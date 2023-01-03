@@ -271,23 +271,44 @@
             ret += `<audio class="passage_audio"controls="true"></audio>
             <input type="hidden" id="canvas_name_` + metadata['Canvas']+`"/>`;
             
-            if(tick == 1){
+            if(tick === 1){
+              ret += '<hr>';
+              // ret += `
+              //   <div>
+              //   <script>
+              //   console.log('test');
+              //           $('#control_nav').hide();
+              //           $('#testing').html('lol');
+              //           alert(1);
+              //   $(function{
+              //     $.ajax({
+              //       type: 'post',
+              //       url: '/passages',
+              //       data: {
+              //           search: '',
+              //       },
+              //       success: function(data){
+              //           console.log('test');
+              //           $('#control_nav').hide();
+              //           $('#testing').html('lol');
+              //           alert(1);
+              //       },
+                    
+              //      crossDomain: true
+              //   });
+              //   });
+              //   </script>
+              //   </div>
+              //   `;
+              console.log('test');
               ret += `
+              <hr>
                 <div>
+                <h1>FLAG</h1>
                 <script>
-                $(function{
-                  $.ajax({
-                    type: 'post',
-                    url: '/passages',
-                    data: {
-                        search: '',
-                    },
-                    success: function(data){
+                console.log('test');
+                        $('#control_nav').hide();
                         $('#testing').html('lol');
-                        alert(1);
-                    }
-                });
-                });
                 </script>
                 </div>
                 `;

@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
 const helmet = require('helmet');
+const cors = require("cors");
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 var http = require('http').Server(app);
@@ -39,6 +40,7 @@ mongoose.connect(process.env.MONGODB_CONNECTION_URL, {
 });
 
 var app = express();
+app.use(cors());
 app.use(helmet());
 app.use(fileUpload());
 // make sure recordings folder exists
