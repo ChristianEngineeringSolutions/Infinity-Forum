@@ -1,7 +1,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Sasame</title>
+        <title>Christian Engineering Solutions</title>
         <link rel="stylesheet" href="/css/main.css">
         <link rel="stylesheet" href="/css/book.css">
         <link rel="stylesheet" href="/css/mobile.css">
@@ -165,20 +165,23 @@
                       </div>
                       <!-- Help -->
                       <div id="help_div">
-                          <p><b>Never do anything twice.</b></p>
-                          <p>Sasame is a versatile, modular, and merit-based Modern Library for worldwide collaboration.</p> 
-                          <p>Sasame is fresh, open-source and always improving. Help out by adding, categorizing, and starring useful information. Sasame keeps track of who did what, so you can use little pieces of everyone's work in your own. Share what you want to share, and gain reputation and rewards everytime someone duplicates your work or finds it useful.</p>
-                          <p>Create an account to get the most out of Sasame; this allows you to star and duplicate useful passages for your own purposes.</p>
-                          <p>Sasame has both a traditional and a graphic user interface. Instead of books, the Library of Sasame has passages. These passages can be text, music, images, code, animations, games, etc. They can even modify Sasame itself. And they can all be sorted and resorted like the pieces of a puzzle to accomplish any task.</p>
-                          <p>Passages can also be grouped into Chapters, which can have their access controlled by the creator.</p>
-                          <p>Information is ranked by 'usefulness'. This centralizes the flow of information towards productivity and prevents echo-chambers. Users can find passages and chapters sorted according to their wants and needs and curated by users with high reputations.</p>
-                          <p>Sasame has an aggressive content flagging system that warns users without restricting access.</p>
-                          <p>As Sasame grows, we will explore utilizing AI and Machine Learning to accelerate growth. However, the users control what information becomes prominent and highly utilized via the starring system.</p>
-                          <p>Users can give only twice as many stars as they have. This helps prevent malicious or non-serious activity.</p>
-                          <p>We can learn and create <i>anything</i>, and solve every problem if we all work together. Sasame keeps that process transparent, accessible, and meritocratic.</p>
-                          <p>Access to information is critical. Sasame will grow to increasingly utilize peer-to-peer networks, compression, and encryption to ensure that no one is left out. Sasame will also encourage the production of servers and devices to access the library and keep it accessible for all.</p>
-                          <p>Coders, please contribute at <a class="link" target="_blank"href="https://github.com/uriahsanders/Sasasame">Github</a>.</p>
-                          <p>Let's make our dreams a reality!</p>
+                        <h3>The fear of the Lord is the beginning of knowledge (Proverbs 1:7)</h3>
+                        <hr>
+                        <h1>Engineering Solutions for the Church</h1>
+                        <p>
+                            Christian Engineering Solutions (CES) is a Not for Profit Organization specializing in collaborative solutions development for the Church. In the Spirit of Jesus Christ, we are to spread the gospel throughout the Earth, taking care to be good examples of Christ Jesus by serving others. CES is designed to help the Church meet these goals in the most rigorous manner possible.
+                        </p>
+                        <h1>Our Technology</h1>
+                        <p>
+                            Our Technology is scripture based in its goals and foundations. Open-Source and Free, one may use our services to both learn and solve problems with the goals of helping others and growing closer to God.
+                        </p>
+                        <h1>Under Active Development</h1>
+                        <h3>Merit-based Reputation and Rewards</h3>
+                        <h3>Streamlined Search and Citations</h3>
+                        <h3>Modular Applications</h3>
+                        <h3>Peer-to-Peer and Encryption Technologies</h3>
+                        <h1>External Repository</h1>
+                        <h3><a href="https://github.com/ChristianEngineeringSolutions/ChristianEngineeringSolutions">https://github.com/ChristianEngineeringSolutions/ChristianEngineeringSolutions</a></h3>
                       </div>
                     </div>
             </div>
@@ -232,7 +235,20 @@
                         </div>
             
                     </div>
+                    <br>
+                    <div id="tab_panel">
+                        <ul id="tab_list">
+                            <li class="tab">Tab</li>
+                            <li class="tab">Tab</li>
+                            <li class="tab">Tab</li>
+                            <li class="tab">+</li>
+                        </ul>
+                        <br><br><br>
+                    </div>
+                    <br><br><br>
             </div>
+            <br>
+            <br>
             <div id="ppe">
                 <canvas id="ppe_canvas"></canvas>
                 <canvas id="ppe_cursor"></canvas>
@@ -251,6 +267,7 @@
                     </div>
                 <div  class="control_block" id="book_of_sasame">
                     <input type="hidden" id="add_position" value="top">
+                    <br><br><br><br>
                     <%if(parentChapter != null || locals.isProfile){%>
                     <div class="tool_header">
                         <%if(parentChapter != null){%>
@@ -287,7 +304,7 @@
                     <%if(book){%>
                       <%if(parentChapter == null){%>
                         <div>
-                              <input style="font-size: 1.5em;"class="control_input"id="chapter_search_left"placeholder="Search Sasame" type="" name="" autocomplete="off">
+                              <input style="font-size: 1.5em;"class="control_input"id="chapter_search_left"placeholder="" type="" name="" autocomplete="off">
                           </div>
                         <%}%>
                         <div id="passages">
@@ -312,7 +329,39 @@
                     
                 </div> -->
             </div>
+            <br><br><br><br><br><br><br><br><br><br>
+            <div style="border:1px solid black; ">
+                <div id="tabs">
+                    <ul>
+                        <li class="tab">Tab</li>
+                        <li class="tab">Tab</li>
+                        <li class="tab">Tab</li>
+                        <li class="tab">Tab</li>
+                    </ul>
+                </div>
+                <div>
+                    <input id="advanced_search"type="text" placeholder="Search...">
+                        <br>
+                        <textarea id="textt"name="" id="" cols="30" rows="10"></textarea>
+                        <br>
+                    <button id="db">Add to DB</button>
+                    <button id="eval">Eval</button>
+                </div>
+                <div></div>
+            </div>
+            <iframe id="myframe"frameborder="0">
+            </iframe>
+    <script>
+        $(function(){
+            // $("#db").hide();
+            $("#myframe").contents().find('body').append('<script>document.getElementById("db").innerHTML="";<\/script>');
+        });
+    </script>
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
         </div>
+        <script>
+            
+        </script>
         <input type="hidden"id="custom_pairs" name="">
         <script src="/marked.min.js"></script>
         <script src="/shared.js"></script>
