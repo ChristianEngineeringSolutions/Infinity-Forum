@@ -1,13 +1,13 @@
 {
-  "name": "sasame",
+  "name": "Christian Engineering Solutions",
   "version": "1.0.0",
-  "description": "sasasame",
+  "description": "Christian Engineering Solutions",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "author": "Uriah Sanders, Mohamed Hassan",
+  "author": "Uriah Sanders",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^3.0.6",
