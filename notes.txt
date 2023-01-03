@@ -1,0 +1,18 @@
+Models
+
+//Major
+Chapters
+    Organize Passages
+Passages
+    Application Modules
+Sub-Passages
+    Related Modules
+Elements
+    Passages for the PPE
+    Consider using Passage
+
+
+//Minor
+Comments
+Messages
+Notifications

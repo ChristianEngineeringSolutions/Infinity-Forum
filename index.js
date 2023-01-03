@@ -583,6 +583,40 @@ app.post(/\/delete_category\/?/, (req, res) => {
         res.send('Deleted.');
     });
 });
+app.post(/\/chapters\/?/, (req, res) => {
+    var backURL=req.header('Referer') || '/';
+    Chapter.find({title: new RegExp(''+title+'', "i")})
+    .select('title flagged')
+    .sort('stars')
+    .limit(DOCS_PER_PAGE)
+    .exec(function(err, chapters){
+        let html = '';
+        if(chapters){
+            chapters.forEach(function(f){
+                html += scripts.printChapter(f);
+            });
+        }
+        res.send(html);
+    });
+    res.send(html);
+});
+app.post(/\/passages\/?/, (req, res) => {
+    var backURL=req.header('Referer') || '/';
+    Passage.find({title: new RegExp(''+title+'', "i")})
+    .select('title flagged')
+    .sort('stars')
+    .limit(DOCS_PER_PAGE)
+    .exec(function(err, passages){
+        let html = '';
+        if(passages){
+            passages.forEach(function(f){
+                html += scripts.printPassage(f);
+            });
+        }
+        res.send(html);
+    });
+    res.send(html);
+});
 
 app.use('/passage', passageRoutes);
 app.post('/search/', (req, res) => {

@@ -1613,6 +1613,34 @@ $(document).on('click', '.file_update', function(){
         }
     });
 });
+//ajax load chapter list
+$(document).on('click', '.file_update', function(){
+    $.ajax({
+        type: 'post',
+        url: '/chapters',
+        data: {
+            search: search,
+        },
+        success: function(data){
+            $('#div').html(data);
+        }
+    });
+});
+//ajax load passage list
+$(document).on('click', '.file_update', function(){
+    var fileName = $('#parent_chapter_title').text();
+    var fileContent = $(this).parent().siblings('.passage_content').text();
+    $.ajax({
+        type: 'post',
+        url: '/passages',
+        data: {
+            search: search,
+        },
+        success: function(data){
+            $('#div').html(data);
+        }
+    });
+});
 $('.help_read_more').on('click', function(){
     $('#right_side_select').val('help').change();
     $('#side_panel').show();
