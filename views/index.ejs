@@ -303,6 +303,11 @@
                     <!-- Add upon scroll -->
                     <%if(book){%>
                       <%if(parentChapter == null){%>
+                        <iframe sandbox="same-origin allow-scripts"style="height:300px;width:100%;"src="/"class="chapter_list_display"></iframe>
+                        <div id="testing">
+                            Yes
+                            <button onClick="$('#control_nav').hide();">click</button>  
+                        </div>
                         <div>
                               <input style="font-size: 1.5em;"class="control_input"id="chapter_search_left"placeholder="" type="" name="" autocomplete="off">
                           </div>
@@ -311,6 +316,10 @@
                         <!-- <%if(chapters && parentChapter == null){%>
                             <%chapters.forEach(function(f) { %>
                               <%- scripts.printChap(f, user); %>
+                        <%});} %> -->
+                        <!-- <%if(chapters){%>
+                            <%chapters.forEach(function(f) { %>
+                                <%- scripts.printChapter(f) %>
                         <%});} %> -->
                         <% book.forEach(function(f) { %>
                             <%if(!f.deleted && !f.queue){%>
@@ -352,10 +361,10 @@
             <iframe id="myframe"frameborder="0">
             </iframe>
     <script>
-        $(function(){
-            // $("#db").hide();
-            $("#myframe").contents().find('body').append('<script>document.getElementById("db").innerHTML="";<\/script>');
-        });
+        // $(function(){
+        //     // $("#db").hide();
+        //     $("#myframe").contents().find('body').append('<script>document.getElementById("db").innerHTML="";<\/script>');
+        // });
     </script>
     <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
         </div>

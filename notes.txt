@@ -16,3 +16,10 @@ Elements
 Comments
 Messages
 Notifications
+
+
+Normal chapter url displays passages in chapter as normal passages (unexecutable). Only admin-verified passages/chapters can be made live outside of sandbox
+but not a writeable version.
+Within chapter we will also display a sandbox where they can see the result of their code. Basically, aggregate passage content and run as html. They will need
+to write script tags in order to execute javascript.
+So, every chapter has an iframe portal to /chapter/id/sandbox

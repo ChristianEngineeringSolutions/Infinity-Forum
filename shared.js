@@ -172,7 +172,7 @@
     `;
     return ret;
   };
-  exports.printPassage = function(passage, user, queueItem=false){
+  exports.printPassage = function(passage, tick=0, user, queueItem=false){
        var metadata = JSON.parse(passage.metadata);
        var ret = '';
         ret += `
@@ -269,7 +269,30 @@
               ret += `<div class="passage_white"><img class="passage_image"src="/uploads/`+passage.filename+`"></div>`;
             }
             ret += `<audio class="passage_audio"controls="true"></audio>
-            <input type="hidden" id="canvas_name_` + metadata['Canvas']+`"/>
+            <input type="hidden" id="canvas_name_` + metadata['Canvas']+`"/>`;
+            
+            if(tick == 1){
+              ret += `
+                <div>
+                <script>
+                $(function{
+                  $.ajax({
+                    type: 'post',
+                    url: '/passages',
+                    data: {
+                        search: '',
+                    },
+                    success: function(data){
+                        $('#testing').html('lol');
+                        alert(1);
+                    }
+                });
+                });
+                </script>
+                </div>
+                `;
+            }
+            ret += `
             <div class="sub_passages">`;
                 passage.passages.forEach(function(sub){
                     ret += `<div class="sub_passage">`;

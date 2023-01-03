@@ -585,6 +585,7 @@ app.post(/\/delete_category\/?/, (req, res) => {
 });
 app.post(/\/chapters\/?/, (req, res) => {
     var backURL=req.header('Referer') || '/';
+    let title = req.body.search;
     Chapter.find({title: new RegExp(''+title+'', "i")})
     .select('title flagged')
     .sort('stars')
@@ -598,24 +599,30 @@ app.post(/\/chapters\/?/, (req, res) => {
         }
         res.send(html);
     });
-    res.send(html);
 });
 app.post(/\/passages\/?/, (req, res) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     var backURL=req.header('Referer') || '/';
-    Passage.find({title: new RegExp(''+title+'', "i")})
-    .select('title flagged')
+    let title = req.body.search;
+    var tick = 0;
+    var temp = '';
+    Passage.find({})
     .sort('stars')
     .limit(DOCS_PER_PAGE)
     .exec(function(err, passages){
         let html = '';
         if(passages){
             passages.forEach(function(f){
-                html += scripts.printPassage(f);
+                temp = f.id[f.id.length-1];
+                if(temp == 'c'){
+                    tick = 1;
+                }
+                html += scripts.printPassage(f, tick);
             });
         }
         res.send(html);
     });
-    res.send(html);
 });
 
 app.use('/passage', passageRoutes);

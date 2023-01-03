@@ -177,7 +177,7 @@ class SequenceParser {
 
 var Sasame = true;
 
-if($('#parent_chapter_id').val() != 'Sasame'){
+if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
     //so only in chapters
     Sasame = false;
     $('#passages').sortable({
@@ -1614,7 +1614,10 @@ $(document).on('click', '.file_update', function(){
     });
 });
 //ajax load chapter list
-$(document).on('click', '.file_update', function(){
+$(document).on('click', '.get_chapters', function(){
+    loadChapterList();
+});
+function loadChapterList(search=""){
     $.ajax({
         type: 'post',
         url: '/chapters',
@@ -1622,12 +1625,33 @@ $(document).on('click', '.file_update', function(){
             search: search,
         },
         success: function(data){
-            $('#div').html(data);
+            $(".chapter_list_display").contents().find('body').append(data);
         }
     });
+}
+function loadPassageList(search=""){
+    $.ajax({
+        type: 'post',
+        url: '/passages',
+        data: {
+            search: search,
+        },
+        success: function(data){
+            // $(".chapter_list_display").contents().find('body').append(data);
+            // $(".chapter_list_display").contents().find('body').append('<div id="testing">test html</div>');
+            // $(".chapter_list_display").contents().find('body').append('<script>document.getElementById("testing").innerHTML="noooo";;</script>');
+            // $(".chapter_list_display").contents().find('body').append('<script>parent.document.getElementById("testing").innerHTML="noooo";;</script>');
+            // $(".chapter_list_display").contents().find('body').find('#testing').html('over');
+            // $('#testing').html('over');
+        }
+    });
+}
+$(function(){
+    //loadChapterList();
+    loadPassageList();
 });
 //ajax load passage list
-$(document).on('click', '.file_update', function(){
+$(document).on('click', '.get_passages', function(){
     var fileName = $('#parent_chapter_title').text();
     var fileContent = $(this).parent().siblings('.passage_content').text();
     $.ajax({
