@@ -621,6 +621,7 @@ app.post(/\/passages\/?/, (req, res) => {
                     tick = 1;
                 }
                 html += scripts.printPassage(f, tick);
+                tick = 0;
             });
         }
         res.send(html);
