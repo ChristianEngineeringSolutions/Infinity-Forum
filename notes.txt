@@ -23,3 +23,17 @@ but not a writeable version.
 Within chapter we will also display a sandbox where they can see the result of their code. Basically, aggregate passage content and run as html. They will need
 to write script tags in order to execute javascript.
 So, every chapter has an iframe portal to /chapter/id/sandbox
+
+
+Create views for:
+Homepage (index)
+Chapter (Shows Passage List)
+    Have normal passage list
+    have iframe that duplicates passage list but runs code
+
+Daemons (You can add passages to daemons with permissions otherwise they are default from admin)
+Daemons are passages that modify parent passages
+
+
+
+Review iframe 2 and 1 way communication

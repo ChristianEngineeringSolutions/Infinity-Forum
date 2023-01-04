@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Christian Engineering Solutions</title>
+        <link rel="stylesheet" href="/css/main.css">
+        <link rel="stylesheet" href="/css/book.css">
+        <link rel="stylesheet" href="/css/mobile.css">
+        <link rel="shortcut icon" type="image/x-icon" href="/images/bitmap.png" />
+        <script src="/jquery.min.js"></script>
+        <script src="/jquery-ui.min.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="/jquery.modal.min.js"></script>
+        <link rel="stylesheet" href="/jquery.modal.min.css" />
+        <link rel="stylesheet" href="/jquery-ui.css">
+        <script type="module" src="/ionicons.esm.js"></script>
+        <script nomodule="" src="/ionicons.js"></script>
+        <link rel="stylesheet" href="/highlight/default.css">
+        <script src="/js/highlight.js"></script>
+        <script src="/tone.js"></script>
+        <link rel="stylesheet" type="text/css" href="/css/ppe.css">
+        <link rel="stylesheet" href="/codemirror.css">
+        <link rel="stylesheet" type="text/css" href="/css/fonts.css">
+        <script src="/codemirror.js"></script>
+        <script type="text/javascript" src="/mode/javascript/javascript.js"></script>
+        <script src="/sigma.js"></script>
+        <script src="/sigma.parsers.json.js"></script>
+    </head>
+    <body>
+        <div id="login_modal" class="modal">
+          <p class="header">Login</p>
+          <form id="login_form" action="/login/" method="POST">
+            <div>
+                <label>Username:</label>
+                <input id="login_username"class="control_input"type="text" name="username"autocomplete="off"/>
+            </div>
+            <div>
+                <label>Email:</label>
+                <input id="login_email"class="control_input"type="text" name="email"autocomplete="off"/>
+            </div>
+            <div>
+                <label>Password:</label>
+                <input id="login_password"class="control_input"type="password" name="password"autocomplete="off"/>
+            </div>
+            <div>
+                <input class="control_button"type="submit" value="Login"autocomplete="off"/>
+            </div>
+          </form>
+          <p class="header">Register</p>
+          <form id="register_form" action="/register/" method="POST">
+            <div>
+                <label>Username:</label>
+                <input class="control_input"type="text" name="username"autocomplete="off"/>
+            </div>
+            <div>
+                <label>Email:</label>
+                <input class="control_input"type="text" name="email"autocomplete="off"/>
+            </div>
+            <div>
+                <label>Password:</label>
+                <input class="control_input"type="password" name="password"autocomplete="off"/>
+            </div>
+            <div>
+                <label>Confirm Password:</label>
+                <input class="control_input"type="password" name="passwordConf"autocomplete="off"/>
+            </div>
+            <div>
+                <input class="control_button"type="submit" value="Register"/>
+            </div>
+          </form>
+        </div>
+        <% if(user != null){ %>
+            <div id="login">
+                <br/>
+                <br/>
+                <ion-icon class="notifications_icon"title="Notifications"src="/images/ionicons/notifications-outline.svg"></ion-icon>&nbsp;&nbsp;
+                <ion-icon class="messages_icon"title="Messages"src="/images/ionicons/mail-outline.svg"></ion-icon>&emsp;
+                <a class="link" href="/user/<%=user._id%>">Profile</a>&emsp;
+                <a class="link" href="/logout">Logout</a>
+                <input id="logged_in"value="true"type="hidden" name="">
+            </div>
+        <%} else{ %>
+            <div id="login">
+                <br/>
+                <br/>
+                <!-- <a class="link" target="_blank"href="/help">Help</a> | -->
+                <a class="link">Download</a>&emsp;&emsp;
+                <a class="link" rel="modal:open"href="#login_modal">Login</a> 
+                <input id="logged_in"value="false"type="hidden" name="">
+            </div>
+        <%} %>
+        <div id="side_panel">
+          <div id="side_panel_inner">
+            <div id="side_panel_close">
+              <ion-icon src="/images/ionicons/close-circle-outline.svg"></ion-icon>
+            </div>
+            <div id="side_panel_body">
+              <div class="header">
+                        <select id="right_side_select" autocomplete="off">
+                            <option value="chapters">Chapters</option>
+                            <option value="brief">Brief</option>
+                            <option value="add">Add</option>
+                            <option value="edit">Edit</option>
+                            <option value="leaderboard">Leaderboard</option>
+                            <option value="help">Help</option>
+                            <option value="bookmarks">Bookmarks</option>
+                        </select>
+                    </div>
+                    <!-- For Pagination -->
+                    <input id="search_val"type="hidden"autocomplete="false">
+                    <!-- Shows only one child at a time -->
+                    <div id="side_panel_switcher">
+                      <!-- For Chapters -->
+                      <div id="categories">
+                          <div>
+                              <input class="control_input"id="chapter_search_right"placeholder="Search Sasame" type="" name="" autocomplete="off">
+                          </div>
+                          <div id="chapters">
+                            <br>
+                              <%if(chapters){%>
+                                  <%chapters.forEach(function(f) { %>
+                                      <%- scripts.printChapter(f) %>
+                              <%});} %>
+                              <div id="chapter_load"class="load_more category">Load More</div>
+                          </div>
+                      </div>
+                      <!-- Brief -->
+                      <div id="brief">
+                        <div id="brief_blocker"></div>
+                        <div id="right_passages"></div>
+                      </div>
+                      <!-- Passages -->
+                      <div id="search_passages">
+                        <div>
+                              <input class="control_input"id="category_search_input"placeholder="Search Passages" type="" name="" autocomplete="off">
+                              <div id="ppe_queue">
+                                <!-- <input placeholder="Search..."id="ppe_search"class="control_input"type="text" name=""> -->
+                                <div class="ppe_canvas_container ppe_queue_selected">
+                                  <canvas id="ppe_mutation"class="ppe_queue_canvas" width="100" height="100"></canvas>
+                                </div>
+                              </div>
+                          </div>
+                          <div id="cats"></div>
+                      </div>
+                      <!-- Queue -->
+                      <div id="queue">
+                          <input value="{}"id="queue_passages"type="hidden" name="" autocomplete="off">
+                          <div id="queue_items"></div>
+                      </div>
+                      <!-- Add -->
+                      <div id="add_div">
+                          <%-scripts.printAddForm(chapter)%>
+                      </div>
+                      <!-- Console -->
+                      <div id="console_div">
+                          <textarea id="console" class="control_textarea" autocomplete="off"></textarea>
+                          <button class="control_button">Add to Queue</button>
+                      </div>
+                      <!-- Edit -->
+                      <div id="edit_div">
+                          
+                      </div>
+                      <!-- Leaderboard -->
+                      <div id="leaderboard_div">
+                          Leaderboard coming soon
+                      </div>
+                      <!-- Help -->
+                      <div id="help_div">
+                        <h3>The fear of the Lord is the beginning of knowledge (Proverbs 1:7)</h3>
+                        <hr>
+                        <h1>Engineering Solutions for the Church</h1>
+                        <p>
+                            Christian Engineering Solutions (CES) is a Not for Profit Organization specializing in collaborative solutions development for the Church. In the Spirit of Jesus Christ, we are to spread the gospel throughout the Earth, taking care to be good examples of Christ Jesus by serving others. CES is designed to help the Church meet these goals in the most rigorous manner possible.
+                        </p>
+                        <h1>Our Technology</h1>
+                        <p>
+                            Our Technology is scripture based in its goals and foundations. Open-Source and Free, one may use our services to both learn and solve problems with the goals of helping others and growing closer to God.
+                        </p>
+                        <h1>Under Active Development</h1>
+                        <h3>Merit-based Reputation and Rewards</h3>
+                        <h3>Streamlined Search and Citations</h3>
+                        <h3>Modular Applications</h3>
+                        <h3>Peer-to-Peer and Encryption Technologies</h3>
+                        <h1>External Repository</h1>
+                        <h3><a href="https://github.com/ChristianEngineeringSolutions/ChristianEngineeringSolutions">https://github.com/ChristianEngineeringSolutions/ChristianEngineeringSolutions</a></h3>
+                      </div>
+                    </div>
+            </div>
+          </div>
+        </div>
+        <div id="mobile_modal" class="modal">
+            <%-scripts.printAddForm(chapter)%>
+            <div class="header">
+                Table of Contents
+            </div>
+            <div id="mobile_category_list">
+                <%if(chapters){%>
+                    <%chapters.forEach(function(f) { %>
+                        <%- scripts.printChapter(f) %>
+                <%});} %>
+            </div>
+            <div id="chapter_load_mobile"class="load_more category link">Load More</div>
+        </div>
+        <div id="control_panel">
+            <div id="control_nav">
+                    <div id="main_header">
+                        <a href="/" class="basic_link">
+                          <!-- <%if(parentChapter != null){%>
+                            <div id="perm_chapter"><%=parentChapter.title%></div>
+                          <%}else if(locals.isProfile){%>
+                            <div id="perm_chapter"><%=profile.username%></div>
+                          <%}else{%>
+                            <div id="perm_chapter">Sasame</div>
+                          <%}%> -->
+                          <div id="perm_chapter">Christian Engineering Solutions</div>
+                        </a>
+                       <!--  <div id="sasame_title">
+                          <span id="parent_chapter_title">Sasame</span> <span id="alpha">Alpha</span>
+                        </div> -->
+                        <!-- 
+                        <div><a style="font-size:0.5em"class="basic_link"href="https://github.com/uriahsanders/Sasasame">Sasame</a></div> -->
+                        <div id="options">
+                            <a class="basic_link"><ion-icon id="help"title="Help"src="/images/ionicons/help-circle-outline.svg"></ion-icon></a>
+                            <ion-icon class="passage_adder book_option"title="Add (a)"src="/images/ionicons/add-circle-outline.svg"></ion-icon>
+                             <ion-icon class="book_option"id="option_menu"title="Menu (m)"src="/images/ionicons/browsers-outline.svg"></ion-icon>
+                             <ion-icon class="toggle_tools book_option"title="Tools (t)"src="/images/ionicons/build-outline.svg"></ion-icon>
+                             <!-- <ion-icon class="toggle_resize book_option"title="Resize (r)"src="/images/ionicons/albums-outline.svg"></ion-icon> -->
+                             <!-- PPE Options -->
+                             <ion-icon data-select="off"id="ppe_select"class="ppe_option"title="Select (q)"src="/images/ionicons/scan-outline.svg"></ion-icon>
+                             <ion-icon id="ppe_mutate"class="ppe_option"title="Mutate (m)"src="/images/ionicons/color-palette-outline.svg"></ion-icon>
+                             <ion-icon id="ppe_erase"class="ppe_option"title="Erase (e)"src="/images/ionicons/square-outline.svg"></ion-icon>
+                             <ion-icon id="ppe_search_icon"class="ppe_option"title="Search (SPC)"src="/images/ionicons/search-outline.svg"></ion-icon>
+
+                             <ion-icon class="graphic_mode"title="Graphic Mode (g)"src="/images/ionicons/brush-outline.svg"></ion-icon>
+                             <ion-icon class="model_mode"title="Model Mode"src="/images/ionicons/prism-outline.svg"></ion-icon>
+                        </div>
+            
+                    </div>
+                    <br>
+                    <div id="tab_panel">
+                        <ul id="tab_list">
+                            <li class="tab">Tab</li>
+                            <li class="tab">Tab</li>
+                            <li class="tab">Tab</li>
+                            <li class="tab">+</li>
+                        </ul>
+                        <br><br><br>
+                    </div>
+                    <br><br><br>
+            </div>
+            <br>
+            <br>

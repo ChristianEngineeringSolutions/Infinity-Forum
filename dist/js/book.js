@@ -1637,7 +1637,7 @@ function loadPassageList(search=""){
             search: search,
         },
         success: function(data){
-            // $(".chapter_list_display").contents().find('body').append(data);
+            $(".chapter_list_display").contents().find('body').append(data);
             // $(".chapter_list_display").contents().find('body').append('<div id="testing">test html</div>');
             // $(".chapter_list_display").contents().find('body').append('<script>document.getElementById("testing").innerHTML="noooo";;</script>');
             // $(".chapter_list_display").contents().find('body').append('<script>parent.document.getElementById("testing").innerHTML="noooo";;</script>');
