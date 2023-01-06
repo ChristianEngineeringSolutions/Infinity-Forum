@@ -1631,18 +1631,14 @@ function loadChapterList(search=""){
 }
 function loadPassageList(search=""){
     $.ajax({
-        type: 'post',
+        type: 'get',
         url: '/passages',
         data: {
             search: search,
         },
         success: function(data){
-            $(".chapter_list_display").contents().find('body').append(data);
-            // $(".chapter_list_display").contents().find('body').append('<div id="testing">test html</div>');
-            // $(".chapter_list_display").contents().find('body').append('<script>document.getElementById("testing").innerHTML="noooo";;</script>');
-            // $(".chapter_list_display").contents().find('body').append('<script>parent.document.getElementById("testing").innerHTML="noooo";;</script>');
-            // $(".chapter_list_display").contents().find('body').find('#testing').html('over');
-            // $('#testing').html('over');
+            $('#passages').html(data);
+            // $(".chapter_list_display").contents().find('body').append(data);
         }
     });
 }

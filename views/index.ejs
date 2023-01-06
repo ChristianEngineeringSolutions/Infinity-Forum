@@ -1,125 +1,30 @@
 <%- include('header') %>
-            <div id="ppe">
-                <canvas id="ppe_canvas"></canvas>
-                <canvas id="ppe_cursor"></canvas>
-                
-                <div id="ppe_search_modal" class="modal">
-
-
-                </div>
-            </div>
+            <%- include('ppe') %>
             <div id="control_blocks">
                 <!-- <div class="modal" id="code"> -->
                     <!-- scripts.printAddForm(chapter) -->
                 <!-- </div> -->
-                <div id="property_select">
-                        <%-scripts.printPropertySelect()%>
-                    </div>
+                <!-- <div id="property_select">
+                        <%#scripts.printPropertySelect()%>
+                    </div> -->
                 <div  class="control_block" id="book_of_sasame">
                     <input type="hidden" id="add_position" value="top">
                     <br><br><br><br>
-                    <%if(parentChapter != null || locals.isProfile){%>
-                    <div class="tool_header">
-                        <%if(parentChapter != null){%>
-                          <%-scripts.displayWholeChapter(parentChapter)%>
-                        <%}else{%>
-                            <%if(locals.isProfile){%>
-                            <div id="profile_modal" class="modal">
-                                <p><%=profile.username%></p>
-                                <p><%=profile.stars%> Stars</p>
-                                <p><%=profile.starsGiven%> Stars Given</p>
-                            </div>
-                            <input type="hidden" value="true", id="is_profile"/>
-                            <div><ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
-                            <a class="basic_link" href="#profile_modal" rel="modal:open"><ion-icon title="Details"src="/images/ionicons/settings-outline.svg"></ion-icon></a>
-                            <span id="parent_chapter_title"><%=profile.username%></span>
-                            <div id="chapter_description">
-                              Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-                              tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-                              quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-                              consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
-                              cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-                              proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                            </div> 
-                            <%}%>
-                        <%}%>
-                    </div>
-                    <%}else{%>
-                        <!-- <span id="parent_chapter_title">Sasame</span> <span id="alpha">Alpha</span> -->
-                        <input id="fileStreamPath" type="hidden"></input>
-                        <input id="parent_chapter_id"type="hidden" value="Sasame"/>
-                        <input id="page" type="hidden" value="2" autocomplete="off"/>
-                    <%}%>
+                   
                     <!-- Add upon scroll -->
-                    <%if(book){%>
-                      <%if(parentChapter == null){%>
-                        <iframe sandbox="allow-same-origin allow-scripts"style="height:300px;width:100%;"src="/passages/"></iframe>
-                        <div id="testing">
-                            Yes
-                            <button onClick="$('#control_nav').hide();">click</button>  
-                        </div>
                         <div>
                               <input style="font-size: 1.5em;"class="control_input"id="chapter_search_left"placeholder="" type="" name="" autocomplete="off">
                           </div>
-                        <%}%>
-                        <div id="passages">
-                        <!-- <%if(chapters && parentChapter == null){%>
-                            <%chapters.forEach(function(f) { %>
-                              <%- scripts.printChap(f, user); %>
-                        <%});} %> -->
-                        <!-- <%if(chapters){%>
-                            <%chapters.forEach(function(f) { %>
-                                <%- scripts.printChapter(f) %>
-                        <%});} %> -->
-                        <% book.forEach(function(f) { %>
-                            <%if(!f.deleted && !f.queue){%>
-                              <%- scripts.printPassage(f, user); %>
-                            <%}%>
-                        <% }); %>
+                        <iframe src="/passages" sandbox="allow-scripts" class="tab_window">
+                            <!-- Populate tab windows with appropriate passages using javascript -->
+                            <!-- Display chapters in iframe here -->
                         </div>
-                        <%if(parentChapter == null){%>
-                        <div id="passage_load" class="load_more passage">
-                            Load More
-                        </div>
-                        <%}%>
-                    <%}%>
                 </div>
                 <!-- <div class="modal" id="toc">
                     
                 </div> -->
             </div>
-            <br><br><br><br><br><br><br><br><br><br>
-            <div style="border:1px solid black; ">
-                <div id="tabs">
-                    <ul>
-                        <li class="tab">Tab</li>
-                        <li class="tab">Tab</li>
-                        <li class="tab">Tab</li>
-                        <li class="tab">Tab</li>
-                    </ul>
-                </div>
-                <div>
-                    <input id="advanced_search"type="text" placeholder="Search...">
-                        <br>
-                        <textarea id="textt"name="" id="" cols="30" rows="10"></textarea>
-                        <br>
-                    <button id="db">Add to DB</button>
-                    <button id="eval">Eval</button>
-                </div>
-                <div></div>
-            </div>
-            <iframe id="myframe"frameborder="0">
-            </iframe>
-    <script>
-        // $(function(){
-        //     // $("#db").hide();
-        //     $("#myframe").contents().find('body').append('<script>document.getElementById("db").innerHTML="";<\/script>');
-        // });
-    </script>
-    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+    <br>
         </div>
-        <script>
-            
-        </script>
         <input type="hidden"id="custom_pairs" name="">
         <%- include('footer') %>

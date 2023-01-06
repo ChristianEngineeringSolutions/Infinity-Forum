@@ -117,10 +117,6 @@
                           </div>
                           <div id="chapters">
                             <br>
-                              <%if(chapters){%>
-                                  <%chapters.forEach(function(f) { %>
-                                      <%- scripts.printChapter(f) %>
-                              <%});} %>
                               <div id="chapter_load"class="load_more category">Load More</div>
                           </div>
                       </div>
@@ -146,10 +142,6 @@
                       <div id="queue">
                           <input value="{}"id="queue_passages"type="hidden" name="" autocomplete="off">
                           <div id="queue_items"></div>
-                      </div>
-                      <!-- Add -->
-                      <div id="add_div">
-                          <%-scripts.printAddForm(chapter)%>
                       </div>
                       <!-- Console -->
                       <div id="console_div">
@@ -189,7 +181,7 @@
           </div>
         </div>
         <div id="mobile_modal" class="modal">
-            <%-scripts.printAddForm(chapter)%>
+            <%-scripts.printAddForm()%>
             <div class="header">
                 Table of Contents
             </div>

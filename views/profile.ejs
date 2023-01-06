@@ -1,0 +1,21 @@
+<!-- <%- include('header') %> -->
+
+<div id="profile_modal" class="modal">
+    <p><%=profile.username%></p>
+    <p><%=profile.stars%> Stars</p>
+    <p><%=profile.starsGiven%> Stars Given</p>
+</div>
+<input type="hidden" value="true", id="is_profile"/>
+<div><ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
+<a class="basic_link" href="#profile_modal" rel="modal:open"><ion-icon title="Details"src="/images/ionicons/settings-outline.svg"></ion-icon></a>
+<span id="parent_chapter_title"><%=profile.username%></span>
+<div id="chapter_description">
+  Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+  consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+  cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+  proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</div> 
+
+<!-- <%- include('footer') %> -->
