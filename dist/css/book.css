@@ -92,16 +92,22 @@ body{
 #tab_list{
     list-style-type: none;
 }
+.tab_window{
+    width: 100%; 
+    height: 100%;
+}
 .tab{
     display: inline;
-    padding: 5px;
+    padding: 10px;
     border: 1px solid black;
     cursor: pointer;
     background: #fff;
+    font-weight: bold;
 }
 .tab:hover{
     font-weight: bolder;
-    color: red;
+    border: 2px solid black;
+    /* color: red; */
 }
 #tab_panel{
     /* padding-top: 15px; */
@@ -115,6 +121,7 @@ body{
     width: 100%;
     z-index: 30000000;
     margin-bottom: 20px;
+    text-align: center;
 }
 .control_button{
     padding: 5px;

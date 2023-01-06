@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
 const helmet = require('helmet');
 const cors = require("cors");
+const stripe = require("stripe");
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 var http = require('http').Server(app);
@@ -162,7 +163,7 @@ cron.schedule('0 12 * * *', () => {
 });
 //ROUTES
 //GET (or show view)
-app.get(/\/user\/?(:user_id)?/, function(req, res) {
+app.get(/\/user\/(:user_id)?/, function(req, res) {
     //scripts.renderBookPage(req, res);
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
@@ -215,7 +216,39 @@ app.get('/friend', function(req, res){
   res.render('friend');
 });
 //HOME/INDEX
-app.get(/\/?(:category\/:category_ID)?/, function(req, res) {
+app.get('/', function(req, res) {
+    //scripts.renderBookPage(req, res);
+    let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+    let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+    let chapterTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+    let golden = '';
+    let addPassageAllowed = true;
+    let addChapterAllowed = true;
+    var user = req.session.user || null;
+    //home page
+    res.render("index", {scripts: scripts});
+    Chapter.find({
+        flagged: false,
+      })
+      .sort([['stars', -1]])
+      .limit(DOCS_PER_PAGE)
+      .exec()
+      .then(function(chapters){
+        console.log(1);
+            res.render("index", {
+                session: req.session,
+                chapters: chapters,
+                scripts: scripts,
+            });
+      })
+      .then(function(err){
+          if(err){
+              console.log(err);
+          }
+      });
+});
+//Passage List
+app.get(/\/chapter\/(:chapter\/:chapter_ID)?/, function(req, res) {
     //scripts.renderBookPage(req, res);
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
@@ -602,14 +635,22 @@ app.post(/\/chapters\/?/, (req, res) => {
         res.send(html);
     });
 });
-app.post(/\/passages\/?/, (req, res) => {
+//CHANGE TO GET REQUEST
+app.get(/\/passages\/?/, (req, res) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     var backURL=req.header('Referer') || '/';
     let title = req.body.search;
     var tick = 0;
     var temp = '';
-    Passage.find({})
+    Passage.find({
+        parent: undefined,
+        deleted: false,
+        visible: true,
+        flagged: false,
+        queue: false
+    })
+    .populate('chapter author')
     .sort('stars')
     .limit(DOCS_PER_PAGE)
     .exec(function(err, passages){
