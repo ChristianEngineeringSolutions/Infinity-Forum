@@ -33,6 +33,10 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+    developerMode: {
+      type: Boolean,
+      default: false
+    },
     queue: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
@@ -51,6 +55,11 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // Background scripts
+    daemons: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Passage'
+    }]
 });
 
 module.exports = mongoose.model('User', userSchema, 'Users');
