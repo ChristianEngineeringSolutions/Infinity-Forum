@@ -68,7 +68,7 @@ var MongoStore  = require('connect-mongo');
 const scripts = require('./shared');
 app.use(cookieParser());
 app.use(session({
-    secret: "Sasame; just a cute little seed with a Really Big HEART!",
+    secret: "ls",
     resave: true,
     saveUninitialized: true,
     // store: new MongoStore({
@@ -168,7 +168,6 @@ app.get(/\/user\/(:user_id)?/, function(req, res) {
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let user_id = fullUrl.split('/')[fullUrl.split('/').length - 1];
-    let golden = '';
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
@@ -225,6 +224,7 @@ app.get('/', function(req, res) {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
+    var test = "TEST";
     //home page
     res.render("index", {scripts: scripts});
     Chapter.find({
@@ -234,11 +234,11 @@ app.get('/', function(req, res) {
       .limit(DOCS_PER_PAGE)
       .exec()
       .then(function(chapters){
-        console.log(1);
             res.render("index", {
                 session: req.session,
                 chapters: chapters,
-                scripts: scripts,
+                // scripts: scripts,
+                test: test
             });
       })
       .then(function(err){
@@ -637,8 +637,8 @@ app.post(/\/chapters\/?/, (req, res) => {
 });
 //CHANGE TO GET REQUEST
 app.get(/\/passages\/?/, (req, res) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    // res.header("Access-Control-Allow-Origin", "*");
+    // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     var backURL=req.header('Referer') || '/';
     let title = req.body.search;
     var tick = 0;

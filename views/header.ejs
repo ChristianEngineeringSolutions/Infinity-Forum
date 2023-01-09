@@ -186,10 +186,7 @@
                 Table of Contents
             </div>
             <div id="mobile_category_list">
-                <%if(chapters){%>
-                    <%chapters.forEach(function(f) { %>
-                        <%- scripts.printChapter(f) %>
-                <%});} %>
+                
             </div>
             <div id="chapter_load_mobile"class="load_more category link">Load More</div>
         </div>
@@ -197,20 +194,8 @@
             <div id="control_nav">
                     <div id="main_header">
                         <a href="/" class="basic_link">
-                          <!-- <%if(parentChapter != null){%>
-                            <div id="perm_chapter"><%=parentChapter.title%></div>
-                          <%}else if(locals.isProfile){%>
-                            <div id="perm_chapter"><%=profile.username%></div>
-                          <%}else{%>
-                            <div id="perm_chapter">Sasame</div>
-                          <%}%> -->
                           <div id="perm_chapter">Christian Engineering Solutions</div>
                         </a>
-                       <!--  <div id="sasame_title">
-                          <span id="parent_chapter_title">Sasame</span> <span id="alpha">Alpha</span>
-                        </div> -->
-                        <!-- 
-                        <div><a style="font-size:0.5em"class="basic_link"href="https://github.com/uriahsanders/Sasasame">Sasame</a></div> -->
                         <div id="options">
                             <a class="basic_link"><ion-icon id="help"title="Help"src="/images/ionicons/help-circle-outline.svg"></ion-icon></a>
                             <ion-icon class="passage_adder book_option"title="Add (a)"src="/images/ionicons/add-circle-outline.svg"></ion-icon>
@@ -229,7 +214,7 @@
             
                     </div>
                     <br>
-                    <div id="tab_panel">
+                    <!-- <div id="tab_panel">
                         <ul id="tab_list">
                             <li class="tab">Tab</li>
                             <li class="tab">Tab</li>
@@ -237,7 +222,7 @@
                             <li class="tab">+</li>
                         </ul>
                         <br><br><br>
-                    </div>
+                    </div> -->
                     <br><br><br>
             </div>
             <br>
