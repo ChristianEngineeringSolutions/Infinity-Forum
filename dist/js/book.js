@@ -1644,7 +1644,7 @@ function loadPassageList(search=""){
 }
 $(function(){
     //loadChapterList();
-    loadPassageList();
+    // loadPassageList();
 });
 //ajax load passage list
 $(document).on('click', '.get_passages', function(){

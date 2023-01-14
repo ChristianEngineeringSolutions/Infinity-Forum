@@ -1,0 +1,42 @@
+.passage_options, .passage_tabs, .passage_users{
+    list-style-type: none;
+
+}
+.passage_option{
+    display: inline;
+    padding: 1px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 15px;
+}
+.passage_tab{
+    display: inline;
+    padding: 10px;
+    border: 1px solid black;
+    cursor: pointer;
+    background: #fff;
+    font-weight: bold;
+}
+.passage_tab:hover{
+    font-weight: bolder;
+    border: 2px solid black;
+    /* color: red; */
+}
+.passage_user{
+    cursor: pointer;
+    color: black;
+    font-style: italic;
+}
+.passage_title, .passage_description, .passage_file{
+    all: revert;
+    display: block;
+    width: 95%;
+    padding: 10px;
+    margin: auto;
+    margin-bottom: 10px;
+}
+.passage_form{
+    border: 1px solid black;
+    padding: 10px;
+    /* margin: auto; */
+}
