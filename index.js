@@ -224,28 +224,34 @@ app.get('/', function(req, res) {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    var test = "TEST";
+    var passage = {
+        users: [
+            {
+                name: "Uriah Sanders"
+            }
+        ]
+    };
     //home page
-    res.render("index", {scripts: scripts});
-    Chapter.find({
-        flagged: false,
-      })
-      .sort([['stars', -1]])
-      .limit(DOCS_PER_PAGE)
-      .exec()
-      .then(function(chapters){
-            res.render("index", {
-                session: req.session,
-                chapters: chapters,
-                // scripts: scripts,
-                test: test
-            });
-      })
-      .then(function(err){
-          if(err){
-              console.log(err);
-          }
-      });
+    res.render("index", {scripts: scripts, passage: passage});
+    // Chapter.find({
+    //     flagged: false,
+    //   })
+    //   .sort([['stars', -1]])
+    //   .limit(DOCS_PER_PAGE)
+    //   .exec()
+    //   .then(function(chapters){
+    //         res.render("index", {
+    //             session: req.session,
+    //             chapters: chapters,
+    //             scripts: scripts,
+    //             test: test
+    //         });
+    //   })
+    //   .then(function(err){
+    //       if(err){
+    //           console.log(err);
+    //       }
+    //   });
 });
 //Passage List
 app.get(/\/chapter\/(:chapter\/:chapter_ID)?/, function(req, res) {

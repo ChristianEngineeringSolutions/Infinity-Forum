@@ -86,7 +86,7 @@ body{
     font-weight: bolder;
     position: fixed;
     width: 100%;
-    z-index: 30000000;
+    z-index: 200;
     padding-bottom: 20px;
 }
 #tab_list{

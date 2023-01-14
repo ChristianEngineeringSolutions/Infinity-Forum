@@ -3,12 +3,6 @@ Source variable: passage
  -->
 
  <div id="passage_<%=passage.id%>" class="passage">
-    <ul class="passage_users">
-        <!-- Profile Image layers -->
-        <li class="passage_user"></li>
-        <!-- ... -->
-    </ul>
-    <div class="passage_stars"></div>
     <ul class="passage_options">
         <!-- Shift passage location -->
         <li class="passage_option">Move</li>
@@ -18,21 +12,33 @@ Source variable: passage
         <li class="passage_option">Comments</li>
         <li class="passage_option">Share</li>
         <li class="passage_option">Donate</li>
+        <li class="passage_option">Update</li>
         <li class="passage_option">Delete</li>
     </ul>
+    <ul class="passage_users">
+        <!-- Profile Image layers -->
+        <%if(passage.users){%>
+            <%passage.users.forEach(function(user) { %>
+                <%- include('profile_thumbnail', {user: user}) %>
+        <%});} %>
+        <!-- ... -->
+    </ul>
+    <div class="passage_stars"></div>
     <ul class="passage_tabs">
-        <li class="passage_tab_open_advanced">Advanced</li>
-        <li class="passage_tab_advanced">HTML</li>
-        <li class="passage_tab_advanced">CSS</li>
-        <li class="passage_tab_advanced">JS</li>
+        <li class="passage_tab passage_tab_open_advanced">Advanced</li>
+        <li class="passage_tab passage_tab_advanced">HTML</li>
+        <li class="passage_tab passage_tab_advanced">CSS</li>
+        <li class="passage_tab passage_tab_advanced">JS</li>
+        <li class="passage_tab passage_tab_advanced">Result</li>
         <!-- Display Result -->
-        <li class="passage_tab">View</li>
         <li class="passage_tab">Sources</li>
         <li class="passage_tab">Alternates</li>
         <li class="passage_tab">Tags</li>
     </ul>
-    <form action="">
-        <input type="text"name="title"placeholder="Title">
-        <textarea name="" id="" cols="30" rows="10"></textarea>
+
+    <form class="passage_form"action="">
+        <input class="passage_title" type="text"name="title"placeholder="Title">
+        <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Description"></textarea>
+        <input class="passage_file" type="file" multiple>
     </form>
  </div>
