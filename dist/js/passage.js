@@ -1,6 +1,6 @@
 "use strict"
 $(function(){
     $(document).on('click', '.passage_tab_open_advanced', function(e){
-        $('.passage_tab_advanced').fadeToggle().css('display', 'inline-block');
+        $('.passage_advanced').fadeToggle().css('display', 'inline-block');
     });
 });

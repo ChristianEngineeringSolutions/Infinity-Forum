@@ -163,57 +163,30 @@ cron.schedule('0 12 * * *', () => {
 });
 //ROUTES
 //GET (or show view)
-app.get(/\/user\/(:user_id)?/, function(req, res) {
-    //scripts.renderBookPage(req, res);
-    let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-    let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-    let user_id = fullUrl.split('/')[fullUrl.split('/').length - 1];
-    let addPassageAllowed = true;
-    let addChapterAllowed = true;
-    var user = req.session.user || null;
-    //home page
-    //get all level 1 chapters (explicit)
-    User.findOne({_id: user_id.trim()})
-    .exec()
-    .then(function(profile_user){
-        Chapter.find({author:mongoose.Types.ObjectId(user_id)})
+app.get(/\/profile\/(:user_id)?/, function(req, res) {
+    var user = {
+    };
+    var user_id = req.params.user_id;
+    if(!user_id || user_id === null){
+        res.render("profile", {scripts: scripts, profile: req.session.user});
+    }
+    else{
+        User.findOne({_id: req.params.user_id})
+        .select('queue')
+        .populate('queue')
         .exec()
-        .then(function(chapters){
-            Passage.find({
-              author: mongoose.Types.ObjectId(user_id),
-              deleted: false,
-              queue: false
-            })
-            .populate('author')
-            .sort([['_id', -1]])
-            .limit(DOCS_PER_PAGE)
-            .exec()
-            .then(function(passages){
-                res.render("index", {
-                    session: req.session.user,
-                    profile: profile_user,
-                    isProfile: 'true',
-                    chapter: '',
-                    chapterTitle: 'Sasame',
-                    parentChapter: null,
-                    book: passages,
-                    chapters: chapters,
-                    paginate: 'profile',
-                    addChapterAllowed: false,
-                    scripts: scripts,
-                });
-            })
-            .then(function(err){
-                if(err){
-                    console.log(err);
-                }
-            });
+        .then(function(user){
+            res.render("profile", {scripts: scripts, profile: user});
         });
-    });
+        res.render("profile", {scripts: scripts, profile: req.session.user});
+    }
 });
 app.get('/friend', function(req, res){
   res.render('friend');
 });
+app.get('/loginform', function(req, res){
+    res.render('login_register', {scripts: scripts});
+  });
 //HOME/INDEX
 app.get('/', function(req, res) {
     //scripts.renderBookPage(req, res);
@@ -234,25 +207,6 @@ app.get('/', function(req, res) {
     };
     //home page
     res.render("index", {scripts: scripts, passage: passage});
-    // Chapter.find({
-    //     flagged: false,
-    //   })
-    //   .sort([['stars', -1]])
-    //   .limit(DOCS_PER_PAGE)
-    //   .exec()
-    //   .then(function(chapters){
-    //         res.render("index", {
-    //             session: req.session,
-    //             chapters: chapters,
-    //             scripts: scripts,
-    //             test: test
-    //         });
-    //   })
-    //   .then(function(err){
-    //       if(err){
-    //           console.log(err);
-    //       }
-    //   });
 });
 app.get('/eval/:passage_id', function(req, res){
     var passage_id = req.params.passage_id;
@@ -359,25 +313,24 @@ app.get(/\/chapter\/(:chapter\/:chapter_ID)?/, function(req, res) {
     }
 });
 
-//POST
-app.post('/login/', function(req, res) {
+app.post('/login', function(req, res) {
     //check if email has been verified
-    authenticateUser(req.body.email, req.body.password, function(err, user){
+    authenticateUsername(req.body.username, req.body.password, function(err, user){
         if(err){
             console.log(err);
         }
         req.session.user = user;
-        return res.redirect('/user/' + user._id);
+        return res.redirect('/profile/' + user._id);
     });
 });
 app.post('/register/', function(req, res) {
-    if (req.body.email &&
-      req.body.username &&
+    if ((req.body.email ||
+      req.body.username) &&
       req.body.password &&
       req.body.passwordConf) {  
         var userData = {
-        email: req.body.email,
-        username: req.body.username,
+        email: req.body.email || '',
+        username: req.body.username || '',
         password: req.body.password,
         token: v4()
       }  //use schema.create to insert data into the db
@@ -399,7 +352,7 @@ app.post('/register/', function(req, res) {
           //     `
           //         https://sasame.xyz/verify/`+user.id+`/`+user.token+`
           //     `);
-          res.redirect('/user/' + user._id);
+          res.redirect('/profile/' + user._id);
         }
       });
     }
@@ -1013,6 +966,38 @@ function authenticateUser(email, password, callback) {
       })
     });
 }
+function authenticateUsername(username, password, callback) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let obj = {};
+    let search = '';
+    if(username.match(regex) === null){
+        //it's a username
+        search = "username";
+        obj[search] = username;
+    }
+    else{
+        search = "email";
+        obj[search] = email;
+    }
+    console.log(obj);
+    User.findOne(obj)
+      .exec(function (err, user) {
+        if (err) {
+          return callback(err)
+        } else if (!user) {
+          var err = new Error('User not found.');
+          err.status = 401;
+          return callback(err);
+        }
+        bcrypt.compare(password, user.password, function (err, result) {
+          if (result === true) {
+            return callback(err, user);
+          } else {
+            return callback(err);
+          }
+        })
+      });
+  }
 //we need to check permissions when:
 //Adding a passage
 //Editing/deleting a passage

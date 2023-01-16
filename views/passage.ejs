@@ -1,8 +1,4 @@
-<!-- 
-Source variable: passage
- -->
-
- <div id="passage_<%=passage.id%>" class="passage">
+<div id="passage_<%=passage.id%>" class="passage">
     <ul class="passage_options">
         <li class="passage_option">More</li>
         <!-- Shift passage location -->
@@ -24,35 +20,13 @@ Source variable: passage
         <%});} %>
         <!-- ... -->
     </ul>
-    <div class="passage_stars"></div>
+    <div class="passage_stars">24 Stars</div>
     <ul class="passage_tabs">
         <li class="passage_tab passage_tab_open_advanced">Advanced</li>
-        <li class="passage_tab passage_tab_advanced">HTML</li>
-        <li class="passage_tab passage_tab_advanced">CSS</li>
-        <li class="passage_tab passage_tab_advanced">JS</li>
-        <li class="passage_tab passage_tab_advanced">Result</li>
         <!-- Display Result -->
         <li class="passage_tab">Sources</li>
         <li class="passage_tab">Alternates</li>
         <li class="passage_tab">Tags</li>
     </ul>
-
-    <form class="passage_form"action="">
-        <input class="passage_cross_origin"type="checkbox" name="" id=""> Cross Origin Allowed (Admin Advanced)
-        <br>
-        <textarea class="passage_html" name="" id="" cols="30" rows="10" placeholder="HTML"></textarea>
-        <textarea class="passage_css" name="" id="" cols="30" rows="10" placeholder="CSS"></textarea>
-        <textarea class="passage_js" name="" id="" cols="30" rows="10" placeholder="Javascript"></textarea>
-        <input class="passage_title" type="text"name="title"placeholder="Title">
-        <ul class="description_options">
-            <li class="description_option">Rich Text</li>
-            <li class="description_option">Plain Text</li>
-            <li class="description_option">Code</li>
-            <li class="description_option">Markdown</li>
-        </ul>
-        <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Description"></textarea>
-        <button class="passage_plus_description">+</button>
-        <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Tags"></textarea>
-        <input class="passage_file" type="file" multiple>
-    </form>
+    <%- include('passage_form') %>
  </div>
