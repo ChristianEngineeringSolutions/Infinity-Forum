@@ -1,5 +1,5 @@
 {
-  "name": "Christian Engineering Solutions",
+  "name": "ChristianEngineeringSolutions",
   "version": "1.0.0",
   "description": "Christian Engineering Solutions",
   "main": "index.js",
@@ -51,10 +51,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uriahsanders/Sasasame.git"
+    "url": "git+https://github.com/ChristianEngineeringSolutions/ChristianEngineeringSolutions.git"
   },
   "bugs": {
-    "url": "https://github.com/uriahsanders/Sasasame/issues"
+    "url": "https://github.com/ChristianEngineeringSolutions/ChristianEngineeringSolutions/issues"
   },
-  "homepage": "https://github.com/uriahsanders/Sasasame#readme"
+  "homepage": "https://github.com/ChristianEngineeringSolutions/ChristianEngineeringSolutions#readme"
 }
