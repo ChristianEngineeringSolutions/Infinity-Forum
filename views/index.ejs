@@ -1,24 +1,14 @@
 <%- include('header') %>
             <%- include('ppe') %>
-            <div id="control_blocks">
-                <!-- <div class="modal" id="code"> -->
-                    <!-- scripts.printAddForm(chapter) -->
-                <!-- </div> -->
-                <!-- <div id="property_select">
-                        <%#scripts.printPropertySelect()%>
-                    </div> -->
-                <div  class="control_block" id="book_of_sasame">
-                    <input type="hidden" id="add_position" value="top">
-                    <br><br><br><br>
-                   
-                    <!-- Add upon scroll -->
-                        <div>
-                              <input style="font-size: 1.5em;"class="control_input"id="chapter_search_left"placeholder="Search Solutions" type="" name="" autocomplete="off">
-                          </div>
-                          <br>
-                          <%- include('passage') %>
+            <input id="search"placeholder="Search Solutions" type="" name="" autocomplete="off">
+            <div>
+                <h1 style="margin:auto;text-align: center;">Result</h1>
+                <div style="border: 1px solid black; padding: 50px; width: 88%; margin:auto;" id="result_div">
+                    <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
                 </div>
             </div>
+            <br>
+            <%- include('passage') %>
     <br>
         </div>
         <input type="hidden"id="custom_pairs" name="">

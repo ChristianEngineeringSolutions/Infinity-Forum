@@ -1827,3 +1827,9 @@ $(document).on('keydown', function(e){
         }
     }
 });
+
+/**
+ * For evaling JS
+ * Get render view with ajax and put in iframe
+ * sandbox permissions depend on developer permissions
+ */

@@ -1,12 +1,40 @@
-.passage_options, .passage_tabs, .passage_users{
+.passage{
+    /* border-bottom: 1px dotted grey; */
+    text-align: left;
+    border-radius: 15px;
+    /*line-height: 30px;*/
+    font-size: 1.2em;
+    background: gold;
+    color: #000;
+    margin-bottom: 10px;
+    padding: 15px;
+    /*not for mobile*/
+    display: block;
+    /*resize: both;*/
+    overflow: auto;
+    /*width: 160px;
+    height: 200px;*/
+    /*width: 96%;*/
+    border: 2px solid #353535;
+    width: 88%;
+    margin: auto;
+}
+.passage_options, .passage_tabs, .passage_users, .description_options{
     list-style-type: none;
-
+    padding: 0px;
+    /* padding-left: 0; */
 }
 .passage_option{
     display: inline;
     padding: 1px;
     cursor: pointer;
     font-weight: bold;
+    margin-right: 15px;
+}
+.description_option{
+    display: inline;
+    padding: 1px;
+    cursor: pointer;
     margin-right: 15px;
 }
 .passage_tab{
@@ -27,16 +55,32 @@
     color: black;
     font-style: italic;
 }
-.passage_title, .passage_description, .passage_file{
+.passage_title, .passage_description, .passage_file, .passage_plus_description{
     all: revert;
     display: block;
-    width: 95%;
+    width: 99%;
     padding: 10px;
     margin: auto;
     margin-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 0px;
+}
+.boxsizingBorder {
+    -webkit-box-sizing: border-box;
+       -moz-box-sizing: border-box;
+            box-sizing: border-box;
+}
+
+.passage_plus_description{
+    width: 100%;
 }
 .passage_form{
-    border: 1px solid black;
-    padding: 10px;
+    /* border: 1px solid black;
+    padding: 10px; */
     /* margin: auto; */
+    width: 100%;
+    /* padding: 20px; */
+}
+.passage_tab_advanced{
+    display: none;
 }
