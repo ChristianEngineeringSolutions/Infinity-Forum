@@ -20,6 +20,7 @@
         <script src="/js/highlight.js"></script>
         <script src="/tone.js"></script>
         <link rel="stylesheet" type="text/css" href="/css/ppe.css">
+        <link rel="stylesheet" type="text/css" href="/css/users.css">
         <link rel="stylesheet" href="/codemirror.css">
         <link rel="stylesheet" type="text/css" href="/css/fonts.css">
         <script src="/codemirror.js"></script>
@@ -28,68 +29,6 @@
         <script src="/sigma.parsers.json.js"></script>
     </head>
     <body>
-        <div id="login_modal" class="modal">
-          <p class="header">Login</p>
-          <form id="login_form" action="/login/" method="POST">
-            <div>
-                <label>Username:</label>
-                <input id="login_username"class="control_input"type="text" name="username"autocomplete="off"/>
-            </div>
-            <div>
-                <label>Email:</label>
-                <input id="login_email"class="control_input"type="text" name="email"autocomplete="off"/>
-            </div>
-            <div>
-                <label>Password:</label>
-                <input id="login_password"class="control_input"type="password" name="password"autocomplete="off"/>
-            </div>
-            <div>
-                <input class="control_button"type="submit" value="Login"autocomplete="off"/>
-            </div>
-          </form>
-          <p class="header">Register</p>
-          <form id="register_form" action="/register/" method="POST">
-            <div>
-                <label>Username:</label>
-                <input class="control_input"type="text" name="username"autocomplete="off"/>
-            </div>
-            <div>
-                <label>Email:</label>
-                <input class="control_input"type="text" name="email"autocomplete="off"/>
-            </div>
-            <div>
-                <label>Password:</label>
-                <input class="control_input"type="password" name="password"autocomplete="off"/>
-            </div>
-            <div>
-                <label>Confirm Password:</label>
-                <input class="control_input"type="password" name="passwordConf"autocomplete="off"/>
-            </div>
-            <div>
-                <input class="control_button"type="submit" value="Register"/>
-            </div>
-          </form>
-        </div>
-        <% if(user != null){ %>
-            <div id="login">
-                <br/>
-                <br/>
-                <ion-icon class="notifications_icon"title="Notifications"src="/images/ionicons/notifications-outline.svg"></ion-icon>&nbsp;&nbsp;
-                <ion-icon class="messages_icon"title="Messages"src="/images/ionicons/mail-outline.svg"></ion-icon>&emsp;
-                <a class="link" href="/user/<%=user._id%>">Profile</a>&emsp;
-                <a class="link" href="/logout">Logout</a>
-                <input id="logged_in"value="true"type="hidden" name="">
-            </div>
-        <%} else{ %>
-            <div id="login">
-                <br/>
-                <br/>
-                <!-- <a class="link" target="_blank"href="/help">Help</a> | -->
-                <a class="link">Download</a>&emsp;&emsp;
-                <a class="link" rel="modal:open"href="#login_modal">Login</a> 
-                <input id="logged_in"value="false"type="hidden" name="">
-            </div>
-        <%} %>
         <div id="side_panel">
           <div id="side_panel_inner">
             <div id="side_panel_close">
@@ -196,7 +135,8 @@
                           <!-- <div id="perm_chapter">Christian Engineering Solutions</div> -->
                         </a>
                         <div id="options">
-                            <a class="basic_link"><ion-icon id="help"title="Help"src="/images/ionicons/help-circle-outline.svg"></ion-icon></a>
+                            <ion-icon id="home_link"title="Start"src="/images/ionicons/home-outline.svg"></ion-icon></a>
+                            <ion-icon id=""title="Help"src="/images/ionicons/help-circle-outline.svg"></ion-icon></a>
                             <ion-icon class="passage_adder book_option"title="Add (a)"src="/images/ionicons/add-circle-outline.svg"></ion-icon>
                              <ion-icon class="book_option"id="option_menu"title="Menu (m)"src="/images/ionicons/browsers-outline.svg"></ion-icon>
                              <ion-icon class="toggle_tools book_option"title="Tools (t)"src="/images/ionicons/build-outline.svg"></ion-icon>
@@ -206,16 +146,26 @@
                              <ion-icon id="ppe_mutate"class="ppe_option"title="Mutate (m)"src="/images/ionicons/color-palette-outline.svg"></ion-icon>
                              <ion-icon id="ppe_erase"class="ppe_option"title="Erase (e)"src="/images/ionicons/square-outline.svg"></ion-icon>
                              <ion-icon id="ppe_search_icon"class="ppe_option"title="Search (SPC)"src="/images/ionicons/search-outline.svg"></ion-icon>
-                             <ion-icon class=""title="Profile"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
                              <ion-icon class=""title="Leader Board"src="/images/ionicons/stats-chart-outline.svg"></ion-icon>
-                             <ion-icon class=""title="Login/Register"src="/images/ionicons/log-in-outline.svg"></ion-icon>
+                             <ion-icon class=""title="Donate"src="/images/ionicons/cash-outline.svg"></ion-icon>
+                             <% if(user != null){ %>
+                                <ion-icon class="notifications_icon"title="Notifications"src="/images/ionicons/notifications-outline.svg"></ion-icon>
+                                <ion-icon class="messages_icon"title="Messages"src="/images/ionicons/mail-outline.svg"></ion-icon>
+                                <ion-icon id="profile_link"title="Profile"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+                                <ion-icon class=""title="Log Out"src="/images/ionicons/log-out-outline.svg"></ion-icon>
+                                <input id="logged_in"value="true"type="hidden" name="">
+                            <%} else{ %>
+                                <ion-icon id="login_register_link"class=""title="Login/Register"src="/images/ionicons/log-in-outline.svg"></ion-icon>
+                                <!-- <a class="link">Download</a>&emsp;&emsp; -->
+                                <input id="logged_in"value="false"type="hidden" name="">
+                            <%} %>
                              <!-- <ion-icon class="graphic_mode"title="Graphic Mode (g)"src="/images/ionicons/brush-outline.svg"></ion-icon>
                              <ion-icon class="model_mode"title="Model Mode"src="/images/ionicons/prism-outline.svg"></ion-icon> -->
                         </div>
                         
                     </div>
                     <br>
-                    <!-- <div id="tab_panel">
+                    <div id="tab_panel">
                         <ul id="tab_list">
                             <li class="tab">Tab</li>
                             <li class="tab">Tab</li>
@@ -223,8 +173,9 @@
                             <li class="tab">+</li>
                         </ul>
                         <br><br><br>
-                    </div> -->
+                    </div>
                     <br><br><br>
             </div>
             <br>
             <br>
+            <script src="/js/header.js"></script>

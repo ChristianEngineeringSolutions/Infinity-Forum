@@ -1,0 +1,40 @@
+<%- include('header') %>
+<br><br>
+<h1 style="text-align: center;margin-bottom: 10px;">Login</h1>
+<form id="login_form" action="/login/" method="POST">
+    <div>
+        <label>Username or Email:</label>
+        <input id="login_username"class=""type="text" name="username"autocomplete="off"/>
+    </div>
+    <div>
+        <label>Password:</label>
+        <input id="login_password"class=""type="password" name="password"autocomplete="off"/>
+    </div>
+    <div>
+        <input id="login_button"type="submit" value="Login"autocomplete="off"/>
+    </div>
+  </form>
+  <h1 style="text-align: center;margin-bottom: 10px;">Register</h1>
+  <form id="register_form" action="/register/" method="POST">
+    <div>
+        <label>Username:</label>
+        <input id="register_username" type="text" name="username"autocomplete="off"/>
+    </div>
+    <div>
+        <label>Email:</label>
+        <input placeholder="Recommended" id="register_email" type="text" name="email"autocomplete="off"/>
+    </div>
+    <div>
+        <label>Password:</label>
+        <input id="register_password" type="password" name="password"autocomplete="off"/>
+    </div>
+    <div>
+        <label>Confirm Password:</label>
+        <input id="register_confirm" type="password" name="passwordConf"autocomplete="off"/>
+    </div>
+    <div>
+        <input id="register_button"type="submit" value="Register"/>
+    </div>
+  </form>
+  <br><br><br><br>
+  <%- include('footer') %>
