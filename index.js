@@ -225,6 +225,7 @@ app.get('/', function(req, res) {
     let addChapterAllowed = true;
     var user = req.session.user || null;
     var passage = {
+        id: 1,
         users: [
             {
                 name: "Uriah Sanders"
@@ -252,6 +253,16 @@ app.get('/', function(req, res) {
     //           console.log(err);
     //       }
     //   });
+});
+app.get('/eval/:passage_id', function(req, res){
+    var passage_id = req.params.passage_id;
+    var passage = {
+        title: 'Test',
+        html: '<h1 id="test">Test</h1>',
+        css: '#test{color:red;}',
+        js: '$("#test").css("color", "blue")',
+    };
+    res.render("eval", {passage: passage});
 });
 //Passage List
 app.get(/\/chapter\/(:chapter\/:chapter_ID)?/, function(req, res) {

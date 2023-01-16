@@ -70,6 +70,10 @@ const passageSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
+    crossOriginAllowed: {
+        type: Boolean,
+        default: false
+    },
     flagged: {
         type: Boolean,
         default: false
