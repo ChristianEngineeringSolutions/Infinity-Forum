@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
 const helmet = require('helmet');
 const cors = require("cors");
-const stripe = require("stripe");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 var http = require('http').Server(app);
@@ -57,7 +57,16 @@ app.use(express.static('./dist'));
 app.set('view engine', 'ejs');
 app.set('views', './views');
 
-app.use(bodyParser.json({limit: '50mb'}));
+// app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.json({
+    verify: function (req, res, buf) {
+      var url = req.originalUrl;
+      if (url.startsWith('/stripe')) {
+         req.rawBody = buf.toString();
+      }
+    }
+  }));
+  
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // User Session Setup Logic
@@ -208,6 +217,49 @@ app.get('/', function(req, res) {
     //home page
     res.render("index", {scripts: scripts, passage: passage});
 });
+const fulfillOrder = (lineItems) => {
+    // TODO: fill me in
+    console.log("test");
+    console.log("Fulfilling order", lineItems);
+  }
+app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+    // response.header("Access-Control-Allow-Origin", "*");
+    // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+    const endpointSecret = "whsec_0d1e31d8e00db9e7e8e17d8d2bba4c321abfd29f9936e85776ea9da4c367cffd";
+    const payload = request.body;
+  
+    console.log("Got payload: " + payload);
+    const sig = request.headers['stripe-signature'];
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(request.rawBody, sig, endpointSecret);
+        console.log(JSON.stringify(payload));
+    } catch (err) {
+        console.log(err);
+        //console.log(response.status(400).send(`Webhook Error: ${err.message}`));
+        return;
+        // return response.status(400).send(`Webhook Error: ${err.message}`);
+    }
+    // Handle the checkout.session.completed event
+  if (event.type === 'checkout.session.completed') {
+    console.log("happy");
+    // Retrieve the session. If you require line items in the response, you may include them by expanding line_items.
+    const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
+      session.id,
+      {
+        expand: ['line_items'],
+      }
+    );
+    const lineItems = session.line_items;
+      console.log("hope");
+    // Fulfill the purchase...
+    fulfillOrder(lineItems);
+  }
+  
+    response.status(200).end();
+  });
 app.get('/eval/:passage_id', function(req, res){
     var passage_id = req.params.passage_id;
     var passage = {
@@ -218,6 +270,81 @@ app.get('/eval/:passage_id', function(req, res){
     };
     res.render("eval", {passage: passage});
 });
+app.get('/donate', async function(req, res){
+    const stripe = require('stripe')('sk_test_51MORm3Ec108P51ZVULQU4yDFNrw9Bd3KicWmtqrm9GJvrerIrd7poJaPXsFEp3hxBD0wMJIMWR30Nhk6WaMEjSmW00OnVTxxoe');
+    const session = await stripe.checkout.sessions.create({
+        cancel_url: 'https://example.com',
+        line_items: [{price: '{{PRICE_ID}}'
+    , quantity: 1}],
+        mode: 'payment',
+        success_url: 'https://example.com',
+    });
+});
+app.get('/stripeAuthorize', async function(req, res){
+    if(req.session.user){
+        // Generate a random string as `state` to protect from CSRF and include it in the session
+        req.session.state = Math.random()
+        .toString(36)
+        .slice(2);
+        var user = req.session.user;
+        try {
+            let accountId = user.stripeAccountId;
+            // Create a Stripe account for this user if one does not exist already
+            if (accountId === null) {
+                const stripe = require('stripe')('sk_test_51MORm3Ec108P51ZVULQU4yDFNrw9Bd3KicWmtqrm9GJvrerIrd7poJaPXsFEp3hxBD0wMJIMWR30Nhk6WaMEjSmW00OnVTxxoe');
+                const account = await stripe.accounts.create({
+                    type: 'express',
+                    capabilities: {
+                        transfers: {requested: true},
+                    },
+                  });
+                try{
+                    user = await User.updateOne({id: user.id}, {stripeAccountId: account.id});
+                }
+                catch(error){
+                    console.error(error);
+                }
+                console.log(user);
+                // Create an account link for the user's Stripe account
+                const accountLink = await stripe.accountLinks.create({
+                    account: account.id,
+                    refresh_url: 'http://localhost:3000/stripeAuthorize',
+                    return_url: 'http://localhost:3000/stripeOnboarded',
+                    type: 'account_onboarding'
+                });
+                console.log(accountLink);
+                // Redirect to Stripe to start the Express onboarding flow
+                res.redirect(accountLink.url);
+            }
+            else{
+                console.log("Already has account.");
+            }
+          } catch (err) {
+            console.log('Failed to create a Stripe account.');
+            console.log(err);
+            // next(err);
+          }
+    }
+});
+// app.get('/stripeOnboarded', async (req, res, next) => {
+//     try {
+//       // Retrieve the user's Stripe account and check if they have finished onboarding
+//       const account = await stripe.account.retrieve(req.user.stripeAccountId);
+//       if (account.details_submitted) {
+//         req.user.onboardingComplete = true;
+//         req.user.save(function(){
+//             res.redirect('/profile');
+//         });
+//       } else {
+//         console.log('The onboarding process was not completed.');
+//         res.redirect('/profile');
+//       }
+//     } catch (err) {
+//       console.log('Failed to retrieve Stripe account information.');
+//       console.log(err);
+//       next(err);
+//     }
+//   });
 //Passage List
 app.get(/\/chapter\/(:chapter\/:chapter_ID)?/, function(req, res) {
     //scripts.renderBookPage(req, res);
@@ -979,7 +1106,6 @@ function authenticateUsername(username, password, callback) {
         search = "email";
         obj[search] = email;
     }
-    console.log(obj);
     User.findOne(obj)
       .exec(function (err, user) {
         if (err) {
