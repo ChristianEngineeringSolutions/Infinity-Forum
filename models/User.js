@@ -54,7 +54,12 @@ const userSchema = mongoose.Schema({
     daemons: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Passage'
-    }]
+    }],
+    stripeAccountId: {
+      type: String,
+      default: null
+  },
+    stripeOnboardingComplete: Boolean
 });
 
 module.exports = mongoose.model('User', userSchema, 'Users');
