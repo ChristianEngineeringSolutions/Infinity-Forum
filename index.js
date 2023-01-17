@@ -217,11 +217,6 @@ app.get('/', function(req, res) {
     //home page
     res.render("index", {scripts: scripts, passage: passage});
 });
-const fulfillOrder = (lineItems) => {
-    // TODO: fill me in
-    console.log("test");
-    console.log("Fulfilling order", lineItems);
-  }
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
     // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -235,7 +230,8 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     let event;
     try {
         event = stripe.webhooks.constructEvent(request.rawBody, sig, endpointSecret);
-        console.log(JSON.stringify(payload));
+        console.log(payload.data.object.amount);
+        console.log(event.type);
     } catch (err) {
         console.log(err);
         //console.log(response.status(400).send(`Webhook Error: ${err.message}`));
@@ -244,18 +240,8 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     }
     // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
-    console.log("happy");
-    // Retrieve the session. If you require line items in the response, you may include them by expanding line_items.
-    const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
-      session.id,
-      {
-        expand: ['line_items'],
-      }
-    );
-    const lineItems = session.line_items;
-      console.log("hope");
-    // Fulfill the purchase...
-    fulfillOrder(lineItems);
+    //Save recording passage in database and give user correct number of stars
+    //...
   }
   
     response.status(200).end();
