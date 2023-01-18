@@ -1,26 +1,34 @@
 <div id="passage_<%=passage.id%>" class="passage">
     <ul class="passage_options">
-        <li class="passage_option">More</li>
+        <li id="passage_more_<%=passage.id%>" class="passage_option">More</li>
+        <li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li>
         <!-- Shift passage location -->
-        <li class="passage_option">Move</li>
+        <li id="passage_move_<%=passage.id%>" class="passage_option">Move</li>
         <!-- Copy and move passage -->
-        <li class="passage_option">Copy</li>
-        <li class="passage_option">Flag</li>
-        <li class="passage_option">Comments</li>
-        <li class="passage_option">Share</li>
-        <li class="passage_option">Donate</li>
-        <li class="passage_option">Update</li>
-        <li class="passage_option">Delete</li>
+        <li id="passage_copy_<%=passage.id%>" class="passage_option">Copy</li>
+        <li id="passage_flag_<%=passage.id%>" class="passage_option">Flag</li>
+        <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
+        <li id="passage_share_<%=passage.id%>" class="passage_option">Share</li>
+        <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li>
+        <li id="passage_donate_<%=passage.id%>" class="passage_option">Donate</li>
+        <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
+        <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
     </ul>
     <ul class="passage_users">
         <!-- Profile Image layers -->
         <%if(passage.users){%>
             <%passage.users.forEach(function(user) { %>
                 <%- include('profile_thumbnail', {user: user}) %>
-        <%});} %>
+        <%});%>
+        <%}else{%>
+            Anonymous
+        <%}%>
         <!-- ... -->
     </ul>
     <div class="passage_stars">24 Stars</div>
+    <div id="passage_iframe" id="result_div">
+        <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+    </div>
     <ul class="passage_tabs">
         <li class="passage_tab passage_tab_open_advanced">Advanced</li>
         <!-- Display Result -->
@@ -29,4 +37,10 @@
         <li class="passage_tab">Tags</li>
     </ul>
     <%- include('passage_form') %>
+    <div id="sub_passages">
+        <%if(passage.passages){%>
+            <%passage.passages.forEach(function(sub_passage) { %>
+                <%- include('passage', {passage: sub_passage}) %>
+            <%});} %>
+    </div>
  </div>

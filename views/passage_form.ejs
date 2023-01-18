@@ -6,9 +6,9 @@ Source variable: passage
     <div class="passage_advanced">
         <input class="passage_cross_origin"type="checkbox" name="" id=""> Cross Origin Allowed (Admin Advanced)
         <br>
-        <textarea class="passage_html" name="" id="" cols="30" rows="10" placeholder="HTML"></textarea>
-        <textarea class="passage_css" name="" id="" cols="30" rows="10" placeholder="CSS"></textarea>
-        <textarea class="passage_js" name="" id="" cols="30" rows="10" placeholder="Javascript"></textarea>
+        <textarea class="passage_html" name="" id="" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
+        <textarea class="passage_css" name="" id="" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
+        <textarea class="passage_js" name="" id="" cols="30" rows="10" placeholder="Javascript"><%=passage.js%></textarea>
     </div>
     <input class="passage_title" type="text"name="title"placeholder="Title">
     <ul class="description_options">
@@ -17,8 +17,8 @@ Source variable: passage
         <li class="description_option">Code</li>
         <li class="description_option">Markdown</li>
     </ul>
-    <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Description"></textarea>
-    <button class="passage_plus_description">+</button>
+    <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Content"></textarea>
+    <!-- <button class="passage_plus_description">+</button> -->
     <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Tags"></textarea>
     <input class="passage_file" type="file" multiple>
 </form>

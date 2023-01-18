@@ -58,6 +58,7 @@ body{
 /* Control Panel */
 #control_panel{
     color: #353535;
+    background: #fff;
 }
 #main_header{
     font-size: 1.5em;
@@ -85,54 +86,6 @@ body{
     /*width: 30%;*/
     /*padding: 20px;*/
     padding-top: 0px;
-}
-#control_nav{
-    padding-top: 15px;
-    background: gold;
-    background: gold;
-    color: #000;
-    height: 60px;
-    border-top: 2px solid #353535;
-    border-bottom: 2px solid #353535;
-    font-weight: bolder;
-    position: fixed;
-    width: 100%;
-    z-index: 200;
-    padding-bottom: 20px;
-}
-#tab_list{
-    list-style-type: none;
-}
-.tab_window{
-    width: 100%; 
-    height: 100%;
-}
-.tab{
-    display: inline;
-    padding: 10px;
-    border: 1px solid black;
-    cursor: pointer;
-    background: #fff;
-    font-weight: bold;
-}
-.tab:hover{
-    font-weight: bolder;
-    border: 2px solid black;
-    /* color: red; */
-}
-#tab_panel{
-    /* padding-top: 15px; */
-    /* background: gold; */
-    color: #000;
-    height: 60px;
-    /* border-top: 2px solid #353535;
-    border-bottom: 2px solid #353535; */
-    font-weight: bolder;
-    position: fixed;
-    width: 100%;
-    z-index: 30000000;
-    margin-bottom: 20px;
-    text-align: center;
 }
 .control_button{
     padding: 5px;
@@ -328,9 +281,6 @@ body{
 
 .help_modal{
     font-size: 1.3em;
-}
-.help_read_more{
-    font-size: 0.8em;
 }
 .passage_donate{
     display: none;
@@ -938,7 +888,7 @@ ion-icon{
     color: red;
 }
 #options{
-    width: 50%;
+    width: 100%;
     margin: auto;
     color: #000;
     padding-top: 10px;
