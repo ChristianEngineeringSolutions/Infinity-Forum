@@ -1242,25 +1242,7 @@ $('#parent_chapter_title').css('cursor', 'default');
 $('.category_delete').on('click', function(){
     $(this).parent().fadeOut();
 });
-$(document).on('change', '.property_key', function(){
-    //update help modal
-    // var placeholder = '';
-    // switch($(this).val()){
-    //     case 'Color':
-    //         placeholder = 'Enter a Color';
-    //         break;
-    //     case 'Hidden':
-    //         placeholder = 'True/False';
-    //         break;
-    //     case 'Canvas':
-    //         placeholder = 'shape.color.x.y.l.w or reference.x.y';
-    //         break;
-    //     case 'Tone':
-    //         placeholder = 'frequency.type.seconds';
-    //         break;
-    // }
-    // $(this).siblings('.property_value').attr('placeholder',placeholder);
-});
+
 $('.star_icon').on('click', function(){
     // $(this).toggleClass('gold_color');
 });
@@ -1663,7 +1645,7 @@ $(document).on('click', '.get_passages', function(){
 });
 $('.help_read_more').on('click', function(){
     $('#right_side_select').val('help').change();
-    $('#side_panel').show();
+    $('#side_panel').toggle();
     $('.blocker').click();
     $('#side_panel').scrollTop(0);
 });

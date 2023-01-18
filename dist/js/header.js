@@ -8,4 +8,7 @@ $(function(){
     $(document).on('click', '#profile_link', function(){
         window.location.href = "/profile/";
     });
+    $(document).on('click', '#help_link', function(){
+        
+    });
 });

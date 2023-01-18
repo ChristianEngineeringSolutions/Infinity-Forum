@@ -1,0 +1,9 @@
+<!-- Basically,
+the view for one passage
+but lists all sub-passages
+and evaluates their code in a top level iframe -->
+<!-- top level iframe -->
+<iframe src="" frameborder="0"></iframe>
+<%passages.forEach(function(passage) { %>
+    <%- include('passage', {passage: passage}) %>
+<%});%>

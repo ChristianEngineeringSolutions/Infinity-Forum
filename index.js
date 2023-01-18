@@ -166,10 +166,16 @@ app.get('/sigma.parsers.json.js', function(req, res) {
 //CRON
 var cron = require('node-cron');
 cron.schedule('0 12 * * *', () => {
-  console.log('Cron ran at 12pm.');
+  console.log('Daily Cron ran at 12pm.');
   //run daily methods
   //...
 });
+//run monthly cron
+cron.schedule('0 12 1 * *', () => {
+    console.log('Monthly Cron ran at 12pm.');
+    //run daily methods
+    //...
+  });
 //ROUTES
 //GET (or show view)
 app.get(/\/profile\/(:user_id)?/, function(req, res) {
@@ -190,14 +196,11 @@ app.get(/\/profile\/(:user_id)?/, function(req, res) {
         res.render("profile", {scripts: scripts, profile: req.session.user});
     }
 });
-app.get('/friend', function(req, res){
-  res.render('friend');
-});
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
   });
 //HOME/INDEX
-app.get('/', function(req, res) {
+app.get('/', async (req, res) => {
     //scripts.renderBookPage(req, res);
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
@@ -206,16 +209,8 @@ app.get('/', function(req, res) {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    var passage = {
-        id: 1,
-        users: [
-            {
-                name: "Uriah Sanders"
-            }
-        ]
-    };
-    //home page
-    res.render("index", {scripts: scripts, passage: passage});
+    let passages = await Passage.find({});
+    res.render("index", {scripts: scripts, passages: passages});
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
@@ -246,8 +241,9 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
   
     response.status(200).end();
   });
-app.get('/eval/:passage_id', function(req, res){
+app.get('/eval/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
+    var passage = await Passage.findOne({_id: passage_id});
     var passage = {
         title: 'Test',
         html: '<h1 id="test">Test</h1>',
@@ -255,6 +251,11 @@ app.get('/eval/:passage_id', function(req, res){
         js: '$("#test").css("color", "blue")',
     };
     res.render("eval", {passage: passage});
+});
+app.get('/passage/:passage_id', async function(req, res){
+    var passage_id = req.params.passage_id;
+    var passage = await Passage.findOne({_id: passage_id});
+    res.render("index", {scripts: scripts, passage: passage, passages: false});
 });
 app.get('/donate', async function(req, res){
     const stripe = require('stripe')('sk_test_51MORm3Ec108P51ZVULQU4yDFNrw9Bd3KicWmtqrm9GJvrerIrd7poJaPXsFEp3hxBD0wMJIMWR30Nhk6WaMEjSmW00OnVTxxoe');
@@ -753,6 +754,20 @@ app.get(/\/passages\/?/, (req, res) => {
 });
 
 app.use('/passage', passageRoutes);
+app.get('/passage_form/', (req, res) => {
+    res.render('passage_form');
+});
+app.post('/create_passage/', async (req, res) => {
+    let user = req.session.user || null;
+    let users = null;
+    if(user){
+        users = [user];
+    }
+    let passage = await Passage.create({
+        users: users,
+    });
+    res.render('passage', {passage: passage});
+});
 app.post('/search/', (req, res) => {
     let title = req.body.title;
     Chapter.find({title: new RegExp(''+title+'', "i")})
@@ -1270,7 +1285,7 @@ function sendEmail(to, subject, body){
     });
 
     var mailOptions = {
-      from: 'uriahrsanders@gmail.com',
+      from: 'christianengineeringsolutions@gmail.com',
       to: to,
       subject: subject,
       text: body

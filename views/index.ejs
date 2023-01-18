@@ -1,14 +1,20 @@
 <%- include('header') %>
             <%- include('ppe') %>
+            <br><br>
             <input id="search"placeholder="Search Solutions" type="" name="" autocomplete="off">
-            <div>
-                <h1 style="margin:auto;text-align: center;">Result</h1>
-                <div style="border: 1px solid black; padding: 50px; width: 88%; margin:auto;" id="result_div">
-                    <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
-                </div>
-            </div>
+            <button id="add_passage_button">+</button>
             <br>
-            <%- include('passage') %>
+            <div id="passage_wrapper">
+                <!-- Show passage list or search list -->
+                <%if(passages){%>
+                    <%passages.forEach(function(passage) { %>
+                        <%- include('passage', {passage: passage}) %>
+                <%});}else if (passage){%>
+                <!-- Just show one passage -->
+                    <%- include('passage', {passage: passage}) %>
+                <%} %>
+            </div>
+            <div id="passage_form_wrapper"></div>
     <br>
         </div>
         <input type="hidden"id="custom_pairs" name="">
