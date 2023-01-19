@@ -1,7 +1,11 @@
 #footer{
     margin: auto;
     text-align: center;
-    margin-top: 30px;
-    margin-bottom: 30px;
-    color: #000;
+    margin-top: 100px;
+    padding-top: 100px;
+    padding-bottom: 150px;
+    color: gold;
+    background: black;
+    font-size: 1.5em;
+    font-weight: bold;
 }

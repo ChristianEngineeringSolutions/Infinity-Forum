@@ -816,9 +816,6 @@ pre, code{
     margin-bottom: 10px;
     border: 2px solid #353535;
 }
-.sub_passages{
-    display: none;
-}
 .image_upload_icon, .mic_record_icon, .flag_icon, .icon_top_add, .passage_play{
     cursor: pointer;
 }

@@ -15,7 +15,10 @@
         margin-bottom: 10px;
     }
     .tab{
-        font-size: 0.5em;   
+        font-size: 0.5em;
+    }
+    #tab_panel{
+        height: 80px !important;
     }
     #control_nav{
         font-size: 1.5em;

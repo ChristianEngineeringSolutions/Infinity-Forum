@@ -37,7 +37,7 @@
         <li class="passage_tab">Tags</li>
     </ul>
     <%- include('passage_form') %>
-    <div id="sub_passages">
+    <div class="sub_passages">
         <%if(passage.passages){%>
             <%passage.passages.forEach(function(sub_passage) { %>
                 <%- include('passage', {passage: sub_passage}) %>
