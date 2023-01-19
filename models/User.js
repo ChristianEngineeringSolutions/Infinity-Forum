@@ -55,6 +55,10 @@ const userSchema = mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Passage'
     }],
+    tabs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Passage'
+    }],
     stripeAccountId: {
       type: String,
       default: null
