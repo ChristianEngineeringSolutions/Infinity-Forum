@@ -11,4 +11,7 @@ $(function(){
     $(document).on('click', '#help_link', function(){
         
     });
+    $(document).on('click', '#new_tab', function(){
+        $(this).before(' <li class="tab">Tab</li> ');
+    });
 });

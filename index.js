@@ -234,22 +234,16 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         // return response.status(400).send(`Webhook Error: ${err.message}`);
     }
     // Handle the checkout.session.completed event
-  if (event.type === 'checkout.session.completed') {
-    //Save recording passage in database and give user correct number of stars
-    //...
-  }
+    if (event.type === 'checkout.session.completed') {
+        //Save recording passage in database and give user correct number of stars
+        //...
+    }
   
     response.status(200).end();
   });
 app.get('/eval/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
-    // var passage = {
-    //     title: 'Test',
-    //     html: '<h1 id="test">Test</h1>',
-    //     css: '#test{color:red;}',
-    //     js: '$("#test").css("color", "blue")',
-    // };
     //stick together code for all sub passages
     var all = {
         html: [passage.html],
