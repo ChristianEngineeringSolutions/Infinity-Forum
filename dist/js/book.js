@@ -1072,12 +1072,14 @@ $('.passage_content').each(function(){
     // $(this).html(marked($(this).text()));
     // $(this).css('white-space', 'initial');
 });
-function flashIcon(thiz, color='gold'){
-    thiz.css('color', color);
-    setTimeout(function(){
-        thiz.css('color', 'inherit');
-    }, 250);
-}
+// $(function(){
+    function flashIcon(thiz, color='gold'){
+        thiz.css('color', color);
+        setTimeout(function(){
+            thiz.css('color', 'inherit');
+        }, 250);
+    }
+// });
 $(document).on('click', '[id^=star_]', function(){
     var _id = $(this).attr('id').split('_')[1];
     var thiz = $(this);
@@ -1164,19 +1166,6 @@ $(document).on('click', '.fileStreamChapter', function(){
     $(this).parent().parent().prev('.file_input').val(inputVal + $(this).text());
     $(this).parent().parent().prev('.file_input').keyup();
 });
-$(document).on('click', '[id^=passage_flag_]', function(){
-    var _id = $(this).attr('id').split('_')[2];
-    $.ajax({
-        type: 'post',
-        url: '/flag_passage',
-        data: {
-            _id: _id
-        },
-        success: function(data){
-            
-        }
-    });
-});
 $(document).on('click', '[id^=chapter_flag_]', function(){
     var _id = $(this).attr('id').split('_')[2];
     $.ajax({
@@ -1190,46 +1179,7 @@ $(document).on('click', '[id^=chapter_flag_]', function(){
         }
     });
 });
-$(document).on('click', '[id^=passage_delete_]', function(){
-    var _id = $(this).attr('id').split('_')[2];
-    $.ajax({
-        type: 'post',
-        url: '/delete_passage',
-        data: {
-            _id: _id
-        },
-        success: function(data){
-            $('#' + _id).remove();
-        }
-    });
-});
-$(document).on('click', '[id^=passage_update_]', function(){
-    var _id = $(this).attr('id').split('_')[2];
-    var content = $(this).parent().siblings('.passage_content');
-    var text;
-    if(content.prop('tagName') == 'TEXTAREA'){
-        editor = content.next('.CodeMirror').get(0).CodeMirror;
-        text = editor.getValue();
-    }
-    else if(content.children('.ql-editor').length){
-        text = content.children('.ql-editor').html();
-    }
-    else{
-        text = content.text();
-    }
-    var thiz = $(this);
-    $.ajax({
-        type: 'post',
-        url: '/update_passage_content',
-        data: {
-            _id: _id,
-            content: text
-        },
-        success: function(data){
-            flashIcon(thiz, 'gold');
-        }
-    });
-});
+
 $('.hljs').css('color', '#000');
 $('#parent_chapter_title').css('cursor', 'default');
 

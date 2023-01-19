@@ -210,7 +210,7 @@ app.get('/', async (req, res) => {
     let addChapterAllowed = true;
     var user = req.session.user || null;
     let passages = await Passage.find({});
-    res.render("index", {scripts: scripts, passages: passages});
+    res.render("index", {scripts: scripts, passages: passages, passage: {id:'root'}});
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
@@ -244,13 +244,31 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
 app.get('/eval/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
-    var passage = {
-        title: 'Test',
-        html: '<h1 id="test">Test</h1>',
-        css: '#test{color:red;}',
-        js: '$("#test").css("color", "blue")',
+    // var passage = {
+    //     title: 'Test',
+    //     html: '<h1 id="test">Test</h1>',
+    //     css: '#test{color:red;}',
+    //     js: '$("#test").css("color", "blue")',
+    // };
+    //stick together code for all sub passages
+    var all = {
+        html: [passage.html],
+        css: [passage.css],
+        javascript: [passage.javascript]
     };
-    res.render("eval", {passage: passage});
+    function getAllSubPassageCode(passage, all){
+        if(passage.passages){
+            passage.passages.forEach((p)=>{
+                all.html += p.html;
+                all.css += p.css;
+                all.javascript += p.javascript;
+                getAllSubPassageCode(p, all);
+            });
+        }
+        return all;
+    }
+    getAllSubPassageCode(passage, all);
+    res.render("eval", {passage: passage, all: all});
 });
 app.get('/passage/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
@@ -887,31 +905,44 @@ app.post('/add_sub_passage/', (req, res) => {
         res.redirect(backURL);
     });
 });
-app.post('/update_passage/', (req, res) => {
-    var chapterID = req.body.chapterID;
-    var type = req.body.type;
-    var user = req.session.user || null;
-    var content = req.body.passage || '';
-    var parentPassage = req.body.parentPassage || '';
-    var property_key = req.body['property_key[]'] || req.body.property_key;
-    var property_value = req.body['property_value[]'] || req.body.property_value;
-    var dataURL = req.body.dataURL || false;
-    //build metadata from separate arrays
-    var metadata = generateMetadata(property_key, property_value);
-    var json = metadata.json;
-    var canvas = metadata.canvas;
-    var categories = req.body.tags;
-    passageController.updatePassage({
-        'id': req.body._id,
-        'content': content,
-        'canvas': canvas,
-        'categories': categories,
-        'metadata': JSON.stringify(json),
-        'callback': function(passage){
-            res.send(scripts.printPassage(passage));
-        }
+app.post('/update_passage/', async (req, res) => {
+    var _id = req.body._id;
+    var formData = req.body.formData;
+    var passage = await Passage.findOneAndUpdate({_id: _id}, {
+        html: formData.html,
+        css: formData.css,
+        javascript: formData.js,
+        title: formData.title,
+        content: formData.content,
+        tags: formData.tags,
     });
+    res.send('Updated');
 });
+// app.post('/update_passage/', (req, res) => {
+//     var chapterID = req.body.chapterID;
+//     var type = req.body.type;
+//     var user = req.session.user || null;
+//     var content = req.body.passage || '';
+//     var parentPassage = req.body.parentPassage || '';
+//     var property_key = req.body['property_key[]'] || req.body.property_key;
+//     var property_value = req.body['property_value[]'] || req.body.property_value;
+//     var dataURL = req.body.dataURL || false;
+//     //build metadata from separate arrays
+//     var metadata = generateMetadata(property_key, property_value);
+//     var json = metadata.json;
+//     var canvas = metadata.canvas;
+//     var categories = req.body.tags;
+//     passageController.updatePassage({
+//         'id': req.body._id,
+//         'content': content,
+//         'canvas': canvas,
+//         'categories': categories,
+//         'metadata': JSON.stringify(json),
+//         'callback': function(passage){
+//             res.send(scripts.printPassage(passage));
+//         }
+//     });
+// });
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
     var token = req.params.token;

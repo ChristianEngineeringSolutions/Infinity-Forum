@@ -112,3 +112,9 @@
     width: 88%; 
     margin:auto;
 }
+.sub_passages{
+    display: none;
+}
+.editor_option_active{
+    font-weight: bolder;
+}
