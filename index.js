@@ -253,9 +253,9 @@ app.get('/eval/:passage_id', async function(req, res){
     function getAllSubPassageCode(passage, all){
         if(passage.passages){
             passage.passages.forEach((p)=>{
-                all.html += p.html;
-                all.css += p.css;
-                all.javascript += p.javascript;
+                all.html += p.html === undefined ? '' : p.html;
+                all.css += p.css === undefined ? '' : p.css;
+                all.javascript += p.javascript === undefined ? '' : p.javascript;
                 getAllSubPassageCode(p, all);
             });
         }
@@ -772,12 +772,28 @@ app.get('/passage_form/', (req, res) => {
 app.post('/create_passage/', async (req, res) => {
     let user = req.session.user || null;
     let users = null;
+    let parentPassageId = req.body.passageID;
+    let parentId = null;
+    var isRoot = parentPassageId == 'root';
+    if(isRoot){
+        parentId = null;
+    }
+    else{
+        parentId = parentPassageId;
+    }
     if(user){
         users = [user];
     }
     let passage = await Passage.create({
         users: users,
+        parent: parentId
     });
+    if(!isRoot){
+        //add passage to parent sub passage list
+        let parent = await Passage.findOne({_id: parentId});
+        parent.passages.push(passage);
+        await parent.save();
+    }
     res.render('passage', {passage: passage});
 });
 app.post('/search/', (req, res) => {

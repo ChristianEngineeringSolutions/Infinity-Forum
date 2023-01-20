@@ -1,6 +1,6 @@
 <%- include('header') %>
             <%- include('ppe') %>
-            <input type="hidden" value="<%=passage.id%>"name="">
+            <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
             <br><br>
             <input id="search"placeholder="Search Solutions" type="" name="" autocomplete="off">
             <button id="add_passage_button">+</button>
@@ -8,9 +8,8 @@
             <div id="passage_wrapper">
                 <!-- Show passage list or search list -->
                 <%if(passages){%>
-                    <%passages.forEach(function(passage) { %>
-                        <%- include('passage', {passage: passage}) %>
-                <%});}else if (passage){%>
+                    <%- include('passages') %>
+                <%}else if (passage){%>
                 <!-- Just show one passage -->
                     <%- include('passage', {passage: passage}) %>
                 <%} %>
