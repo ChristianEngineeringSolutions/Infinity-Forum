@@ -1,6 +1,9 @@
 "use strict"
 $(function(){
+    // $('.passage').draggable();
+    $('#passage_wrapper').sortable();
     //sub passages are only hidden for index and search
+    var inRoot = $('#chief_passage_id').val() === 'root';
     if($('#chief_passage_id').val() != 'root'){
         $('.sub_passages').show();
     }

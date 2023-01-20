@@ -19,6 +19,7 @@
     width: 88%;
     margin: auto;
     margin-bottom: 10px;
+    z-index: 1;
 }
 .passage_options, .passage_tabs, .passage_users, .description_options{
     list-style-type: none;
