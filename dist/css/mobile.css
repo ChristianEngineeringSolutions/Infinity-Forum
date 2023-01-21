@@ -6,8 +6,14 @@
         font-size: 2em;
         float: right;
     }
+    #page_title{
+        text-align: center;
+    }
 }
 @media screen and (max-width: 550px){
+    #page_title{
+        text-align: center;
+    }
     #nav_ul{
         text-align: center;
         margin: 0;

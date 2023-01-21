@@ -37,6 +37,9 @@
     background-color: yellow;
     /* color: red; */
 }
+.active_tab{
+    background: yellow;
+}
 #tab_panel{
     /* padding-top: 15px; */
     /* background: gold; */
