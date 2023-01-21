@@ -12,6 +12,16 @@
     z-index: 200;
     padding-bottom: 20px;
 }
+.tab_delete{
+    color: black;
+    margin-right: 5px;
+    padding: 5px;
+    font-weight: normal;
+}
+.tab_delete:hover{
+    font-weight: bolder;
+    color: red;
+}
 #new_tab{
 
 }
@@ -30,6 +40,9 @@
     background: gold;
     font-weight: bold;
     z-index: 2000;
+}
+.tab:not(#new_tab){
+    padding-right: 15px;
 }
 .tab:hover{
     font-weight: bolder;
