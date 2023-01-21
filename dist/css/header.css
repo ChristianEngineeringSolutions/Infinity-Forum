@@ -70,4 +70,7 @@
     border: 2px solid black;
     margin-top: 0px;
     background: black;
+    overflow-y: hidden;
+    white-space: nowrap;
+    overflow-x: scroll;
 }
