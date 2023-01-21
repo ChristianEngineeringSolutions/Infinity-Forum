@@ -37,3 +37,16 @@ Daemons are passages that modify parent passages
 
 
 Review iframe 2 and 1 way communication
+
+
+
+TODO:
+Editors
+Uploads
+Email
+Tags
+Daemons
+Queue
+Notifications
+Messages
+Permissions
