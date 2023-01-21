@@ -41,7 +41,7 @@ $(function(){
                 }
             }
         });
-        //remove deleted tab
+        //remove deleted tab    
         localStorage.setItem('tab_' + _num, null);
         $(this).parent().remove();
         e.stopPropagation();
