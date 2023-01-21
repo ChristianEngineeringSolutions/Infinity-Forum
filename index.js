@@ -264,7 +264,7 @@ app.get('/eval/:passage_id', async function(req, res){
     getAllSubPassageCode(passage, all);
     res.render("eval", {passage: passage, all: all});
 });
-app.get('/passage/:passage_id', async function(req, res){
+app.get('/passage/:passage_title/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
     res.render("index", {scripts: scripts, passage: passage, passages: false});

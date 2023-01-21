@@ -1,8 +1,10 @@
+<%- include('html_head') %>
+</head>
 <%- include('header') %>
             <%- include('ppe') %>
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
-            <br><br>
-            <input id="search"placeholder="Search Solutions" type="" name="" autocomplete="off">
+            <div id="page_title"><%=passage.title || "Christian Engineering Solutions"%></div>
+            <input id="search"placeholder="Search..." type="" name="" autocomplete="off">
             <button id="add_passage_button">+</button>
             <br>
             <div id="passage_wrapper">

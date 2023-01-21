@@ -15,10 +15,10 @@ const passageSchema = mongoose.Schema({
     html: String,
     css: String,
     javascript: String,
-    tags: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tag'
-    }],
+    // tags: [{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'Tag'
+    // }],
     tags: String, //["tag1", "tag2", "tag3", ...]
     /**
      * {

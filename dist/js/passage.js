@@ -27,6 +27,9 @@ $(function(){
         //passage_id is the last part of the html id
         return $(thiz).attr('id').split('_')[$(thiz).attr('id').split('_').length - 1];
     }
+    function getPassageTitle(_id){
+        return $('#passage_title_'+_id).val();
+    }
     function thisPassage(thiz){
         return $('#passage_' + getPassageId(thiz));
     }
@@ -44,7 +47,14 @@ $(function(){
         });
     });
     $(document).on('click', '[id^="passage_more_"]', function(e){
-        window.location.href = '/passage/' + getPassageId(this);
+        let _id = getPassageId(this);
+        let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
+        let href = '/passage/'+ title +'/' + _id;
+        $('.active_tab').text(title);
+        let tab_id = $('.active_tab').attr('id');
+        localStorage.setItem(tab_id, JSON.stringify({text: title, href: href}));
+        localStorage.setItem('active_tab', tab_id);
+        window.location.href = href;
     });
     $(document).on('click', '[id^=passage_update_]', function(){
         var _id = getPassageId(this);
