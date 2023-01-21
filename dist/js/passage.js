@@ -50,7 +50,7 @@ $(function(){
         let _id = getPassageId(this);
         let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
         let href = '/passage/'+ title +'/' + _id;
-        $('.active_tab').text(title);
+        $('.active_tab').html('<span class="tab_delete">X</span>' + title);
         let tab_id = $('.active_tab').attr('id');
         localStorage.setItem(tab_id, JSON.stringify({text: title, href: href}));
         localStorage.setItem('active_tab', tab_id);

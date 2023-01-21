@@ -250,7 +250,7 @@ body{
 #side_panel, #side_panel_inner{
     float: right;
     padding: 10px;
-    z-index: 2;
+    z-index: 9999999999;
     width: 50%;
     background: gold;
     color: #000;
@@ -265,6 +265,7 @@ body{
     top: 0px;
     overflow-y: scroll;
     padding-top: 30px;
+    border: 2px solid black;
 }
 .category{
     /* border-bottom: 1px dotted grey; */
