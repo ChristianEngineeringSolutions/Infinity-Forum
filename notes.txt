@@ -42,8 +42,8 @@ Review iframe 2 and 1 way communication
 
 TODO:
 Editors
-Uploads
-Email
+Uploads *
+Email *
 Tags
 Daemons
 Queue
