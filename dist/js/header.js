@@ -96,8 +96,16 @@ $(function(){
         
     });
     $('.tab').droppable({
-        drop: () => {
+        drop: (event) => {
             // alert('dropped');
+            $('#' + event.target.id).css('background', 'green');
+            setTimeout(function(){
+                $('#' + event.target.id).css('background', 'gold');
+            }, 300);    
+            // $.ajax({
+            //     type: 'post',
+            //     url: 'copy_passage',
+            // });
         },
         over: (event, ui) => {
             $('#' + event.target.id).css('background', 'yellow');
@@ -130,4 +138,10 @@ $(function(){
             // });
         }
     });
+    {
+        let title = window.location.href.split('/')[window.location.href.split('/').length - 2];
+        console.log(title);
+        let active_tab_id = localStorage.getItem('active_tab');
+        $('#' + active_tab_id).html('<span class="tab_delete">X</span>' + title);
+    }
 });

@@ -1,11 +1,13 @@
 <div id="passage_<%=passage.id%>" class="passage">
     <ul class="passage_options">
-        <li id="passage_more_<%=passage.id%>" class="passage_option">More</li>
+        <% if(sub === true){%>
+        <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
+        <%}%>
         <li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li>
         <!-- Shift passage location -->
-        <li id="passage_move_<%=passage.id%>" class="passage_option">Move</li>
+        <li id="passage_move_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
-        <li id="passage_copy_<%=passage.id%>" class="passage_option">Copy</li>
+        <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
         <li id="passage_flag_<%=passage.id%>" class="passage_option">Flag</li>
         <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
         <li id="passage_share_<%=passage.id%>" class="passage_option">Share</li>
@@ -27,10 +29,10 @@
     </ul>
     <div class="passage_stars">24 Stars</div>
     <!-- Hide Iframe window if there is neither html nor js -->
-    <%if(passage.html == '' && passage.javascript == ''){%>
+    <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
         <% hide = 'hide'; %>
     <%}else{%>
-        <% hide = ''; %>
+        <% hide = 'test'; %>
     <%}%>
     <div id="passage_iframe" class="<%=hide%>" id="result_div">
         <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
