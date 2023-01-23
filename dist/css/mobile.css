@@ -9,8 +9,14 @@
     #page_title{
         text-align: center;
     }
+    #add_passage_button{
+        width: 92%;
+    }
 }
 @media screen and (max-width: 550px){
+    #add_passage_button{
+        width: 95%;
+    }
     #page_title{
         text-align: center;
     }
