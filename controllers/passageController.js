@@ -155,12 +155,25 @@ module.exports = {
             callback();
         });
     },
+    //deprecated; see copyPassage
     duplicatePassage: function(req, res, callback){
         //make a copy of the passage
         //but change the author
         var passage = new Passage(req.body.passage);
         passage.author = session.user;
-        passage.chapter = req.body.chapter.
+        passage.chapter = req.body.chapter;
+        //add source
+        passage.save();
+    },
+    copyPassage: function(req, res, callback){
+        //make a copy of the passage
+        //but change the author
+        var passage = new Passage(req.body.passage);
+        //reset author list
+        passage.users = [session.user];
+        passage.parent = null;
+        passage.passages = null;
+        //passage.date = 
         passage.save();
     }
 }

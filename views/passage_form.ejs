@@ -2,7 +2,7 @@
 Source variable: passage
  -->
 
-<form class="passage_form"action="">
+<form class="passage_form"action="" enctype="multipart/form-data">
     <div class="passage_advanced">
         <input class="passage_cross_origin"type="checkbox" name="" id=""> Cross Origin Allowed (Admin Advanced)
         <br>
@@ -20,5 +20,5 @@ Source variable: passage
     <textarea class="passage_description" name="content" id="" cols="30" rows="10" placeholder="Content"><%=passage.content%></textarea>
     <!-- <button class="passage_plus_description">+</button> -->
     <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
-    <input class="passage_file" name="file" type="file" multiple>
+    <input class="passage_file" name="file" type="file" />
 </form>

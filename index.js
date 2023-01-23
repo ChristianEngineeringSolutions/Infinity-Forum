@@ -835,7 +835,8 @@ app.post('/update_passage/', async (req, res) => {
         content: formData.content,
         tags: formData.tags,
     });
-    res.send('Updated');
+    //give back updated passage
+    res.render('passage', {passage: passage, sub: true});
 });
 // app.post('/update_passage/', (req, res) => {
 //     var chapterID = req.body.chapterID;

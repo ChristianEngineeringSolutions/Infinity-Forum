@@ -1,6 +1,5 @@
 "use strict"
 $(function(){
-    // $('.passage').draggable();
     $('#passage_wrapper').sortable();
     //sub passages are only hidden for index and search
     var inRoot = $('#chief_passage_id').val() === 'root';
@@ -74,7 +73,8 @@ $(function(){
                 formData: properData
             },
             success: function(data){
-                flashIcon(thiz, 'green');
+                thisPassage(thiz).replaceWith(data);
+                flashIcon($('#passage_update_' + _id), 'green');
             }
         });
         // var content = $(this).parent().siblings('.passage_content');
