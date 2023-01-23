@@ -26,7 +26,14 @@
         <!-- ... -->
     </ul>
     <div class="passage_stars">24 Stars</div>
-    <div id="passage_iframe" id="result_div">
+    <!-- Hide Iframe window if there is neither html nor js -->
+    <%if(passage.html == '' && passage.javascript == ''){%>
+        <% hide = 'hide'; %>
+    <%}else{%>
+        <% hide = ''; %>
+    <%}%>
+    <div id="passage_iframe" class="<%=hide%>" id="result_div">
+        <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
         <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
     </div>
     <ul class="passage_tabs">
