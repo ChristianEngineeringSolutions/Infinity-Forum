@@ -270,7 +270,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
-    res.render("index", {passageTitle: decodeURI(passageTitle), scripts: scripts, passage: passage, passages: false});
+    res.render("index", {passageTitle: decodeURI(passageTitle), scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/donate', async function(req, res){
     const stripe = require('stripe')('sk_test_51MORm3Ec108P51ZVULQU4yDFNrw9Bd3KicWmtqrm9GJvrerIrd7poJaPXsFEp3hxBD0wMJIMWR30Nhk6WaMEjSmW00OnVTxxoe');
