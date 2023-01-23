@@ -209,7 +209,7 @@ app.get('/', async (req, res) => {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    let passages = await Passage.find({});
+    let passages = await Passage.find();
     res.render("index", {passageTitle: 'Christian Engineering Solutions', scripts: scripts, passages: passages, passage: {id:'root'}});
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
@@ -703,7 +703,7 @@ app.post('/create_passage/', async (req, res) => {
         parent.passages.push(passage);
         await parent.save();
     }
-    res.render('passage', {passage: passage});
+    res.render('passage', {passage: passage, sub: true});
 });
 app.post('/search/', (req, res) => {
     let title = req.body.title;
@@ -834,9 +834,16 @@ app.post('/update_passage/', async (req, res) => {
         title: formData.title,
         content: formData.content,
         tags: formData.tags,
+    }, {
+        new: true
     });
     //give back updated passage
     res.render('passage', {passage: passage, sub: true});
+});
+app.post('/copy_passage/', async (req, res) => {
+    passageController.copyPassage(req, res, function(){
+        
+    });
 });
 // app.post('/update_passage/', (req, res) => {
 //     var chapterID = req.body.chapterID;

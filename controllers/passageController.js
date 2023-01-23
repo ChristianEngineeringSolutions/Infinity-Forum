@@ -1,3 +1,4 @@
+"use strict";
 const Passage = require('../models/Passage');
 const Chapter = require('../models/Chapter');
 //Call in Scripts
@@ -165,15 +166,81 @@ module.exports = {
         //add source
         passage.save();
     },
-    copyPassage: function(req, res, callback){
-        //make a copy of the passage
-        //but change the author
-        var passage = new Passage(req.body.passage);
+    copyPassage: async function(req, res, callback){
+        //get passage to copy
+        let user;
+        let passage = await Passage.findOne({_id: req.body._id});
         //reset author list
-        passage.users = [session.user];
-        passage.parent = null;
-        passage.passages = null;
-        //passage.date = 
-        passage.save();
-    }
+        if (typeof req.session.user === 'undefined' || req.session.user === null) {
+            user = null;
+        }
+        else{
+            user = [req.session.user];
+        }
+        //add source
+        let sourceList = passage.sourceList;
+        sourceList.push(passage._id);
+        //duplicate main passage
+        let copy = await Passage.create({
+            users: user,
+            sourceList: sourceList,
+            title: passage.title,
+            content: passage.content,
+            html: passage.html,
+            css: passage.css,
+            javascript: passage.javascript,
+            editor: passage.editor
+        });
+        //copy children
+        async function copyPassagesRecursively(passage, copy){
+            let copySubPassages = [];
+            passage.passages.forEach(async function(p){
+                let sourceList = p.sourceList;
+                sourceList.push(p._id);
+                let pcopy = await Passage.create({
+                    users: user,
+                    sourceList: sourceList,
+                    title: p.title,
+                    content: p.content,
+                    html: p.html,
+                    css: p.css,
+                    javascript: p.javascript,
+                    editor: p.editor
+                });
+                copy.passages.push(pcopy._id);
+                await copy.save();
+                if(p.passages){
+                    await copyPassagesRecursively(p, pcopy);
+                }
+            });
+            // console.log(copy.title);
+            let update = await Passage.findOneAndUpdate({_id: copy._id}, {
+                passages: copy.passages
+            }, {
+                new: true
+            });
+            let check = await Passage.findOne({_id: copy._id});
+            return update;
+            // console.log(done.title + '\n' + done.passages[0]);
+        }
+        let result = '';
+        if(passage.passages){
+            let result = await copyPassagesRecursively(passage, copy);
+        }
+        else{
+            console.log('false');
+        }
+        console.log(result);
+        res.render('passage', {passage: copy, sub: true});
+    },
+    //update order of sub-passages in passage
+    updatePassageOrder: async function(req, res, callback) {
+        var passageId = req.body.passageId;
+        var passages = JSON.parse(req.body.passages);
+        let trimmedPassages = passages.map(str => str.trim());
+        let passage = await Passage.updateOne({_id: passageId.trim()}, {
+            passages: trimmedPassages,
+        });
+        res.send("Done");
+    },
 }

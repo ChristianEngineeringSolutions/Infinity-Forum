@@ -55,6 +55,21 @@ $(function(){
         localStorage.setItem('active_tab', tab_id);
         window.location.href = href;
     });
+    $(document).on('click', '[id^="passage_copy_"]', function(e){
+        var _id = getPassageId(this);
+        var thiz = $(this);
+        $.ajax({
+            type: 'post',
+            url: '/copy_passage',
+            data: {
+                _id: _id,
+            },
+            success: function(data){
+                // alert(data);
+                flashIcon($('#passage_copy_' + _id), 'green');
+            }
+        });
+    });
     $(document).on('click', '[id^=passage_update_]', function(){
         var _id = getPassageId(this);
         var form = thisPassage(this).children('.passage_form');
