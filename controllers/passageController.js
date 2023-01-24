@@ -166,6 +166,13 @@ module.exports = {
         //add source
         passage.save();
     },
+    //move passage from one passage to another
+    movePassage: async function(movingPassage, destinationPassage){
+        movingPassage.parent = destinationPassage._id;
+        destinationPassage.passages.push(movingPassage._id);
+        await movingPassage.save();
+        await destinationPassage.save();
+    },
     copyPassage: async function(req, res, callback){
         //get passage to copy
         let user;
