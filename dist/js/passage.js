@@ -70,6 +70,21 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^="passage_bookmark_"]', function(e){
+        var _id = getPassageId(this);
+        var thiz = $(this);
+        $.ajax({
+            type: 'post',
+            url: '/bookmark_passage',
+            data: {
+                _id: _id,
+            },
+            success: function(data){
+                updateBookmarks();
+                flashIcon($('#passage_bookmark_' + _id), 'green');
+            }
+        });
+    });
     $(document).on('click', '[id^=passage_update_]', function(){
         var _id = getPassageId(this);
         var form = thisPassage(this).children('.passage_form');

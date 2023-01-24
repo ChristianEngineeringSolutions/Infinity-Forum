@@ -178,12 +178,16 @@ cron.schedule('0 12 1 * *', () => {
   });
 //ROUTES
 //GET (or show view)
-app.get(/\/profile\/(:user_id)?/, function(req, res) {
+app.get(/\/profile\/(:user_id)?/, async function(req, res) {
+    let bookmarks = [];
+    if(req.session.user){
+        bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
+    }
     var user = {
     };
     var user_id = req.params.user_id;
     if(!user_id || user_id === null){
-        res.render("profile", {scripts: scripts, profile: req.session.user});
+        res.render("profile", {scripts: scripts, profile: req.session.user, bookmarks: bookmarks});
     }
     else{
         User.findOne({_id: req.params.user_id})
@@ -191,9 +195,9 @@ app.get(/\/profile\/(:user_id)?/, function(req, res) {
         .populate('queue')
         .exec()
         .then(function(user){
-            res.render("profile", {scripts: scripts, profile: user});
+            res.render("profile", {scripts: scripts, profile: user, bookmarks: bookmarks});
         });
-        res.render("profile", {scripts: scripts, profile: req.session.user});
+        res.render("profile", {scripts: scripts, profile: req.session.user, bookmarks: bookmarks});
     }
 });
 app.get('/loginform', function(req, res){
@@ -210,7 +214,42 @@ app.get('/', async (req, res) => {
     let addChapterAllowed = true;
     var user = req.session.user || null;
     let passages = await Passage.find();
-    res.render("index", {passageTitle: 'Christian Engineering Solutions', scripts: scripts, passages: passages, passage: {id:'root'}});
+    let bookmarks = [];
+    if(req.session.user){
+        bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+    }
+    res.render("index", {
+        passageTitle: 'Christian Engineering Solutions', 
+        scripts: scripts, 
+        passages: passages, 
+        passage: {id:'root'},
+        bookmarks: bookmarks
+    });
+});
+app.post('/bookmark_passage', async (req, res) => {
+    let user = await User.findOne({_id: req.session.user._id});
+    user.bookmarks.push(req.body._id);
+    await user.save();
+    res.send('done.');
+});
+app.post('/transfer_bookmark', async (req, res) => {
+    let _id = req.body._id;
+    //First copy the passage
+    let copy = await passageController.copyPassage(req, res, function(){
+        
+    });
+    //Then move the copy into the current tab
+    let tab = await Passage.findOne({_id: req.body.tab_id});
+    tab.passages.push(copy._id);
+    copy.parent = tab._id;
+    await tab.save();
+    await copy.save();
+    res.render('passage', {passage: copy, sub: true});
+});
+app.get('/get_bookmarks', async (req, res) => {
+    let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
+    let bookmarks = user.bookmarks;
+    res.render('bookmarks', {bookmarks: bookmarks});
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
@@ -841,9 +880,10 @@ app.post('/update_passage/', async (req, res) => {
     res.render('passage', {passage: passage, sub: true});
 });
 app.post('/copy_passage/', async (req, res) => {
-    passageController.copyPassage(req, res, function(){
+    let copy = passageController.copyPassage(req, res, function(){
         
     });
+    res.render('passage', {passage: copy, sub: true});
 });
 // app.post('/update_passage/', (req, res) => {
 //     var chapterID = req.body.chapterID;

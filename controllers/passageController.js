@@ -238,7 +238,8 @@ module.exports = {
             console.log('false');
         }
         console.log(result);
-        res.render('passage', {passage: copy, sub: true});
+        return copy;
+        // res.render('passage', {passage: copy, sub: true});
     },
     //update order of sub-passages in passage
     updatePassageOrder: async function(req, res, callback) {
