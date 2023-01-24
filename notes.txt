@@ -44,9 +44,15 @@ TODO:
 Editors
 Uploads *
 Email *
-Tags
 Daemons
-Queue
 Notifications
 Messages
 Permissions
+
+
+Passage Settings:
+Private: Only Users can add/edit/delete
+Add user to passage
+remove user from passage
+Default: Private
+Public: Everyone can add or edit/delete their own passages.

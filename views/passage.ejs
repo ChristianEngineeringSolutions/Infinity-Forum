@@ -1,9 +1,12 @@
 <div id="passage_<%=passage.id%>" class="passage">
+    <div id="passage_settings_modal" class="modal">
+        <%- include('passage_settings', {passage: passage}) %>
+    </div>
     <ul class="passage_options">
         <% if(sub === true){%>
         <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
         <%}%>
-        <li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li>
+        <a class="basic_link" href="#passage_settings_modal" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
         <!-- Shift passage location -->
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
