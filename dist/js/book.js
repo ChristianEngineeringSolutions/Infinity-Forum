@@ -1400,9 +1400,9 @@ $('#right_side_select').on('change', function(){
             $('#brief').show();
             updateBrief();
             break;
-        case 'queue':
-            updateQueue();
-            $('#queue').show();
+        case 'bookmarks':
+            // updateQueue();
+                $('#bookmarks').show();
             break;
         case 'passages':
             $('#search_passages').show();
