@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
 const messageSchema = mongoose.Schema({
     //who is the message for?
-    user: {
+    to: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
     //from?
-    author: {
+    from: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },

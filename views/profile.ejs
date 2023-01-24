@@ -11,7 +11,9 @@
   <div>
     <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
     </div>
+    <%if(user && user._id == profile._id){%>
   <a class="basic_link" href="#profile_modal" rel="modal:open"><ion-icon style=""id="user_settings_icon"title="Settings"src="/images/ionicons/settings-sharp.svg"></ion-icon></a>
+  <%}%>
   &nbsp;
   <span id="parent_chapter_title"><%=profile.username%></span>
 </div>

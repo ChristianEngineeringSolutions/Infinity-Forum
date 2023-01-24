@@ -179,10 +179,13 @@ cron.schedule('0 12 1 * *', () => {
 //ROUTES
 //GET (or show view)
 
-app.get("/profile/:_id/", async (req, res) => {
+app.get("/profile/:_id?/", async (req, res) => {
     let bookmarks = [];
     let profile;
-    if(!req.params._id || req.params._id === null){
+    if(typeof req.params._id == 'undefined'){
+        if(!req.session.user){
+            res.redirect('/');
+        }
         profile = req.session.user;
     }
     else{
