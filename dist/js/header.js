@@ -1,4 +1,16 @@
 $(function(){
+    $(document).on('click', '#bookmarks_icon', function(){
+        $('#right_side_select').val('bookmarks').change();
+        $('#side_panel').toggle();
+        $('.blocker').click();
+        $('#side_panel').scrollTop(0);
+    });
+    $(document).on('click', '.help_read_more', function(){
+        $('#right_side_select').val('help').change();
+        $('#side_panel').toggle();
+        $('.blocker').click();
+        $('#side_panel').scrollTop(0);
+    });
     // localStorage.clear();
     // $('#tab_list').sortable();
     console.log(localStorage.getItem('num_tabs'));
@@ -144,4 +156,5 @@ $(function(){
         let active_tab_id = localStorage.getItem('active_tab');
         $('#' + active_tab_id).html('<span class="tab_delete">X</span>' + title);
     }
+
 });

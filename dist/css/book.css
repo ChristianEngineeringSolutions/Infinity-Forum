@@ -207,7 +207,7 @@ body{
 #side_panel{
     display: none;
     /*border-left: 1px solid black;*/
-    border-left: 2px solid #353535;
+    border-left: 5px solid #000;
 }
 #side_panel_close{
     /*display: none;*/
@@ -266,6 +266,7 @@ body{
     overflow-y: scroll;
     padding-top: 30px;
     border: 2px solid black;
+    border-left: 5px solid black;
 }
 .category{
     /* border-bottom: 1px dotted grey; */
