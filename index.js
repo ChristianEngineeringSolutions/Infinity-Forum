@@ -166,16 +166,98 @@ app.get('/sigma.parsers.json.js', function(req, res) {
 //CRON
 var cron = require('node-cron');
 cron.schedule('0 12 * * *', () => {
-  console.log('Daily Cron ran at 12pm.');
   //run daily methods
   //...
+  console.log('Daily Cron ran at 12pm.');
 });
 //run monthly cron
-cron.schedule('0 12 1 * *', () => {
-    console.log('Monthly Cron ran at 12pm.');
-    //run daily methods
+cron.schedule('0 12 1 * *', async () => {
     //...
-  });
+    //await rewardUsers();
+    console.log('Monthly Cron ran at 12pm.');
+});
+
+//Get total star count and pay out users
+async function rewardUsers(){
+    let users = await User.find({stripeAccountId: {$ne: null}});
+    let systemContent = JSON.parse(GetMainSystemRecord().content);
+    let totalStarCount = systemContent.stars;
+    let totalUSD = systemContent.usd;
+    users.forEach(async function(user){
+        //appropriate percentage based on stars
+        //users get same allotment as they have percentage of stars
+        let userUSD = percentStars(user.stars, totalStarCount) * totalUSD;
+        const transfer = await stripe.transfers.create({
+            amount: userUSD,
+            currency: "usd",
+            destination: user.stripeAccountId,
+        });
+    });
+}
+async function starUser(numStars, userId){
+    let user = User.findOne({_id: userId});
+    user.stars += numStars;
+    await user.save();
+    let SystemRecord = GetMainSystemRecord();
+    let preContent = JSON.parse(SystemRecord.content);
+    preContent.stars = parseInt(preContent.stars) + numStars;
+    SystemRecord.content = JSON.stringify(preContent);
+    await SystemRecord.save();
+}
+async function GetMainSystemRecord(){
+    let idForMainSystemRecord; //Just copy from manual creation
+    let passage = await Passage.findOne({systemRecord: true, _id: idForMainSystemRecord});
+    return passage;
+}
+function percentStars(user_stars, totalStarCount){
+    return users_stars / totalStarCount;
+}
+function percentUSD(donationUSD, totalUSD){
+    return donationUSD / totalUSD;
+}
+
+async function starPassage(amount, passageID, userID){
+    //give bonuses according to previous systemrecords for this passage
+    let systemRecords = await Passage.find({
+        parent: passageID,
+        systemRecord: true,
+        title: 'Star'
+    });
+    //Give bonus to all previous starrers
+    systemRecords.forEach(async function(record){
+        let numStars = record.stars;
+        if(record.stars > amount){
+            numStars = (amount / record.stars) * record.stars;
+        }
+        else if (amount > record.stars){
+            numStars = (record.stars / amount) * amount;
+        }
+        await starUser(numStars, record.users[0]);
+    });
+    //add stars to passage, sourceList, and sub Passages
+    let passage = await Passage.findOne({_id: passageID});
+    passage.stars += amount;
+    await passage.save();
+    passage.sourceList.forEach(async function(source){
+        await starPassage(amount, source._id, userID);
+    });
+    (function lambda(passage){
+        passage.passages.forEach(async function(p){
+            await starPassage(amount, p._id, userID);
+            lambda(p);
+        });
+    })(passage);
+    //then add stars to users appropriately (will be reflected in the main system record)
+    //add systemrecord passage
+    let systemRecord = await Passage.create({
+        systemRecord: true,
+        parent: passageID
+        stars: amount,
+        users: [userID],
+        title: 'Star'
+    });
+}
+
 //ROUTES
 //GET (or show view)
 
@@ -266,7 +348,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-    const endpointSecret = "whsec_0d1e31d8e00db9e7e8e17d8d2bba4c321abfd29f9936e85776ea9da4c367cffd";
+    const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET_KEY;
     const payload = request.body;
   
     console.log("Got payload: " + payload);
@@ -284,8 +366,22 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     }
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
+        let amount = payload.data.object.amount;
         //Save recording passage in database and give user correct number of stars
-        //...
+        //get user from email
+        let user = await User.find({_id: request.session.user._id});
+        let passage = await Passage.create({
+            users: [request.session.user._id],
+            title: 'Donation',
+            content: amount,
+            systemRecord: true
+        });
+        let systemContent = JSON.parse(GetSystemRecord().content);
+        let totalUSD = systemContent.usd;
+        let totalStarCount = systemContent.stars;
+        let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
+        user.stars += starsToAdd;
+        await user.save();
     }
   
     response.status(200).end();
@@ -322,7 +418,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     res.render("index", {passageTitle: decodeURI(passageTitle), scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/donate', async function(req, res){
-    const stripe = require('stripe')('sk_test_51MORm3Ec108P51ZVULQU4yDFNrw9Bd3KicWmtqrm9GJvrerIrd7poJaPXsFEp3hxBD0wMJIMWR30Nhk6WaMEjSmW00OnVTxxoe');
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.create({
         cancel_url: 'https://example.com',
         line_items: [{price: '{{PRICE_ID}}'
@@ -342,7 +438,7 @@ app.get('/stripeAuthorize', async function(req, res){
             let accountId = user.stripeAccountId;
             // Create a Stripe account for this user if one does not exist already
             if (accountId === null) {
-                const stripe = require('stripe')('sk_test_51MORm3Ec108P51ZVULQU4yDFNrw9Bd3KicWmtqrm9GJvrerIrd7poJaPXsFEp3hxBD0wMJIMWR30Nhk6WaMEjSmW00OnVTxxoe');
+                const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
                 const account = await stripe.accounts.create({
                     type: 'express',
                     capabilities: {
