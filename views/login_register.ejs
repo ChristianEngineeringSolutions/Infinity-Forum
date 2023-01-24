@@ -18,9 +18,11 @@
   </form>
   <h1 style="text-align: center;margin-bottom: 10px;">Register</h1>
   <form id="register_form" action="/register/" method="POST">
+    Username: <span id="register_username_load"></span>
+    <br><br>
     <div>
-        <label>Username:</label>
-        <input id="register_username" type="text" name="username"autocomplete="off"/>
+        <label>Name:</label>
+        <input placeholder="" id="register_username" type="text" name="username"autocomplete="off"/>
     </div>
     <div>
         <label>Email:</label>
@@ -38,5 +40,6 @@
         <input id="register_button"type="submit" value="Register"/>
     </div>
   </form>
+  <script src="/js/login_register_form.js"></script>
   <br><br><br><br>
   <%- include('footer') %>

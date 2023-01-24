@@ -765,7 +765,7 @@ select::-ms-expand {
     /*z-index: 4;*/
 }
 .blocker{
-    z-index: 2 !important;
+    z-index: 9999999 !important;
 }
 .modal_select, .modal_input{
     width: 100%;

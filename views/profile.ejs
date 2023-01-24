@@ -1,18 +1,21 @@
 <%- include('html_head') %>
 </head>
 <%- include('header') %>
-<br><br><br><br>
+<br><br>
 <div id="profile_modal" class="modal">
-    <p><%=profile.username%></p>
-    <p><%=profile.stars%> Stars</p>
-    <p><%=profile.starsGiven%> Stars Given</p>
+    <%- include('settings_form', {profile: profile}) %>
 </div>
 <input type="hidden" value="true", id="is_profile"/>
-<div><ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
-<a class="basic_link" href="#profile_modal" rel="modal:open"><ion-icon title="Details"src="/images/ionicons/settings-outline.svg"></ion-icon></a>
-<span id="parent_chapter_title"><%=profile.username%></span>
+<div id="profile_header">
+  <div>
+    <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+    </div>
+  <a class="basic_link" href="#profile_modal" rel="modal:open"><ion-icon style="color:white;"id="user_settings_icon"title="Settings"src="/images/ionicons/settings-sharp.svg"></ion-icon></a>
+  &nbsp;
+  <span id="parent_chapter_title"><%=profile.username%></span>
+</div>
 <div id="chapter_description">
-  <a href="/stripeAuthorize">Get Paid</a>
+  
 </div> 
-
+<script src="/js/profile.js"></script>
 <%- include('footer') %>
