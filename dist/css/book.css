@@ -1,6 +1,10 @@
 body{
     /*background: #000;*/
 }
+.basic_link{
+    text-decoration: none;
+    color: inherit;
+}
 #page_title{
     margin-top: 50px;
     font-size: 2.15em;

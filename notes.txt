@@ -48,6 +48,8 @@ Daemons
 Notifications
 Messages
 Permissions
+Flagging
+Star algorithms
 
 
 Passage Settings:
