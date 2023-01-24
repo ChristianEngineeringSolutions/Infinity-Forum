@@ -178,27 +178,22 @@ cron.schedule('0 12 1 * *', () => {
   });
 //ROUTES
 //GET (or show view)
-app.get(/\/profile\/(:user_id)?/, async function(req, res) {
+
+app.get("/profile/:_id/", async (req, res) => {
     let bookmarks = [];
+    let profile;
+    if(!req.params._id || req.params._id === null){
+        profile = req.session.user;
+    }
+    else{
+        profile = await User.findOne({_id: req.params._id});
+    }
+    let passages = await Passage.find({users: profile});
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
-    var user = {
-    };
-    var user_id = req.params.user_id;
-    if(!user_id || user_id === null){
-        res.render("profile", {scripts: scripts, profile: req.session.user, bookmarks: bookmarks});
-    }
-    else{
-        User.findOne({_id: req.params.user_id})
-        .select('queue')
-        .populate('queue')
-        .exec()
-        .then(function(user){
-            res.render("profile", {scripts: scripts, profile: user, bookmarks: bookmarks});
-        });
-        res.render("profile", {scripts: scripts, profile: req.session.user, bookmarks: bookmarks});
-    }
+    // console.log(profile[0].username);
+    res.render("profile", {passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
@@ -222,7 +217,7 @@ app.get('/', async (req, res) => {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    let passages = await Passage.find();
+    let passages = await Passage.find().populate('users');
     let bookmarks = [];
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
@@ -320,7 +315,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
-    var passage = await Passage.findOne({_id: passage_id});
+    var passage = await Passage.findOne({_id: passage_id}).populate('users');
     res.render("index", {passageTitle: decodeURI(passageTitle), scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/donate', async function(req, res){
