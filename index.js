@@ -203,6 +203,15 @@ app.get(/\/profile\/(:user_id)?/, async function(req, res) {
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
   });
+app.post('/get_username_number', async function(req, res){
+    let name = req.body.name;
+    let number = await User.countDocuments({username:name.trim()}) + 1;
+    if(number - 1 === 0){
+        number = '';
+    }
+    console.log(number);
+    res.send(number + '');
+});
 //HOME/INDEX
 app.get('/', async (req, res) => {
     //scripts.renderBookPage(req, res);
@@ -247,8 +256,11 @@ app.post('/transfer_bookmark', async (req, res) => {
     res.render('passage', {passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
-    let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
-    let bookmarks = user.bookmarks;
+    let bookmarks = [];
+    if(req.session.user){
+        let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
+        bookmarks = user.bookmarks;
+    }
     res.render('bookmarks', {bookmarks: bookmarks});
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
@@ -397,14 +409,15 @@ app.post('/login', function(req, res) {
         return res.redirect('/profile/' + user._id);
     });
 });
-app.post('/register/', function(req, res) {
+app.post('/register/', async function(req, res) {
     if ((req.body.email ||
       req.body.username) &&
       req.body.password &&
       req.body.passwordConf) {  
+        let numUsers = await User.countDocuments({username: req.body.username.trim()}) + 1;
         var userData = {
         email: req.body.email || '',
-        username: req.body.username || '',
+        username: req.body.username + numUsers || '',
         password: req.body.password,
         token: v4()
       }  //use schema.create to insert data into the db

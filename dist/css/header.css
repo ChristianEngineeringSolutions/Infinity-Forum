@@ -12,6 +12,9 @@
     z-index: 200;
     padding-bottom: 20px;
 }
+#options{
+    height: 60px;
+}
 .tab_delete{
     color: black;
     margin-right: 5px;
