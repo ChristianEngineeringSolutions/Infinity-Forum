@@ -5,6 +5,9 @@ $(function(){
         $('.blocker').click();
         $('#side_panel').scrollTop(0);
     });
+    $(document).on('click', '#nav_donate', function(){
+        window.open('https://buy.stripe.com/test_aEU4hz7I9biK6cg6oo', '_blank');
+    });
     $(document).on('click', '.help_read_more', function(){
         $('#right_side_select').val('help').change();
         $('#side_panel').toggle();
