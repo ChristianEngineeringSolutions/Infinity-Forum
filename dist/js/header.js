@@ -11,6 +11,7 @@ $(function(){
         $('.blocker').click();
         $('#side_panel').scrollTop(0);
     });
+    // $('#bookmarks_icon').click();
     // localStorage.clear();
     // $('#tab_list').sortable();
     console.log(localStorage.getItem('num_tabs'));
@@ -152,7 +153,18 @@ $(function(){
     });
     //correction for tab name if using window navigation
     {
-        let title = window.location.pathname == '/' ? 'Home' : window.location.href.split('/')[window.location.href.split('/').length - 2];
+        let title;
+        if(window.location.pathname === '/'){
+            title = 'Home';
+        }
+        else if(window.location.pathname == '/loginform'
+        || window.location.pathname == '/leaderboard'){
+            title = 'Home';
+            $('.tab').css('background', 'gold');
+        }
+        else{
+            title = window.location.href.split('/')[window.location.href.split('/').length - 2];
+        }
         let active_tab_id = localStorage.getItem('active_tab');
         $('#' + active_tab_id).html('<span class="tab_delete">X</span>' + title);
     }
