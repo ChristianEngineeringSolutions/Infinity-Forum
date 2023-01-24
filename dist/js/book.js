@@ -1593,12 +1593,6 @@ $(document).on('click', '.get_passages', function(){
         }
     });
 });
-$('.help_read_more').on('click', function(){
-    $('#right_side_select').val('help').change();
-    $('#side_panel').toggle();
-    $('.blocker').click();
-    $('#side_panel').scrollTop(0);
-});
 $('.toggle_resize').on('click', function(){
     if($(this).data('hidden') == 'true'){
         $(this).css('color', 'white');
@@ -1683,7 +1677,9 @@ $('#option_menu').on('click', function(){
     //$('.passage_adder').toggleClass('gold');
 });
 $('#side_panel_close').on('click', function(){
-    $('#option_menu').click();
+    if($('#side_panel').is(':visible')){
+        $('#side_panel').toggle();
+    }
 });
 $('.passage_adder').on('click', function(){
     if(!$('#side_panel').is(':visible') || $('#right_side_select').val() === 'add'){

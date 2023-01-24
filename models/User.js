@@ -50,6 +50,10 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    bookmarks: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Passage'
+    }],
     // Background scripts
     daemons: [{
       type: mongoose.Schema.Types.ObjectId,
