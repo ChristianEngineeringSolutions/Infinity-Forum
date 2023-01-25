@@ -970,10 +970,18 @@ app.post('/star_chapter/', (req, res) => {
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
+    var passage = await Passage.findOne({_id: _id});
+    passage.html = formData.html;
+    passage.css = formData.css;
+    passage.javascript = formData.js;
+    passage.title = formData.title;
+    passage.content = formData.content;
+    passage.tags = formData.tags;
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
         console.log("No files uploaded.");
+        passage.filename = passage.filename;
     }
     else{
         console.log('File uploaded');
@@ -989,18 +997,20 @@ app.post('/update_passage/', async (req, res) => {
             return res.status(500).send(err);
         }
       });
+      passage.filename = uploadTitle;
     }
-    var passage = await Passage.findOneAndUpdate({_id: _id}, {
-        html: formData.html,
-        css: formData.css,
-        javascript: formData.js,
-        title: formData.title,
-        content: formData.content,
-        tags: formData.tags,
-        filename: uploadTitle
-    }, {
-        new: true
-    });
+    await passage.save();
+    // var passage = await Passage.findOneAndUpdate({_id: _id}, {
+    //     html: formData.html,
+    //     css: formData.css,
+    //     javascript: formData.js,
+    //     title: formData.title,
+    //     content: formData.content,
+    //     tags: formData.tags,
+    //     filename: uploadTitle
+    // }, {
+    //     new: true
+    // });
     //give back updated passage
     res.render('passage', {passage: passage, sub: true});
 });
