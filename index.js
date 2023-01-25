@@ -118,14 +118,14 @@ app.get('/ionicons.esm.js', function(req, res) {
 app.get('/ionicons.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/ionicons.js');
 });
-app.get('/p-af480238.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-af480238.js');
+app.get('/p-9c97a69a.js', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-9c97a69a.js');
 });
-app.get('/p-vsz5ekad.entry.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-vsz5ekad.entry.js');
+app.get('/p-c1aa32dd.entry.js', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-c1aa32dd.entry.js');
 });
-app.get('/p-763ce0c6.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-763ce0c6.js');
+app.get('/p-85f22907.js', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-85f22907.js');
 });
 app.get('/marked.min.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/marked/marked.min.js');
@@ -233,6 +233,8 @@ async function starPassage(amount, passageID, userID){
             numStars = (record.stars / amount) * amount;
         }
         await starUser(numStars, record.users[0]);
+        //The passage gets the bonus too
+        amount += numStars;
     });
     //add stars to passage, sourceList, and sub Passages
     let passage = await Passage.findOne({_id: passageID});
@@ -922,6 +924,7 @@ app.post('/flag_passage', (req, res) => {
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
     var user = req.session.user;
+    //get user from db
     if(req.session && req.session.user){
         //Since this is a manual star, user must trade their own stars
         req.session.user.stars -= req.body.amount;
