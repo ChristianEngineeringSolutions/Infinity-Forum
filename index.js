@@ -251,13 +251,27 @@ async function starPassage(amount, passageID, userID){
     //add systemrecord passage
     let systemRecord = await Passage.create({
         systemRecord: true,
-        parent: passageID
+        parent: passageID,
         stars: amount,
         users: [userID],
         title: 'Star'
     });
 }
-
+async function notifyUser(userId, content, type="General"){
+    let notification = await Notification.create({
+        user: userId,
+        content: content,
+        type: type
+    });
+}
+async function messageUser(from, to, subject, content){
+    let message = await Message.create({
+        from: from,
+        to: to,
+        subject: subject,
+        content: content
+    });
+}
 //ROUTES
 //GET (or show view)
 
@@ -885,15 +899,8 @@ app.post('/search_category/', (req, res) => {
 app.post('/flag_passage', (req, res) => {
     var _id = req.body._id.trim();
     Passage.findOne({_id: _id}, function(err, passage){
-        passage.flagged = !passage.flagged;
+        passage.flagged = true;
         passage.save();
-    });
-});
-app.post('/flag_chapter', (req, res) => {
-    var _id = req.body._id.trim();
-    Chapter.findOne({_id: _id}, function(err, chapter){
-        chapter.flagged = !chapter.flagged;
-        chapter.save();
     });
 });
 app.post('/star/', (req, res) => {
@@ -987,9 +994,12 @@ app.post('/update_passage/', async (req, res) => {
     res.render('passage', {passage: passage, sub: true});
 });
 app.post('/copy_passage/', async (req, res) => {
-    let copy = passageController.copyPassage(req, res, function(){
+    let copy = await passageController.copyPassage(req, res, function(){
         
     });
+    let passage = await Passage.findOne({_id: req.body._id});
+    //Give passage as many stars as it's worth
+    await starPassage(passage.stars, passage._id, req.session.user_id);
     res.render('passage', {passage: copy, sub: true});
 });
 // app.post('/update_passage/', (req, res) => {
