@@ -85,33 +85,51 @@ $(function(){
             }
         });
     });
+    $(document).on('submit', '[id^=passage_form_]', function(e){
+        e.preventDefault();
+        var thiz = $(this);
+        var formData = new FormData(this);
+        $.ajax({
+            url: '/update_passage',
+            type: 'POST',
+            data: formData,
+            success: function (data) {
+                thisPassage(thiz).replaceWith(data);
+            },
+            cache: false,
+            contentType: false,
+            processData: false
+        });
+    });
     $(document).on('click', '[id^=passage_update_]', function(){
         var _id = getPassageId(this);
-        var form = thisPassage(this).children('.passage_form');
-        var formData = form.serializeArray();
-        var formDataForFile = new FormData();
-        formDataForFile.append('file', $('#passage_file_' + _id)[0].files[0]);
-        var properData = {};
-        //make array object
-        formData.forEach((tup)=>{
-            properData[tup['name']] = tup['value'];
-        });
-        var thiz = $(this);
-        $.ajax({
-            type: 'post',
-            url: '/update_passage',
-            data: {
-                _id: _id,
-                formData: properData,
-                formDataForFile: formDataForFile
-            },
-            processData: false,
-            contentType: false,
-            success: function(data){
-                thisPassage(thiz).replaceWith(data);
-                flashIcon($('#passage_update_' + _id), 'green');
-            }
-        });
+        flashIcon($('#passage_update_' + _id), 'green');
+        $('#passage_form_' + _id).submit();
+        // var form = thisPassage(this).children('.passage_form');
+        // var formData = form.serializeArray();
+        // var formDataForFile = new FormData();
+        // formDataForFile.append('file', $('#passage_file_' + _id)[0].files[0]);
+        // var properData = {};
+        // //make array object
+        // formData.forEach((tup)=>{
+        //     properData[tup['name']] = tup['value'];
+        // });
+        // var thiz = $(this);
+        // $.ajax({
+        //     type: 'post',
+        //     url: '/update_passage',
+        //     data: {
+        //         _id: _id,
+        //         formData: properData,
+        //         formDataForFile: formDataForFile
+        //     },
+        //     processData: false,
+        //     contentType: false,
+        //     success: function(data){
+        //         thisPassage(thiz).replaceWith(data);
+        //         flashIcon($('#passage_update_' + _id), 'green');
+        //     }
+        // });
         // var content = $(this).parent().siblings('.passage_content');
         // var text;
         // if(content.prop('tagName') == 'TEXTAREA'){

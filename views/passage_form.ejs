@@ -2,7 +2,7 @@
 Source variable: passage
  -->
 
-<form class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
+<form id="passage_form_<%=passage._id%>"class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
     <input value="<%=passage._id%>"name="_id"type="hidden">
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
     <ul class="description_options">
@@ -17,7 +17,7 @@ Source variable: passage
     <!-- <button class="passage_plus_description">+</button> -->
     <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
     <% if(passage.filename){ %>
-    <img src="/uploads/<%passage.filename%>" alt="">
+    <img src="/uploads/<%=passage.filename%>" alt="">
     <%}%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
     <div class="passage_advanced">

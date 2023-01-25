@@ -969,7 +969,7 @@ app.post('/star_chapter/', (req, res) => {
 
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
-    var formData = req.body.formData;
+    var formData = req.body;
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
