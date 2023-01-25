@@ -2,22 +2,27 @@
 Source variable: passage
  -->
 
-<form class="passage_form"action="" enctype="multipart/form-data">
+<form class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
+    <input value="<%=passage._id%>"name="_id"type="hidden">
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
     <ul class="description_options">
         <li class="description_option">Rich Text</li>
         <li class="description_option editor_option_active">Plain Text</li>
         <li class="description_option">Code</li>
         <li class="description_option">Markdown</li>
+        <li class="description_option">Graphical</li>
         <li class="description_option"><input value=".txt"placeholder=".ext"type="text"/></li>
     </ul>
-    <textarea class="passage_description" name="content" id="" cols="30" rows="10" placeholder="Content"><%=passage.content%></textarea>
+    <textarea class="passage_description" name="content" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"><%=passage.content%></textarea>
     <!-- <button class="passage_plus_description">+</button> -->
     <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
-    <input class="passage_file" name="file" type="file" />
+    <% if(passage.filename){ %>
+    <img src="/uploads/<%passage.filename%>" alt="">
+    <%}%>
+    <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
     <div class="passage_advanced">
-        <textarea class="passage_html" name="html" id="" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
-        <textarea class="passage_css" name="css" id="" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
-        <textarea class="passage_js" name="js" id="" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
+        <textarea class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
+        <textarea class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
+        <textarea class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
     </div>
 </form>

@@ -329,6 +329,16 @@ app.get('/', async (req, res) => {
         bookmarks: bookmarks
     });
 });
+//Search
+app.get('/search/:query', async (req, res) => {
+    let results = await Passage.find({title: {
+        $regex: req.params.query,
+        $options: 'i'
+    }}).populate('users');
+    res.render("passages", {
+        passages: results
+    });
+});
 app.post('/bookmark_passage', async (req, res) => {
     let user = await User.findOne({_id: req.session.user._id});
     user.bookmarks.push(req.body._id);
@@ -956,30 +966,30 @@ app.post('/star_chapter/', (req, res) => {
         });
     }
 });
-app.post('/update_chapter/', (req, res) => {
-    chapterController.updateChapter(req, res, function(){
-        res.send('Updated');
-    });
-});
-app.post('/update_chapter_order/', (req, res) => {
-    chapterController.updateChapterOrder(req, res, function(){
-        res.send('Updated');
-    });
-});
-app.post('/update_passage_content', (req, res) => {
-    passageController.updatePassageContent(req, res, function(){
-        res.send('Updated');
-    });
-});
-app.post('/add_sub_passage/', (req, res) => {
-    passageController.addSubPassage(req, res, function(){
-        var backURL=req.header('Referer') || '/';
-        res.redirect(backURL);
-    });
-});
+
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body.formData;
+    var uploadTitle = '';
+    if (!req.files || Object.keys(req.files).length === 0) {
+        //no files uploaded
+        console.log("No files uploaded.");
+    }
+    else{
+        console.log('File uploaded');
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+      let fileToUpload = req.files.file;
+      let mimetype = req.files.file.mimetype;
+      uploadTitle = v4();
+      //first verify that mimetype is image
+      console.log(mimetype);
+      // Use the mv() method to place the file somewhere on your server
+      fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
+        if (err){
+            return res.status(500).send(err);
+        }
+      });
+    }
     var passage = await Passage.findOneAndUpdate({_id: _id}, {
         html: formData.html,
         css: formData.css,
@@ -987,6 +997,7 @@ app.post('/update_passage/', async (req, res) => {
         title: formData.title,
         content: formData.content,
         tags: formData.tags,
+        filename: uploadTitle
     }, {
         new: true
     });
@@ -999,34 +1010,12 @@ app.post('/copy_passage/', async (req, res) => {
     });
     let passage = await Passage.findOne({_id: req.body._id});
     //Give passage as many stars as it's worth
-    await starPassage(passage.stars, passage._id, req.session.user_id);
+    //But duplicating your own passage won't star it
+    if(passage.users[0]._id != req.session.user._id){
+        await starPassage(passage.stars, passage._id, req.session.user_id);
+    }
     res.render('passage', {passage: copy, sub: true});
 });
-// app.post('/update_passage/', (req, res) => {
-//     var chapterID = req.body.chapterID;
-//     var type = req.body.type;
-//     var user = req.session.user || null;
-//     var content = req.body.passage || '';
-//     var parentPassage = req.body.parentPassage || '';
-//     var property_key = req.body['property_key[]'] || req.body.property_key;
-//     var property_value = req.body['property_value[]'] || req.body.property_value;
-//     var dataURL = req.body.dataURL || false;
-//     //build metadata from separate arrays
-//     var metadata = generateMetadata(property_key, property_value);
-//     var json = metadata.json;
-//     var canvas = metadata.canvas;
-//     var categories = req.body.tags;
-//     passageController.updatePassage({
-//         'id': req.body._id,
-//         'content': content,
-//         'canvas': canvas,
-//         'categories': categories,
-//         'metadata': JSON.stringify(json),
-//         'callback': function(passage){
-//             res.send(scripts.printPassage(passage));
-//         }
-//     });
-// });
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
     var token = req.params.token;
@@ -1240,156 +1229,6 @@ function authenticateUsername(username, password, callback) {
         })
       });
   }
-//we need to check permissions when:
-//Adding a passage
-//Editing/deleting a passage
-//displaying a passage
-function getPermissions(doc, user, type="passage", adding=false, callback){
-  //check if the user is the author
-  var isAuthor = false;
-  var isChapterAdmin = false;
-  var isChapterUser = false;
-  var isChapterAuthor = false;
-  //Public, Protected, Private, Exclusive
-  //All, Self, None, None
-  //can add/edit/delete all, can add/edit/delete own, can do nothing
-  var permissions = 'None'; //start at most restrictive
-  //we want to center on the chapter
-  var main;
-  //You can always edit/delete your own content
-  if(type == "passage"){
-    main = doc.chapter;
-    //but you can't add content everywhere!
-    if(doc.author == user && !adding){
-      isAuthor = true;
-      permissions = 'Self';
-    }
-  }
-  //this should actually never happen.
-  //editing/deleting chapters is only for the chapter author
-  else if (type == 'chapter'){
-    main = doc;
-  }
-  //they have all permissions if chapter author
-  if(main.author == user){
-    isChapterAuthor = true;
-    permissions = 'All';
-    //return callback(permissions);
-  }
-  Chapter.findOne({_id: main._id}, function(err, obj){
-    //check if the user is a user of the chapter
-    if(obj2){
-      isUser = true;
-      permissions = 'Self';
-    }
-    //check if the user is an admin of the chapter
-    if(obj){
-      isAdmin = true;
-      permissions = 'All';
-    }
-    if(!isAdmin && !isUser){
-      //if they don't have special permissions and aren't the author,
-      //we need to check the permissions for the chapter
-      switch(main.access){
-        case 'Public':
-        permissions = 'All';
-        break;
-        case 'Protected':
-        permissions = 'Self';
-        break;
-        case 'Private':
-        case 'Exclusive':
-        //not allowed to add no matter what
-        //but can edit or delete if they are the author
-        if(adding){
-            permissions = 'None';
-        }
-        //but can edit or delete if they are the passage author
-        if(!adding && isAuthor){
-            permissions = 'Self';
-        }
-      }
-    }
-    callback(permissions);
-  });
-}
-//when they add a passage to queue, duplicate it and add the duplication
-function addToQueue(passage, user){
-  User.findOne({_id: user}, function(err, theUser){
-    theUser.queue.push(passage);
-    theUser.starsGiven += 1;
-    theUser.save();
-  });
-}
-//Duplications keeps everything the same and stores a reference to the original
-//Duplicating a passage should also give it a free star, but it also adds to users 'stars given'
-function duplicatePassage(req, passage, location=null, parent=null){
-  Passage.create({
-      author: req.session.user,
-      chapter: location == '' ? null : location,
-      originalPassage: passage.originalPassage,
-      previousPassage: passage,
-      metadata: passage.metadata,
-      content: passage.content,
-      flagged: passage.flagged,
-      canvas: passage.canvas,
-      filename: passage.filename,
-      categories: passage.categories,
-      parent: parent
-  }).then(function(newParent){
-    //then we need to duplicate each sub passage all the way down
-    passage.passages.forEach(function(p){
-        newParent.passages.push(duplicatePassage(req, p, location, newParent));
-    });
-    passage.stars += 1;
-    // session.user.starsGiven += 1;
-    passage.save();
-    // session.user.save();
-    addToQueue(newParent, req.session.user._id);
-  });
-}
-function generateMetadata(property_keys, property_values){
-    var metadata = {};
-    var canvas = false;
-    var i = 0;
-    if(Array.isArray(property_keys) && Array.isArray(property_values)){
-        property_keys.forEach(function(key){
-            if(key == 'Canvas'){
-                canvas = true;
-            }
-            metadata[key] = property_values[i++];
-        });
-    }
-    else if(Array.isArray(property_keys)){
-        property_keys.forEach(function(key){
-            if(key == 'Canvas'){
-                canvas = true;
-            }
-            metadata[key] = '';
-        });
-    }
-    else{
-        if(property_keys == 'Canvas'){
-            canvas = true;
-        }
-        metadata[property_keys] = property_values;
-    }
-    return {
-        canvas: canvas,
-        json: metadata
-    };
-}
-function starCategories(categories){
-    if(categories != ''){
-        Category.find({title: new RegExp('^'+categories+'$', "i")})
-        .exec(function(cats){
-            cats.foreach(function(cat){
-                cat.stars += 1;
-                cat.save();
-            });
-        });
-    }
-}
 function sendEmail(to, subject, body){
     var transporter = nodemailer.createTransport({
       service: 'gmail',

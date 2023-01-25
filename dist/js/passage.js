@@ -89,6 +89,8 @@ $(function(){
         var _id = getPassageId(this);
         var form = thisPassage(this).children('.passage_form');
         var formData = form.serializeArray();
+        var formDataForFile = new FormData();
+        formDataForFile.append('file', $('#passage_file_' + _id)[0].files[0]);
         var properData = {};
         //make array object
         formData.forEach((tup)=>{
@@ -100,8 +102,11 @@ $(function(){
             url: '/update_passage',
             data: {
                 _id: _id,
-                formData: properData
+                formData: properData,
+                formDataForFile: formDataForFile
             },
+            processData: false,
+            contentType: false,
             success: function(data){
                 thisPassage(thiz).replaceWith(data);
                 flashIcon($('#passage_update_' + _id), 'green');
