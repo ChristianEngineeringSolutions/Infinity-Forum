@@ -248,6 +248,12 @@ async function starPassage(amount, passageID, userID){
         });
     })(passage);
     //then add stars to users appropriately (will be reflected in the main system record)
+    //if starring user is passage creator,
+    //they can get bonuses and star the passage,
+    //but they won't get initial stars; it is an investment
+    if(userID != passage.users[0]._id){
+        await starUser(amount, passage.users[0]);
+    }
     //add systemrecord passage
     let systemRecord = await Passage.create({
         systemRecord: true,
@@ -913,34 +919,19 @@ app.post('/flag_passage', (req, res) => {
         passage.save();
     });
 });
-app.post('/star/', (req, res) => {
+app.post('/star_passage/', async (req, res) => {
+    var passage_id = req.body.passage_id;
+    var user = req.session.user;
     if(req.session && req.session.user){
-        var user = req.session.user;
-       if(user.starsGiven < user.stars * 2){
-            user.starsGiven += 1;
-            var _id = req.body._id.trim();
-            Passage.findOne({_id: _id})
-            .populate('chapter author')
-            .exec(function(err, passage){
-                //can't star your own passages
-                if(passage.author._id != user._id){
-                    passage.stars += 1;
-                    if(passage.chapter != null){
-                        passage.chapter.stars += 1;
-                        passage.chapter.save();
-                    }
-                    if(passage.author != null){
-                        passage.author.stars += 1;
-                        passage.author.save();
-                    }
-                    passage.save();
-                    user.save();
-                    res.send('Done');
-                }
-            });
+        //Since this is a manual star, user must trade their own stars
+        req.session.user.stars -= req.body.amount;
+        if(req.session.user.stars > 0){
+            await starPassage(req.body.amount, req.body.passage_id, req.session.user._id);
+            await req.session.user.save();
+            res.send("Done.");
         }
         else{
-            res.send("You don't have enough stars to give!");
+            res.send("Not enough stars!");
         }
     }
 });

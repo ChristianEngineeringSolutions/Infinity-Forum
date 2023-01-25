@@ -37,7 +37,8 @@
     <div class="passage_stars"><%=passage.stars%> Stars &emsp; 
         <% if(user){ %>
             <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
-            <input class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> &nbsp;&nbsp;<span class="add_stars">Add</span>
+            <input id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> 
+            &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Add</span>
         <% } %>
     </div>
     <br>
