@@ -1,12 +1,13 @@
 <div id="passage_<%=passage.id%>" class="passage">
-    <div id="passage_settings_modal" class="modal">
+    <div id="passage_settings_modal_<%=passage._id%>" class="modal">
         <%- include('passage_settings', {passage: passage}) %>
     </div>
     <ul class="passage_options">
         <% if(sub === true){%>
         <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
         <%}%>
-        <a class="basic_link" href="#passage_settings_modal" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
+        <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
+        <li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li>
         <!-- Shift passage location -->
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
@@ -30,7 +31,12 @@
         <%}%>
         <!-- ... -->
     </ul>
-    <div class="passage_stars">24 Stars</div>
+    <div class="passage_stars">24 Stars &emsp; 
+        <% if(user){ %>
+            <input class="star_number"value="1"type="number" /> &nbsp;&nbsp;<a>Add</a>
+        <% } %>
+    </div>
+    <br>
     <!-- Hide Iframe window if there is neither html nor js -->
     <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
         <% hide = 'hide'; %>
@@ -41,13 +47,11 @@
         <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
         <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
     </div>
-    <ul class="passage_tabs">
-        <li class="passage_tab passage_tab_open_advanced">Advanced</li>
+    <!-- <ul class="passage_tabs">
+        <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
         <!-- Display Result -->
-        <li class="passage_tab">Sources</li>
-        <li class="passage_tab">Alternates</li>
-        <li class="passage_tab">Tags</li>
-    </ul>
+        <!-- <li class="passage_tab">Alternates</li> -->
+    <!-- </ul> -->
     <%- include('passage_form') %>
     <!-- <div class="sub_passages"> -->
        

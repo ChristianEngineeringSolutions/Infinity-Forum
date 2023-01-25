@@ -13,9 +13,6 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    //rrr, wwww, xxx, etc., ordered by users
-    // [rwx, ...]
-    permissions: [String],
     title: String,
     html: String,
     css: String,
@@ -90,6 +87,37 @@ const passageSchema = mongoose.Schema({
     },
     //quill, codeMirror, etc.
     editor: String,
+    //permissions/settings
+    public: {
+        type: Boolean,
+        default: false
+    },
+    personal_cross_origin: {
+        type: Boolean,
+        default: false
+    },
+    personal_same_origin: {
+        type: Boolean,
+        default: false
+    },
+    //0 is false, 1 is requesting, 2 is active
+    public_daemon: {
+        type: Number,
+        default: 0
+    },
+    admin_cross_origin_all: {
+        type: Boolean,
+        default: false
+    },
+    admin_same_origin: {
+        type: Boolean,
+        default: false
+    },
+    admin_make_daemon: {
+        type: Boolean,
+        default: false
+    },
+
 });
 var autoPopulateChildren = function(next) {
     this.populate('passages');
