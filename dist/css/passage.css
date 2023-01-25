@@ -51,9 +51,9 @@
 .passage_tab{
     display: inline;
     padding: 10px;
-    border: 1px solid black;
+    /* border: 1px solid black; */
     cursor: pointer;
-    background: #fff;
+    /* background: #fff; */
     font-weight: bold;
 }
 .passage_tab:hover{
@@ -143,4 +143,7 @@
 }
 .passage_setting:hover{
     font-weight: bold;;
+}
+.add_stars{
+    cursor: pointer;
 }

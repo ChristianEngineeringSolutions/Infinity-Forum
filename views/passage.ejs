@@ -6,19 +6,22 @@
         <% if(sub === true){%>
         <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
         <%}%>
+        <!-- Show them settings only if they made the passage -->
+        <%if(passage.users && user && passage.users[0]._id == user._id){%>
         <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
+        <%}%>
         <li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li>
         <!-- Shift passage location -->
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
         <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
         <li id="passage_flag_<%=passage.id%>" class="passage_option">Flag</li>
-        <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
-        <li id="passage_share_<%=passage.id%>" class="passage_option">Share</li>
         <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li>
         <li id="passage_donate_<%=passage.id%>" class="passage_option">Donate</li>
-        <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
-        <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+        <%if(passage.users && user && passage.users[0]._id == user._id){%>
+            <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
+            <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+        <%}%>
     </ul>
     <ul class="passage_users">
         <!-- Profile Image layers -->
@@ -31,9 +34,10 @@
         <%}%>
         <!-- ... -->
     </ul>
-    <div class="passage_stars">24 Stars &emsp; 
+    <div class="passage_stars"><%=passage.stars%> Stars &emsp; 
         <% if(user){ %>
-            <input class="star_number"value="1"type="number" /> &nbsp;&nbsp;<a>Add</a>
+            <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
+            <input class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> &nbsp;&nbsp;<span class="add_stars">Add</span>
         <% } %>
     </div>
     <br>
@@ -53,6 +57,9 @@
         <!-- <li class="passage_tab">Alternates</li> -->
     <!-- </ul> -->
     <%- include('passage_form') %>
+    <ul class="passage_tabs">
+        <li class="passage_tab passage_tab_open_advanced">Executable</li>
+    </ul>
     <!-- <div class="sub_passages"> -->
        
     <!-- </div> -->
