@@ -147,3 +147,6 @@
 .add_stars{
     cursor: pointer;
 }
+.change_passage_file{
+    cursor: pointer;
+}

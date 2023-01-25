@@ -101,6 +101,10 @@ $(function(){
             processData: false
         });
     });
+    $(document).on('click', '.change_passage_file', function(){
+        let _id = $(this).attr('id').split('_')[$(this).attr('id').split('_').length - 1];
+        // $('#passage_file_' + _id).
+    });
     $(document).on('click', '[id^=passage_update_]', function(){
         var _id = getPassageId(this);
         flashIcon($('#passage_update_' + _id), 'green');
