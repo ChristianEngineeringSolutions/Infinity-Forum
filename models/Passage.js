@@ -117,10 +117,7 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    admin: {
-        type: Boolean,
-        default: false
-    }
+    extension: String,
 
 });
 var autoPopulateChildren = function(next) {

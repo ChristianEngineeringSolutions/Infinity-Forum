@@ -44,11 +44,6 @@ TODO:
 Editors
 Uploads *
 Email *
-Daemons
-Notifications
-Messages
-Permissions
-Flagging
 
 
 Passage Settings:
