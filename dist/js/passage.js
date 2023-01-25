@@ -101,6 +101,21 @@ $(function(){
             processData: false
         });
     });
+    $(document).on('click', '.add_stars', function(){
+        var passage_id = $(this).attr('id').split('_').at(-1);
+        var amount = $('#star_number_' + passage_id).val();
+        $.ajax({
+            url: '/star_passage/',
+            type: 'POST',
+            data: {
+                passage_id: passage_id,
+                amount: amount
+            },
+            success: function(data){
+                alert(data);
+            }
+        });
+    });
     $(document).on('click', '.change_passage_file', function(){
         let _id = $(this).attr('id').split('_')[$(this).attr('id').split('_').length - 1];
         // $('#passage_file_' + _id).

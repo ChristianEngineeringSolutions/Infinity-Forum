@@ -42,8 +42,9 @@ Review iframe 2 and 1 way communication
 
 TODO:
 Editors
-Uploads *
 Email *
+sourceList
+Star midware
 
 
 Passage Settings:
