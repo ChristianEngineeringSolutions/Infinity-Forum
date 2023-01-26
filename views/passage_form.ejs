@@ -5,14 +5,6 @@ Source variable: passage
 <form id="passage_form_<%=passage._id%>"class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
     <input value="<%=passage._id%>"name="_id"type="hidden">
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
-    <ul class="description_options">
-        <li class="description_option">Rich Text</li>
-        <li class="description_option editor_option_active">Plain Text</li>
-        <li class="description_option">Code</li>
-        <li class="description_option">Markdown</li>
-        <li class="description_option">Graphical</li>
-        <li class="description_option"><input value=".txt"placeholder=".ext"type="text"/></li>
-    </ul>
     <textarea class="passage_description" name="content" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"><%=passage.content%></textarea>
     <!-- <button class="passage_plus_description">+</button> -->
     <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->

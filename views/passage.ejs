@@ -15,9 +15,6 @@
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
         <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
-        <li id="passage_flag_<%=passage.id%>" class="passage_option">Flag</li>
-        <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li>
-        <li id="passage_donate_<%=passage.id%>" class="passage_option">Donate</li>
         <%if(passage.users && user && passage.users[0]._id == user._id){%>
             <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
             <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
@@ -59,7 +56,7 @@
     <!-- </ul> -->
     <%- include('passage_form') %>
     <ul class="passage_tabs">
-        <li class="passage_tab passage_tab_open_advanced">Executable</li>
+        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Executable</li>
     </ul>
     <!-- <div class="sub_passages"> -->
        

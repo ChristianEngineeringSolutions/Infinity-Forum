@@ -195,18 +195,17 @@ async function rewardUsers(){
     });
 }
 async function starUser(numStars, userId){
-    let user = User.findOne({_id: userId});
+    let user = await User.findOne({_id: userId});
     user.stars += numStars;
     await user.save();
-    let SystemRecord = GetMainSystemRecord();
+    let SystemRecord = await GetMainSystemRecord();
     let preContent = JSON.parse(SystemRecord.content);
     preContent.stars = parseInt(preContent.stars) + numStars;
     SystemRecord.content = JSON.stringify(preContent);
     await SystemRecord.save();
 }
 async function GetMainSystemRecord(){
-    let idForMainSystemRecord; //Just copy from manual creation
-    let passage = await Passage.findOne({systemRecord: true, _id: idForMainSystemRecord});
+    let passage = await Passage.findOne({MainSystemRecord: true});
     return passage;
 }
 function percentStars(user_stars, totalStarCount){
@@ -264,6 +263,7 @@ async function starPassage(amount, passageID, userID){
         users: [userID],
         title: 'Star'
     });
+    return passage;
 }
 async function notifyUser(userId, content, type="General"){
     let notification = await Notification.create({
@@ -925,13 +925,14 @@ app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
     var user = req.session.user;
     //get user from db
-    if(req.session && req.session.user){
+    let sessionUser = await User.findOne({_id: user._id});
+    if(req.session && user){
         //Since this is a manual star, user must trade their own stars
-        req.session.user.stars -= req.body.amount;
-        if(req.session.user.stars > 0){
-            await starPassage(req.body.amount, req.body.passage_id, req.session.user._id);
-            await req.session.user.save();
-            res.send("Done.");
+        sessionUser.stars -= parseInt(req.body.amount);
+        if(sessionUser.stars > 0){
+            let passage = await starPassage(parseInt(req.body.amount), req.body.passage_id, sessionUser._id);
+            await sessionUser.save();
+            res.render('passage', {passage: passage, sub: true});
         }
         else{
             res.send("Not enough stars!");
@@ -1013,11 +1014,6 @@ app.post('/copy_passage/', async (req, res) => {
         
     });
     let passage = await Passage.findOne({_id: req.body._id});
-    //Give passage as many stars as it's worth
-    //But duplicating your own passage won't star it
-    if(passage.users[0]._id != req.session.user._id){
-        await starPassage(passage.stars, passage._id, req.session.user_id);
-    }
     res.render('passage', {passage: copy, sub: true});
 });
 app.get('/verify/:user_id/:token', function (req, res) {

@@ -4,7 +4,7 @@
   "description": "Christian Engineering Solutions",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "rollup -c",
     "dev": "nodemon index.js"
   },
   "author": "Uriah Sanders",
@@ -32,6 +32,8 @@
     "mongodb-restore": "^0.1.0",
     "mongoose": "^5.7.1",
     "mongoose-paginate": "^5.0.3",
+    "n": "^9.0.1",
+    "node": "^19.4.0",
     "node-cron": "^2.0.3",
     "nodemailer": "^6.4.5",
     "pagedown": "^1.1.0",
@@ -39,6 +41,7 @@
     "passport-local": "^1.0.0",
     "pug": "^3.0.2",
     "quill": "^1.3.7",
+    "rollup": "^3.10.1",
     "sigma": "1.2.1",
     "socket.io": "^2.3.0",
     "stripe": "^11.5.0",

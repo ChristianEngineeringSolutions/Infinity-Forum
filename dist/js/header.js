@@ -20,7 +20,6 @@ $(function(){
     // $('#bookmarks_icon').click();
     // localStorage.clear();
     // $('#tab_list').sortable();
-    console.log(localStorage.getItem('num_tabs'));
     if(localStorage.getItem('num_tabs') === null){
         localStorage.setItem('num_tabs', 1);
         localStorage.setItem('tab_' + 1, JSON.stringify({text: 'Home', href: '/'}));
