@@ -9,3 +9,11 @@
     font-size: 2em;
     font-weight: bold;
 }
+#editor{
+    position: fixed;
+    bottom: 0px;
+    z-index: 99999999;
+    width: 100%;
+    color: black;
+    background: white;
+}

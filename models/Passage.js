@@ -17,6 +17,10 @@ const passageSchema = mongoose.Schema({
     html: String,
     css: String,
     javascript: String,
+    MainSystemRecord: {
+        type: Boolean,
+        default: false
+    },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Tag'
@@ -32,11 +36,6 @@ const passageSchema = mongoose.Schema({
     /** tags.join('') => Regex $search */
     // From original to previous passage source
     sourceList : [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
-    }],
-    //alternate list
-    alternates : [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],
@@ -85,8 +84,6 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    //quill, codeMirror, etc.
-    editor: String,
     //permissions/settings
     public: {
         type: Boolean,
@@ -117,7 +114,6 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    extension: String,
 
 });
 var autoPopulateChildren = function(next) {

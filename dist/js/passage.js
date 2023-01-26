@@ -1,11 +1,17 @@
 "use strict"
 $(function(){
-    $('#passage_wrapper').sortable();
+    $('#passage_wrapper').sortable({
+        handle: '.passage_options'
+    });
     //sub passages are only hidden for index and search
     var inRoot = $('#chief_passage_id').val() === 'root';
     if($('#chief_passage_id').val() != 'root'){
         $('.sub_passages').show();
     }
+    $(document).on('click', '[id^="passage_executable_"]', function(e){
+        let _id = $(this).attr('id').split('_').at(-1);
+    });
+
     $(document).on('click', '.passage_tab_open_advanced', function(e){
         $('.passage_advanced').fadeToggle().css('display', 'inline-block');
     });
@@ -102,6 +108,7 @@ $(function(){
         });
     });
     $(document).on('click', '.add_stars', function(){
+        var thiz = $(this);
         var passage_id = $(this).attr('id').split('_').at(-1);
         var amount = $('#star_number_' + passage_id).val();
         $.ajax({
@@ -112,7 +119,7 @@ $(function(){
                 amount: amount
             },
             success: function(data){
-                alert(data);
+                thisPassage(thiz).replaceWith(data);
             }
         });
     });
