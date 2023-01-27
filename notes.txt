@@ -42,8 +42,8 @@ Review iframe 2 and 1 way communication
 
 TODO:
 Email *
-sourceList
 pagination
+permissions
 
 Passage Settings:
 Private: Only Users can add/edit/delete

@@ -30,6 +30,7 @@ const { v4 } = require('uuid');
 const writeFile = promisify(fs.writeFile);
 const readdir = promisify(fs.readdir);
 
+//pagination for home and profile
 const DOCS_PER_PAGE = 10; // Documents per Page Limit (Pagination)
 
 // Database Connection Setup
@@ -375,6 +376,30 @@ app.get('/get_bookmarks', async (req, res) => {
     }
     res.render('bookmarks', {bookmarks: bookmarks});
 });
+app.get('/leaderboard', async (req, res) => {
+    let users = await User.find();
+    res.render('leaderboard', {users: users, scripts: scripts});
+});
+app.post('/add_user', async (req, res) => {
+    let passageId = req.body.passageId;
+    let username = req.body.username;
+    let user = await User.findOne({username: username});
+    let passage = await Passage.findOne({_id: passageId});
+    passage.users.push(user._id);
+    passage.save();
+});
+app.post('/remove_user', async (req, res) => {
+    let passageId = req.body.passageId;
+    let user_id = req.body.user_id;
+    let passage = await Passage.findOne({_id: passageId});
+    passage.users.forEach(function(u, index){
+        if(u == user_id){
+            //remove user
+            passage.users.splice(index, 1);
+        }
+    });
+    passage.save();
+});
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
     // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -585,7 +610,7 @@ app.get('/logout', function(req, res) {
 //simply return new object list for client to add into html
 app.post('/paginate', function(req, res){
     let page = req.body.page;
-    let which = req.body.which; //chap or passage
+    let which = req.body.which; //home, profile, or leaderboard
     let search = req.body.search;
     //what category is the user looking at?
     let chapter = req.body.chapter;
@@ -605,14 +630,14 @@ app.post('/paginate', function(req, res){
         };
     }
     if(which == 'passage_load'){
-        Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'chapter', sort: [['_id', -1]]})
+        Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'users', sort: [['_id', -1]]})
         .then(function(passages){
             res.send(JSON.stringify(passages));
         }).then(function(err){
             if(err) console.log(err);
         });
     }
-    else if(which == 'chapter_load' || which == 'chapter_load_mobile'){
+    else if(which == 'user_load' ){
         Chapter.paginate(chapterFind, {page: page, limit: DOCS_PER_PAGE, sort: 'stars', select: 'title'})
         .then(function(chapters){
             res.send(JSON.stringify(chapters));
@@ -621,234 +646,11 @@ app.post('/paginate', function(req, res){
         });
     }
 });
-app.post('/add_to_queue', (req, res) =>{
-  var _id = req.body.passage.trim();
-  Passage.findOne({_id: _id}, function(err, passage){
-    //and add to queue
-    duplicatePassage(req, passage);
-    // console.log(ret.content);
-    // res.send(scripts.printPassage(ret)); //send the passage back
-  });
-});
-app.post('/add_from_queue', (req, res) =>{
-  var _id = req.body.passageID.trim();
-  var chapterID = req.body.chapterID.trim();
-  Chapter.findOne({_id: chapterID}, function(err, chapter){
-    Passage.findOne({_id: _id})
-    .populate('author')
-    .exec()
-    .then(function(passage){
-      //remove from authors queue
-      passage.author.queue = passage.author.queue.filter(e => e !== passage._id);
-      //no longer in queue
-      passage.queue = false;
-      //remove from old chapter (shouldn't be an old chapter)
-      // passage.chapter.passages = passage.chapter.passages.filter(e => e !== passage._id);
-      // passage.chapter.save();
-      //add to new chapter
-      chapter.passages.push(passage);
-      //change chapter location
-      passage.chapter = chapter;
-      //then save all
-      passage.author.save();
-      passage.save();
-      chapter.save();
-      res.send('Done');
-    });
-  });
-});
-app.post('/get_queue', (req, res) =>{
-  if(req.session.user){
-    var ret = '';
-    User.findOne({_id: req.session.user})
-    .select('queue')
-    .populate('queue')
-    .exec()
-    .then(function(user){
-      user.queue.forEach(function(q){
-        if(!q.deleted){
-          ret += scripts.printPassage(q);
-        }
-      });
-      res.send(ret);
-    });
-  }
-  else{
-    res.send('<span style="color:#000;">Must be logged in.</span>');
-  }
-});
-app.post(/\/create_queue_chapter\/?/, (req, res) => {
-    var user = req.session.user_id || null;
-    var passages = JSON.parse(req.body.passages);
-    chapterController.addChapter({
-        'title': req.body.title,
-        'author': user,
-        'callback': function(chapter){
-            for(var key in passages){
-                var parentPassage = passages[key].parentPassage || '';
-                //build metadata from separate arrays
-                var json = passages[key].metadata;
-                var canvas = json.canvas || false;
-                passageController.addPassage({
-                    'chapter': chapter._id,
-                    'content': passages[key].content,
-                    'author': user,
-                    // 'sourceAuthor': passage.user,
-                    // 'sourceChapter': passages[key].chapter,
-                    'canvas': canvas,
-                    'metadata': JSON.stringify(json),
-                    'callback': function(psg){
-                        // console.log(psg);
-                    },
-                    'parentPassage': parentPassage
-                });
-            }
-            res.send(scripts.printChapter(chapter));
-        }
-    });
-});
-//add passage or chapter
-app.post(/\/add_passage\/?/, (req, res) => {
-    var chapterID = req.body.chapterID;
-    var type = req.body.type;
-    var user = req.session.user || null;
-    var content = req.body.passage || '';
-    var parentPassage = req.body.parentPassage || '';
-    var property_key = req.body['property_key[]'] || req.body.property_key;
-    var property_value = req.body['property_value[]'] || req.body.property_value;
-    var dataURL = req.body.dataURL || false;
-    //build metadata from separate arrays
-    var metadata = generateMetadata(property_key, property_value);
-    var json = metadata.json;
-    var canvas = metadata.canvas;
-    var categories = req.body.tags;
-    var uploadTitle = '';
-    //image from Canvas
-    if(dataURL){
-        uploadTitle = v4();
-        var data = dataURL.replace(/^data:image\/\w+;base64,/, "");
-        var buf = new Buffer(data, 'base64');
-        fs.writeFile('./dist/uploads/'+uploadTitle, buf);
-    }
-    //express-fileupload
-    if (!req.files || Object.keys(req.files).length === 0) {
-        //no files uploaded
-        // console.log("No files uploaded.");
-    }
-    else{
-    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-      let fileToUpload = req.files.file;
-      let mimetype = req.files.file.mimetype;
-      uploadTitle = v4();
-      //first verify that mimetype is image
-      console.log(mimetype);
-      // Use the mv() method to place the file somewhere on your server
-      fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
-        if (err){
-            return res.status(500).send(err);
-        }
-      });
-    }
-    var passageCallback = function(data){
-        if(req.body.special && req.body.special == 'ppe_queue'){
-            res.send(scripts.printCanvas(data));
-        }
-        else{
-            res.send(scripts.printPassage(data, req.session.user));
-        }
-    };
-    var chapterCallback = function(data){
-        res.send(scripts.printChapter(data));
-    };
-    if(type == 'passage'){
-        passageController.addPassage({
-            'chapter': chapterID,
-            'content': content,
-            'author': user,
-            'canvas': canvas,
-            'metadata': JSON.stringify(json),
-            'callback': passageCallback,
-            'parentPassage': parentPassage,
-            'filename': uploadTitle,
-            'categories': categories
-        });
-    }
-    else if(type == 'chapter' && content != ''){
-        console.log(JSON.stringify(req.body));
-        chapterController.addChapter({
-            'title': content,
-            'author': user,
-            'callback': chapterCallback,
-            'categories': categories
-        });
-    }
-});
 
 app.post(/\/delete_passage\/?/, (req, res) => {
     var backURL=req.header('Referer') || '/';
     passageController.deletePassage(req, res, function(){
         res.send(backURL);
-    });
-});
-app.post(/\/delete_category\/?/, (req, res) => {
-    var chapterID = req.body._id;
-    //delete chapter
-    //in the future consider also deleting all passages within this chapter
-    Chapter.deleteOne({_id: chapterID.trim()}, function(err){
-        if(err){
-            console.log(err);
-        }
-        res.send('Deleted.');
-    });
-});
-app.post(/\/chapters\/?/, (req, res) => {
-    var backURL=req.header('Referer') || '/';
-    let title = req.body.search;
-    Chapter.find({title: new RegExp(''+title+'', "i")})
-    .select('title flagged')
-    .sort('stars')
-    .limit(DOCS_PER_PAGE)
-    .exec(function(err, chapters){
-        let html = '';
-        if(chapters){
-            chapters.forEach(function(f){
-                html += scripts.printChapter(f);
-            });
-        }
-        res.send(html);
-    });
-});
-//CHANGE TO GET REQUEST
-app.get(/\/passages\/?/, (req, res) => {
-    // res.header("Access-Control-Allow-Origin", "*");
-    // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    var backURL=req.header('Referer') || '/';
-    let title = req.body.search;
-    var tick = 0;
-    var temp = '';
-    Passage.find({
-        parent: undefined,
-        deleted: false,
-        visible: true,
-        flagged: false,
-        queue: false
-    })
-    .populate('chapter author')
-    .sort('stars')
-    .limit(DOCS_PER_PAGE)
-    .exec(function(err, passages){
-        let html = '';
-        if(passages){
-            passages.forEach(function(f){
-                temp = f.id[f.id.length-1];
-                if(temp == 'c'){
-                    tick = 1;
-                }
-                html += scripts.printPassage(f, tick);
-                tick = 0;
-            });
-        }
-        res.send(html);
     });
 });
 
@@ -899,28 +701,6 @@ app.post('/search/', (req, res) => {
         res.send(html);
     });
 });
-app.post('/search_category/', (req, res) => {
-    let title = req.body.title;
-    Passage.find({categories: new RegExp(''+title+'', "i") })
-    .sort('stars')
-    .limit(DOCS_PER_PAGE)
-    .exec(function(err, passages){
-        let html = '';
-        if(passages){
-            passages.forEach(function(p){
-                html += scripts.printPassage(p);
-            });
-        }
-        res.send(html);
-    });
-});
-app.post('/flag_passage', (req, res) => {
-    var _id = req.body._id.trim();
-    Passage.findOne({_id: _id}, function(err, passage){
-        passage.flagged = true;
-        passage.save();
-    });
-});
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
     var user = req.session.user;
@@ -937,28 +717,6 @@ app.post('/star_passage/', async (req, res) => {
         else{
             res.send("Not enough stars!");
         }
-    }
-});
-app.post('/star_chapter/', (req, res) => {
-    if(req.session && req.session.user){
-        var _id = req.body._id.trim();
-        var user = req.session.user;
-        Chapter.findOne({_id: _id})
-        .populate('author')
-        .exec(function(err, chapter){
-            if(user.starsGiven < user.stars * 2 && chapter.author._id != user._id){
-                user.starsGiven += 1;
-                chapter.stars += 1;
-                chapter.author.stars += 1;
-                chapter.save();
-                chapter.author.save();
-                user.save();
-                res.send('Done');
-            }
-            else{
-                res.send("You don't have enough stars to give!");
-            }
-        });
     }
 });
 
@@ -995,17 +753,6 @@ app.post('/update_passage/', async (req, res) => {
       passage.filename = uploadTitle;
     }
     await passage.save();
-    // var passage = await Passage.findOneAndUpdate({_id: _id}, {
-    //     html: formData.html,
-    //     css: formData.css,
-    //     javascript: formData.js,
-    //     title: formData.title,
-    //     content: formData.content,
-    //     tags: formData.tags,
-    //     filename: uploadTitle
-    // }, {
-    //     new: true
-    // });
     //give back updated passage
     res.render('passage', {passage: passage, sub: true});
 });
@@ -1034,41 +781,15 @@ app.get('/verify/:user_id/:token', function (req, res) {
         }
     });
 });
-//recordings
-app.get('/recordings', (req, res) => {
-  readdir(recordingFolder)
-    .then(messageFilenames => {
-      res.status(200).json({ messageFilenames });
-    })
-    .catch(err => {
-      console.log('Error reading message directory', err);
-      res.sendStatus(500);
-    });
-});
-
-app.post('/recordings', (req, res) => {
-  if (!req.body.recording) {
-    return res.status(400).json({ error: 'No req.body.message' });
-  }
-  const messageId = v4();
-  writeFile(recordingFolder + messageId, req.body.recording, 'base64')
-    .then(() => {
-        res.send(messageId);
-    })
-    .catch(err => {
-      console.log('Error writing message to file', err);
-      res.sendStatus(500);
-    });
-});
 
 /*
     ROUTERS FOR FILESTREAM
 */
-if(process.env.DOMAIN == 'localhost'){
-    app.post('/server_eval', function(req, res) {
-        eval(req.code);
-    });
-}
+// if(process.env.DOMAIN == 'localhost'){
+//     app.post('/server_eval', function(req, res) {
+//         eval(req.code);
+//     });
+// }
 // app.post('/fileStream', function(req, res) {
 //     var result = '';
 //     var dir = __dirname + '/';
@@ -1089,50 +810,50 @@ if(process.env.DOMAIN == 'localhost'){
 //       });
 //     });
 // });
-app.post('/file', function(req, res) {
-    var file = req.body.fileName;
-    if(req.body.dir[req.body.dir.length - 1] == '/'){
-        var dir = req.body.dir + file;
-    }
-    else{
-        var dir = req.body.dir + '/' + file;
-    }
-    var stat = fs.lstatSync(dir);
-    if(stat.isFile()){
-        fs.readFile(dir, {encoding: 'utf-8'}, function(err,data){
-                if (!err) {
-                    res.send({
-                        data: scripts.printFile(data, __dirname + '/' +file),
-                        type: 'file'
-                    });
-                } else {
-                    console.log(err);
-                }
-        });
-    }
-    else if (stat.isDirectory()){
-        fs.readdir(dir, (err, files) => {
-          var ret = '<div class="directory_list">';
-          ret += `<div>
-            <a class="link fileStreamChapter fileStreamCreate">Create</a>
-          </div>`;
-          var stat2;
-          files.forEach(function(file){
-            stat2 = fs.lstatSync(dir + '/' +file);
-            if(stat2.isDirectory()){
-                file += '/';
-            }
-            ret += scripts.printDir(file);
-          });
-          ret += '</div>';
-          res.send({
-            data: ret,
-            type: 'dir',
-            dir: dir
-          });
-        });
-    }
-});
+// app.post('/file', function(req, res) {
+//     var file = req.body.fileName;
+//     if(req.body.dir[req.body.dir.length - 1] == '/'){
+//         var dir = req.body.dir + file;
+//     }
+//     else{
+//         var dir = req.body.dir + '/' + file;
+//     }
+//     var stat = fs.lstatSync(dir);
+//     if(stat.isFile()){
+//         fs.readFile(dir, {encoding: 'utf-8'}, function(err,data){
+//                 if (!err) {
+//                     res.send({
+//                         data: scripts.printFile(data, __dirname + '/' +file),
+//                         type: 'file'
+//                     });
+//                 } else {
+//                     console.log(err);
+//                 }
+//         });
+//     }
+//     else if (stat.isDirectory()){
+//         fs.readdir(dir, (err, files) => {
+//           var ret = '<div class="directory_list">';
+//           ret += `<div>
+//             <a class="link fileStreamChapter fileStreamCreate">Create</a>
+//           </div>`;
+//           var stat2;
+//           files.forEach(function(file){
+//             stat2 = fs.lstatSync(dir + '/' +file);
+//             if(stat2.isDirectory()){
+//                 file += '/';
+//             }
+//             ret += scripts.printDir(file);
+//           });
+//           ret += '</div>';
+//           res.send({
+//             data: ret,
+//             type: 'dir',
+//             dir: dir
+//           });
+//         });
+//     }
+// });
 // app.post('/run_file', function(req, res) {
 //     var file = req.body.file;
 //     var ext = file.split('.')[file.split('.').length - 1];
