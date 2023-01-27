@@ -81,8 +81,16 @@ module.exports = {
             html: passage.html,
             css: passage.css,
             javascript: passage.javascript,
-            editor: passage.editor
+            filename: passage.filename
         });
+        //Add copy to passage it was duplicated into
+        let parent = await Passage.findOne({_id: req.body.parent});
+        if(parent != "root"){
+            copy.parent = parent;
+            parent.passages.push(copy);
+            copy.save();
+            parent.save();
+        }
         //copy children
         async function copyPassagesRecursively(passage, copy){
             let copySubPassages = [];
@@ -91,13 +99,14 @@ module.exports = {
                 sourceList.push(p._id);
                 let pcopy = await Passage.create({
                     users: user,
+                    parent: copy,
                     sourceList: sourceList,
                     title: p.title,
                     content: p.content,
                     html: p.html,
                     css: p.css,
                     javascript: p.javascript,
-                    editor: p.editor
+                    filename: p.filename
                 });
                 copy.passages.push(pcopy._id);
                 await copy.save();
