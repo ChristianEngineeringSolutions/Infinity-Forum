@@ -295,7 +295,7 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let passages = await Passage.find({users: profile}).populate('users');
+    let passages = await Passage.find({users: profile}).populate('users sourceList');
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -324,7 +324,7 @@ app.get('/', async (req, res) => {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    let passages = await Passage.find().populate('users');
+    let passages = await Passage.find().populate('users sourceList');
     let bookmarks = [];
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
@@ -342,7 +342,7 @@ app.get('/search/:query', async (req, res) => {
     let results = await Passage.find({title: {
         $regex: req.params.query,
         $options: 'i'
-    }}).populate('users');
+    }}).populate('users sourceList');
     res.render("passages", {
         passages: results
     });
@@ -446,8 +446,8 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
-    var passage = await Passage.findOne({_id: passage_id}).populate('users');
-    res.render("index", {passageTitle: decodeURI(passageTitle), scripts: scripts, sub: false, passage: passage, passages: false});
+    var passage = await Passage.findOne({_id: passage_id}).populate('users sourceList');
+    res.render("index", {passageTitle: decodeURI(passageTitle), Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/donate', async function(req, res){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);

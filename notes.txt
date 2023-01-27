@@ -41,11 +41,9 @@ Review iframe 2 and 1 way communication
 
 
 TODO:
-Editors
 Email *
 sourceList
-Star midware
-
+pagination
 
 Passage Settings:
 Private: Only Users can add/edit/delete

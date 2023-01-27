@@ -69,9 +69,10 @@ $(function(){
             url: '/copy_passage',
             data: {
                 _id: _id,
+                parent: $('#chief_passage_id').val()
             },
             success: function(data){
-                // alert(data);
+                $('#passage_wrapper').prepend(data);
                 flashIcon($('#passage_copy_' + _id), 'green');
             }
         });
