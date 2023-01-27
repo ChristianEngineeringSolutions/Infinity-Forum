@@ -75,7 +75,7 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    flagged: {
+    admin: {
         type: Boolean,
         default: false
     }, //content warning
@@ -89,10 +89,12 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // allow same origin iframes
     personal_cross_origin: {
         type: Boolean,
         default: false
     },
+    //load code outside of iframe
     personal_same_origin: {
         type: Boolean,
         default: false
