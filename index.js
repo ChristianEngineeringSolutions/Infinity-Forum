@@ -385,20 +385,79 @@ app.post('/add_user', async (req, res) => {
     let username = req.body.username;
     let user = await User.findOne({username: username});
     let passage = await Passage.findOne({_id: passageId});
-    passage.users.push(user._id);
-    passage.save();
+    if(user && req.session.user && req.session.user._id == passage.users[0]._id){
+        passage.users.push(user._id);
+        passage.save();
+        res.send("User Added");
+    }
+    else{
+        res.send("User not found.");
+    }
+});
+app.post('/passage_setting', async (req, res) => {
+    let _id = req.body._id;
+    let setting = req.body.setting;
+    let user = await User.find({_id: req.session.user._id});
+    let passage = await Passage.findOne({_id: _id});
+    switch(setting){
+        case 'private':
+            if(passage.users[0] == user._id){
+                passage.public = false;
+            }
+            break;
+        case 'public':
+            if(passage.users[0] == user._id){
+                passage.public = true;
+            }
+            break;
+        case 'cross-origin-allowed':
+            if(passage.users[0] == user._id){
+                passage.personal_cross_origin = true;
+            }
+            break;
+        case 'same-origin':
+            if(passage.users[0] == user._id){
+                passage.personal_same_origin = true;
+            }
+            break;
+        case 'request-public-daemon':
+            if(passage.users[0] == user._id){
+                passage.public_daemon = 1;
+            }
+            break;
+        case 'admin-cross-origin':
+            if(user.admin){
+                passage.admin_cross_origin_all = true;
+            }
+            break;
+        case 'admin-same-origin':
+            if(user.admin){
+                passage.admin_same_origin = true;
+            }
+            break;
+        case 'admin-make-public-daemon':
+            if(user.admin){
+                passage.public_daemon = 2;
+            }
+            break;
+    }
+    await passage.save();
+    res.send("Done")
 });
 app.post('/remove_user', async (req, res) => {
     let passageId = req.body.passageId;
     let user_id = req.body.user_id;
     let passage = await Passage.findOne({_id: passageId});
-    passage.users.forEach(function(u, index){
-        if(u == user_id){
-            //remove user
-            passage.users.splice(index, 1);
-        }
-    });
-    passage.save();
+    if(req.session.user && req.session.user._id == passage.users[0]._id){
+        passage.users.forEach(function(u, index){
+            if(u == user_id){
+                //remove user
+                passage.users.splice(index, 1);
+            }
+        });
+        await passage.save();
+        res.send("Done.");
+    }
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
@@ -426,9 +485,9 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         let amount = payload.data.object.amount;
         //Save recording passage in database and give user correct number of stars
         //get user from email
-        let user = await User.find({_id: request.session.user._id});
+        let user = await User.find({_id: payload.data.object.email});
         let passage = await Passage.create({
-            users: [request.session.user._id],
+            users: [user._id],
             title: 'Donation',
             content: amount,
             systemRecord: true

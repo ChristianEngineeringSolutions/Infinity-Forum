@@ -92,6 +92,59 @@ $(function(){
             }
         });
     });
+    $(document).on('keyup', '.passage_add_user', function(e){
+        if(e.keyCode == 13){
+            var thiz = $(this);
+            $.ajax({
+                url: '/add_user',
+                type: 'POST',
+                data: {
+                    passageId: thiz.attr('id').split('_').at(-1),
+                    username: thiz.val()
+                },
+                success: function (data) {
+                    console.log(data);
+                }
+            });
+        }
+    });
+    $(document).on('click', '.passage_remove_user', function(e){
+        $.ajax({
+            url: '/remove_user',
+            type: 'POST',
+            data: {
+                passageId: $(this).attr('id').split('_').at(-1),
+                username: thiz.data('userId')
+            },
+            success: function (data) {
+                console.log(data);
+            }
+        });
+    });
+    $(document).on('click', '.passage_setting', function(){
+        let _id = $(this).attr('id').split('_').at(-1);
+        let setting = $(this).data('setting');
+        var thiz = $(this);
+        $.ajax({
+            url: '/passage_setting',
+            type: 'POST',
+            data: {
+                _id: _id,
+                setting: setting
+            },
+            success: function (data) {
+                if(thiz.hasClass('green')){
+                    thiz.removeClass('green');
+                    thiz.addClass('red');
+                }
+                else if(thiz.hasClass('red')){
+                    thiz.removeClass('red');
+                    thiz.addClass('green');
+                }
+                // alert(data);
+            }
+        });
+    });
     $(document).on('submit', '[id^=passage_form_]', function(e){
         e.preventDefault();
         var thiz = $(this);

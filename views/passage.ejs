@@ -12,7 +12,7 @@
         <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
         <%}%>
         <!-- Show them settings only if they made the passage -->
-        <%if(passage.users != null){%>
+        <%if(passage.users != null && passage.users[0]){%>
             <%if(passage.users && user && passage.users[0]._id == user._id){%>
                 <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
                 <%}%>
@@ -26,9 +26,11 @@
         <% if(sub === true){%>
             <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
         <%}%>
+        <%if(passage.users != null && passage.users[0]){%>
         <%if(passage.users && user && passage.users[0]._id == user._id){%>
             <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
             <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+        <%}%>
         <%}%>
     </ul>
     <ul class="passage_users">
@@ -58,7 +60,11 @@
     <%}%>
     <div id="passage_iframe" class="<%=hide%>" id="result_div">
         <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
-        <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+        <%if(passage.personal_cross_origin){%>
+            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+        <%}else{%>
+            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+        <%}%>
     </div>
     <!-- <ul class="passage_tabs">
         <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
