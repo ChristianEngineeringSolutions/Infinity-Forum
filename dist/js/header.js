@@ -17,6 +17,9 @@ $(function(){
     $(document).on('click', '#logout', function(){
         window.location.href = '/logout';
     });
+    $(document).on('click', '#leaderboard_link', function(){
+        window.location.href = '/leaderboard';
+    });
     // $('#bookmarks_icon').click();
     // localStorage.clear();
     // $('#tab_list').sortable();

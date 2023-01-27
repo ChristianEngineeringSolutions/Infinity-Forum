@@ -1,15 +1,16 @@
 Users:
-<%if(passage.users){passage.users.forEach(function(user) { %>
-    <%=user.username%>,
+<%if(passage.users){passage.users.forEach(function(user, i) { %>
+    <%=user.username%>
+    <%if(i !== 0){%>
+        <span data-userId="<%=user._id%>"id="delete_passage_user_<%=passage._id%>">X</span>
+    <%}%>
+    ,
 <%});}else{%>
 Anonymous
 <%}%>
 <br>
 Add User:
 <input type="">
-<br>
-Remove User:
-<input type="text">
 <br>
 Toggle Green/Red for Active/Inactive
 <br>
