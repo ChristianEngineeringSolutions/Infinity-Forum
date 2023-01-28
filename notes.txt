@@ -43,7 +43,8 @@ Review iframe 2 and 1 way communication
 TODO:
 Email *
 pagination
-permissions
+Update passage order
+Move passages
 
 Passage Settings:
 Private: Only Users can add/edit/delete
