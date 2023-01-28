@@ -326,6 +326,7 @@ app.get('/', async (req, res) => {
     let addChapterAllowed = true;
     var user = req.session.user || null;
     let passages = await Passage.find().populate('users sourceList');
+    let passageUsers = [];
     let bookmarks = [];
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
@@ -335,7 +336,7 @@ app.get('/', async (req, res) => {
         scripts: scripts, 
         passages: passages, 
         passage: {id:'root'},
-        bookmarks: bookmarks
+        bookmarks: bookmarks,
     });
 });
 //Search
@@ -531,7 +532,11 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id}).populate('users sourceList');
-    res.render("index", {passageTitle: decodeURI(passageTitle), Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
+    let passageUsers = [];
+    passage.users.forEach(function(u){
+        passageUsers.push(u._id.toString());
+    });
+    res.render("index", {passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/donate', async function(req, res){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -781,7 +786,9 @@ app.post('/star_passage/', async (req, res) => {
 
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
-    var formData = req.body;
+    var formData = req.body.formData;
+    var passageOrder = JSON.parse(req.body.passageOrder);
+    let trimmedPassageOrder = passageOrder.map(str => str.trim());
     var passage = await Passage.findOne({_id: _id});
     passage.html = formData.html;
     passage.css = formData.css;
@@ -789,6 +796,7 @@ app.post('/update_passage/', async (req, res) => {
     passage.title = formData.title;
     passage.content = formData.content;
     passage.tags = formData.tags;
+    passage.passages = trimmedPassageOrder;
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
@@ -812,6 +820,8 @@ app.post('/update_passage/', async (req, res) => {
       passage.filename = uploadTitle;
     }
     await passage.save();
+    //update passage order
+    if(passage.passages)
     //give back updated passage
     res.render('passage', {passage: passage, sub: true});
 });

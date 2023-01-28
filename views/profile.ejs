@@ -19,7 +19,9 @@
   <div id="profile_stars"><%=profile.stars%> Star(s)</div>
 </div>
 <input id="search"placeholder="Search..." type="" name="" autocomplete="off">
-  <button id="add_passage_button">+</button>
+  <%if(user && profile._id == user._id){%>
+    <button id="add_passage_button">+</button>
+  <%}%>
   <br>
   <div id="passage_wrapper">
       <!-- Show passage list or search list -->
