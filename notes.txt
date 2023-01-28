@@ -43,7 +43,6 @@ Review iframe 2 and 1 way communication
 TODO:
 Email *
 pagination
-Update passage order
 Move passages
 
 Passage Settings:
@@ -52,3 +51,12 @@ Add user to passage
 remove user from passage
 Default: Private
 Public: Everyone can add or edit/delete their own passages.
+
+
+Main system record true
+content:
+
+{
+    stars: x,
+    usd: x
+}

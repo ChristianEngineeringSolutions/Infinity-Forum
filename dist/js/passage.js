@@ -149,17 +149,10 @@ $(function(){
         e.preventDefault();
         var thiz = $(this);
         var formData = new FormData(this);
-        var orderList = $('#sub_passages').sortable('toArray');
-        orderList.forEach(function(p, i){
-            orderList[i] = orderList[i].split('_')[1];
-        });
         $.ajax({
             url: '/update_passage',
             type: 'POST',
-            data: {
-                formData: formData,
-                passageOrder: JSON.stringify(orderList)
-            },
+            data: formData,
             success: function (data) {
                 thisPassage(thiz).replaceWith(data);
             },
@@ -192,6 +185,28 @@ $(function(){
         var _id = getPassageId(this);
         flashIcon($('#passage_update_' + _id), 'green');
         $('#passage_form_' + _id).submit();
+        //if chapter passage in view,
+        //update passage order according to sortable
+        //pending ....
+        // ....
+        
+        var orderList = [];
+        if($('#sub_passages').length){
+            orderList = $('#sub_passages').sortable('toArray');
+            orderList.forEach(function(p, i){
+                orderList[i] = orderList[i].split('_')[1];
+            });
+        }
+        $.ajax({
+            url: '/update_passage_order',
+            type: 'POST',
+            data: {
+                passageOrder: JSON.stringify(orderList)
+            },
+            success: function (data) {
+                alert(data);
+            }
+        });
     });
     $(document).on('click', '[id^=passage_flag_]', function(){
         var _id = getPassageId(this);

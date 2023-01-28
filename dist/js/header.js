@@ -116,17 +116,36 @@ $(function(){
     $(document).on('click', '#help_link', function(){
         
     });
+    $('.passage').draggable();
     $('.tab').droppable({
-        drop: (event) => {
+        drop: (event, ui) => {
             // alert('dropped');
             $('#' + event.target.id).css('background', 'green');
             setTimeout(function(){
                 $('#' + event.target.id).css('background', 'gold');
             }, 300);    
-            // $.ajax({
-            //     type: 'post',
-            //     url: 'copy_passage',
-            // });
+            let destination_id = $('#' + event.target.id).data('href').split('/').at(-1);
+            let passage_id = ui.draggable.attr('id').split('_').at(-1);
+            let pdom = ui.draggable;
+            $.ajax({
+                type: 'post',
+                url: '/move_passage',
+                data: {
+                    destination_id: destination_id,
+                    passage_id: passage_id
+                },
+                success: function(data){
+                    let pdom = ui.draggable;
+                    if(pdom.parent.attr('id') == 'sub_passages'){
+                        pdom.remove();
+                    }
+                    $('#' + event.target.id).css('background', 'green');
+                    setTimeout(function(){
+                        $('#' + event.target.id).css('background', 'gold');
+                    }, 500);
+                }
+            });
+            ui.draggable.draggable('option', 'revert', true);
         },
         over: (event, ui) => {
             $('#' + event.target.id).css('background', 'yellow');

@@ -460,6 +460,12 @@ app.post('/remove_user', async (req, res) => {
         res.send("Done.");
     }
 });
+app.post('/move_passage', async (req, res) => {
+    let passage = await Passage.findOne({_id: req.body.passage_id});
+    let destination = await Passage.findOne({_id: req.body.destination_id});
+    await passageController.movePassage(passage, destination);
+    res.send("Done");
+});
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
     // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -533,9 +539,11 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id}).populate('users sourceList');
     let passageUsers = [];
-    passage.users.forEach(function(u){
-        passageUsers.push(u._id.toString());
-    });
+    if(passage.users != null){
+        passage.users.forEach(function(u){
+            passageUsers.push(u._id.toString());
+        });
+    }
     res.render("index", {passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/donate', async function(req, res){
@@ -783,12 +791,18 @@ app.post('/star_passage/', async (req, res) => {
         }
     }
 });
-
+app.post('/update_passage_order/', async (req, res) => {
+    var passageOrder = [];
+    if(typeof req.body.passageOrder != 'undefined'){
+        var passageOrder = JSON.parse(req.body.passageOrder);
+        let trimmedPassageOrder = passageOrder.map(str => str.trim());
+    }
+    //give back updated passage
+    res.render('Done');
+});
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
-    var formData = req.body.formData;
-    var passageOrder = JSON.parse(req.body.passageOrder);
-    let trimmedPassageOrder = passageOrder.map(str => str.trim());
+    var formData = req.body;
     var passage = await Passage.findOne({_id: _id});
     passage.html = formData.html;
     passage.css = formData.css;
@@ -796,7 +810,6 @@ app.post('/update_passage/', async (req, res) => {
     passage.title = formData.title;
     passage.content = formData.content;
     passage.tags = formData.tags;
-    passage.passages = trimmedPassageOrder;
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
@@ -820,8 +833,6 @@ app.post('/update_passage/', async (req, res) => {
       passage.filename = uploadTitle;
     }
     await passage.save();
-    //update passage order
-    if(passage.passages)
     //give back updated passage
     res.render('passage', {passage: passage, sub: true});
 });

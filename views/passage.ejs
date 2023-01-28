@@ -1,4 +1,4 @@
-<div id="passage_<%=passage.id%>" class="passage">
+<div data-sub="<%=sub%>"id="passage_<%=passage.id%>" class="passage">
     <div id="passage_settings_modal_<%=passage._id%>" class="modal">
         <%- include('passage_settings', {passage: passage}) %>
     </div>
@@ -78,8 +78,8 @@
  </div>
  <%if(passage.passages && sub === false){%>
     <div id="sub_passages">
-    <%passage.passages.forEach(function(sub_passage) { %>
-        <%- include('passage', {passage: sub_passage, sub: true}) %>
-    <%}); %>
-</div>
+        <%passage.passages.forEach(function(sub_passage) { %>
+            <%- include('passage', {passage: sub_passage, sub: true}) %>
+        <%}); %>
+    </div>
 <%}%> 

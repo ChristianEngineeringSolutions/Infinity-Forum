@@ -53,6 +53,13 @@ module.exports = {
     },
     //move passage from one passage to another
     movePassage: async function(movingPassage, destinationPassage){
+        let oldParent = await Passage.findOne({_id: movingPassage.parent._id});
+        oldParent.passages.forEach(function(p, i){
+            if(p._id == movingPassage._id){
+                oldParent.passages.splice(i, 1);
+            }
+        });
+        await oldParent.save();
         movingPassage.parent = destinationPassage._id;
         destinationPassage.passages.push(movingPassage._id);
         await movingPassage.save();
