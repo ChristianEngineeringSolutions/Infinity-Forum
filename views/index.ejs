@@ -3,6 +3,7 @@
 <%- include('header') %>
             <%- include('ppe') %>
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
+            <input type="hidden" value="false", id="is_profile"/>
             <div id="page_title"><%= passageTitle || "Christian Engineering Solutions"%></div>
             <input id="search"placeholder="Search..." type="" name="" autocomplete="off">
             <%if(passage.id == 'root' || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
@@ -21,5 +22,5 @@
             <div id="passage_form_wrapper"></div>
     <br>
         </div>
-        <input type="hidden"id="custom_pairs" name="">
+        <div class="passage"id="view_more">View More</div>
         <%- include('footer') %>

@@ -340,13 +340,14 @@ app.get('/', async (req, res) => {
     });
 });
 //Search
-app.get('/search/:query', async (req, res) => {
+app.post('/search/', async (req, res) => {
     let results = await Passage.find({title: {
-        $regex: req.params.query,
+        $regex: req.body.search,
         $options: 'i'
     }}).populate('users sourceList');
     res.render("passages", {
-        passages: results
+        passages: results,
+        sub: true
     });
 });
 app.post('/bookmark_passage', async (req, res) => {
@@ -680,42 +681,29 @@ app.get('/logout', function(req, res) {
     res.redirect('/');
 });
 //simply return new object list for client to add into html
-app.post('/paginate', function(req, res){
+app.post('/paginate', async function(req, res){
     let page = req.body.page;
-    let which = req.body.which; //home, profile, or leaderboard
+    let profile = req.body.profile; //home, profile, or leaderboard
     let search = req.body.search;
-    //what category is the user looking at?
-    let chapter = req.body.chapter;
-    let find = {chapter: chapter.trim()};
-    if(chapter.trim() == 'Sasame'){
-        find = {
-            deleted: false,
-            queue: false
-        };
-    }
-    if(search == ''){
-        var chapterFind = {};
-    }
-    else{
-        var chapterFind = {
+    if(profile != 'leaderboard'){
+        let find = {
             title: new RegExp(''+search+'', "i")
         };
-    }
-    if(which == 'passage_load'){
-        Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'users', sort: [['_id', -1]]})
-        .then(function(passages){
-            res.send(JSON.stringify(passages));
-        }).then(function(err){
-            if(err) console.log(err);
+        if(profile != 'false'){
+            find.author = profile;
+        }
+        let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'users'});
+        res.render('passages', {
+            passages: passages,
+            sub: true
         });
     }
-    else if(which == 'user_load' ){
-        Chapter.paginate(chapterFind, {page: page, limit: DOCS_PER_PAGE, sort: 'stars', select: 'title'})
-        .then(function(chapters){
-            res.send(JSON.stringify(chapters));
-        }).then(function(err){
-            if(err) console.log(err);
-        });
+    else{
+        let find = {
+            username: new RegExp(''+search+'', "i")
+        };
+        let users = await User.paginate(find, {page: page, limit: DOCS_PER_PAGE});
+        res.render('leaderboard', {users: users});
     }
 });
 
@@ -757,22 +745,6 @@ app.post('/create_passage/', async (req, res) => {
     }
     res.render('passage', {passage: passage, sub: true});
 });
-app.post('/search/', (req, res) => {
-    let title = req.body.title;
-    Chapter.find({title: new RegExp(''+title+'', "i")})
-    .select('title flagged')
-    .sort('stars')
-    .limit(DOCS_PER_PAGE)
-    .exec(function(err, chapters){
-        let html = '';
-        if(chapters){
-            chapters.forEach(function(f){
-                html += scripts.printChapter(f);
-            });
-        }
-        res.send(html);
-    });
-});
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
     var user = req.session.user;
@@ -792,13 +764,18 @@ app.post('/star_passage/', async (req, res) => {
     }
 });
 app.post('/update_passage_order/', async (req, res) => {
+    let passage = await Passage.findOne({_id: req.body._id});
     var passageOrder = [];
     if(typeof req.body.passageOrder != 'undefined'){
         var passageOrder = JSON.parse(req.body.passageOrder);
         let trimmedPassageOrder = passageOrder.map(str => str.trim());
+        console.log(passage.passages);
+        passage.passages = trimmedPassageOrder;
+        console.log(passage.passages);
+        await passage.save();
     }
     //give back updated passage
-    res.render('Done');
+    res.send('Done');
 });
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;

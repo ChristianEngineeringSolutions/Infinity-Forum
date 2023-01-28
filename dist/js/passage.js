@@ -189,35 +189,42 @@ $(function(){
         //update passage order according to sortable
         //pending ....
         // ....
-        
-        var orderList = [];
-        if($('#sub_passages').length){
-            orderList = $('#sub_passages').sortable('toArray');
-            orderList.forEach(function(p, i){
-                orderList[i] = orderList[i].split('_')[1];
+        if($('#chief_passage_id').val() == _id){
+            var orderList = [];
+            if($('#sub_passages').length){
+                orderList = $('#sub_passages').sortable('toArray');
+                orderList.forEach(function(p, i){
+                    orderList[i] = orderList[i].split('_')[1];
+                });
+            }
+            $.ajax({
+                url: '/update_passage_order',
+                type: 'POST',
+                data: {
+                    _id: _id,
+                    passageOrder: JSON.stringify(orderList)
+                },
+                success: function (data) {
+                    alert(data);
+                }
             });
         }
-        $.ajax({
-            url: '/update_passage_order',
-            type: 'POST',
-            data: {
-                passageOrder: JSON.stringify(orderList)
-            },
-            success: function (data) {
-                alert(data);
-            }
-        });
     });
-    $(document).on('click', '[id^=passage_flag_]', function(){
-        var _id = getPassageId(this);
+    //For Home, Search, and Profile
+    $(document).on('click', '#view_more', function(){
+        //check if home, search, or profile
+        var isProfile = $('#is_profile').val();
         $.ajax({
             type: 'post',
-            url: '/flag_passage',
+            url: '/paginate',
             data: {
-                _id: _id
+                page: page,
+                profile: isProfile,
+                search: search
             },
             success: function(data){
-                
+                page += 1;
+                $('#passage_wrapper').append(data);
             }
         });
     });

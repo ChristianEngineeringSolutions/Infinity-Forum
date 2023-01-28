@@ -8,6 +8,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     //author is first user
     users: [{
         type: mongoose.Schema.Types.ObjectId,

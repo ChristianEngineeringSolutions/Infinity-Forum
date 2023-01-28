@@ -6,7 +6,7 @@
 <div id="profile_modal" class="modal">
     <%- include('settings_form', {profile: profile}) %>
 </div>
-<input type="hidden" value="true", id="is_profile"/>
+<input type="hidden" value="<%=profile._id%>", id="is_profile"/>
 <div id="profile_header">
   <div>
     <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
@@ -32,6 +32,7 @@
           <%- include('passage', {passage: passage, sub: sub}) %>
       <%} %>
   </div>
+  <div class="passage"id="view_more">View More</div>
   <div id="passage_form_wrapper"></div>
 <script src="/js/profile.js"></script>
 <%- include('footer') %>

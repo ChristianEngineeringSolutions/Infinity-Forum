@@ -4,6 +4,8 @@ var sessionStorageQueue = false;
 
 var Sasame = true;
 
+var page = 1;
+
 if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
     //so only in chapters
     Sasame = false;
@@ -41,18 +43,18 @@ function isMobile(){
     }
   } );
 //search
-$('[id^="chapter_search_"]').on('keypress', function(e){
-    $('#search_val').val($(this).val());
+$('#search').on('keypress', function(e){
+    var thiz = $(this);
     if(e.which == 13){
         $.ajax({
             type: 'post',
             url: '/search/',
             data: {
-                title: $(this).val()
+                search: thiz.val()
             },
             success: function(data){
-                $('.category').not('#chapter_load').not('#chapter_load_mobile').remove();
-                $('#categories').append(data);
+                $('#passage_wrapper').append(data);
+                page = 1;
             }
         });
 
