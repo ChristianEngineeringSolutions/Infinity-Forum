@@ -1,6 +1,6 @@
 "use strict"
 $(function(){
-    $('#passage_wrapper').sortable({
+    $('#sub_passages').sortable({
         handle: '.passage_options'
     });
     //sub passages are only hidden for index and search
@@ -149,10 +149,17 @@ $(function(){
         e.preventDefault();
         var thiz = $(this);
         var formData = new FormData(this);
+        var orderList = $('#sub_passages').sortable('toArray');
+        orderList.forEach(function(p, i){
+            orderList[i] = orderList[i].split('_')[1];
+        });
         $.ajax({
             url: '/update_passage',
             type: 'POST',
-            data: formData,
+            data: {
+                formData: formData,
+                passageOrder: JSON.stringify(orderList)
+            },
             success: function (data) {
                 thisPassage(thiz).replaceWith(data);
             },
@@ -185,55 +192,6 @@ $(function(){
         var _id = getPassageId(this);
         flashIcon($('#passage_update_' + _id), 'green');
         $('#passage_form_' + _id).submit();
-        // var form = thisPassage(this).children('.passage_form');
-        // var formData = form.serializeArray();
-        // var formDataForFile = new FormData();
-        // formDataForFile.append('file', $('#passage_file_' + _id)[0].files[0]);
-        // var properData = {};
-        // //make array object
-        // formData.forEach((tup)=>{
-        //     properData[tup['name']] = tup['value'];
-        // });
-        // var thiz = $(this);
-        // $.ajax({
-        //     type: 'post',
-        //     url: '/update_passage',
-        //     data: {
-        //         _id: _id,
-        //         formData: properData,
-        //         formDataForFile: formDataForFile
-        //     },
-        //     processData: false,
-        //     contentType: false,
-        //     success: function(data){
-        //         thisPassage(thiz).replaceWith(data);
-        //         flashIcon($('#passage_update_' + _id), 'green');
-        //     }
-        // });
-        // var content = $(this).parent().siblings('.passage_content');
-        // var text;
-        // if(content.prop('tagName') == 'TEXTAREA'){
-        //     editor = content.next('.CodeMirror').get(0).CodeMirror;
-        //     text = editor.getValue();
-        // }
-        // else if(content.children('.ql-editor').length){
-        //     text = content.children('.ql-editor').html();
-        // }
-        // else{
-        //     text = content.text();
-        // }
-        // var thiz = $(this);
-        // $.ajax({
-        //     type: 'post',
-        //     url: '/update_passage_content',
-        //     data: {
-        //         _id: _id,
-        //         content: text
-        //     },
-        //     success: function(data){
-        //         flashIcon(thiz, 'gold');
-        //     }
-        // });
     });
     $(document).on('click', '[id^=passage_flag_]', function(){
         var _id = getPassageId(this);
