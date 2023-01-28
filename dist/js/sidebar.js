@@ -24,4 +24,7 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '#side_panel_close', function(){
+        $('#side_panel').hide();
+    });
 });

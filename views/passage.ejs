@@ -60,7 +60,7 @@
     <%}%>
     <div id="passage_iframe" class="<%=hide%>" id="result_div">
         <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
-        <%if(passage.personal_cross_origin){%>
+        <%if(passage.personal_cross_origin && user._id == passage.users[0]._id){%>
             <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
         <%}else{%>
             <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
@@ -75,12 +75,11 @@
     <ul class="passage_tabs">
         <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Executable</li>
     </ul>
-    <!-- <div class="sub_passages"> -->
-       
-    <!-- </div> -->
  </div>
  <%if(passage.passages && sub === false){%>
+    <div id="sub_passages">
     <%passage.passages.forEach(function(sub_passage) { %>
         <%- include('passage', {passage: sub_passage, sub: true}) %>
     <%}); %>
+</div>
 <%}%> 
