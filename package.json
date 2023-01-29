@@ -2,9 +2,9 @@
   "name": "ChristianEngineeringSolutions",
   "version": "1.0.0",
   "description": "Christian Engineering Solutions",
-  "main": "index.js",
+  "main": "sasame.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "dev": "nodemon sasame.js"
   },
   "author": "Uriah Sanders",
   "license": "ISC",
