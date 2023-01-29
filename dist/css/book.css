@@ -1,6 +1,21 @@
 body{
     /*background: #000;*/
 }
+.basic_link{
+    text-decoration: none;
+    color: inherit;
+}
+#page_title{
+    margin-top: 50px;
+    font-size: 2.15em;
+    margin-top: 100px;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 25px;
+    /* color: yellow; */
+    font-weight: bold;
+}
 #search{
     width: 88%;
     padding: 10px;
@@ -8,7 +23,7 @@ body{
     margin-bottom: 10px;
     padding-left: 0px;
     padding-right: 0px;
-    margin-top: 80px;
+    /* margin-top: 80px; */
     display: block;
     padding: 15px;
 }
@@ -58,6 +73,7 @@ body{
 /* Control Panel */
 #control_panel{
     color: #353535;
+    background: #fff;
 }
 #main_header{
     font-size: 1.5em;
@@ -85,54 +101,6 @@ body{
     /*width: 30%;*/
     /*padding: 20px;*/
     padding-top: 0px;
-}
-#control_nav{
-    padding-top: 15px;
-    background: gold;
-    background: gold;
-    color: #000;
-    height: 60px;
-    border-top: 2px solid #353535;
-    border-bottom: 2px solid #353535;
-    font-weight: bolder;
-    position: fixed;
-    width: 100%;
-    z-index: 200;
-    padding-bottom: 20px;
-}
-#tab_list{
-    list-style-type: none;
-}
-.tab_window{
-    width: 100%; 
-    height: 100%;
-}
-.tab{
-    display: inline;
-    padding: 10px;
-    border: 1px solid black;
-    cursor: pointer;
-    background: #fff;
-    font-weight: bold;
-}
-.tab:hover{
-    font-weight: bolder;
-    border: 2px solid black;
-    /* color: red; */
-}
-#tab_panel{
-    /* padding-top: 15px; */
-    /* background: gold; */
-    color: #000;
-    height: 60px;
-    /* border-top: 2px solid #353535;
-    border-bottom: 2px solid #353535; */
-    font-weight: bolder;
-    position: fixed;
-    width: 100%;
-    z-index: 30000000;
-    margin-bottom: 20px;
-    text-align: center;
 }
 .control_button{
     padding: 5px;
@@ -243,7 +211,7 @@ body{
 #side_panel{
     display: none;
     /*border-left: 1px solid black;*/
-    border-left: 2px solid #353535;
+    border-left: 5px solid #000;
 }
 #side_panel_close{
     /*display: none;*/
@@ -286,7 +254,7 @@ body{
 #side_panel, #side_panel_inner{
     float: right;
     padding: 10px;
-    z-index: 2;
+    z-index: 9999999999;
     width: 50%;
     background: gold;
     color: #000;
@@ -301,6 +269,8 @@ body{
     top: 0px;
     overflow-y: scroll;
     padding-top: 30px;
+    border: 2px solid black;
+    border-left: 5px solid black;
 }
 .category{
     /* border-bottom: 1px dotted grey; */
@@ -328,9 +298,6 @@ body{
 
 .help_modal{
     font-size: 1.3em;
-}
-.help_read_more{
-    font-size: 0.8em;
 }
 .passage_donate{
     display: none;
@@ -605,6 +572,7 @@ body{
     /*height: auto !important;*/
     border: 1px solid #353535;
     resize: vertical;
+    width: 500px;
 }
 #perm_chapter{
     position: absolute;
@@ -802,7 +770,7 @@ select::-ms-expand {
     /*z-index: 4;*/
 }
 .blocker{
-    z-index: 2 !important;
+    z-index: 9999999 !important;
 }
 .modal_select, .modal_input{
     width: 100%;
@@ -865,9 +833,6 @@ pre, code{
     font-size: 3em;
     margin-bottom: 10px;
     border: 2px solid #353535;
-}
-.sub_passages{
-    display: none;
 }
 .image_upload_icon, .mic_record_icon, .flag_icon, .icon_top_add, .passage_play{
     cursor: pointer;
@@ -938,7 +903,7 @@ ion-icon{
     color: red;
 }
 #options{
-    width: 50%;
+    width: 100%;
     margin: auto;
     color: #000;
     padding-top: 10px;

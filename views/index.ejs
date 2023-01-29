@@ -1,15 +1,26 @@
+<%- include('html_head') %>
+</head>
 <%- include('header') %>
             <%- include('ppe') %>
-            <input id="search"placeholder="Search Solutions" type="" name="" autocomplete="off">
-            <div>
-                <h1 style="margin:auto;text-align: center;">Result</h1>
-                <div style="border: 1px solid black; padding: 50px; width: 88%; margin:auto;" id="result_div">
-                    <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
-                </div>
-            </div>
+            <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
+            <input type="hidden" value="false", id="is_profile"/>
+            <div id="page_title"><%= passageTitle || "Christian Engineering Solutions"%></div>
+            <input id="search"placeholder="Search..." type="" name="" autocomplete="off">
+            <%if(passage.id == 'root' || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
+                <button id="add_passage_button">+</button>
+            <%}%>
             <br>
-            <%- include('passage') %>
+            <div id="passage_wrapper">
+                <!-- Show passage list or search list -->
+                <%if(passages){%>
+                    <%- include('passages') %>
+                <%}else if (passage){%>
+                <!-- Just show one passage -->
+                    <%- include('passage', {passage: passage, sub: sub}) %>
+                <%} %>
+            </div>
+            <div id="passage_form_wrapper"></div>
     <br>
         </div>
-        <input type="hidden"id="custom_pairs" name="">
+        <div class="passage"id="view_more">View More</div>
         <%- include('footer') %>

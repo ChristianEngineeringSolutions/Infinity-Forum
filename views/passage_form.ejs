@@ -2,23 +2,19 @@
 Source variable: passage
  -->
 
-<form class="passage_form"action="">
+<form id="passage_form_<%=passage._id%>"class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
+    <input value="<%=passage._id%>"name="_id"type="hidden">
+    <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
+    <textarea class="passage_description" name="content" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"><%=passage.content%></textarea>
+    <!-- <button class="passage_plus_description">+</button> -->
+    <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
+    <% if(passage.filename){ %>
+    <img src="/uploads/<%=passage.filename%>" alt="">
+    <%}%>
+    <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
     <div class="passage_advanced">
-        <input class="passage_cross_origin"type="checkbox" name="" id=""> Cross Origin Allowed (Admin Advanced)
-        <br>
-        <textarea class="passage_html" name="" id="" cols="30" rows="10" placeholder="HTML"></textarea>
-        <textarea class="passage_css" name="" id="" cols="30" rows="10" placeholder="CSS"></textarea>
-        <textarea class="passage_js" name="" id="" cols="30" rows="10" placeholder="Javascript"></textarea>
+        <textarea class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
+        <textarea class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
+        <textarea class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
     </div>
-    <input class="passage_title" type="text"name="title"placeholder="Title">
-    <ul class="description_options">
-        <li class="description_option">Rich Text</li>
-        <li class="description_option">Plain Text</li>
-        <li class="description_option">Code</li>
-        <li class="description_option">Markdown</li>
-    </ul>
-    <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Description"></textarea>
-    <button class="passage_plus_description">+</button>
-    <textarea class="passage_description" name="" id="" cols="30" rows="10" placeholder="Tags"></textarea>
-    <input class="passage_file" type="file" multiple>
 </form>

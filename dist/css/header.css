@@ -1,0 +1,79 @@
+#control_nav{
+    padding-top: 15px;
+    background: gold;
+    background: gold;
+    color: #000;
+    height: 60px;
+    border-top: 2px solid #353535;
+    border-bottom: 2px solid #353535;
+    font-weight: bolder;
+    position: fixed;
+    width: 100%;
+    z-index: 200;
+    padding-bottom: 20px;
+}
+#options{
+    height: 60px;
+}
+.tab_delete{
+    color: black;
+    margin-right: 5px;
+    padding: 5px;
+    font-weight: normal;
+}
+.tab_delete:hover{
+    font-weight: bolder;
+    color: red;
+}
+#new_tab{
+
+}
+#tab_list{
+    list-style-type: none;
+}
+.tab_window{
+    width: 100%; 
+    height: 100%;
+}
+.tab{
+    display: inline;
+    padding: 10px;
+    border: 2px solid black;
+    cursor: pointer;
+    background: gold;
+    font-weight: bold;
+    z-index: 2000;
+}
+.tab:not(#new_tab){
+    padding-right: 15px;
+}
+.tab:hover{
+    font-weight: bolder;
+    border: 2px solid black;
+    background-color: yellow;
+    /* color: red; */
+}
+.active_tab{
+    background: yellow;
+}
+#tab_panel{
+    /* padding-top: 15px; */
+    /* background: gold; */
+    color: #000;
+    height: 60px;
+    /* border-top: 2px solid #353535;
+    border-bottom: 2px solid #353535; */
+    font-weight: bolder;
+    position: fixed;
+    width: 100%;
+    z-index: 30000000;
+    margin-bottom: 20px;
+    text-align: center;
+
+    border: 2px solid black;
+    margin-top: 0px;
+    background: black;
+    overflow-y: hidden;
+    white-space: nowrap;
+    overflow-x: scroll;
+}

@@ -28,6 +28,10 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+    admin: {
+      type: Boolean,
+      default: false
+    },
     verified: {
       type: Boolean,
       default: false
@@ -39,7 +43,7 @@ const userSchema = mongoose.Schema({
     //You can give away twice as many stars as you have
     stars: {
         type: Number,
-        default: 1
+        default: 100
     },
     starsGiven: {
         type: Number,
@@ -50,11 +54,24 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    bookmarks: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Passage'
+    }],
     // Background scripts
     daemons: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Passage'
-    }]
+    }],
+    tabs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Passage'
+    }],
+    stripeAccountId: {
+      type: String,
+      default: null
+  },
+    stripeOnboardingComplete: Boolean
 });
 
 module.exports = mongoose.model('User', userSchema, 'Users');

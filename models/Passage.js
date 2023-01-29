@@ -3,22 +3,32 @@ const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
 
 const passageSchema = mongoose.Schema({
+    //
+    systemRecord: {
+        type: Boolean,
+        default: false
+    },
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     //author is first user
     users: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    //rrr, wwww, xxx, etc., ordered by users
-    // [rwx, ...]
-    permissions: [String],
     title: String,
     html: String,
     css: String,
     javascript: String,
-    tags: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tag'
-    }],
+    MainSystemRecord: {
+        type: Boolean,
+        default: false
+    },
+    // tags: [{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'Tag'
+    // }],
     tags: String, //["tag1", "tag2", "tag3", ...]
     /**
      * {
@@ -30,11 +40,6 @@ const passageSchema = mongoose.Schema({
     /** tags.join('') => Regex $search */
     // From original to previous passage source
     sourceList : [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
-    }],
-    //alternate list
-    alternates : [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],
@@ -74,17 +79,48 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    flagged: {
+    admin: {
         type: Boolean,
         default: false
     }, //content warning
-    label: String,
-    canvas: Boolean, // Has Canvas tag?
     filename: String, // associated file
     deleted: {
         type: Boolean,
         default: false
     },
+    //permissions/settings
+    public: {
+        type: Boolean,
+        default: false
+    },
+    // allow same origin iframes
+    personal_cross_origin: {
+        type: Boolean,
+        default: false
+    },
+    //load code outside of iframe
+    personal_same_origin: {
+        type: Boolean,
+        default: false
+    },
+    //0 is false, 1 is requesting, 2 is active
+    public_daemon: {
+        type: Number,
+        default: 0
+    },
+    admin_cross_origin_all: {
+        type: Boolean,
+        default: false
+    },
+    admin_same_origin: {
+        type: Boolean,
+        default: false
+    },
+    admin_make_daemon: {
+        type: Boolean,
+        default: false
+    },
+
 });
 var autoPopulateChildren = function(next) {
     this.populate('passages');
