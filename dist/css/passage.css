@@ -18,6 +18,17 @@
     border: 2px solid #353535;
     width: 88%;
     margin: auto;
+    margin-bottom: 10px;
+    z-index: 1;
+}
+.star_number{
+    width: 80px;
+}
+.hide{
+    display: none;
+}
+.sub_passages .passage{
+    width: 100%;
 }
 .passage_options, .passage_tabs, .passage_users, .description_options{
     list-style-type: none;
@@ -40,9 +51,9 @@
 .passage_tab{
     display: inline;
     padding: 10px;
-    border: 1px solid black;
+    /* border: 1px solid black; */
     cursor: pointer;
-    background: #fff;
+    /* background: #fff; */
     font-weight: bold;
 }
 .passage_tab:hover{
@@ -83,4 +94,59 @@
 }
 .passage_advanced{
     display: none;
+}
+#add_passage_button{
+    background: gold;
+    width: 90%;
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid black;
+    margin: auto;
+    display: block;
+    margin-top: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.5em;
+
+}
+#add_passage_button:hover{
+    /* background-color: yellow; */
+}
+#passage_form_wrapper{
+    background: gold;
+    width: 88%;
+    padding: 10px;
+    display: none;
+    margin: auto;
+}
+#passage_iframe{
+    border: 1px solid black; 
+    padding: 10px; 
+    width: 88%; 
+    margin:auto;
+}
+.sub_passages{
+    display: none;
+}
+.editor_option_active{
+    font-weight: bolder;
+}
+.green{
+    color: green;
+}
+.red{
+    color: red;
+}
+.passage_setting{
+    cursor: pointer;
+    padding: 5px;
+}
+.passage_setting:hover{
+    font-weight: bold;;
+}
+.add_stars{
+    cursor: pointer;
+}
+.change_passage_file{
+    cursor: pointer;
 }

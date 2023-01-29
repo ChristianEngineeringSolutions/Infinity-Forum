@@ -1,0 +1,19 @@
+#footer{
+    margin: auto;
+    text-align: center;
+    margin-top: 100px;
+    padding-top: 100px;
+    padding-bottom: 150px;
+    color: gold;
+    background: black;
+    font-size: 2em;
+    font-weight: bold;
+}
+#editor{
+    position: fixed;
+    bottom: 0px;
+    z-index: 99999999;
+    width: 100%;
+    color: black;
+    background: white;
+}

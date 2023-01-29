@@ -1,32 +1,85 @@
-<div id="passage_<%=passage.id%>" class="passage">
+<div data-sub="<%=sub%>"id="passage_<%=passage.id%>" class="passage">
+    <div id="passage_settings_modal_<%=passage._id%>" class="modal">
+        <%- include('passage_settings', {passage: passage}) %>
+    </div>
+    <div id="passage_sources_modal_<%=passage._id%>" class="modal">
+        <%passage.sourceList.forEach(function(source) { %>
+            <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
+        <%});%>
+    </div>
     <ul class="passage_options">
-        <li class="passage_option">More</li>
+        <% if(sub === true){%>
+        <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
+        <%}%>
+        <!-- Show them settings only if they made the passage -->
+        <%if(passage.users != null && passage.users[0]){%>
+            <%if(passage.users && user && passage.users[0]._id == user._id){%>
+                <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
+                <%}%>
+        <%}%>
+        <% if(sub === false){%>
+            <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
+        <%}%>
         <!-- Shift passage location -->
-        <li class="passage_option">Move</li>
+        <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
-        <li class="passage_option">Copy</li>
-        <li class="passage_option">Flag</li>
-        <li class="passage_option">Comments</li>
-        <li class="passage_option">Share</li>
-        <li class="passage_option">Donate</li>
-        <li class="passage_option">Update</li>
-        <li class="passage_option">Delete</li>
+        <% if(sub === true){%>
+            <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
+        <%}%>
+        <%if(passage.users != null && passage.users[0]){%>
+        <%if(passage.users && user && passage.users[0]._id == user._id){%>
+            <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
+            <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+        <%}%>
+        <%}%>
     </ul>
     <ul class="passage_users">
         <!-- Profile Image layers -->
         <%if(passage.users){%>
             <%passage.users.forEach(function(user) { %>
-                <%- include('profile_thumbnail', {user: user}) %>
-        <%});} %>
+                <%- include('profile_thumbnail', {profile: user}) %>
+        <%});%>
+        <%}else{%>
+            Anonymous
+        <%}%>
         <!-- ... -->
     </ul>
-    <div class="passage_stars">24 Stars</div>
-    <ul class="passage_tabs">
-        <li class="passage_tab passage_tab_open_advanced">Advanced</li>
+    <div class="passage_stars"><%=passage.stars%> Stars &emsp; 
+        <% if(user){ %>
+            <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
+            <input id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> 
+            &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Add</span>
+        <% } %>
+    </div>
+    <br>
+    <!-- Hide Iframe window if there is neither html nor js -->
+    <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
+        <% hide = 'hide'; %>
+    <%}else{%>
+        <% hide = 'test'; %>
+    <%}%>
+    <div id="passage_iframe" class="<%=hide%>" id="result_div">
+        <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
+        <%if(passage.personal_cross_origin && user._id == passage.users[0]._id){%>
+            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+        <%}else{%>
+            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+        <%}%>
+    </div>
+    <!-- <ul class="passage_tabs">
+        <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
         <!-- Display Result -->
-        <li class="passage_tab">Sources</li>
-        <li class="passage_tab">Alternates</li>
-        <li class="passage_tab">Tags</li>
-    </ul>
+        <!-- <li class="passage_tab">Alternates</li> -->
+    <!-- </ul> -->
     <%- include('passage_form') %>
+    <ul class="passage_tabs">
+        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Executable</li>
+    </ul>
  </div>
+ <%if(passage.passages && sub === false){%>
+    <div id="sub_passages">
+        <%passage.passages.forEach(function(sub_passage) { %>
+            <%- include('passage', {passage: sub_passage, sub: true}) %>
+        <%}); %>
+    </div>
+<%}%> 

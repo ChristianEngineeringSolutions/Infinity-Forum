@@ -37,3 +37,25 @@ Daemons are passages that modify parent passages
 
 
 Review iframe 2 and 1 way communication
+
+
+
+TODO:
+Email *
+pagination
+
+Passage Settings:
+Private: Only Users can add/edit/delete
+Add user to passage
+remove user from passage
+Default: Private
+Public: Everyone can add or edit/delete their own passages.
+
+
+Main system record true
+content:
+
+{
+    stars: x,
+    usd: x
+}

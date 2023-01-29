@@ -6,13 +6,35 @@
         font-size: 2em;
         float: right;
     }
+    #page_title{
+        text-align: center;
+    }
+    #add_passage_button{
+        width: 92%;
+    }
 }
 @media screen and (max-width: 550px){
+    #add_passage_button{
+        width: 95%;
+    }
+    #page_title{
+        text-align: center;
+    }
     #nav_ul{
         text-align: center;
         margin: 0;
         padding: 0;
         margin-bottom: 10px;
+    }
+    .tab{
+        font-size: 0.5em;
+    }
+    #tab_panel{
+        height: 80px !important;
+    }
+    #control_nav{
+        font-size: 1.5em;
+        padding-bottom: 5px;
     }
     .proteins{
         font-size: 1.2em;

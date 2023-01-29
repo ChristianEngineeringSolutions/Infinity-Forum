@@ -1,0 +1,8 @@
+.bookmark{
+    border-bottom: 1px solid black;
+    margin: 5px;
+    padding: 5px;
+}
+.transfer_bookmark, .view_bookmark, .remove_bookmark{
+    cursor: pointer;
+}

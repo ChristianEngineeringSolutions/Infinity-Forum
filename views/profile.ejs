@@ -1,21 +1,38 @@
+<%- include('html_head') %>
+</head>
 <%- include('header') %>
 <br><br><br><br>
+<input id="chief_passage_id"type="hidden" value="root"name="">
 <div id="profile_modal" class="modal">
-    <p><%=profile.username%></p>
-    <p><%=profile.stars%> Stars</p>
-    <p><%=profile.starsGiven%> Stars Given</p>
+    <%- include('settings_form', {profile: profile}) %>
 </div>
-<input type="hidden" value="true", id="is_profile"/>
-<div><ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
-<a class="basic_link" href="#profile_modal" rel="modal:open"><ion-icon title="Details"src="/images/ionicons/settings-outline.svg"></ion-icon></a>
-<span id="parent_chapter_title"><%=profile.username%></span>
-<div id="chapter_description">
-  Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-  tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-  consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
-  cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-  proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-</div> 
-
+<input type="hidden" value="<%=profile._id%>", id="is_profile"/>
+<div id="profile_header">
+  <div>
+    <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+    </div>
+    <%if(user && user._id == profile._id){%>
+  <a class="basic_link" href="#profile_modal" rel="modal:open"><ion-icon style=""id="user_settings_icon"title="Settings"src="/images/ionicons/settings-sharp.svg"></ion-icon></a>
+  <%}%>
+  &nbsp;
+  <span id="parent_chapter_title"><%=profile.username%></span>
+  <div id="profile_stars"><%=profile.stars%> Star(s)</div>
+</div>
+<input id="search"placeholder="Search..." type="" name="" autocomplete="off">
+  <%if(user && profile._id == user._id){%>
+    <button id="add_passage_button">+</button>
+  <%}%>
+  <br>
+  <div id="passage_wrapper">
+      <!-- Show passage list or search list -->
+      <%if(passages){%>
+          <%- include('passages') %>
+      <%}else if (passage){%>
+      <!-- Just show one passage -->
+          <%- include('passage', {passage: passage, sub: sub}) %>
+      <%} %>
+  </div>
+  <div class="passage"id="view_more">View More</div>
+  <div id="passage_form_wrapper"></div>
+<script src="/js/profile.js"></script>
 <%- include('footer') %>
