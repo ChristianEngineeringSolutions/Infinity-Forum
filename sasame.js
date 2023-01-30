@@ -973,6 +973,9 @@ app.post('/ppe', function(req, res) {
         res.send(ret);
     });
 });
+app.get('/terms', function(req, res) {
+    res.render('terms');
+});
 //FUNCTIONS
 //authenticate input against database
 function authenticateUser(email, password, callback) {
