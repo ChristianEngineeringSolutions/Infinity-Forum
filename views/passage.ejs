@@ -23,7 +23,7 @@
         <!-- Shift passage location -->
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
-        <% if(sub === true){%>
+        <% if(user && sub === true){%>
             <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
         <%}%>
         <%if(passage.users != null && passage.users[0]){%>
@@ -36,9 +36,7 @@
     <ul class="passage_users">
         <!-- Profile Image layers -->
         <%if(passage.users){%>
-            <%passage.users.forEach(function(user) { %>
-                <%- include('profile_thumbnail', {profile: user}) %>
-        <%});%>
+            <%- include('profile_thumbnail', {profile: passage.author}) %>
         <%}else{%>
             Anonymous
         <%}%>

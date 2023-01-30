@@ -32,24 +32,10 @@ module.exports = {
             callback();
         });
     },
-    deletePassage: function(req, res, callback) {
+    deletePassage: async function(req, res, callback) {
         let passageID = req.body._id;
-        //False deletion
-        // Passage.findOne({_id: passageID.trim()}, function(err, passage){
-        //     passage.deleted = true;
-        //     passage.save();
-        //     callback();
-        // });
-        //Real deletion
-        Passage.findOneAndDelete({_id: passageID.trim()}, function(err, passage){
-            if(passage.filename){
-                fs.unlink('./dist/uploads/'+passage.filename, (err) => {
-                    if (err) throw err;
-                    console.log('./dist/uploads/'+passage.filename+' was deleted');
-                });
-            }
-            callback();
-        });
+        await Passage.deleteOne({_id: passageID.trim()});
+        callback();
     },
     //move passage from one passage to another
     movePassage: async function(movingPassage, destinationPassage){
@@ -66,6 +52,7 @@ module.exports = {
         await destinationPassage.save();
     },
     copyPassage: async function(req, res, callback){
+        console.log('copied');
         //get passage to copy
         let user;
         let passage = await Passage.findOne({_id: req.body._id});
@@ -79,8 +66,11 @@ module.exports = {
         //add source
         let sourceList = passage.sourceList;
         sourceList.push(passage._id);
+        var parent = req.body.parent == 'root' ? [] : req.body.parent;
         //duplicate main passage
         let copy = await Passage.create({
+            parent: parent,
+            author: req.session.user,
             users: user,
             sourceList: sourceList,
             title: passage.title,
@@ -91,12 +81,12 @@ module.exports = {
             filename: passage.filename
         });
         //Add copy to passage it was duplicated into
-        let parent = await Passage.findOne({_id: req.body.parent});
-        if(parent != "root"){
-            copy.parent = parent;
-            parent.passages.push(copy);
+        if(req.body.parent != "root"){
+            let parentPassage = await Passage.findOne({_id: req.body.parent});
+            copy.parent = parentPassage;
+            parentPassage.passages.push(copy);
             copy.save();
-            parent.save();
+            parentPassage.save();
         }
         //copy children
         async function copyPassagesRecursively(passage, copy){
@@ -132,14 +122,17 @@ module.exports = {
             // console.log(done.title + '\n' + done.passages[0]);
         }
         let result = '';
-        if(passage.passages){
+        if(passage.passages.length >= 1){
+            console.log(passage.passages);
+            console.log('test');
             let result = await copyPassagesRecursively(passage, copy);
         }
         else{
             console.log('false');
         }
         console.log(result);
-        return copy;
+        let ret = await Passage.findOne({_id: copy._id}).populate('author');
+        return ret;
         // res.render('passage', {passage: copy, sub: true});
     },
     //update order of sub-passages in passage
