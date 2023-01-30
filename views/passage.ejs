@@ -35,7 +35,7 @@
     </ul>
     <ul class="passage_users">
         <!-- Profile Image layers -->
-        <%if(passage.users){%>
+        <%if(passage.author){%>
             <%- include('profile_thumbnail', {profile: passage.author}) %>
         <%}else{%>
             Anonymous
