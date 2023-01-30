@@ -656,10 +656,10 @@ app.post('/register/', async function(req, res) {
           });
           //send verification email
           if(user.email.length > 1){
-            // sendEmail(user.email, 'Verify Email for Sasame', 
-            //     `
-            //         https://christianengineeringsolutions.com/verify/`+user.id+`/`+user.token+`
-            //     `);
+            sendEmail(user.email, 'Verify Email for Sasame', 
+                `
+                    https://christianengineeringsolutions.com/verify/`+user.id+`/`+user.token+`
+                `);
           }
           res.redirect('/profile/' + user._id);
         }
@@ -692,9 +692,8 @@ app.post('/paginate', async function(req, res){
             find.author = profile;
         }
         let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
-        console.log('passages');
         res.render('passages', {
-            passages: passages,
+            passages: passages.docs,
             sub: true
         });
     }
@@ -703,7 +702,7 @@ app.post('/paginate', async function(req, res){
             username: new RegExp(''+search+'', "i")
         };
         let users = await User.paginate(find, {page: page, limit: DOCS_PER_PAGE});
-        res.render('leaderboard', {users: users});
+        res.render('leaderboard', {users: users.docs});
     }
 });
 

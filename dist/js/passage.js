@@ -252,7 +252,6 @@ $(function(){
     });
     //For Home, Search, and Profile
     $(document).on('click', '#view_more', function(){
-        alert('test');
         //check if home, search, or profile
         var isProfile = $('#is_profile').val();
         $.ajax({
@@ -261,10 +260,9 @@ $(function(){
             data: {
                 page: page,
                 profile: isProfile,
-                search: search
+                search: $('#search').val()
             },
             success: function(data){
-                alert(data);
                 page += 1;
                 $('#passage_wrapper').append(data);
             }
