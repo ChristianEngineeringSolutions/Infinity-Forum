@@ -300,7 +300,10 @@ app.get('/', async (req, res) => {
         passageTitle: 'Christian Engineering Solutions', 
         scripts: scripts, 
         passages: passages, 
-        passage: {id:'root'},
+        passage: {id:'root', author: {
+            _id: 'root',
+            username: 'Sasame'
+        }},
         bookmarks: bookmarks,
     });
 });
