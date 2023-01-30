@@ -21,7 +21,9 @@
             <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
         <%}%>
         <!-- Shift passage location -->
+        <%if(user){%>
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
+        <%}%>
         <!-- Copy and move passage -->
         <% if(user && sub === true){%>
             <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
