@@ -75,7 +75,7 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
 var MongoStore  = require('connect-mongo');
-const scripts = require('./shared');
+const scripts = {};
 app.use(cookieParser());
 app.use(session({
     secret: "ls",
@@ -107,9 +107,6 @@ app.get('/jquery.modal.min.js', function(req, res) {
 app.get('/jquery.modal.min.css', function(req, res) {
     res.sendFile(__dirname + '/node_modules/jquery-modal/jquery.modal.min.css');
 });
-app.get('/shared.js', function(req, res) {
-    res.sendFile(__dirname + '/shared.js');
-});
 app.get('/data.json', function(req, res) {
     res.sendFile(__dirname + '/data.json');
 });
@@ -128,42 +125,7 @@ app.get('/p-c1aa32dd.entry.js', function(req, res) {
 app.get('/p-85f22907.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-85f22907.js');
 });
-app.get('/marked.min.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/marked/marked.min.js');
-});
-app.get('/highlight.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/highlight.js/lib/highlight.js');
-});
-app.get('/highlight/javascript.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/highlight.js/lib/languages/javascript.js');
-});
-app.get('/highlight/default.css', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/highlight.js/styles/tomorrow.css');
-});
-app.get('/codemirror.css', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/codemirror/lib/codemirror.css');
-});
-app.get('/codemirror.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/codemirror/lib/codemirror.js');
-});
-app.get('/mode/:mode/:mode.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/codemirror/mode/'+req.params.mode+'/'+req.params.mode+'.js');
-});
-app.get('/quill.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/quill/dist/quill.min.js');
-});
-app.get('/quill.snow.css', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/quill/dist/quill.snow.css');
-});
-app.get('/tone.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/tone/build/Tone.js');
-});
-app.get('/sigma.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/sigma/build/sigma.min.js');
-});
-app.get('/sigma.parsers.json.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/sigma/build/plugins/sigma.parsers.json.min.js');
-});
+
 //CRON
 var cron = require('node-cron');
 cron.schedule('0 12 * * *', () => {
@@ -375,6 +337,9 @@ app.get('/get_bookmarks', async (req, res) => {
     if(req.session.user){
         let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
         bookmarks = user.bookmarks;
+        await bookmarks.forEach(async function(bookmark){
+            bookmark.author = await Passage.find({_id: bookmark._id}).author._id;
+        });
     }
     res.render('bookmarks', {bookmarks: bookmarks});
 });
@@ -547,6 +512,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     }
     res.render("index", {passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
+//not active currently using donation link and capturing details post submission
 app.get('/donate', async function(req, res){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.create({
@@ -566,9 +532,9 @@ app.get('/stripeAuthorize', async function(req, res){
         var user = req.session.user;
         try {
             let accountId = user.stripeAccountId;
+            const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
             // Create a Stripe account for this user if one does not exist already
             if (accountId === null) {
-                const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
                 const account = await stripe.accounts.create({
                     type: 'express',
                     capabilities: {
@@ -576,7 +542,7 @@ app.get('/stripeAuthorize', async function(req, res){
                     },
                   });
                 try{
-                    user = await User.updateOne({id: user.id}, {stripeAccountId: account.id});
+                    await User.updateOne({id: user.id}, {stripeAccountId: account.id});
                 }
                 catch(error){
                     console.error(error);
@@ -585,8 +551,8 @@ app.get('/stripeAuthorize', async function(req, res){
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.id,
-                    refresh_url: 'http://localhost:3000/stripeAuthorize',
-                    return_url: 'http://localhost:3000/stripeOnboarded',
+                    refresh_url: 'http://christianengineeringsolutions.com/stripeAuthorize',
+                    return_url: 'http://christianengineeringsolutions.com/stripeOnboarded',
                     type: 'account_onboarding'
                 });
                 console.log(accountLink);
@@ -595,6 +561,17 @@ app.get('/stripeAuthorize', async function(req, res){
             }
             else{
                 console.log("Already has account.");
+                let account = await User.findOne({_id: user._id});
+                // Create an account link for the user's Stripe account
+                const accountLink = await stripe.accountLinks.create({
+                    account: account.stripeAccountId,
+                    refresh_url: 'http://christianengineeringsolutions.com/stripeAuthorize',
+                    return_url: 'http://christianengineeringsolutions.com/stripeOnboarded',
+                    type: 'account_onboarding'
+                });
+                console.log(accountLink);
+                // Redirect to Stripe to start the Express onboarding flow
+                res.redirect(accountLink.url);
             }
           } catch (err) {
             console.log('Failed to create a Stripe account.');
@@ -659,10 +636,12 @@ app.post('/register/', async function(req, res) {
             user.save();
           });
           //send verification email
-          // sendEmail(user.email, 'Verify Email for Sasame', 
-          //     `
-          //         https://sasame.xyz/verify/`+user.id+`/`+user.token+`
-          //     `);
+          if(user.email.length > 1){
+            // sendEmail(user.email, 'Verify Email for Sasame', 
+            //     `
+            //         https://christianengineeringsolutions.com/verify/`+user.id+`/`+user.token+`
+            //     `);
+          }
           res.redirect('/profile/' + user._id);
         }
       });

@@ -72,7 +72,7 @@ $(function(){
                 parent: $('#chief_passage_id').val()
             },
             success: function(data){
-                $('#passage_wrapper').prepend(data);
+                $('#passage_' + _id).after(data);
                 flashIcon($('#passage_copy_' + _id), 'green');
             }
         });

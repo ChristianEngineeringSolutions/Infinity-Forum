@@ -2,7 +2,7 @@
 const Passage = require('../models/Passage');
 const Chapter = require('../models/Chapter');
 //Call in Scripts
-const scripts = require('../shared');
+const scripts = {};
 var fs = require('fs'); 
 
 module.exports = {
