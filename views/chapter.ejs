@@ -1,6 +1,0 @@
-<%-scripts.printAddForm(chapter)%>
-<% book.forEach(function(f) { %>
-    <%if(!f.deleted && !f.queue){%>
-        <%- scripts.printPassage(f, user); %>
-    <%}%>
-<% }); %>

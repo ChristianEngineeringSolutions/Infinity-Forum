@@ -75,7 +75,7 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
 var MongoStore  = require('connect-mongo');
-const scripts = require('./shared');
+const scripts = {};
 app.use(cookieParser());
 app.use(session({
     secret: "ls",
@@ -107,9 +107,6 @@ app.get('/jquery.modal.min.js', function(req, res) {
 app.get('/jquery.modal.min.css', function(req, res) {
     res.sendFile(__dirname + '/node_modules/jquery-modal/jquery.modal.min.css');
 });
-app.get('/shared.js', function(req, res) {
-    res.sendFile(__dirname + '/shared.js');
-});
 app.get('/data.json', function(req, res) {
     res.sendFile(__dirname + '/data.json');
 });
@@ -128,42 +125,7 @@ app.get('/p-c1aa32dd.entry.js', function(req, res) {
 app.get('/p-85f22907.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-85f22907.js');
 });
-app.get('/marked.min.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/marked/marked.min.js');
-});
-app.get('/highlight.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/highlight.js/lib/highlight.js');
-});
-app.get('/highlight/javascript.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/highlight.js/lib/languages/javascript.js');
-});
-app.get('/highlight/default.css', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/highlight.js/styles/tomorrow.css');
-});
-app.get('/codemirror.css', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/codemirror/lib/codemirror.css');
-});
-app.get('/codemirror.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/codemirror/lib/codemirror.js');
-});
-app.get('/mode/:mode/:mode.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/codemirror/mode/'+req.params.mode+'/'+req.params.mode+'.js');
-});
-app.get('/quill.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/quill/dist/quill.min.js');
-});
-app.get('/quill.snow.css', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/quill/dist/quill.snow.css');
-});
-app.get('/tone.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/tone/build/Tone.js');
-});
-app.get('/sigma.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/sigma/build/sigma.min.js');
-});
-app.get('/sigma.parsers.json.js', function(req, res) {
-    res.sendFile(__dirname + '/node_modules/sigma/build/plugins/sigma.parsers.json.min.js');
-});
+
 //CRON
 var cron = require('node-cron');
 cron.schedule('0 12 * * *', () => {
@@ -205,6 +167,12 @@ async function starUser(numStars, userId){
     SystemRecord.content = JSON.stringify(preContent);
     await SystemRecord.save();
 }
+/**
+ * db.Passages.insertOne({
+ *  MainSystemRecord: true,
+ *  content: "{stars: 0, usd: 0}"
+ * });
+ */
 async function GetMainSystemRecord(){
     let passage = await Passage.findOne({MainSystemRecord: true});
     return passage;
@@ -217,6 +185,9 @@ function percentUSD(donationUSD, totalUSD){
 }
 
 async function starPassage(amount, passageID, userID){
+    let passage = await Passage.findOne({_id: passageID});
+    let numSources = passage.sourceList.length;
+    amount = amount * numSources;
     //give bonuses according to previous systemrecords for this passage
     let systemRecords = await Passage.find({
         parent: passageID,
@@ -237,12 +208,13 @@ async function starPassage(amount, passageID, userID){
         amount += numStars;
     });
     //add stars to passage, sourceList, and sub Passages
-    let passage = await Passage.findOne({_id: passageID});
     passage.stars += amount;
     await passage.save();
+    //star each source
     passage.sourceList.forEach(async function(source){
         await starPassage(amount, source._id, userID);
     });
+    //star all sub passages
     (function lambda(passage){
         passage.passages.forEach(async function(p){
             await starPassage(amount, p._id, userID);
@@ -296,7 +268,7 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let passages = await Passage.find({users: profile}).populate('users sourceList');
+    let passages = await Passage.find({users: profile, deleted: false}).populate('author users sourceList');
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -312,7 +284,6 @@ app.post('/get_username_number', async function(req, res){
     if(number - 1 === 0){
         number = '';
     }
-    console.log(number);
     res.send(number + '');
 });
 //HOME/INDEX
@@ -325,7 +296,7 @@ app.get('/', async (req, res) => {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    let passages = await Passage.find().populate('users sourceList');
+    let passages = await Passage.find({deleted: false}).populate('author users sourceList');
     let passageUsers = [];
     let bookmarks = [];
     if(req.session.user){
@@ -335,16 +306,21 @@ app.get('/', async (req, res) => {
         passageTitle: 'Christian Engineering Solutions', 
         scripts: scripts, 
         passages: passages, 
-        passage: {id:'root'},
+        passage: {id:'root', author: {
+            _id: 'root',
+            username: 'Sasame'
+        }},
         bookmarks: bookmarks,
     });
 });
 //Search
 app.post('/search/', async (req, res) => {
-    let results = await Passage.find({title: {
+    let results = await Passage.find({
+        deleted: false,
+        title: {
         $regex: req.body.search,
         $options: 'i'
-    }}).populate('users sourceList');
+    }}).populate('author users sourceList');
     res.render("passages", {
         passages: results,
         sub: true
@@ -356,6 +332,13 @@ app.post('/bookmark_passage', async (req, res) => {
     await user.save();
     res.send('done.');
 });
+app.post('/copy_passage/', async (req, res) => {
+    let copy = await passageController.copyPassage(req, res, function(){
+        
+    });
+    let passage = await Passage.findOne({_id: req.body._id});
+    res.render('passage', {passage: copy, sub: true});
+});
 app.post('/transfer_bookmark', async (req, res) => {
     let _id = req.body._id;
     //First copy the passage
@@ -363,7 +346,7 @@ app.post('/transfer_bookmark', async (req, res) => {
         
     });
     //Then move the copy into the current tab
-    let tab = await Passage.findOne({_id: req.body.tab_id});
+    let tab = await Passage.findOne({_id: req.body.parent}).populate('author');
     tab.passages.push(copy._id);
     copy.parent = tab._id;
     await tab.save();
@@ -399,42 +382,30 @@ app.post('/add_user', async (req, res) => {
 app.post('/passage_setting', async (req, res) => {
     let _id = req.body._id;
     let setting = req.body.setting;
-    let user = await User.find({_id: req.session.user._id});
-    let passage = await Passage.findOne({_id: _id});
+    let user = await User.findOne({_id: req.session.user._id});
+    let passage = await Passage.findOne({_id: _id}).populate('author');
+    console.log(user._id);
+    console.log(passage.author);
     switch(setting){
         case 'private':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
+                console.log(1);
                 passage.public = false;
             }
             break;
         case 'public':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
                 passage.public = true;
             }
             break;
         case 'cross-origin-allowed':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
                 passage.personal_cross_origin = true;
             }
             break;
-        case 'same-origin':
-            if(passage.users[0] == user._id){
-                passage.personal_same_origin = true;
-            }
-            break;
         case 'request-public-daemon':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
                 passage.public_daemon = 1;
-            }
-            break;
-        case 'admin-cross-origin':
-            if(user.admin){
-                passage.admin_cross_origin_all = true;
-            }
-            break;
-        case 'admin-same-origin':
-            if(user.admin){
-                passage.admin_same_origin = true;
             }
             break;
         case 'admin-make-public-daemon':
@@ -461,6 +432,17 @@ app.post('/remove_user', async (req, res) => {
         res.send("Done.");
     }
 });
+app.post('/remove_bookmark', async (req, res) => {
+    let _id = req.body._id;
+    let user = await User.findOne({_id: req.session.user._id});
+    user.bookmarks.forEach((bookmark, i) => {
+        if(bookmark._id.toString() == _id.toString()){
+            user.bookmarks.splice(i, 1);
+        }
+    });
+    await user.save();
+    res.send("Done.");
+});
 app.post('/move_passage', async (req, res) => {
     let passage = await Passage.findOne({_id: req.body.passage_id});
     let destination = await Passage.findOne({_id: req.body.destination_id});
@@ -480,7 +462,6 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     let event;
     try {
         event = stripe.webhooks.constructEvent(request.rawBody, sig, endpointSecret);
-        console.log(payload.data.object.amount);
         console.log(event.type);
     } catch (err) {
         console.log(err);
@@ -493,19 +474,22 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         let amount = payload.data.object.amount;
         //Save recording passage in database and give user correct number of stars
         //get user from email
-        let user = await User.find({_id: payload.data.object.email});
-        let passage = await Passage.create({
-            users: [user._id],
-            title: 'Donation',
-            content: amount,
-            systemRecord: true
-        });
-        let systemContent = JSON.parse(GetSystemRecord().content);
-        let totalUSD = systemContent.usd;
-        let totalStarCount = systemContent.stars;
-        let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
-        user.stars += starsToAdd;
-        await user.save();
+        let user = await User.findOne({_id: payload.data.object.customer_details.email});
+        if(user){
+            let passage = await Passage.create({
+                author: user._id,
+                users: [user._id],
+                title: 'Donation',
+                content: amount,
+                systemRecord: true
+            });
+            let systemContent = JSON.parse(GetMainSystemRecord().content);
+            let totalUSD = systemContent.usd;
+            let totalStarCount = systemContent.stars;
+            let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
+            user.stars += starsToAdd;
+            await user.save();
+        }
     }
   
     response.status(200).end();
@@ -547,6 +531,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     }
     res.render("index", {passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
+//not active currently using donation link and capturing details post submission
 app.get('/donate', async function(req, res){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const session = await stripe.checkout.sessions.create({
@@ -566,9 +551,9 @@ app.get('/stripeAuthorize', async function(req, res){
         var user = req.session.user;
         try {
             let accountId = user.stripeAccountId;
+            const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
             // Create a Stripe account for this user if one does not exist already
             if (accountId === null) {
-                const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
                 const account = await stripe.accounts.create({
                     type: 'express',
                     capabilities: {
@@ -576,7 +561,7 @@ app.get('/stripeAuthorize', async function(req, res){
                     },
                   });
                 try{
-                    user = await User.updateOne({id: user.id}, {stripeAccountId: account.id});
+                    await User.updateOne({id: user.id}, {stripeAccountId: account.id});
                 }
                 catch(error){
                     console.error(error);
@@ -585,8 +570,8 @@ app.get('/stripeAuthorize', async function(req, res){
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.id,
-                    refresh_url: 'http://localhost:3000/stripeAuthorize',
-                    return_url: 'http://localhost:3000/stripeOnboarded',
+                    refresh_url: 'http://christianengineeringsolutions.com/stripeAuthorize',
+                    return_url: 'http://christianengineeringsolutions.com/stripeOnboarded',
                     type: 'account_onboarding'
                 });
                 console.log(accountLink);
@@ -595,6 +580,17 @@ app.get('/stripeAuthorize', async function(req, res){
             }
             else{
                 console.log("Already has account.");
+                let account = await User.findOne({_id: user._id});
+                // Create an account link for the user's Stripe account
+                const accountLink = await stripe.accountLinks.create({
+                    account: account.stripeAccountId,
+                    refresh_url: 'http://christianengineeringsolutions.com/stripeAuthorize',
+                    return_url: 'http://christianengineeringsolutions.com/stripeOnboarded',
+                    type: 'account_onboarding'
+                });
+                console.log(accountLink);
+                // Redirect to Stripe to start the Express onboarding flow
+                res.redirect(accountLink.url);
             }
           } catch (err) {
             console.log('Failed to create a Stripe account.');
@@ -659,10 +655,12 @@ app.post('/register/', async function(req, res) {
             user.save();
           });
           //send verification email
-          // sendEmail(user.email, 'Verify Email for Sasame', 
-          //     `
-          //         https://sasame.xyz/verify/`+user.id+`/`+user.token+`
-          //     `);
+          if(user.email.length > 1){
+            sendEmail(user.email, 'Verify Email for Sasame', 
+                `
+                    https://christianengineeringsolutions.com/verify/`+user.id+`/`+user.token+`
+                `);
+          }
           res.redirect('/profile/' + user._id);
         }
       });
@@ -682,6 +680,7 @@ app.get('/logout', function(req, res) {
 });
 //simply return new object list for client to add into html
 app.post('/paginate', async function(req, res){
+    console.log('test');
     let page = req.body.page;
     let profile = req.body.profile; //home, profile, or leaderboard
     let search = req.body.search;
@@ -692,9 +691,9 @@ app.post('/paginate', async function(req, res){
         if(profile != 'false'){
             find.author = profile;
         }
-        let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'users'});
+        let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
         res.render('passages', {
-            passages: passages,
+            passages: passages.docs,
             sub: true
         });
     }
@@ -703,7 +702,7 @@ app.post('/paginate', async function(req, res){
             username: new RegExp(''+search+'', "i")
         };
         let users = await User.paginate(find, {page: page, limit: DOCS_PER_PAGE});
-        res.render('leaderboard', {users: users});
+        res.render('leaderboard', {users: users.docs});
     }
 });
 
@@ -734,6 +733,7 @@ app.post('/create_passage/', async (req, res) => {
         users = [user];
     }
     let passage = await Passage.create({
+        author: user,
         users: users,
         parent: parentId
     });
@@ -743,7 +743,8 @@ app.post('/create_passage/', async (req, res) => {
         parent.passages.push(passage);
         await parent.save();
     }
-    res.render('passage', {passage: passage, sub: true});
+    let find = await Passage.findOne({_id: passage._id}).populate('author');
+    res.render('passage', {passage: find, sub: true});
 });
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
@@ -769,9 +770,7 @@ app.post('/update_passage_order/', async (req, res) => {
     if(typeof req.body.passageOrder != 'undefined'){
         var passageOrder = JSON.parse(req.body.passageOrder);
         let trimmedPassageOrder = passageOrder.map(str => str.trim());
-        console.log(passage.passages);
         passage.passages = trimmedPassageOrder;
-        console.log(passage.passages);
         await passage.save();
     }
     //give back updated passage
@@ -780,7 +779,7 @@ app.post('/update_passage_order/', async (req, res) => {
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
-    var passage = await Passage.findOne({_id: _id});
+    var passage = await Passage.findOne({_id: _id}).populate('author');
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
@@ -812,13 +811,6 @@ app.post('/update_passage/', async (req, res) => {
     await passage.save();
     //give back updated passage
     res.render('passage', {passage: passage, sub: true});
-});
-app.post('/copy_passage/', async (req, res) => {
-    let copy = await passageController.copyPassage(req, res, function(){
-        
-    });
-    let passage = await Passage.findOne({_id: req.body._id});
-    res.render('passage', {passage: copy, sub: true});
 });
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
