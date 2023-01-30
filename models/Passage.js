@@ -111,14 +111,6 @@ const passageSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
-    admin_cross_origin_all: {
-        type: Boolean,
-        default: false
-    },
-    admin_same_origin: {
-        type: Boolean,
-        default: false
-    },
     admin_make_daemon: {
         type: Boolean,
         default: false

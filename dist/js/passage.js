@@ -133,13 +133,53 @@ $(function(){
                 setting: setting
             },
             success: function (data) {
-                if(thiz.hasClass('green')){
-                    thiz.removeClass('green');
-                    thiz.addClass('red');
+                if(thiz.data('setting') != 'request-public-daemon'){
+                    if(thiz.hasClass('green')){
+                        thiz.removeClass('green');
+                        thiz.addClass('red');
+                    }
+                    else if(thiz.hasClass('red')){
+                        thiz.removeClass('red');
+                        thiz.addClass('green');
+                    }
                 }
-                else if(thiz.hasClass('red')){
-                    thiz.removeClass('red');
-                    thiz.addClass('green');
+                switch (thiz.data('setting')) {
+                    case 'public':
+                        let privateSetting = $('#passage_setting_make_private_' + _id);
+                        if(privateSetting.hasClass('green')){
+                            privateSetting.removeClass('green');
+                            privateSetting.addClass('red');
+                        }
+                        else if(privateSetting.hasClass('red')){
+                            privateSetting.removeClass('red');
+                            privateSetting.addClass('green');
+                        }
+                        break;
+                    case 'private':
+                        let publicSetting = $('#passage_setting_make_public_' + _id);
+                        if(publicSetting.hasClass('green')){
+                            publicSetting.removeClass('green');
+                            publicSetting.addClass('red');
+                        }
+                        else if(publicSetting.hasClass('red')){
+                            publicSetting.removeClass('red');
+                            publicSetting.addClass('green');
+                        }
+                        break;
+                    case 'request-public-daemon':
+                        if(thiz.hasClass('yellow')){
+                            thiz.removeClass('yellow');
+                            thiz.addClass('red');
+                        }
+                        else if(thiz.hasClass('red')){
+                            thiz.removeClass('red');
+                            thiz.addClass('yellow');
+                        }
+                        break;
+                    
+                    default:
+                        
+                        break;
                 }
                 // alert(data);
             }
@@ -212,6 +252,7 @@ $(function(){
     });
     //For Home, Search, and Profile
     $(document).on('click', '#view_more', function(){
+        alert('test');
         //check if home, search, or profile
         var isProfile = $('#is_profile').val();
         $.ajax({
@@ -223,6 +264,7 @@ $(function(){
                 search: search
             },
             success: function(data){
+                alert(data);
                 page += 1;
                 $('#passage_wrapper').append(data);
             }
