@@ -465,7 +465,6 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     let event;
     try {
         event = stripe.webhooks.constructEvent(request.rawBody, sig, endpointSecret);
-        console.log(payload.data.object.amount);
         console.log(event.type);
     } catch (err) {
         console.log(err);
@@ -478,14 +477,14 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         let amount = payload.data.object.amount;
         //Save recording passage in database and give user correct number of stars
         //get user from email
-        let user = await User.find({_id: payload.data.object.email});
+        let user = await User.find({_id: payload.data.object.customer_details.email});
         let passage = await Passage.create({
             users: [user._id],
             title: 'Donation',
             content: amount,
             systemRecord: true
         });
-        let systemContent = JSON.parse(GetSystemRecord().content);
+        let systemContent = JSON.parse(GetMainSystemRecord().content);
         let totalUSD = systemContent.usd;
         let totalStarCount = systemContent.stars;
         let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
