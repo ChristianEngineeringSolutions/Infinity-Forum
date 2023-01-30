@@ -167,6 +167,12 @@ async function starUser(numStars, userId){
     SystemRecord.content = JSON.stringify(preContent);
     await SystemRecord.save();
 }
+/**
+ * db.Passages.insertOne({
+ *  MainSystemRecord: true,
+ *  content: "{stars: 0, usd: 0}"
+ * });
+ */
 async function GetMainSystemRecord(){
     let passage = await Passage.findOne({MainSystemRecord: true});
     return passage;
@@ -314,7 +320,7 @@ app.post('/search/', async (req, res) => {
         title: {
         $regex: req.body.search,
         $options: 'i'
-    }}).populate('users sourceList');
+    }}).populate('author users sourceList');
     res.render("passages", {
         passages: results,
         sub: true
@@ -376,42 +382,30 @@ app.post('/add_user', async (req, res) => {
 app.post('/passage_setting', async (req, res) => {
     let _id = req.body._id;
     let setting = req.body.setting;
-    let user = await User.find({_id: req.session.user._id});
-    let passage = await Passage.findOne({_id: _id});
+    let user = await User.findOne({_id: req.session.user._id});
+    let passage = await Passage.findOne({_id: _id}).populate('author');
+    console.log(user._id);
+    console.log(passage.author);
     switch(setting){
         case 'private':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
+                console.log(1);
                 passage.public = false;
             }
             break;
         case 'public':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
                 passage.public = true;
             }
             break;
         case 'cross-origin-allowed':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
                 passage.personal_cross_origin = true;
             }
             break;
-        case 'same-origin':
-            if(passage.users[0] == user._id){
-                passage.personal_same_origin = true;
-            }
-            break;
         case 'request-public-daemon':
-            if(passage.users[0] == user._id){
+            if(passage.author._id.toString() == user._id.toString()){
                 passage.public_daemon = 1;
-            }
-            break;
-        case 'admin-cross-origin':
-            if(user.admin){
-                passage.admin_cross_origin_all = true;
-            }
-            break;
-        case 'admin-same-origin':
-            if(user.admin){
-                passage.admin_same_origin = true;
             }
             break;
         case 'admin-make-public-daemon':
@@ -480,19 +474,22 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         let amount = payload.data.object.amount;
         //Save recording passage in database and give user correct number of stars
         //get user from email
-        let user = await User.find({_id: payload.data.object.customer_details.email});
-        let passage = await Passage.create({
-            users: [user._id],
-            title: 'Donation',
-            content: amount,
-            systemRecord: true
-        });
-        let systemContent = JSON.parse(GetMainSystemRecord().content);
-        let totalUSD = systemContent.usd;
-        let totalStarCount = systemContent.stars;
-        let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
-        user.stars += starsToAdd;
-        await user.save();
+        let user = await User.findOne({_id: payload.data.object.customer_details.email});
+        if(user){
+            let passage = await Passage.create({
+                author: user._id,
+                users: [user._id],
+                title: 'Donation',
+                content: amount,
+                systemRecord: true
+            });
+            let systemContent = JSON.parse(GetMainSystemRecord().content);
+            let totalUSD = systemContent.usd;
+            let totalStarCount = systemContent.stars;
+            let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
+            user.stars += starsToAdd;
+            await user.save();
+        }
     }
   
     response.status(200).end();
@@ -683,6 +680,7 @@ app.get('/logout', function(req, res) {
 });
 //simply return new object list for client to add into html
 app.post('/paginate', async function(req, res){
+    console.log('test');
     let page = req.body.page;
     let profile = req.body.profile; //home, profile, or leaderboard
     let search = req.body.search;
@@ -693,7 +691,8 @@ app.post('/paginate', async function(req, res){
         if(profile != 'false'){
             find.author = profile;
         }
-        let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'users'});
+        let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
+        console.log('passages');
         res.render('passages', {
             passages: passages,
             sub: true

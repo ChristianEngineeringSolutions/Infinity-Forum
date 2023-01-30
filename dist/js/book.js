@@ -53,7 +53,7 @@ $('#search').on('keypress', function(e){
                 search: thiz.val()
             },
             success: function(data){
-                $('#passage_wrapper').append(data);
+                $('#passage_wrapper').html(data);
                 page = 1;
             }
         });
@@ -71,29 +71,6 @@ function jqueryToggle(thiz, func1, func2, dataType='toggle', dataValue=[0, 1]){
         func1();
     }
     return thiz.data(dataType);
-}
-$(document).on('click', '.passage_mutate', function(){
-    flashIcon($(this), 'red');
-    var content = $(this).parent().siblings('.passage_content').text();
-    $(this)
-    .parent()
-    .parent()
-    .append('<input class="reserve"type="hidden"value="'+content+'"/>');
-    var newContent = $(this).parent().siblings('.reserve').val();
-    newContent = share.mutate(newContent, ' ');
-    $(this).parent().siblings('.passage_content').html(newContent);
-});
-$(document).on('click', '.image_upload_icon', function(){
-    $(this).css('color', 'red');
-    $(this).parent().siblings('.hidden_upload').click();
-});
-
-function scriptLoaded(url) {
-    var scripts = document.getElementsByTagName('script');
-    for (var i = scripts.length; i--;) {
-        if (scripts[i].src == url) return true;
-    }
-    return false;
 }
 function flashIcon(thiz, color='gold'){
     thiz.css('color', color);

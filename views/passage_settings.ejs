@@ -14,10 +14,10 @@ Add User:
 <br>
 Toggle Green/Red for Active/Inactive
 <br>
-<div data-setting="private"class="passage_setting green"id="passage_setting_make_private_<%=passage._id%>">Make Private (Default) (Only Team members can add passages)</div>
-<div data-setting="public"class="passage_setting red"id="passage_setting_make_public_<%=passage._id%>">Make Public (Everyone can add passages)</div>
-<div data-setting="cross-origin-allowed"class="passage_setting red"id="passage_setting_cross_origin_allowed_<%=passage._id%>">Cross Origin Allowed (Personal Advanced)</div>
-<div data-setting="request-public-daemon"class="passage_setting red"id="passage_setting_public_daemon_requested_<%=passage._id%>">Request Public Daemonization</div>
+<div data-setting="private"class="passage_setting <%=passage.public == false ? 'green' : 'red';%>"id="passage_setting_make_private_<%=passage._id%>">Make Private (Default) (Only Team members can add passages)</div>
+<div data-setting="public"class="passage_setting <%=passage.public == true ? 'green' : 'red';%>"id="passage_setting_make_public_<%=passage._id%>">Make Public (Everyone can add passages)</div>
+<div data-setting="cross-origin-allowed"class="passage_setting <%=passage.personal_cross_origin == true ? 'green' : 'red';%>"id="passage_setting_cross_origin_allowed_<%=passage._id%>">Cross Origin Allowed (Personal Advanced)</div>
+<div data-setting="request-public-daemon"class="passage_setting <%=passage.public_daemon == 0 ? 'red' : 'yellow';%>"id="passage_setting_public_daemon_requested_<%=passage._id%>">Request Public Daemonization</div>
 <%if(user && user.admin){%>
-<div data-setting="admin-make-public-daemon"class="passage_setting red"id="passage_setting_admin_make_daemon_<%=passage._id%>">Make Public Daemon (Admin Advanced Option)</div>
+<div data-setting="admin-make-public-daemon"class="passage_setting <%=passage.public_daemon == 2 ? 'green' : 'red';%>"id="passage_setting_admin_make_daemon_<%=passage._id%>">Make Public Daemon (Admin Advanced Option)</div>
 <%}%>

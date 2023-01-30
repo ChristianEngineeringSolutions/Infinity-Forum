@@ -137,6 +137,9 @@
 .red{
     color: red;
 }
+.yellow{
+    color: yellow;
+}
 .passage_setting{
     cursor: pointer;
     padding: 5px;
@@ -148,5 +151,8 @@
     cursor: pointer;
 }
 .change_passage_file{
+    cursor: pointer;
+}
+#view_more{
     cursor: pointer;
 }
