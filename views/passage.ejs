@@ -23,7 +23,7 @@
         <!-- Shift passage location -->
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <!-- Copy and move passage -->
-        <% if(sub === true){%>
+        <% if(user && sub === true){%>
             <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
         <%}%>
         <%if(passage.users != null && passage.users[0]){%>
@@ -35,10 +35,8 @@
     </ul>
     <ul class="passage_users">
         <!-- Profile Image layers -->
-        <%if(passage.users){%>
-            <%passage.users.forEach(function(user) { %>
-                <%- include('profile_thumbnail', {profile: user}) %>
-        <%});%>
+        <%if(passage.author){%>
+            <%- include('profile_thumbnail', {profile: passage.author}) %>
         <%}else{%>
             Anonymous
         <%}%>
@@ -59,11 +57,11 @@
         <% hide = 'test'; %>
     <%}%>
     <div id="passage_iframe" class="<%=hide%>" id="result_div">
-        <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
-        <%if(passage.personal_cross_origin && user._id == passage.users[0]._id){%>
-            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+        <a style="float:right;"target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
+        <%if(user && passage.personal_cross_origin && user._id == passage.users[0]._id){%>
+            <iframe src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
         <%}else{%>
-            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+            <iframe src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
         <%}%>
     </div>
     <!-- <ul class="passage_tabs">

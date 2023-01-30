@@ -1,5 +1,5 @@
 <p><%=profile.username%></p>
-    <a target="_blank"href="/stripeAuthorize">Get Paid</a>
+    <a target="_blank"href="/stripeAuthorize">Get Paid (<%=profile.stripeAccountId.length > 1 && profile.stripeAccountId != null ? "Active" : "Inactive"%>)</a>
     <br><br>
     <form id="settings_form" action="/register/" method="POST">
         <input id="original_username"type="hidden"value="<%=profile.username%>" />
