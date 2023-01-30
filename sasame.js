@@ -633,11 +633,13 @@ app.post('/register/', async function(req, res) {
     if ((req.body.email ||
       req.body.username) &&
       req.body.password &&
-      req.body.passwordConf) {  
+      req.body.passwordConf && 
+      req.body.password == req.body.passwordConf) {  
         let numUsers = await User.countDocuments({username: req.body.username.trim()}) + 1;
         var userData = {
         email: req.body.email || '',
-        username: req.body.username + numUsers || '',
+        name: req.body.username || req.body.email,
+        username: req.body.username.split(' ').join('.') + numUsers || '',
         password: req.body.password,
         token: v4()
       }  //use schema.create to insert data into the db
@@ -665,6 +667,30 @@ app.post('/register/', async function(req, res) {
         }
       });
     }
+});
+app.post('/update_settings/', async function(req, res) {
+    if ((req.body.email ||
+      req.body.username) &&
+      req.body.password &&
+      req.body.passwordConf && 
+      req.body.password == req.body.passwordConf &&
+      req.body.oldPassword) {  
+        authenticateUsername(req.body.username, req.body.oldPassword, function(err, user){
+            if(err){
+                console.log(err);
+            }
+            req.session.user = user;
+            user.username = req.body.username;
+            user.password = bcrypt.hash(req.body.password, 10, async function (err, hash){
+                if (err) {
+                  console.log(err);
+                }
+                user.password = hash;
+                await user.save();
+                res.redirect('/profile/' + user._id);
+            });
+        });
+    } 
 });
 app.get('/logout', function(req, res) {
     if (req.session) {
