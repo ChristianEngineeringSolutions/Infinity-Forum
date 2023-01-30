@@ -17,7 +17,10 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    title: String,
+    title: {
+        type: String,
+        default: 'Untitled'
+    },
     html: String,
     css: String,
     javascript: String,
