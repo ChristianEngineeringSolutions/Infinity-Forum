@@ -179,6 +179,9 @@ function percentUSD(donationUSD, totalUSD){
 }
 
 async function starPassage(amount, passageID, userID){
+    let passage = await Passage.findOne({_id: passageID});
+    let numSources = passage.sourceList.length;
+    amount = amount * numSources;
     //give bonuses according to previous systemrecords for this passage
     let systemRecords = await Passage.find({
         parent: passageID,
@@ -199,12 +202,13 @@ async function starPassage(amount, passageID, userID){
         amount += numStars;
     });
     //add stars to passage, sourceList, and sub Passages
-    let passage = await Passage.findOne({_id: passageID});
     passage.stars += amount;
     await passage.save();
+    //star each source
     passage.sourceList.forEach(async function(source){
         await starPassage(amount, source._id, userID);
     });
+    //star all sub passages
     (function lambda(passage){
         passage.passages.forEach(async function(p){
             await starPassage(amount, p._id, userID);
@@ -258,7 +262,7 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let passages = await Passage.find({users: profile}).populate('users sourceList');
+    let passages = await Passage.find({users: profile, deleted: false}).populate('author users sourceList');
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -274,7 +278,6 @@ app.post('/get_username_number', async function(req, res){
     if(number - 1 === 0){
         number = '';
     }
-    console.log(number);
     res.send(number + '');
 });
 //HOME/INDEX
@@ -287,7 +290,7 @@ app.get('/', async (req, res) => {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    let passages = await Passage.find().populate('users sourceList');
+    let passages = await Passage.find({deleted: false}).populate('author users sourceList');
     let passageUsers = [];
     let bookmarks = [];
     if(req.session.user){
@@ -303,7 +306,9 @@ app.get('/', async (req, res) => {
 });
 //Search
 app.post('/search/', async (req, res) => {
-    let results = await Passage.find({title: {
+    let results = await Passage.find({
+        deleted: false,
+        title: {
         $regex: req.body.search,
         $options: 'i'
     }}).populate('users sourceList');
@@ -318,6 +323,13 @@ app.post('/bookmark_passage', async (req, res) => {
     await user.save();
     res.send('done.');
 });
+app.post('/copy_passage/', async (req, res) => {
+    let copy = await passageController.copyPassage(req, res, function(){
+        
+    });
+    let passage = await Passage.findOne({_id: req.body._id});
+    res.render('passage', {passage: copy, sub: true});
+});
 app.post('/transfer_bookmark', async (req, res) => {
     let _id = req.body._id;
     //First copy the passage
@@ -325,7 +337,7 @@ app.post('/transfer_bookmark', async (req, res) => {
         
     });
     //Then move the copy into the current tab
-    let tab = await Passage.findOne({_id: req.body.tab_id});
+    let tab = await Passage.findOne({_id: req.body.parent}).populate('author');
     tab.passages.push(copy._id);
     copy.parent = tab._id;
     await tab.save();
@@ -337,9 +349,6 @@ app.get('/get_bookmarks', async (req, res) => {
     if(req.session.user){
         let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
         bookmarks = user.bookmarks;
-        await bookmarks.forEach(async function(bookmark){
-            bookmark.author = await Passage.find({_id: bookmark._id}).author._id;
-        });
     }
     res.render('bookmarks', {bookmarks: bookmarks});
 });
@@ -425,6 +434,17 @@ app.post('/remove_user', async (req, res) => {
         await passage.save();
         res.send("Done.");
     }
+});
+app.post('/remove_bookmark', async (req, res) => {
+    let _id = req.body._id;
+    let user = await User.findOne({_id: req.session.user._id});
+    user.bookmarks.forEach((bookmark, i) => {
+        if(bookmark._id.toString() == _id.toString()){
+            user.bookmarks.splice(i, 1);
+        }
+    });
+    await user.save();
+    res.send("Done.");
 });
 app.post('/move_passage', async (req, res) => {
     let passage = await Passage.findOne({_id: req.body.passage_id});
@@ -713,6 +733,7 @@ app.post('/create_passage/', async (req, res) => {
         users = [user];
     }
     let passage = await Passage.create({
+        author: user,
         users: users,
         parent: parentId
     });
@@ -722,7 +743,8 @@ app.post('/create_passage/', async (req, res) => {
         parent.passages.push(passage);
         await parent.save();
     }
-    res.render('passage', {passage: passage, sub: true});
+    let find = await Passage.findOne({_id: passage._id}).populate('author');
+    res.render('passage', {passage: find, sub: true});
 });
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
@@ -748,9 +770,7 @@ app.post('/update_passage_order/', async (req, res) => {
     if(typeof req.body.passageOrder != 'undefined'){
         var passageOrder = JSON.parse(req.body.passageOrder);
         let trimmedPassageOrder = passageOrder.map(str => str.trim());
-        console.log(passage.passages);
         passage.passages = trimmedPassageOrder;
-        console.log(passage.passages);
         await passage.save();
     }
     //give back updated passage
@@ -759,7 +779,7 @@ app.post('/update_passage_order/', async (req, res) => {
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
-    var passage = await Passage.findOne({_id: _id});
+    var passage = await Passage.findOne({_id: _id}).populate('author');
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
@@ -791,13 +811,6 @@ app.post('/update_passage/', async (req, res) => {
     await passage.save();
     //give back updated passage
     res.render('passage', {passage: passage, sub: true});
-});
-app.post('/copy_passage/', async (req, res) => {
-    let copy = await passageController.copyPassage(req, res, function(){
-        
-    });
-    let passage = await Passage.findOne({_id: req.body._id});
-    res.render('passage', {passage: copy, sub: true});
 });
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
