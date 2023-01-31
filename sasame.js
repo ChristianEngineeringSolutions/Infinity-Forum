@@ -164,7 +164,7 @@ async function starUser(numStars, userId){
 /**
  * db.Passages.insertOne({
  *  MainSystemRecord: true,
- *  content: "{stars: 0, usd: 0}"
+ *  content: '{"stars": 0, "usd": 0}'
  * });
  */
 async function GetMainSystemRecord(){
@@ -259,7 +259,7 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let passages = await Passage.find({users: profile, deleted: false}).populate('author users sourceList');
+    let passages = await Passage.find({users: profile, deleted: false}).populate('author users sourceList').sort('-stars');
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -309,7 +309,7 @@ app.post('/search/', async (req, res) => {
         title: {
         $regex: req.body.search,
         $options: 'i'
-    }}).populate('author users sourceList');
+    }}).populate('author users sourceList').sort('-stars');
     res.render("passages", {
         passages: results,
         sub: true
@@ -351,7 +351,7 @@ app.get('/get_bookmarks', async (req, res) => {
     res.render('bookmarks', {bookmarks: bookmarks});
 });
 app.get('/leaderboard', async (req, res) => {
-    let users = await User.find();
+    let users = await User.find().sort('-stars');
     res.render('leaderboard', {users: users, scripts: scripts});
 });
 app.post('/add_user', async (req, res) => {

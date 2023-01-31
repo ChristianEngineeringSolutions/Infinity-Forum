@@ -40,7 +40,6 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
-    //You can give away twice as many stars as you have
     stars: {
         type: Number,
         default: 100
