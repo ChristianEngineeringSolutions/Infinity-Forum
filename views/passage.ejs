@@ -3,6 +3,9 @@
         <%- include('passage_settings', {passage: passage}) %>
     </div>
     <div id="passage_sources_modal_<%=passage._id%>" class="modal">
+        <%if(passage.sourceList.length < 1){%>
+            <div>No Sources</div>
+        <%}%>
         <%passage.sourceList.forEach(function(source) { %>
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
         <%});%>
