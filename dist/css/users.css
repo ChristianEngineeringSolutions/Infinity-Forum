@@ -18,3 +18,11 @@
     width: 100%;
     margin-top: 10px;
 }
+.leader{
+    background: black;
+    color: gold;
+    margin: auto;
+    border: 1px solid black;
+    text-align: center;
+    padding: 10px;
+}

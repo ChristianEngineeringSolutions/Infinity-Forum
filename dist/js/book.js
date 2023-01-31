@@ -44,6 +44,7 @@ function isMobile(){
   } );
 //search
 $('#search').on('keypress', function(e){
+    //check what page we are on
     var thiz = $(this);
     if(e.which == 13){
         $.ajax({
