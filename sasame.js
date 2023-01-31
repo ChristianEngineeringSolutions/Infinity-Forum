@@ -251,6 +251,9 @@ async function messageUser(from, to, subject, content){
 //GET (or show view)
 
 app.get("/profile/:_id?/", async (req, res) => {
+    if(!req.session.user){
+        return res.redirect('/');
+    }
     let bookmarks = [];
     let profile;
     if(typeof req.params._id == 'undefined'){
@@ -262,7 +265,6 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    console.log(profile.admin);
     let passages = await Passage.find({users: profile, deleted: false}).populate('author users sourceList');
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
