@@ -1,3 +1,4 @@
+distractionFree = false;
 $(function(){
     $(document).on('click', '#bookmarks_icon', function(){
         $('#right_side_select').val('bookmarks').change();
@@ -115,6 +116,28 @@ $(function(){
     });
     $(document).on('click', '#help_link', function(){
         
+    });
+    $(document).on('click', '#distraction_free', function(){
+        if(distractionFree == false){
+            $('.passage_options').hide();
+            $('.passage_author').hide();
+            $('.passage_users').hide();
+            $('.passage_stars').hide();
+            $('.passage').css('background', 'white'); 
+            $('.passage').css('border', '0'); 
+            $('.passage').css('margin-bottom', '0'); 
+            distractionFree = true;
+        }
+        else{
+            $('.passage_options').show();
+            $('.passage_author').show();
+            $('.passage_users').show();
+            $('.passage_stars').show();
+            $('.passage').css('background', 'gold'); 
+            $('.passage').css('border', '1px solid black'); 
+            $('.passage').css('margin-bottom', '10px'); 
+            distractionFree = false;
+        }
     });
     // $('.passage').draggable();
     $('.tab').droppable({

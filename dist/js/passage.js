@@ -11,6 +11,10 @@ $(function(){
     $(document).on('click', '[id^="passage_executable_"]', function(e){
         let _id = $(this).attr('id').split('_').at(-1);
     });
+    $(document).on('click', '[id^="passage_edit_"]', function(e){
+        let _id = $(this).attr('id').split('_').at(-1);
+        $('#passage_form_' + _id).slideToggle();
+    });
 
     $(document).on('click', '.passage_tab_open_advanced', function(e){
         $('.passage_advanced').fadeToggle().css('display', 'inline-block');
