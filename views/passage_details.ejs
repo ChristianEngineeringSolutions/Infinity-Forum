@@ -2,7 +2,7 @@
 Source variable: passage
  -->
 
-<div id="passage_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
+<div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
 <hr>
 <div class="detail_description" name="content" id="passage_content_<%=passage._id%>"><%=passage.content%></div>
 <!-- <button class="passage_plus_description">+</button> -->
@@ -21,3 +21,4 @@ Source variable: passage
         <%=passage.javascript%>
     </div>
 </div>
+<input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
