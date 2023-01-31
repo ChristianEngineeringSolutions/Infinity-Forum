@@ -76,12 +76,19 @@
     <!-- </ul> -->
     <%if(user && passage.author._id == user._id){%>
         <%- include('passage_form') %>
+        <ul class="passage_tabs">
+            <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
+        </ul>
     <%}else{%>
         <%- include('passage_details') %>
+        <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '') && (passage.css == null || passage.css == '')){%>
+            
+        <%}else{%>
+            <ul class="passage_tabs">
+                <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
+            </ul>
+        <%}%>
     <%}%>
-    <ul class="passage_tabs">
-        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
-    </ul>
  </div>
  <%if(passage.passages && sub === false){%>
     <div id="sub_passages">
