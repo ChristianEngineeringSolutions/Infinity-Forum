@@ -116,7 +116,7 @@ $(function(){
     $(document).on('click', '#help_link', function(){
         
     });
-    $('.passage').draggable();
+    // $('.passage').draggable();
     $('.tab').droppable({
         drop: (event, ui) => {
             // alert('dropped');
