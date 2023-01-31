@@ -181,7 +181,7 @@ function percentUSD(donationUSD, totalUSD){
 async function starPassage(amount, passageID, userID){
     let passage = await Passage.findOne({_id: passageID});
     let numSources = passage.sourceList.length;
-    amount = amount * numSources;
+    amount = amount * (numSources + 1);
     //give bonuses according to previous systemrecords for this passage
     let systemRecords = await Passage.find({
         parent: passageID,
@@ -224,6 +224,7 @@ async function starPassage(amount, passageID, userID){
     }
     //add systemrecord passage
     let systemRecord = await Passage.create({
+        author: userID,
         systemRecord: true,
         parent: passageID,
         stars: amount,
@@ -279,7 +280,7 @@ app.get('/', async (req, res) => {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    let passages = await Passage.find({deleted: false}).populate('author users sourceList');
+    let passages = await Passage.find({deleted: false}).populate('author users sourceList').sort('-stars');
     let passageUsers = [];
     let bookmarks = [];
     if(req.session.user){
