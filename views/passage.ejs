@@ -20,9 +20,7 @@
                 <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
                 <%}%>
         <%}%>
-        <% if(sub === false){%>
             <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
-        <%}%>
         <!-- Shift passage location -->
         <%if(user){%>
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
@@ -90,9 +88,9 @@
         <%}%>
     <%}%>
  </div>
- <%if(passage.passages && sub === false){%>
+ <%if(subPassages && sub === false){%>
     <div id="sub_passages">
-        <%passage.passages.forEach(function(sub_passage) { %>
+        <%subPassages.forEach(function(sub_passage) { %>
             <%- include('passage', {passage: sub_passage, sub: true}) %>
         <%}); %>
     </div>
