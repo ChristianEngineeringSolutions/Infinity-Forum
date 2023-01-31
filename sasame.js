@@ -657,9 +657,9 @@ app.post('/register/', async function(req, res) {
           });
           //send verification email
           if(user.email.length > 1){
-            sendEmail(user.email, 'Verify Email for Sasame', 
+            sendEmail(user.email, 'Verify Email for Christian Engineering Solutions', 
                 `
-                    https://christianengineeringsolutions.com/verify/`+user.id+`/`+user.token+`
+                    https://christianengineeringsolutions.com/verify/`+user._id+`/`+user.token+`
                 `);
           }
           res.redirect('/profile/' + user._id);
@@ -853,6 +853,7 @@ app.get('/verify/:user_id/:token', function (req, res) {
             res.redirect('/login/');
         } else {
             console.log('The token is wrong! Reject the user. token should be: ' + user.verify_token);
+            res.redirect('/login/');
         }
     });
 });
