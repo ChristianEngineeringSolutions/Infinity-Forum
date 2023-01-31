@@ -66,7 +66,7 @@ module.exports = {
         //add source
         let sourceList = passage.sourceList;
         sourceList.push(passage._id);
-        var parent = req.body.parent == 'root' ? [] : req.body.parent;
+        var parent = req.body.parent == 'root' ? null : req.body.parent;
         //duplicate main passage
         let copy = await Passage.create({
             parent: parent,
