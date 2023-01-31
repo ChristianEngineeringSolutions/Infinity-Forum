@@ -2,7 +2,7 @@
     <a target="_blank"href="/stripeAuthorize">Get Paid (<%=profile.stripeAccountId != null && profile.stripeAccountId.length > 1 ? "Active" : "Inactive"%>)</a>
     <br><br>
     <form id="settings_form" action="/update_settings/" method="POST">
-        <input id="original_username"type="hidden"value="<%=profile.username%>" />
+        <input name="oldUsername"id="oldUsername"type="hidden"value="<%=profile.username%>" />
     <div>
         Username: <span id="register_username_load"></span>
         <br>
@@ -15,7 +15,7 @@
     </div>
     <div>
         <label>New Password:</label>
-        <input id="register_password" type="password" name="password"autocomplete="off"/>
+        <input id="register_password" value=""type="password" name="password"autocomplete="off"/>
     </div>
     <div>
         <label>Confirm New Password:</label>
@@ -30,6 +30,6 @@
         <input id="register_confirm" type="checkbox" name="passwordConf"autocomplete="off"/>
     </div> -->
     <div>
-        <input id="register_button"type="submit" value="Update" disabled/>
+        <input id="register_button"type="submit" value="Update"/>
     </div>
 </form>
