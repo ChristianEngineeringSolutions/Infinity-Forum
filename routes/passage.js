@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const passageController = require('../controllers/passageController');
-const chapterController = require('../controllers/chapterController');
 
 router.post(/\/add_passage\/?/, (req, res) => {
     let chapterID = req.body.chapterID;
@@ -21,13 +20,6 @@ router.post(/\/add_passage\/?/, (req, res) => {
                 'callback': callback
             });
             break;
-        case 'chapter':
-            chapterController.addChapter({
-                'title': content,
-                'author': user,
-                'callback': callback
-            });
-            break;
         case '':
         default:
             //TODO: Handle Empty Content Case, etc.
@@ -36,6 +28,5 @@ router.post(/\/add_passage\/?/, (req, res) => {
 });
 router.put(/\/update_passage\/?/, passageController.updatePassage);
 router.delete(/\/delete_passage\/?/, passageController.deletePassage);
-router.delete(/\/delete_category\/?/, chapterController.deleteChapter);
 
 module.exports = router;
