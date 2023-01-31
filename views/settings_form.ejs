@@ -1,21 +1,21 @@
 <p><%=profile.username%></p>
-    <a target="_blank"href="/stripeAuthorize">Get Paid</a>
+    <a target="_blank"href="/stripeAuthorize">Get Paid (<%=profile.stripeAccountId != null ? "Active" : "Inactive"%>)</a>
     <br><br>
-    <form id="settings_form" action="/register/" method="POST">
-        <input id="original_username"type="hidden"value="<%=profile.username%>" />
+    <form id="settings_form" action="/update_settings/" method="POST">
+        <input name="oldUsername"id="oldUsername"type="hidden"value="<%=profile.username%>" />
     <div>
         Username: <span id="register_username_load"></span>
         <br>
         <label>Name:</label>
-        <input id="register_username" type="text" name="username"autocomplete="off"/>
+        <input id="register_username" type="text" value="<%=profile.name%>"name="username"autocomplete="off"/>
     </div>
     <div>
         <label>Email:</label>
-        <input placeholder="Recommended" id="register_email" type="text" name="email"autocomplete="off"/>
+        <input placeholder="Recommended" id="register_email" value="<%=profile.email%>"type="text" name="email"autocomplete="off"/>
     </div>
     <div>
         <label>New Password:</label>
-        <input id="register_password" type="password" name="password"autocomplete="off"/>
+        <input id="register_password" value=""type="password" name="password"autocomplete="off"/>
     </div>
     <div>
         <label>Confirm New Password:</label>
@@ -23,12 +23,12 @@
     </div>
     <div>
         <label>Old Password:</label>
-        <input id="register_confirm" type="password" name="passwordConf"autocomplete="off"/>
+        <input id="register_confirm" type="password" name="oldPassword"autocomplete="off"/>
     </div>
-    <div>
+    <!-- <div>
         <label>Developer Mode (Advanced):</label>
         <input id="register_confirm" type="checkbox" name="passwordConf"autocomplete="off"/>
-    </div>
+    </div> -->
     <div>
         <input id="register_button"type="submit" value="Update"/>
     </div>

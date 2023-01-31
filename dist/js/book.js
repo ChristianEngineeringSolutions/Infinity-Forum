@@ -6,17 +6,17 @@ var Sasame = true;
 
 var page = 1;
 
-if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
-    //so only in chapters
-    Sasame = false;
-    $('#passages').sortable({
-        handle: '.passage_author'
-    });
-}
-else{
-    //force height of passages only on home page
-    document.styleSheets[0].insertRule('.passage_content{max-height:300px}');
-}
+// if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
+//     //so only in chapters
+//     Sasame = false;
+//     $('#passages').sortable({
+//         handle: '.passage_author'
+//     });
+// }
+// else{
+//     //force height of passages only on home page
+//     document.styleSheets[0].insertRule('.passage_content{max-height:300px}');
+// }
 //For forms
 $.fn.serializeObject = function() {
     var o = {};
@@ -44,6 +44,7 @@ function isMobile(){
   } );
 //search
 $('#search').on('keypress', function(e){
+    //check what page we are on
     var thiz = $(this);
     if(e.which == 13){
         $.ajax({
@@ -53,7 +54,7 @@ $('#search').on('keypress', function(e){
                 search: thiz.val()
             },
             success: function(data){
-                $('#passage_wrapper').append(data);
+                $('#passage_wrapper').html(data);
                 page = 1;
             }
         });
@@ -71,29 +72,6 @@ function jqueryToggle(thiz, func1, func2, dataType='toggle', dataValue=[0, 1]){
         func1();
     }
     return thiz.data(dataType);
-}
-$(document).on('click', '.passage_mutate', function(){
-    flashIcon($(this), 'red');
-    var content = $(this).parent().siblings('.passage_content').text();
-    $(this)
-    .parent()
-    .parent()
-    .append('<input class="reserve"type="hidden"value="'+content+'"/>');
-    var newContent = $(this).parent().siblings('.reserve').val();
-    newContent = share.mutate(newContent, ' ');
-    $(this).parent().siblings('.passage_content').html(newContent);
-});
-$(document).on('click', '.image_upload_icon', function(){
-    $(this).css('color', 'red');
-    $(this).parent().siblings('.hidden_upload').click();
-});
-
-function scriptLoaded(url) {
-    var scripts = document.getElementsByTagName('script');
-    for (var i = scripts.length; i--;) {
-        if (scripts[i].src == url) return true;
-    }
-    return false;
 }
 function flashIcon(thiz, color='gold'){
     thiz.css('color', color);

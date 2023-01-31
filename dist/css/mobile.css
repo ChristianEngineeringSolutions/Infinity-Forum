@@ -12,6 +12,9 @@
     #add_passage_button{
         width: 92%;
     }
+    #passage_iframe{
+        width: 88%;
+    }
 }
 @media screen and (max-width: 550px){
     #add_passage_button{
