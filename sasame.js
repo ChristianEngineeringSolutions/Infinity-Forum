@@ -13,10 +13,8 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 // Models
 const User = require('./models/User');
-const Chapter = require('./models/Chapter');
 const Passage = require('./models/Passage');
 // Controllers
-const chapterController = require('./controllers/chapterController');
 const passageController = require('./controllers/passageController');
 // Routes
 const passageRoutes = require('./routes/passage');
