@@ -71,9 +71,13 @@
         <!-- Display Result -->
         <!-- <li class="passage_tab">Alternates</li> -->
     <!-- </ul> -->
-    <%- include('passage_form') %>
+    <%if(user && passage.author._id == user._id){%>
+        <%- include('passage_form') %>
+    <%}else{%>
+        <%- include('passage_details') %>
+    <%}%>
     <ul class="passage_tabs">
-        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Executable</li>
+        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
     </ul>
  </div>
  <%if(passage.passages && sub === false){%>

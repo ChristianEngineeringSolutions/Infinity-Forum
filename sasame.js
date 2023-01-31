@@ -128,14 +128,8 @@ app.get('/p-85f22907.js', function(req, res) {
 
 //CRON
 var cron = require('node-cron');
-cron.schedule('0 12 * * *', () => {
-  //run daily methods
-  //...
-  console.log('Daily Cron ran at 12pm.');
-});
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
-    //...
     //await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
@@ -625,8 +619,13 @@ app.post('/login', function(req, res) {
         if(err){
             console.log(err);
         }
-        req.session.user = user;
-        return res.redirect('/profile/' + user._id);
+        if(!user){
+            res.redirect('/loginform');
+        }
+        else{
+            req.session.user = user;
+            res.redirect('/profile/' + user._id);
+        }
     });
 });
 app.post('/register/', async function(req, res) {
@@ -675,12 +674,13 @@ app.post('/update_settings/', async function(req, res) {
       req.body.passwordConf && 
       req.body.password == req.body.passwordConf &&
       req.body.oldPassword) {  
-        authenticateUsername(req.body.username, req.body.oldPassword, function(err, user){
+        authenticateUsername(req.body.oldUsername, req.body.oldPassword, function(err, user){
             if(err){
                 console.log(err);
             }
             req.session.user = user;
             user.username = req.body.username;
+            user.email = req.body.email;
             user.password = bcrypt.hash(req.body.password, 10, async function (err, hash){
                 if (err) {
                   console.log(err);
