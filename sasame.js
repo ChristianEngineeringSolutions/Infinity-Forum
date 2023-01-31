@@ -251,9 +251,6 @@ async function messageUser(from, to, subject, content){
 //GET (or show view)
 
 app.get("/profile/:_id?/", async (req, res) => {
-    if(!req.session.user){
-        return res.redirect('/');
-    }
     let bookmarks = [];
     let profile;
     if(typeof req.params._id == 'undefined'){
