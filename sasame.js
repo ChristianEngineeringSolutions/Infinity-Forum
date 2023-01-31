@@ -274,10 +274,7 @@ app.get('/loginform', function(req, res){
   });
 app.post('/get_username_number', async function(req, res){
     let name = req.body.name;
-    let number = await User.countDocuments({username:name.trim()}) + 1;
-    if(number - 1 === 0){
-        number = '';
-    }
+    let number = await User.countDocuments({name:name.trim()}) + 1;
     res.send(number + '');
 });
 //HOME/INDEX
