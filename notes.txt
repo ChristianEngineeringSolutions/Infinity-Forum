@@ -1,13 +1,22 @@
 TODO:
+External:
 Anonymous Posts
-File compression
+File compression (client side)
 UUIDs
 Peer to Peer
 Daemon Touch ups
 Admin interface
 Encryption revisited
 Tests
+Personal Passages
+PPE
+Database merge
+Review Database Backups
 
+Internal (approved daemons):
+Claims
+PPE
+Editors
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -210,10 +210,10 @@ async function starPassage(amount, passageID, userID){
         await starPassage(amount, source._id, userID);
     });
     //star all sub passages
-    (function lambda(passage){
+    (async function lambda(passage){
         passage.passages.forEach(async function(p){
             await starPassage(amount, p._id, userID);
-            lambda(p);
+            await lambda(p);
         });
     })(passage);
     //then add stars to users appropriately (will be reflected in the main system record)
