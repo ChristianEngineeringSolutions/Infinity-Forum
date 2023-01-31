@@ -1005,12 +1005,12 @@ function authenticateUsername(username, password, callback) {
     if(username.match(regex) === null){
         //it's a username
         search = "username";
-        obj[search] = username;
     }
     else{
+        //it's an email
         search = "email";
-        obj[search] = email;
     }
+    obj[search] = username;
     User.findOne(obj)
       .exec(function (err, user) {
         if (err) {
