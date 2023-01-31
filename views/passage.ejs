@@ -12,7 +12,7 @@
     </div>
     <ul class="passage_options">
         <% if(sub === true){%>
-        <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
+        <li id="passage_more_<%=passage.id%>" class="passage_option">Details</li>
         <%}%>
         <!-- Show them settings only if they made the passage -->
         <%if(passage.users != null && passage.users[0]){%>
@@ -20,7 +20,7 @@
                 <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
                 <%}%>
         <%}%>
-            <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
+        <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
         <!-- Shift passage location -->
         <%if(user){%>
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
@@ -31,6 +31,7 @@
         <%}%>
         <%if(passage.users != null && passage.users[0]){%>
         <%if(passage.users && user && passage.users[0]._id == user._id){%>
+            <li id="passage_edit_<%=passage.id%>" class="passage_option">Edit</li>
             <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
             <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
         <%}%>
@@ -74,6 +75,7 @@
     <!-- </ul> -->
     <%if(user && passage.author._id == user._id){%>
         <%- include('passage_form') %>
+        <%- include('passage_details') %>
         <ul class="passage_tabs">
             <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
         </ul>
