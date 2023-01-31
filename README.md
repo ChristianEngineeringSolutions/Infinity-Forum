@@ -6,9 +6,9 @@ Christian Engineering Solutions (CES) is a Not for Profit Organization specializ
 
 Our Technology is scripture based in its goals and foundations. Open-Source and Free, one may use our services to both learn and solve problems with the goals of helping others and growing closer to God.
 
-# Under Active Development
+# Features
 
 ## Merit-based Reputation and Rewards
 ## Streamlined Search and Citations
 ## Modular Applications
-## Peer-to-Peer and Encryption Technologies
+## Peer-to-Peer and Encryption Technologies (Under Development)
