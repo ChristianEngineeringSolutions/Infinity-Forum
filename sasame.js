@@ -239,14 +239,6 @@ async function notifyUser(userId, content, type="General"){
         type: type
     });
 }
-async function messageUser(from, to, subject, content){
-    let message = await Message.create({
-        from: from,
-        to: to,
-        subject: subject,
-        content: content
-    });
-}
 //ROUTES
 //GET (or show view)
 
