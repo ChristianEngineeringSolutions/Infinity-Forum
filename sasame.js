@@ -848,10 +848,10 @@ app.get('/verify/:user_id/:token', function (req, res) {
                 console.log('The user has been verified!');
             });
 
-            res.redirect('/login/');
+            res.redirect('/');
         } else {
             console.log('The token is wrong! Reject the user. token should be: ' + user.verify_token);
-            res.redirect('/login/');
+            res.redirect('/');
         }
     });
 });
