@@ -48,6 +48,9 @@
     cursor: pointer;
     margin-right: 15px;
 }
+.passage_tabs{
+    margin-top: 50px;
+}
 .passage_tab{
     display: inline;
     padding: 10px;
@@ -55,6 +58,9 @@
     cursor: pointer;
     /* background: #fff; */
     font-weight: bold;
+}
+.passage_tab_open_advanced{
+    border: 1px solid black;
 }
 .passage_tab:hover{
     font-weight: bolder;
@@ -75,6 +81,9 @@
     margin-bottom: 10px;
     padding-left: 10px;
     padding-right: 0px;
+}
+.detail_title, .detail_description{
+    padding-left: 10px;
 }
 .boxsizingBorder {
     -webkit-box-sizing: border-box;
@@ -124,6 +133,7 @@
     padding: 10px; 
     width: 88%; 
     margin:auto;
+    margin-bottom: 20px;
 }
 .sub_passages{
     display: none;
