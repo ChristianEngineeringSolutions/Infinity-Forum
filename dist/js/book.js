@@ -6,17 +6,17 @@ var Sasame = true;
 
 var page = 1;
 
-if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
-    //so only in chapters
-    Sasame = false;
-    $('#passages').sortable({
-        handle: '.passage_author'
-    });
-}
-else{
-    //force height of passages only on home page
-    document.styleSheets[0].insertRule('.passage_content{max-height:300px}');
-}
+// if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
+//     //so only in chapters
+//     Sasame = false;
+//     $('#passages').sortable({
+//         handle: '.passage_author'
+//     });
+// }
+// else{
+//     //force height of passages only on home page
+//     document.styleSheets[0].insertRule('.passage_content{max-height:300px}');
+// }
 //For forms
 $.fn.serializeObject = function() {
     var o = {};
@@ -44,6 +44,7 @@ function isMobile(){
   } );
 //search
 $('#search').on('keypress', function(e){
+    //check what page we are on
     var thiz = $(this);
     if(e.which == 13){
         $.ajax({
