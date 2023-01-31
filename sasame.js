@@ -179,6 +179,10 @@ function percentUSD(donationUSD, totalUSD){
 }
 
 async function starPassage(amount, passageID, userID){
+    let user = await User.findOne({_id: userID});
+    if(user.stars < amount){
+        return res.send("Not enough stars.");
+    }
     let passage = await Passage.findOne({_id: passageID});
     let numSources = passage.sourceList.length;
     amount = amount * (numSources + 1);
