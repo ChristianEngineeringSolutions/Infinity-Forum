@@ -11,9 +11,10 @@
   <div>
     <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
     </div>
-    <%if(profile.admin === true || (profile._id == user._id && user.admin)){%>
+    <%if(profile.admin === true || (profile._id == user._id && user.admin === true)){%>
       <h1 style="color:red;">ADMIN</h1>
     <%}else{%>
+      <%=profile.admin%>
       <h1 style="color:red;">User</h1>
       <%}%>
     <%if(user && user._id == profile._id){%>
