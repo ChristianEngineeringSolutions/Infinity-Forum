@@ -638,7 +638,7 @@ app.post('/register/', async function(req, res) {
         var userData = {
         email: req.body.email || '',
         name: req.body.username || req.body.email,
-        username: req.body.username.split(' ').join('.') + numUsers || '',
+        username: req.body.username.split(' ').join('.') + '.' + numUsers || '',
         password: req.body.password,
         token: v4()
       }  //use schema.create to insert data into the db
