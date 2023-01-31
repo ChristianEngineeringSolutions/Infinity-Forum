@@ -1,12 +1,12 @@
 TODO:
 Anonymous Posts
-Notifications
 File compression
 UUIDs
 Peer to Peer
 Daemon Touch ups
 Admin interface
 Encryption revisited
+Tests
 
 
 //////////////////////////////////////////////////////////////////////////

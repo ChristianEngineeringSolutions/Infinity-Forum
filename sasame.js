@@ -259,7 +259,7 @@ app.get("/profile/:_id?/", async (req, res) => {
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
     // console.log(profile[0].username);
-    res.render("profile", {passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
+    res.render("profile", {subPassages: false, passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
@@ -286,6 +286,7 @@ app.get('/', async (req, res) => {
         bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
     }
     res.render("index", {
+        subPassages: false,
         passageTitle: 'Christian Engineering Solutions', 
         scripts: scripts, 
         passages: passages, 
@@ -320,7 +321,7 @@ app.post('/copy_passage/', async (req, res) => {
         
     });
     let passage = await Passage.findOne({_id: req.body._id});
-    res.render('passage', {passage: copy, sub: true});
+    res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.post('/transfer_bookmark', async (req, res) => {
     let _id = req.body._id;
@@ -334,7 +335,7 @@ app.post('/transfer_bookmark', async (req, res) => {
     copy.parent = tab._id;
     await tab.save();
     await copy.save();
-    res.render('passage', {passage: copy, sub: true});
+    res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
     let bookmarks = [];
@@ -512,7 +513,8 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
             passageUsers.push(u._id.toString());
         });
     }
-    res.render("index", {passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
+    var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');;
+    res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 //not active currently using donation link and capturing details post submission
 app.get('/donate', async function(req, res){
@@ -708,6 +710,7 @@ app.post('/paginate', async function(req, res){
         }
         let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
         res.render('passages', {
+            subPassages: false,
             passages: passages.docs,
             sub: true
         });
@@ -759,7 +762,7 @@ app.post('/create_passage/', async (req, res) => {
         await parent.save();
     }
     let find = await Passage.findOne({_id: passage._id}).populate('author');
-    res.render('passage', {passage: find, sub: true});
+    res.render('passage', {subPassages: false, passage: find, sub: true});
 });
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
@@ -772,7 +775,7 @@ app.post('/star_passage/', async (req, res) => {
         if(sessionUser.stars > 0){
             let passage = await starPassage(parseInt(req.body.amount), req.body.passage_id, sessionUser._id);
             await sessionUser.save();
-            res.render('passage', {passage: passage, sub: true});
+            res.render('passage', {subPassages: false, passage: passage, sub: true});
         }
         else{
             res.send("Not enough stars!");
@@ -809,23 +812,23 @@ app.post('/update_passage/', async (req, res) => {
     }
     else{
         console.log('File uploaded');
-    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-      let fileToUpload = req.files.file;
-      let mimetype = req.files.file.mimetype;
-      uploadTitle = v4();
-      //first verify that mimetype is image
-      console.log(mimetype);
-      // Use the mv() method to place the file somewhere on your server
-      fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
-        if (err){
-            return res.status(500).send(err);
-        }
-      });
-      passage.filename = uploadTitle;
+        // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+        let fileToUpload = req.files.file;
+        let mimetype = req.files.file.mimetype;
+        uploadTitle = v4();
+        //first verify that mimetype is image
+        console.log(mimetype);
+        // Use the mv() method to place the file somewhere on your server
+        fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
+            if (err){
+                return res.status(500).send(err);
+            }
+        });
+        passage.filename = uploadTitle;
     }
     await passage.save();
     //give back updated passage
-    res.render('passage', {passage: passage, sub: true});
+    res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
