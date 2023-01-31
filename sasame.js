@@ -180,9 +180,6 @@ function percentUSD(donationUSD, totalUSD){
 
 async function starPassage(amount, passageID, userID){
     let user = await User.findOne({_id: userID});
-    if(user.stars < amount){
-        return res.send("Not enough stars.");
-    }
     let passage = await Passage.findOne({_id: passageID});
     let numSources = passage.sourceList.length;
     amount = amount * (numSources + 1);
@@ -772,18 +769,19 @@ app.post('/create_passage/', async (req, res) => {
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
     var user = req.session.user;
+    var amount = parseInt(req.body.amount);
     //get user from db
     let sessionUser = await User.findOne({_id: user._id});
     if(req.session && user){
-        //Since this is a manual star, user must trade their own stars
-        sessionUser.stars -= parseInt(req.body.amount);
-        if(sessionUser.stars > 0){
-            let passage = await starPassage(parseInt(req.body.amount), req.body.passage_id, sessionUser._id);
+        if(sessionUser.stars < amount){
+            //user must trade their own stars
+            sessionUser.stars -= amount;
+            let passage = await starPassage(amount, req.body.passage_id, sessionUser._id);
             await sessionUser.save();
-            res.render('passage', {subPassages: false, passage: passage, sub: true});
+            return res.render('passage', {subPassages: false, passage: passage, sub: true});
         }
         else{
-            res.send("Not enough stars!");
+            return res.send("Not enough stars!");
         }
     }
 });
