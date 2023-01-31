@@ -9,7 +9,7 @@ $(function(){
                 name: name
             },
             success: function(data){
-                $('#register_username_load').text(name + data);
+                $('#register_username_load').text(name.split(" ").join('.') + "." + data);
             }
         });
     });

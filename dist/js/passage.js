@@ -11,6 +11,10 @@ $(function(){
     $(document).on('click', '[id^="passage_executable_"]', function(e){
         let _id = $(this).attr('id').split('_').at(-1);
     });
+    $(document).on('click', '[id^="passage_edit_"]', function(e){
+        let _id = $(this).attr('id').split('_').at(-1);
+        $('#passage_form_' + _id).slideToggle();
+    });
 
     $(document).on('click', '.passage_tab_open_advanced', function(e){
         $('.passage_advanced').fadeToggle().css('display', 'inline-block');
@@ -72,7 +76,7 @@ $(function(){
                 parent: $('#chief_passage_id').val()
             },
             success: function(data){
-                $('#passage_wrapper').prepend(data);
+                $('#passage_' + _id).after(data);
                 flashIcon($('#passage_copy_' + _id), 'green');
             }
         });
@@ -133,13 +137,53 @@ $(function(){
                 setting: setting
             },
             success: function (data) {
-                if(thiz.hasClass('green')){
-                    thiz.removeClass('green');
-                    thiz.addClass('red');
+                if(thiz.data('setting') != 'request-public-daemon'){
+                    if(thiz.hasClass('green')){
+                        thiz.removeClass('green');
+                        thiz.addClass('red');
+                    }
+                    else if(thiz.hasClass('red')){
+                        thiz.removeClass('red');
+                        thiz.addClass('green');
+                    }
                 }
-                else if(thiz.hasClass('red')){
-                    thiz.removeClass('red');
-                    thiz.addClass('green');
+                switch (thiz.data('setting')) {
+                    case 'public':
+                        let privateSetting = $('#passage_setting_make_private_' + _id);
+                        if(privateSetting.hasClass('green')){
+                            privateSetting.removeClass('green');
+                            privateSetting.addClass('red');
+                        }
+                        else if(privateSetting.hasClass('red')){
+                            privateSetting.removeClass('red');
+                            privateSetting.addClass('green');
+                        }
+                        break;
+                    case 'private':
+                        let publicSetting = $('#passage_setting_make_public_' + _id);
+                        if(publicSetting.hasClass('green')){
+                            publicSetting.removeClass('green');
+                            publicSetting.addClass('red');
+                        }
+                        else if(publicSetting.hasClass('red')){
+                            publicSetting.removeClass('red');
+                            publicSetting.addClass('green');
+                        }
+                        break;
+                    case 'request-public-daemon':
+                        if(thiz.hasClass('yellow')){
+                            thiz.removeClass('yellow');
+                            thiz.addClass('red');
+                        }
+                        else if(thiz.hasClass('red')){
+                            thiz.removeClass('red');
+                            thiz.addClass('yellow');
+                        }
+                        break;
+                    
+                    default:
+                        
+                        break;
                 }
                 // alert(data);
             }
@@ -220,7 +264,7 @@ $(function(){
             data: {
                 page: page,
                 profile: isProfile,
-                search: search
+                search: $('#search').val()
             },
             success: function(data){
                 page += 1;

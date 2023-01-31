@@ -21,6 +21,9 @@
     margin-bottom: 10px;
     z-index: 1;
 }
+.passage_form{
+    display: none;
+}
 .star_number{
     width: 80px;
 }
@@ -42,11 +45,22 @@
     font-weight: bold;
     margin-right: 15px;
 }
+.passage_option:hover{
+    text-decoration: underline;
+}
+.passage_profile_link{
+    text-decoration: none;
+    color: inherit;
+}
 .description_option{
     display: inline;
     padding: 1px;
     cursor: pointer;
     margin-right: 15px;
+}
+
+.passage_tabs{
+    margin-top: 50px;
 }
 .passage_tab{
     display: inline;
@@ -56,6 +70,9 @@
     /* background: #fff; */
     font-weight: bold;
 }
+.passage_tab_open_advanced{
+    border: 1px solid black;
+}
 .passage_tab:hover{
     font-weight: bolder;
     border: 2px solid black;
@@ -64,7 +81,6 @@
 .passage_user{
     cursor: pointer;
     color: black;
-    font-style: italic;
 }
 .passage_title, .passage_description, .passage_file, .passage_plus_description{
     all: revert;
@@ -75,6 +91,16 @@
     margin-bottom: 10px;
     padding-left: 10px;
     padding-right: 0px;
+}
+.detail_title{
+    cursor: pointer;
+}
+.detail_title, .detail_description{
+    padding-left: 10px;
+}
+.detail_description{
+    white-space: pre-wrap;
+    padding-bottom: 50px;
 }
 .boxsizingBorder {
     -webkit-box-sizing: border-box;
@@ -122,8 +148,9 @@
 #passage_iframe{
     border: 1px solid black; 
     padding: 10px; 
-    width: 88%; 
+    width: 95%; 
     margin:auto;
+    margin-bottom: 20px;
 }
 .sub_passages{
     display: none;
@@ -137,6 +164,9 @@
 .red{
     color: red;
 }
+.yellow{
+    color: yellow;
+}
 .passage_setting{
     cursor: pointer;
     padding: 5px;
@@ -148,5 +178,8 @@
     cursor: pointer;
 }
 .change_passage_file{
+    cursor: pointer;
+}
+#view_more{
     cursor: pointer;
 }

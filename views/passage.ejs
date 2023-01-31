@@ -3,13 +3,16 @@
         <%- include('passage_settings', {passage: passage}) %>
     </div>
     <div id="passage_sources_modal_<%=passage._id%>" class="modal">
+        <%if(passage.sourceList.length < 1){%>
+            <div>No Sources</div>
+        <%}%>
         <%passage.sourceList.forEach(function(source) { %>
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
         <%});%>
     </div>
     <ul class="passage_options">
         <% if(sub === true){%>
-        <li id="passage_more_<%=passage.id%>" class="passage_option">View</li>
+        <li id="passage_more_<%=passage.id%>" class="passage_option">Details</li>
         <%}%>
         <!-- Show them settings only if they made the passage -->
         <%if(passage.users != null && passage.users[0]){%>
@@ -17,17 +20,18 @@
                 <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
                 <%}%>
         <%}%>
-        <% if(sub === false){%>
-            <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
-        <%}%>
+        <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
         <!-- Shift passage location -->
+        <%if(user){%>
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
+        <%}%>
         <!-- Copy and move passage -->
-        <% if(sub === true){%>
+        <% if(user && sub === true){%>
             <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
         <%}%>
         <%if(passage.users != null && passage.users[0]){%>
         <%if(passage.users && user && passage.users[0]._id == user._id){%>
+            <li id="passage_edit_<%=passage.id%>" class="passage_option">Edit</li>
             <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
             <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
         <%}%>
@@ -35,10 +39,8 @@
     </ul>
     <ul class="passage_users">
         <!-- Profile Image layers -->
-        <%if(passage.users){%>
-            <%passage.users.forEach(function(user) { %>
-                <%- include('profile_thumbnail', {profile: user}) %>
-        <%});%>
+        <%if(passage.author){%>
+            <%- include('profile_thumbnail', {profile: passage.author}) %>
         <%}else{%>
             Anonymous
         <%}%>
@@ -59,11 +61,11 @@
         <% hide = 'test'; %>
     <%}%>
     <div id="passage_iframe" class="<%=hide%>" id="result_div">
-        <a style="float:right;"target="_blank"href="/eval/<%=passage.id%>">Full Screen</a>
-        <%if(passage.personal_cross_origin && user._id == passage.users[0]._id){%>
-            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+        <a style="float:right;"target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
+        <%if(user && passage.personal_cross_origin && user._id == passage.users[0]._id){%>
+            <iframe src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
         <%}else{%>
-            <iframe src="/eval/<%=passage.id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+            <iframe src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
         <%}%>
     </div>
     <!-- <ul class="passage_tabs">
@@ -71,14 +73,26 @@
         <!-- Display Result -->
         <!-- <li class="passage_tab">Alternates</li> -->
     <!-- </ul> -->
-    <%- include('passage_form') %>
-    <ul class="passage_tabs">
-        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Executable</li>
-    </ul>
+    <%if(user && passage.author._id == user._id){%>
+        <%- include('passage_form') %>
+        <%- include('passage_details') %>
+        <ul class="passage_tabs">
+            <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
+        </ul>
+    <%}else{%>
+        <%- include('passage_details') %>
+        <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '') && (passage.css == null || passage.css == '')){%>
+            
+        <%}else{%>
+            <ul class="passage_tabs">
+                <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
+            </ul>
+        <%}%>
+    <%}%>
  </div>
- <%if(passage.passages && sub === false){%>
+ <%if(subPassages && sub === false){%>
     <div id="sub_passages">
-        <%passage.passages.forEach(function(sub_passage) { %>
+        <%subPassages.forEach(function(sub_passage) { %>
             <%- include('passage', {passage: sub_passage, sub: true}) %>
         <%}); %>
     </div>
