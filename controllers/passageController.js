@@ -20,36 +20,10 @@ module.exports = {
             options.callback(doc);
         });
     },
-    updatePassageContent: function(req, res, callback) {
-        var passageID = req.body._id;
-        var content = req.body.content || '';
-        Passage.updateOne({_id: passageID.trim()}, {
-            content: content,
-        }, function(err, affected, resp){
-            if(err){
-                console.log(err);
-            }
-            callback();
-        });
-    },
     deletePassage: async function(req, res, callback) {
         let passageID = req.body._id;
         await Passage.deleteOne({_id: passageID.trim()});
         callback();
-    },
-    //move passage from one passage to another
-    movePassage: async function(movingPassage, destinationPassage){
-        let oldParent = await Passage.findOne({_id: movingPassage.parent._id});
-        oldParent.passages.forEach(function(p, i){
-            if(p._id == movingPassage._id){
-                oldParent.passages.splice(i, 1);
-            }
-        });
-        await oldParent.save();
-        movingPassage.parent = destinationPassage._id;
-        destinationPassage.passages.push(movingPassage._id);
-        await movingPassage.save();
-        await destinationPassage.save();
     },
     copyPassage: async function(req, res, callback){
         console.log('copied');

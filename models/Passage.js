@@ -96,6 +96,11 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // Only author/users can even view
+    personal: {
+        type: Boolean,
+        default: false
+    },
     // allow same origin iframes
     personal_cross_origin: {
         type: Boolean,
