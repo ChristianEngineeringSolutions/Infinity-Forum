@@ -9,9 +9,13 @@ Admin interface
 Encryption revisited
 Tests
 Personal Passages
-PPE
+    Sub Passages should default personal
+Show group passages on profile?
 Database merge
-Review Database Backups
+Review Database Backups/Recovery
+Subscriptions (need code to get email from stripe payload)
+Budget Page
+File Browser + Submissions
 
 Internal (approved daemons):
 Claims
