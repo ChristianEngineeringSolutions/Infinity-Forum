@@ -77,5 +77,5 @@ const userSchema = mongoose.Schema({
     lastSubscribed: String,
     stripeOnboardingComplete: Boolean
 });
-
+userSchema.plugin(mongoosePaginate);
 module.exports = mongoose.model('User', userSchema, 'Users');
