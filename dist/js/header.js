@@ -216,7 +216,7 @@ $(function(){
             title = window.location.href.split('/')[window.location.href.split('/').length - 2];
         }
         let active_tab_id = localStorage.getItem('active_tab');
-        $('#' + active_tab_id).html('<span class="tab_delete">X</span>' + title);
+        $('#' + active_tab_id).html('<span class="tab_delete">X</span>' + decodeURI(title));
     }
 
 });
