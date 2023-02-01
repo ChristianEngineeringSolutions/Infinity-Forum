@@ -128,10 +128,32 @@ app.get('/p-85f22907.js', function(req, res) {
 var cron = require('node-cron');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
+    //Give stars to subscribed users
+    // var subscribers = await User.find({subscribed: true});
+    // var systemRecord = GetMainSystemRecord();
+    // var systemContent = JSON.parse(systemRecord.content);
+    // var addStars = 0;
+    // //if user is still subscribed
+    // //they get stars
+    // //plus time bonus
+    // subscribers.forEach(async function(subscriber){
+    //     let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
+    //     addStars = percentUSD(8000, systemContent.usd);
+    //     systemContent.usd += 8000;
+    //     systemContent.stars += addStars * monthsSubscribed;
+    //     subscriber.stars += addStars * monthsSubscribed;
+    // });
     //await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
 
+// function monthDiff(d1, d2) {
+//     var months;
+//     months = (d2.getFullYear() - d1.getFullYear()) * 12;
+//     months -= d1.getMonth();
+//     months += d2.getMonth();
+//     return months <= 0 ? 0 : months;
+// }
 //Get total star count and pay out users
 async function rewardUsers(){
     let users = await User.find({stripeAccountId: {$ne: null}});
@@ -459,6 +481,9 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         return;
         // return response.status(400).send(`Webhook Error: ${err.message}`);
     }
+    //if subscription created or ended
+    //update subscription data in db
+    //...
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
         let amount = payload.data.object.amount;
@@ -480,6 +505,26 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
             user.stars += starsToAdd;
             await user.save();
         }
+    }
+    else if(event.type == "invoice.paid"){
+        var email = payload.data.object.customer_email;
+        if(email != null){
+            var subscriber = await User.findOne({email: email});
+            subscriber.subscribed = true;
+            subscriber.lastSubscribed = Date.now().toString();
+            await subscriber.save();
+        }
+    }
+    else if(event.type == "invoice.payment_failed"){
+        var email = payload.data.object.customer_email;
+        if(email != null){
+            var subscriber = await User.findOne({email: email});
+            subscriber.subscribed = false;  
+            await subscriber.save();
+        }
+    }
+    else{
+        console.log(event.type);
     }
   
     response.status(200).end();

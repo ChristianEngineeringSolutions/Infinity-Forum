@@ -1,19 +1,19 @@
 TODO:
-External:
-Anonymous Posts
+*=external
+Anonymous Posts*
 File compression (client side)
-UUIDs
-Peer to Peer
+UUIDs*
+Peer to Peer*
 Daemon Touch ups
 Admin interface
 Encryption revisited
 Tests
-Personal Passages
+Personal Passages*
     Sub Passages should default personal
 Show group passages on profile?
-Database merge
+Database merge*
 Review Database Backups/Recovery
-Subscriptions (need code to get email from stripe payload)
+Subscriptions
 Budget Page
 File Browser + Submissions
 Tab sortable fix

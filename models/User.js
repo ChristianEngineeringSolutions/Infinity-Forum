@@ -53,6 +53,10 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    subscribed: {
+      type: Boolean,
+      default: false
+    },
     bookmarks: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Passage'
@@ -69,7 +73,8 @@ const userSchema = mongoose.Schema({
     stripeAccountId: {
       type: String,
       default: null
-  },
+    },
+    lastSubscribed: String,
     stripeOnboardingComplete: Boolean
 });
 
