@@ -130,7 +130,7 @@ var cron = require('node-cron');
 cron.schedule('0 12 1 * *', async () => {
     //Give stars to subscribed users
     // var subscribers = await User.find({subscribed: true});
-    // var systemRecord = GetMainSystemRecord();
+    // var systemRecord = await GetMainSystemRecord();
     // var systemContent = JSON.parse(systemRecord.content);
     // var addStars = 0;
     // //if user is still subscribed
@@ -157,7 +157,8 @@ cron.schedule('0 12 1 * *', async () => {
 //Get total star count and pay out users
 async function rewardUsers(){
     let users = await User.find({stripeAccountId: {$ne: null}});
-    let systemContent = JSON.parse(GetMainSystemRecord().content);
+    let MainSystemRecord = await GetMainSystemRecord();
+    let systemContent = JSON.parse(MainSystemRecord.content);
     let totalStarCount = systemContent.stars;
     let totalUSD = systemContent.usd;
     users.forEach(async function(user){
@@ -322,6 +323,11 @@ app.get('/', async (req, res) => {
         }},
         bookmarks: bookmarks,
     });
+});
+app.get('/donate', async function(req, res){
+    let MainSystemRecord = await GetMainSystemRecord();
+    let systemContent = JSON.parse(MainSystemRecord.content);
+    res.render('donate', {usd: systemContent.usd});
 });
 //Search
 app.post('/search/', async (req, res) => {
@@ -498,7 +504,8 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
                 content: amount,
                 systemRecord: true
             });
-            let systemContent = JSON.parse(GetMainSystemRecord().content);
+            let MainSystemRecord = await GetMainSystemRecord();
+            let systemContent = JSON.parse(MainSystemRecord.content);
             let totalUSD = systemContent.usd;
             let totalStarCount = systemContent.stars;
             let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
@@ -566,17 +573,6 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     }
     var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');;
     res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
-});
-//not active currently using donation link and capturing details post submission
-app.get('/donate', async function(req, res){
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const session = await stripe.checkout.sessions.create({
-        cancel_url: 'https://example.com',
-        line_items: [{price: '{{PRICE_ID}}'
-    , quantity: 1}],
-        mode: 'payment',
-        success_url: 'https://example.com',
-    });
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){

@@ -7,7 +7,7 @@ $(function(){
         $('#side_panel').scrollTop(0);
     });
     $(document).on('click', '#nav_donate', function(){
-        window.open('https://buy.stripe.com/eVabLl8QJ5Wb11KaEE', '_blank');
+        window.location.href = '/donate';
     });
     $(document).on('click', '.help_read_more', function(){
         $('#right_side_select').val('help').change();
