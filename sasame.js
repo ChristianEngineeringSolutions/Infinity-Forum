@@ -305,9 +305,11 @@ app.get('/', async (req, res) => {
 app.post('/search/', async (req, res) => {
     let results = await Passage.find({
         deleted: false,
+        systemRecord: false,
+        MainSystemRecord: false,
         title: {
         $regex: req.body.search,
-        $options: 'i'
+        $options: 'i',
     }}).populate('author users sourceList').sort('-stars');
     res.render("passages", {
         passages: results,
