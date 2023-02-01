@@ -279,7 +279,11 @@ app.get('/', async (req, res) => {
     let addPassageAllowed = true;
     let addChapterAllowed = true;
     var user = req.session.user || null;
-    let passages = await Passage.find({deleted: false}).populate('author users sourceList').sort('-stars');
+    let passages = await Passage.find({
+        deleted: false,
+        systemRecord: false,
+        MainSystemRecord: false
+    }).populate('author users sourceList').sort('-stars');
     let passageUsers = [];
     let bookmarks = [];
     if(req.session.user){
