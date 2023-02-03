@@ -17,7 +17,7 @@
             <%} %>
             <%if((user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if(passage.id == 'root'){%>
-                    <button id="add_passage_button">+</button>
+                    <button title="Add Passage"id="add_passage_button">+</button>
                 <%}%>
             <%}%>
             <br>
@@ -33,7 +33,7 @@
             <div id="passage_form_wrapper"></div>
             <%if((user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if(passage.id != 'root'){%>
-                    <button id="add_passage_button">+</button>
+                    <button title="Add Passage"id="add_passage_button">+</button>
                 <%}%>
             <%}%>
     <br>

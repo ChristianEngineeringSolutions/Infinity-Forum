@@ -18,8 +18,10 @@ Non-profit filings
 Desktop apps
 Phone apps
 
-Personal Passages
-Module search
+Personal Passages (Maybe not)
+
+
+Daemon search and pin** priority
 
 
 Internal (approved daemons):
