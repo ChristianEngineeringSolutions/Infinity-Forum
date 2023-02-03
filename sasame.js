@@ -277,7 +277,7 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let passages = await Passage.find({users: profile, deleted: false}).populate('author users sourceList').sort('-stars');
+    let passages = await Passage.find({users: profile, systemRecord: false, deleted: false}).populate('author users sourceList').sort('-stars');
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -354,21 +354,24 @@ app.post('/copy_passage/', async (req, res) => {
     let copy = await passageController.copyPassage(req, res, function(){
         
     });
-    let passage = await Passage.findOne({_id: req.body._id});
+    let passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.post('/transfer_bookmark', async (req, res) => {
     let _id = req.body._id;
+    let parent = req.body.parent;
     //First copy the passage
     let copy = await passageController.copyPassage(req, res, function(){
         
     });
     //Then move the copy into the current tab
-    let tab = await Passage.findOne({_id: req.body.parent}).populate('author');
-    tab.passages.push(copy._id);
-    copy.parent = tab._id;
-    await tab.save();
-    await copy.save();
+    if(parent !== 'root'){
+        let tab = await Passage.findOne({_id: parent}).populate('author users sourceList');
+        tab.passages.push(copy._id);
+        copy.parent = tab._id;
+        await tab.save();
+        await copy.save();
+    }
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
@@ -378,6 +381,61 @@ app.get('/get_bookmarks', async (req, res) => {
         bookmarks = user.bookmarks;
     }
     res.render('bookmarks', {bookmarks: bookmarks});
+});
+app.get('/get_daemons', async (req, res) => {
+    let daemons = [];
+    if(req.session.user){
+        let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
+        daemons = user.daemons;
+    }
+    res.render('daemons', {daemons: daemons});
+});
+app.post('/add_daemon', async (req, res) => {
+    if(req.session.user){
+        let passage = req.body._id;
+        let daemon = await Passage.findOne({_id: passage});
+        let user = await User.findOne({_id: req.session.user._id});
+        user.daemons.push(daemon);
+        await user.save();
+        return res.render('daemons', {daemons: user.daemons});
+    }
+    else{
+        return res.send('false');
+    }
+});
+app.post('/remove_daemon', async (req, res) => {
+    if(req.session.user){
+        let passage = req.body._id;
+        let daemon = await Passage.findOne({_id: passage});
+        let user = await User.findOne({_id: req.session.user._id});
+        user.daemons.forEach(function(d, i){
+            if(d._id.toString() == daemon._id.toString()){
+                user.daemons.splice(i, 1);
+            }
+        });
+        await user.save();
+        return res.render('daemons', {daemons: user.daemons});
+    }
+    else{
+        return res.send('false');
+    }
+});
+app.post('/sort_daemons', async (req, res) => {
+    if(req.session.user){
+        var user = await User.findOne({_id: req.session.user._id});
+        var daemonOrder = [];
+        if(typeof req.body.daemonOrder != 'undefined'){
+            var daemonOrder = JSON.parse(req.body.daemonOrder);
+            let trimmedDaemonOrder = daemonOrder.map(str => str.trim());
+            user.daemons = trimmedDaemonOrder;
+            await user.save();
+        }
+        //give back updated passage
+        return res.send('Done');
+    }
+    else{
+        return res.send('false');
+    }
 });
 app.get('/leaderboard', async (req, res) => {
     let users = await User.find().sort('-stars');
@@ -460,12 +518,6 @@ app.post('/remove_bookmark', async (req, res) => {
     });
     await user.save();
     res.send("Done.");
-});
-app.post('/move_passage', async (req, res) => {
-    let passage = await Passage.findOne({_id: req.body.passage_id});
-    let destination = await Passage.findOne({_id: req.body.destination_id});
-    await passageController.movePassage(passage, destination);
-    res.send("Done");
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
     // response.header("Access-Control-Allow-Origin", "*");
@@ -832,12 +884,14 @@ app.post('/star_passage/', async (req, res) => {
 });
 app.post('/update_passage_order/', async (req, res) => {
     let passage = await Passage.findOne({_id: req.body._id});
-    var passageOrder = [];
-    if(typeof req.body.passageOrder != 'undefined'){
-        var passageOrder = JSON.parse(req.body.passageOrder);
-        let trimmedPassageOrder = passageOrder.map(str => str.trim());
-        passage.passages = trimmedPassageOrder;
-        await passage.save();
+    if(req.session.user && req.session.user._id.toString() == passage.author.toString()){
+        var passageOrder = [];
+        if(typeof req.body.passageOrder != 'undefined'){
+            var passageOrder = JSON.parse(req.body.passageOrder);
+            let trimmedPassageOrder = passageOrder.map(str => str.trim());
+            passage.passages = trimmedPassageOrder;
+            await passage.save();
+        }
     }
     //give back updated passage
     res.send('Done');
@@ -845,7 +899,7 @@ app.post('/update_passage_order/', async (req, res) => {
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
-    var passage = await Passage.findOne({_id: _id}).populate('author');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
