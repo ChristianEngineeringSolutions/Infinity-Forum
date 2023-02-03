@@ -20,15 +20,21 @@ $(function(){
         $('.passage_advanced').fadeToggle().css('display', 'inline-block');
     });
     $(document).on('click', '#add_passage_button', function(e){
+        var chief = $('#chief_passage_id').val();
         //create a passage and then show it
         $.ajax({
             type: 'post',
             url: '/create_passage/',
             data: {
-                passageID: $('#chief_passage_id').val()
+                passageID: chief
             },
             success: function(data){
-                $('#passage_wrapper').prepend(data);
+                if(chief == 'root'){
+                    $('#passage_wrapper').prepend(data);
+                }
+                else{
+                    $('#passage_wrapper').append(data);
+                }
             }
         });
     });
