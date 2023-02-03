@@ -106,11 +106,6 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    //load code outside of iframe
-    personal_same_origin: {
-        type: Boolean,
-        default: false
-    },
     //0 is false, 1 is requesting, 2 is active
     public_daemon: {
         type: Number,

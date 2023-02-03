@@ -3,6 +3,6 @@
     margin: 5px;
     padding: 5px;
 }
-.transfer_bookmark, .view_bookmark, .remove_bookmark, .move_bookmark{
+.transfer_bookmark, .view_bookmark, .remove_bookmark, .move_bookmark, .add_daemon, .view_daemon, .remove_daemon{
     cursor: pointer;
 }

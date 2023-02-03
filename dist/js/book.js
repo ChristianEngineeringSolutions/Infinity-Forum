@@ -123,8 +123,8 @@ function updateBrief(){
 $('#right_side_select').on('change', function(){
     $('#side_panel_switcher').children().hide();
     switch($(this).val()){
-        case 'chapters':
-            $('#categories').show();
+        case 'daemons':
+            $('#daemons').show();
             break;
         case 'add':
             $('#add_div').show();

@@ -2,9 +2,7 @@ TODO:
 *=external
 Anonymous Posts*
 File compression (client side)
-UUIDs*
 Peer to Peer*
-Daemon Touch ups
 Admin interface
 Encryption revisited
 Tests
@@ -12,11 +10,15 @@ Personal Passages*
     Sub Passages should default personal
 Show group passages on profile?
 Database merge*
+UUIDs*
 Review Database Backups/Recovery
-Subscriptions
-Budget Page
 File Browser + Submissions
 Tab sortable fix
+Non-profit filings
+Desktop apps
+Phone apps
+
+
 
 Internal (approved daemons):
 Claims
