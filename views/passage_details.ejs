@@ -12,7 +12,7 @@ Source variable: passage
 <% if(passage.filename){ %>
 <img src="/uploads/<%=passage.filename%>" alt="">
 <%}%>
-<div class="passage_advanced">
+<!-- <div class="passage_advanced">
     <div class="passage_html" name="html" id="passage_html_<%=passage._id%>">
         <%=passage.html%>
     </div>
@@ -22,5 +22,5 @@ Source variable: passage
     <div class="passage_js" name="js" id="passage_js_<%=passage._id%>">
         <%=passage.javascript%>
     </div>
-</div>
+</div> -->
 <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">

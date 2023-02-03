@@ -17,4 +17,8 @@ Source variable: passage
         <textarea class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
         <textarea class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
     </div>
+    <ul class="passage_tabs">
+        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
+    </ul>
+    <br>
 </form>
