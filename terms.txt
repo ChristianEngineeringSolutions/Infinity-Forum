@@ -6,3 +6,6 @@ These terms are subject to change.
 CES utilizes a public algorithm in order to manage its budget and distribute rewards to users based on merit.
 These algorithms are subject to change; CES is not responsible for compensating users for any donations or activity on the website christianengineeringsolutions.com.
 
+CES modules maintain a source list and reward system that allows users to utilize the works of others in their own contributions while keeping track of merit.
+By using CES, you are authorizing CES and other users to utilize your work on the system so long as they use the built in channels for maintaining credit.
+
