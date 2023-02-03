@@ -870,7 +870,7 @@ app.post('/star_passage/', async (req, res) => {
     //get user from db
     let sessionUser = await User.findOne({_id: user._id});
     if(req.session && user){
-        if(sessionUser.stars < amount){
+        if(sessionUser.stars > amount){
             //user must trade their own stars
             sessionUser.stars -= amount;
             let passage = await starPassage(amount, req.body.passage_id, sessionUser._id);
