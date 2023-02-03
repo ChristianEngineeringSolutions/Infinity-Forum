@@ -277,7 +277,12 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let passages = await Passage.find({users: profile, systemRecord: false, deleted: false}).populate('author users sourceList').sort('-stars');
+    let find = {users: profile, systemRecord: false, deleted: false};
+    //if it's their profile show personal passages
+    // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
+    //     find.$or = [{personal: true}, {personal: false}];
+    // }
+    let passages = await Passage.find(find).populate('author users sourceList').sort('-stars');
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -330,6 +335,48 @@ app.get('/donate', async function(req, res){
     res.render('donate', {usd: systemContent.usd});
 });
 //Search
+app.post('/search_leaderboard/', async (req, res) => {
+    let results = await User.find({
+        username: {
+        $regex: req.body.search,
+        $options: 'i',
+    }}).sort('-stars');
+    res.render("leaders", {
+        users: results,
+    });
+});
+app.post('/search_profile/', async (req, res) => {
+    let results = await Passage.find({
+        author: req.body._id,
+        deleted: false,
+        systemRecord: false,
+        MainSystemRecord: false,
+        title: {
+        $regex: req.body.search,
+        $options: 'i',
+    }}).populate('author users sourceList').sort('-stars');
+    res.render("passages", {
+        passages: results,
+        subPassages: false,
+        sub: true
+    });
+});
+app.post('/search_passage/', async (req, res) => {
+    let results = await Passage.find({
+        parent: req.body._id,
+        deleted: false,
+        systemRecord: false,
+        MainSystemRecord: false,
+        title: {
+        $regex: req.body.search,
+        $options: 'i',
+    }}).populate('author users sourceList').sort('-stars');
+    res.render("passages", {
+        passages: results,
+        subPassages: false,
+        sub: true
+    });
+});
 app.post('/search/', async (req, res) => {
     let results = await Passage.find({
         deleted: false,
@@ -341,6 +388,7 @@ app.post('/search/', async (req, res) => {
     }}).populate('author users sourceList').sort('-stars');
     res.render("passages", {
         passages: results,
+        subPassages: false,
         sub: true
     });
 });
@@ -479,6 +527,11 @@ app.post('/passage_setting', async (req, res) => {
         case 'public':
             if(passage.author._id.toString() == user._id.toString()){
                 passage.public = true;
+            }
+            break;
+        case 'personal':
+            if(passage.author._id.toString() == user._id.toString()){
+                passage.personal = true;
             }
             break;
         case 'cross-origin-allowed':
@@ -623,14 +676,14 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
-    var passage = await Passage.findOne({_id: passage_id}).populate('author users sourceList');
+    var passage = await Passage.findOne({_id: passage_id, systemRecord: false}).populate('author users sourceList');
     let passageUsers = [];
     if(passage.users != null){
         passage.users.forEach(function(u){
             passageUsers.push(u._id.toString());
         });
     }
-    var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');;
+    var subPassages = await Passage.find({parent: passage_id, systemRecord: false}).populate('author users sourceList');;
     res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -807,10 +860,14 @@ app.post('/paginate', async function(req, res){
     let page = req.body.page;
     let profile = req.body.profile; //home, profile, or leaderboard
     let search = req.body.search;
+    let parent = req.body.passage;
     if(profile != 'leaderboard'){
         let find = {
             title: new RegExp(''+search+'', "i")
         };
+        if(parent != 'root'){
+            find.parent = parent;
+        }
         if(profile != 'false'){
             find.author = profile;
         }

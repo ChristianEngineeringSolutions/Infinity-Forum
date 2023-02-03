@@ -18,6 +18,8 @@ Non-profit filings
 Desktop apps
 Phone apps
 
+Personal Passages
+Module search
 
 
 Internal (approved daemons):

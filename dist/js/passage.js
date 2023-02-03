@@ -180,6 +180,16 @@ $(function(){
                             thiz.addClass('yellow');
                         }
                         break;
+                    case 'personal':
+                        if(thiz.hasClass('green')){
+                            thiz.removeClass('green');
+                            thiz.addClass('red');
+                        }
+                        else if(thiz.hasClass('red')){
+                            thiz.removeClass('red');
+                            thiz.addClass('green');
+                        }
+                        break;
                     
                     default:
                         
@@ -263,6 +273,7 @@ $(function(){
             url: '/paginate',
             data: {
                 page: page,
+                passage: $('#chief_passage_id').val(),
                 profile: isProfile,
                 search: $('#search').val()
             },

@@ -16,7 +16,7 @@ body{
     /* color: yellow; */
     font-weight: bold;
 }
-#search{
+#search, #search_leaderboard, #search_profile, #search_passage{
     width: 88%;
     padding: 10px;
     margin: auto;
