@@ -61,6 +61,63 @@ $('#search').on('keypress', function(e){
 
     }
 });
+$('#search_profile').on('keypress', function(e){
+    //check what page we are on
+    var thiz = $(this);
+    if(e.which == 13){
+        $.ajax({
+            type: 'post',
+            url: '/search_profile/',
+            data: {
+                search: thiz.val(),
+                _id: window.location.href.split('/').at(-1)
+            },
+            success: function(data){
+                $('#passage_wrapper').html(data);
+                page = 1;
+            }
+        });
+
+    }
+});
+
+$('#search_leaderboard').on('keypress', function(e){
+    //check what page we are on
+    var thiz = $(this);
+    if(e.which == 13){
+        $.ajax({
+            type: 'post',
+            url: '/search_leaderboard/',
+            data: {
+                search: thiz.val()
+            },
+            success: function(data){
+                $('#leaders').html(data);
+                page = 1;
+            }
+        });
+
+    }
+});
+$('#search_passage').on('keypress', function(e){
+    //check what page we are on
+    var thiz = $(this);
+    if(e.which == 13){
+        $.ajax({
+            type: 'post',
+            url: '/search_passage/',
+            data: {
+                search: thiz.val(),
+                _id: $('#chief_passage_id').val()
+            },
+            success: function(data){
+                $('#passage_wrapper').html(data);
+                page = 1;
+            }
+        });
+
+    }
+});
 
 function jqueryToggle(thiz, func1, func2, dataType='toggle', dataValue=[0, 1]){
     if(thiz.data(dataType) == dataValue[0]){

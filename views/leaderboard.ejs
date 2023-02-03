@@ -7,10 +7,9 @@
 <br><br><br><br><br>
 <br>
 <h1 style="text-align:center;">Leaderboard</h1>
-<input id="search"placeholder="Search..." type="" name="" autocomplete="off">
-<%users.forEach(function(user) { %>
-    <%- include('leader', {user: user}) %>
-<%});%>
-<br>
+<input id="search_leaderboard"placeholder="Search..." type="" name="" autocomplete="off">
+<div id="leaders">
+<%- include('leaders', {users: users}) %>
+</div>
 <div class="passage"id="view_more">View More</div>
 <%- include('footer') %>
