@@ -676,7 +676,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
-    var passage = await Passage.findOne({_id: passage_id, systemRecord: false}).populate('author users sourceList');
+    var passage = await Passage.findOne({_id: passage_id, systemRecord: false}).populate('parent author users sourceList');
     let passageUsers = [];
     if(passage.users != null){
         passage.users.forEach(function(u){
@@ -924,7 +924,7 @@ app.post('/create_passage/', async (req, res) => {
         parent.passages.push(passage);
         await parent.save();
     }
-    let find = await Passage.findOne({_id: passage._id}).populate('author');
+    let find = await Passage.findOne({_id: passage._id}).populate('author sourceList');
     res.render('passage', {subPassages: false, passage: find, sub: true});
 });
 app.post('/star_passage/', async (req, res) => {

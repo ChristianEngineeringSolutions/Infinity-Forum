@@ -4,7 +4,12 @@
             <%- include('ppe') %>
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
             <input type="hidden" value="false", id="is_profile"/>
-            <div id="page_title"><%= passageTitle || "Christian Engineering Solutions"%></div>
+            <div style="margin-top:120px">
+                <%if(passage.parent != null){%>
+                    <div data-url="/passage/<%=passage.parent.title%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
+                <%}%>
+                 <div id="page_title"><%= passageTitle || "Christian Engineering Solutions"%></div>
+            </div>
             <%if(passages){%>
                 <input id="search"placeholder="Search..." type="" name="" autocomplete="off">
             <%}else if (passage){%>
