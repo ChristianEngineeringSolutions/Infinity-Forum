@@ -16,7 +16,9 @@
                 <input id="search_passage"placeholder="Search..." type="" name="" autocomplete="off">
             <%} %>
             <%if((user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
-                <button id="add_passage_button">+</button>
+                <%if(passage.id == 'root'){%>
+                    <button id="add_passage_button">+</button>
+                <%}%>
             <%}%>
             <br>
             <div id="passage_wrapper">
@@ -29,6 +31,9 @@
                 <%} %>
             </div>
             <div id="passage_form_wrapper"></div>
+            <%if(passage.id != 'root'){%>
+                <button id="add_passage_button">+</button>
+            <%}%>
     <br>
         </div>
         <div class="passage"id="view_more">View More</div>

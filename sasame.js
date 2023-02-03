@@ -282,7 +282,7 @@ app.get("/profile/:_id?/", async (req, res) => {
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
     //     find.$or = [{personal: true}, {personal: false}];
     // }
-    let passages = await Passage.find(find).populate('author users sourceList').sort('-stars');
+    let passages = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -311,7 +311,7 @@ app.get('/', async (req, res) => {
         deleted: false,
         systemRecord: false,
         MainSystemRecord: false
-    }).populate('author users sourceList').sort('-stars');
+    }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     let passageUsers = [];
     let bookmarks = [];
     if(req.session.user){
@@ -340,7 +340,7 @@ app.post('/search_leaderboard/', async (req, res) => {
         username: {
         $regex: req.body.search,
         $options: 'i',
-    }}).sort('-stars');
+    }}).sort('-stars').limit(20);
     res.render("leaders", {
         users: results,
     });
@@ -354,7 +354,7 @@ app.post('/search_profile/', async (req, res) => {
         title: {
         $regex: req.body.search,
         $options: 'i',
-    }}).populate('author users sourceList').sort('-stars');
+    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -370,7 +370,7 @@ app.post('/search_passage/', async (req, res) => {
         title: {
         $regex: req.body.search,
         $options: 'i',
-    }}).populate('author users sourceList').sort('-stars');
+    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -385,7 +385,7 @@ app.post('/search/', async (req, res) => {
         title: {
         $regex: req.body.search,
         $options: 'i',
-    }}).populate('author users sourceList').sort('-stars');
+    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -683,7 +683,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
             passageUsers.push(u._id.toString());
         });
     }
-    var subPassages = await Passage.find({parent: passage_id, systemRecord: false}).populate('author users sourceList');;
+    var subPassages = await Passage.find({parent: passage_id, systemRecord: false}).populate('author users sourceList').limit(DOCS_PER_PAGE);
     res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -871,6 +871,7 @@ app.post('/paginate', async function(req, res){
         if(profile != 'false'){
             find.author = profile;
         }
+        find.systemRecord = false;
         let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
         res.render('passages', {
             subPassages: false,
