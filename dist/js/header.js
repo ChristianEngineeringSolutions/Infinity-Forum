@@ -120,6 +120,7 @@ $(function(){
     $(document).on('click', '#distraction_free', function(){
         if(distractionFree == false){
             $('.passage_options').hide();
+            $('.passage_tabs').hide();
             $('.passage_author').hide();
             $('.passage_users').hide();
             $('.passage_stars').hide();
@@ -130,6 +131,7 @@ $(function(){
         }
         else{
             $('.passage_options').show();
+            $('.passage_tabs').show();
             $('.passage_author').show();
             $('.passage_users').show();
             $('.passage_stars').show();
