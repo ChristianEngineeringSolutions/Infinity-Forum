@@ -136,7 +136,7 @@ $(function(){
             $('.passage_users').show();
             $('.passage_stars').show();
             $('.passage').css('background', 'gold'); 
-            $('.passage').css('border', '1px solid black'); 
+            $('.passage').css('border', '2px solid #353535'); 
             $('.passage').css('margin-bottom', '10px'); 
             distractionFree = false;
         }
