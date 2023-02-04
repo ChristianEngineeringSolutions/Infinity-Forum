@@ -18,6 +18,9 @@
     #footer{
         font-size: 1.5em;
     }
+    #page_title_container{
+        margin-top: 145px;
+    }
 }
 @media screen and (max-width: 550px){
     #add_passage_button{
