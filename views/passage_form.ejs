@@ -12,7 +12,7 @@ Source variable: passage
     <img src="/uploads/<%=passage.filename%>" alt="">
     <%}%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
-    <div class="passage_advanced">
+    <div id="passage_advanced_<%=passage._id%>"class="passage_advanced">
         <textarea class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
         <textarea class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
         <textarea class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
