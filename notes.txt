@@ -22,6 +22,10 @@ Personal Passages (Maybe not)
 
 
 Daemon search and pin** priority
+Daemon Mark
+Multiple file upload
+cross origin warning
+Budget update
 
 
 Internal (approved daemons):

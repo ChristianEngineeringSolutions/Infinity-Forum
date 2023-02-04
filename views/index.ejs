@@ -4,7 +4,7 @@
             <%- include('ppe') %>
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
             <input type="hidden" value="false", id="is_profile"/>
-            <div style="margin-top:120px">
+            <div id="page_title_container">
                 <%if(passage.parent != null){%>
                     <div data-url="/passage/<%=passage.parent.title%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
                 <%}%>
