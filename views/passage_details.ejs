@@ -12,15 +12,23 @@ Source variable: passage
 <% if(passage.filename){ %>
 <img src="/uploads/<%=passage.filename%>" alt="">
 <%}%>
-<!-- <div class="passage_advanced">
+<div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced">
+    <h2>HTML</h2>
     <div class="passage_html" name="html" id="passage_html_<%=passage._id%>">
-        <%=passage.html%>
+        <%=passage.html || 'None'%>
     </div>
+    <h2>CSS</h2>
     <div class="passage_css" name="css" id="passage_css_<%=passage._id%>">
-        <%=passage.css%>
+        <%=passage.css || 'None'%>
     </div>
+    <h2>Javascript</h2>
     <div class="passage_js" name="js" id="passage_js_<%=passage._id%>">
-        <%=passage.javascript%>
+        <%=passage.javascript || 'None'%>
     </div>
-</div> -->
+</div>
+<%if((passage.html && passage.html.length> 1) || (passage.javascript && passage.javascript.length> 1) || (passage.css && passage.css.length> 1)){%>
+    <ul class="passage_tabs">
+        <li id="passage_details_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">View Code</li>
+    </ul>
+<%}%> 
 <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">

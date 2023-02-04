@@ -16,8 +16,16 @@ $(function(){
         $('#passage_form_' + _id).slideToggle();
     });
 
-    $(document).on('click', '.passage_tab_open_advanced', function(e){
-        $('.passage_advanced').fadeToggle().css('display', 'inline-block');
+    // $(document).on('click', '.passage_tab_open_advanced', function(e){
+    //     $('.passage_advanced').fadeToggle().css('display', 'inline-block');
+    // });
+    $(document).on('click', '[id^="passage_executable_"]', function(e){
+        let _id = $(this).attr('id').split('_').at(-1);
+        $('#passage_advanced_' + _id).fadeToggle();
+    });
+    $(document).on('click', '[id^="passage_details_executable_"]', function(e){
+        let _id = $(this).attr('id').split('_').at(-1);
+        $('#passage_details_advanced_' + _id).fadeToggle();
     });
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
