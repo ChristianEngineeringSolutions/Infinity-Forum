@@ -74,6 +74,18 @@ const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
 var MongoStore  = require('connect-mongo');
 const scripts = {};
+scripts.isPassageUser = function(user, passage){
+    var ret;
+    if(user._id.toString() == passage.author._id.toString()){
+        return true;
+    }
+    passage.users.forEach(function(u){
+        if(u._id.toString() == user._id.toString()){
+            return true;
+        }
+    });
+    return false;
+};
 app.use(cookieParser());
 app.use(session({
     secret: "ls",
@@ -423,8 +435,8 @@ app.post('/transfer_bookmark', async (req, res) => {
     //first check if parent allow submissions (is Public)
     if(parent !== 'root'){
         let parentPassage = await Passage.findOne({_id: parent});
-        if(parentPassage.public === false && parentPassage.author.toString() != req.session.user._id.toString()){
-            return res.send("<h2 style='text-align:center;color:red;'>Passage is private. Consider Bookmarking it, and copying it over to your own passage.</h2>");
+        if(parentPassage.public === false && parentPassage.author.toString() != req.session.user._id.toString() && !scripts.isPassageUser(req.session.user, parentPassage)){
+            return res.send("<h2 style='text-align:center;color:red;'>Passage is private. Ask to be on the Userlist, or consider Bookmarking it, and copying it over to your own passage.</h2>");
         }
     }
     //First copy the passage
@@ -515,7 +527,7 @@ app.post('/add_user', async (req, res) => {
     let passage = await Passage.findOne({_id: passageId});
     if(user && req.session.user && req.session.user._id == passage.users[0]._id){
         passage.users.push(user._id);
-        passage.save();
+        await passage.save();
         res.send("User Added");
     }
     else{
@@ -920,11 +932,16 @@ app.post('/create_passage/', async (req, res) => {
     let parentPassageId = req.body.passageID;
     let parentId = null;
     var isRoot = parentPassageId == 'root';
+    var parent;
     if(isRoot){
         parentId = null;
     }
     else{
         parentId = parentPassageId;
+        parent = await Passage.findOne({_id: parentId});
+        if(!scripts.isPassageUser(req.session.user, parent) && !parent.public){
+            return res.send("Must be on userlist.");
+        }
     }
     if(user){
         users = [user];
@@ -936,7 +953,6 @@ app.post('/create_passage/', async (req, res) => {
     });
     if(!isRoot){
         //add passage to parent sub passage list
-        let parent = await Passage.findOne({_id: parentId});
         parent.passages.push(passage);
         await parent.save();
     }
@@ -980,6 +996,9 @@ app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
     var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
