@@ -356,7 +356,7 @@ app.get('/', async (req, res) => {
 app.get('/donate', async function(req, res){
     let MainSystemRecord = await GetMainSystemRecord();
     let systemContent = JSON.parse(MainSystemRecord.content);
-    res.render('donate', {usd: systemContent.usd});
+    res.render('donate', {passage: {id: 'root'}, usd: systemContent.usd});
 });
 //Search
 app.post('/search_leaderboard/', async (req, res) => {
@@ -519,7 +519,7 @@ app.post('/sort_daemons', async (req, res) => {
 });
 app.get('/leaderboard', async (req, res) => {
     let users = await User.find().sort('-stars');
-    res.render('leaderboard', {users: users, scripts: scripts});
+    res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts});
 });
 app.post('/add_user', async (req, res) => {
     let passageId = req.body.passageId;
