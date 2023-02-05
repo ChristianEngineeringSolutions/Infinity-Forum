@@ -167,7 +167,8 @@ $(function(){
                     username: thiz.val()
                 },
                 success: function (data) {
-                    console.log(data);
+                    alert(data);
+                    window.location.reload();
                 }
             });
         }
