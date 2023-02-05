@@ -36,6 +36,10 @@
     padding-bottom: 0px;
     cursor: pointer;
 }
+.passage_description, .ql-container, .ql-editor{
+    background: white;
+    border: 0;
+}
 .passage_form{
     display: none;
 }
@@ -99,7 +103,7 @@
     cursor: pointer;
     color: black;
 }
-.passage_title, .passage_description, .passage_file, .passage_plus_description{
+.passage_title, .passage_file, .passage_plus_description{
     all: revert;
     display: block;
     width: 99%;
@@ -108,6 +112,13 @@
     margin-bottom: 10px;
     padding-left: 10px;
     padding-right: 0px;
+}
+.hljs{
+    background: transparent;
+}
+.ql-snow .ql-editor pre.ql-syntax{
+    color: #000;
+    background: #fff;
 }
 .detail_title{
     cursor: pointer;
@@ -118,6 +129,8 @@
 .detail_description{
     white-space: pre-wrap;
     margin-bottom: 50px;
+    /* line-height: 3px; */
+    margin-top: 25px;
 }
 .boxsizingBorder {
     -webkit-box-sizing: border-box;
@@ -200,6 +213,9 @@
 }
 .add_stars{
     cursor: pointer;
+}
+.passage_stars{
+    margin-bottom: 20px;
 }
 .change_passage_file{
     cursor: pointer;

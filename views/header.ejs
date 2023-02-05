@@ -17,7 +17,9 @@
                              <ion-icon id="ppe_mutate"class="ppe_option"title="Mutate (m)"src="/images/ionicons/color-palette-outline.svg"></ion-icon>
                              <ion-icon id="ppe_erase"class="ppe_option"title="Erase (e)"src="/images/ionicons/square-outline.svg"></ion-icon>
                              <ion-icon id="ppe_search_icon"class="ppe_option"title="Search (SPC)"src="/images/ionicons/search-outline.svg"></ion-icon>
-                             <ion-icon id="distraction_free"class=""title="Distraction Free Mode"src="/images/ionicons/eye-outline.svg"></ion-icon>
+                             <%if(typeof passage == 'undefined' || passage.id !== 'root'){%>
+                                <ion-icon id="distraction_free"class=""title="Distraction Free Mode"src="/images/ionicons/eye-outline.svg"></ion-icon>
+                             <%}%>
                              <ion-icon id="leaderboard_link"class=""title="Leader Board"src="/images/ionicons/stats-chart-outline.svg"></ion-icon>
                              <ion-icon id="nav_donate"class=""title="Donate"src="/images/ionicons/cash-outline.svg"></ion-icon>
                              <% if(user != null){ %>
