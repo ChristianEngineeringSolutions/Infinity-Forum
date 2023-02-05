@@ -726,8 +726,8 @@ app.get('/stripeAuthorize', async function(req, res){
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.id,
-                    refresh_url: 'http://christianengineeringsolutions.com/stripeAuthorize',
-                    return_url: 'http://christianengineeringsolutions.com/stripeOnboarded',
+                    refresh_url: 'https://christianengineeringsolutions.com/stripeAuthorize',
+                    return_url: 'https://christianengineeringsolutions.com/stripeOnboarded',
                     type: 'account_onboarding'
                 });
                 console.log(accountLink);
@@ -740,8 +740,8 @@ app.get('/stripeAuthorize', async function(req, res){
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.stripeAccountId,
-                    refresh_url: 'http://christianengineeringsolutions.com/stripeAuthorize',
-                    return_url: 'http://christianengineeringsolutions.com/stripeOnboarded',
+                    refresh_url: 'https://christianengineeringsolutions.com/stripeAuthorize',
+                    return_url: 'https://christianengineeringsolutions.com/stripeOnboarded',
                     type: 'account_onboarding'
                 });
                 console.log(accountLink);
