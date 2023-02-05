@@ -27,6 +27,9 @@ Multiple file upload
 cross origin warning
 Budget update
 
+Private passage let user add own
+Copy bookmark add to bottom
+
 
 Internal (approved daemons):
 Claims
