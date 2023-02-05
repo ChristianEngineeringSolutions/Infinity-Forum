@@ -1030,7 +1030,7 @@ app.post('/update_passage/', async (req, res) => {
     }
     await passage.save();
     //give back updated passage
-    res.render('passage', {subPassages: false, passage: passage, sub: true});
+    return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
