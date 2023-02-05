@@ -81,7 +81,7 @@ $(function(){
             },
             success: function(data){
                 flashIcon($('#transfer_bookmark_' + _id), 'green');
-                $('#passage_wrapper').prepend(data);
+                $('#passage_wrapper').append(data);
             }
         });
     });
