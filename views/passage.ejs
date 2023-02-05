@@ -25,10 +25,6 @@
         <%if(user){%>
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <%}%>
-        <!-- Copy and move passage -->
-        <% if(user && sub === true){%>
-            <li id="passage_copy_<%=passage.id%>" class="passage_option">Duplicate</li>
-        <%}%>
         <%if(passage.users != null && passage.users[0]){%>
         <%if(passage.users && user && passage.users[0]._id == user._id){%>
             <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
