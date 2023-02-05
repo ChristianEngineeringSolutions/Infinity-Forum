@@ -123,6 +123,18 @@ app.get('/p-c1aa32dd.entry.js', function(req, res) {
 app.get('/p-85f22907.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/ionicons/dist/ionicons/p-85f22907.js');
 });
+app.get('/quill.snow.css', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/quill/dist/quill.snow.css');
+});
+app.get('/quill.min.js', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/quill/dist/quill.min.js');
+});
+app.get('/highlight.css', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/highlight.js/styles/a11y-light.css');
+});
+app.get('/highlight.js', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/highlight.js/lib/index.js');
+});
 
 //CRON
 var cron = require('node-cron');
