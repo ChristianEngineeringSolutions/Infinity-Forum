@@ -900,6 +900,9 @@ app.get('/passage_form/', (req, res) => {
     res.render('passage_form');
 });
 app.post('/create_passage/', async (req, res) => {
+    if(!req.session){
+        return res.send("Not logged in.");
+    }
     let user = req.session.user || null;
     let users = null;
     let parentPassageId = req.body.passageID;

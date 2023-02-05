@@ -4,9 +4,9 @@ Source variable: passage
 
 <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
 <%if(passage.content != null && passage.content != ''){%>
-<hr>
+<hr class="hr">
 <%}%>
-<div class="detail_description" name="content" id="passage_content_<%=passage._id%>"><%=passage.content%></div>
+<div class="detail_description" name="content" id="passage_content_<%=passage._id%>"><%-passage.content%></div>
 <!-- <button class="passage_plus_description">+</button> -->
 <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
 <% if(passage.filename){ %>
