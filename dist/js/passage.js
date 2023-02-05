@@ -21,42 +21,45 @@ $(function(){
         let _id = $(this).attr('id').split('_').at(-1);
     });
     $(document).on('click', '[id^="passage_edit_"]', function(e){
-        let _id = $(this).attr('id').split('_').at(-1);
+        var _id = $(this).attr('id').split('_').at(-1);
+        if($(this).data('quill') == false){
+            hljs.configure({   // optionally configure hljs
+                languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
+            });
+            var toolbarOptions = [
+                ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+                ['blockquote', 'code-block'],
+            
+                [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+                [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+                [{ 'direction': 'rtl' }],                         // text direction
+            
+                [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            
+                [{ 'color': ['red', 'blue'] }, { 'background': [] }],          // dropdown with defaults from theme
+                [{ 'font': [] }],
+                [{ 'align': [] }],
+            
+                ['clean']                                         // remove formatting button
+            ];
+            var quill = new Quill('#passage_content_' + _id, {
+            modules: {
+                syntax: true,              // Include syntax module
+                toolbar: toolbarOptions,  // Include button in toolbar
+            },
+            theme: 'snow'
+            });
+            quill.root.innerHTML = document.getElementById('quill-data-' + _id).value;
+            quill.on('text-change', function(delta, source) {
+                var justHtml = quill.root.innerHTML;
+                document.getElementById('quill-data-' + _id).value = justHtml;
+            });
+            $(this).data('quill', true);
+        }
         $('#passage_form_' + _id).slideToggle();
-        hljs.configure({   // optionally configure hljs
-            languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
-          });
-          var toolbarOptions = [
-            ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
-            ['blockquote', 'code-block'],
-          
-            [{ 'header': 1 }, { 'header': 2 }],               // custom button values
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-            [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-            [{ 'direction': 'rtl' }],                         // text direction
-          
-            [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
-            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-          
-            [{ 'color': ['red', 'blue'] }, { 'background': [] }],          // dropdown with defaults from theme
-            [{ 'font': [] }],
-            [{ 'align': [] }],
-          
-            ['clean']                                         // remove formatting button
-          ];
-        var quill = new Quill('#passage_content_' + _id, {
-        modules: {
-            syntax: true,              // Include syntax module
-            toolbar: toolbarOptions,  // Include button in toolbar
-        },
-        theme: 'snow'
-        });
-        quill.root.innerHTML = document.getElementById('quill-data-' + _id).value;
-        quill.on('text-change', function(delta, source) {
-            var justHtml = quill.root.innerHTML;
-            document.getElementById('quill-data-' + _id).value = justHtml;
-         });
     });
 
     // $(document).on('click', '.passage_tab_open_advanced', function(e){
