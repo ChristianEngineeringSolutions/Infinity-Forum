@@ -423,7 +423,7 @@ app.post('/transfer_bookmark', async (req, res) => {
     //first check if parent allow submissions (is Public)
     if(parent !== 'root'){
         let parentPassage = await Passage.findOne({_id: parent});
-        if(parentPassage.public === false){
+        if(parentPassage.public === false && parentPassage.author.toString() != req.session.user._id.toString()){
             return res.send("<h2 style='text-align:center;color:red;'>Passage is private. Consider Bookmarking it, and copying it over to your own passage.</h2>");
         }
     }
