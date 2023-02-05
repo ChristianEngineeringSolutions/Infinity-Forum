@@ -100,8 +100,6 @@ module.exports = {
         }
         let result = '';
         if(passage.passages.length >= 1){
-            console.log(passage.passages);
-            console.log('test');
             let result = await copyPassagesRecursively(passage, copy);
         }
         else{
