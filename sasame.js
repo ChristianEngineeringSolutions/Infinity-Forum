@@ -422,13 +422,14 @@ app.post('/bookmark_passage', async (req, res) => {
     await user.save();
     res.send('done.');
 });
-app.post('/copy_passage/', async (req, res) => {
-    let copy = await passageController.copyPassage(req, res, function(){
+// Add security if reactivating check if passage user first
+// app.post('/copy_passage/', async (req, res) => {
+//     let copy = await passageController.copyPassage(req, res, function(){
         
-    });
-    let passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
-    res.render('passage', {subPassages: false, passage: copy, sub: true});
-});
+//     });
+//     let passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
+//     res.render('passage', {subPassages: false, passage: copy, sub: true});
+// });
 app.post('/transfer_bookmark', async (req, res) => {
     let _id = req.body._id;
     let parent = req.body.parent;
