@@ -129,7 +129,7 @@ $(function(){
             $('.passage').css('margin-bottom', '0'); 
             $('.passage').css('padding-top', '0'); 
             $('.passage').css('padding-bottom', '0'); 
-            $('.detail_title').hide();
+            // $('.detail_title').hide();
             $('.detail_description').css('margin-bottom', '0'); 
             $('.detail_description').css('margin-top', '0');
             $('.hr').hide();
@@ -144,7 +144,7 @@ $(function(){
             $('.passage').css('background', 'gold'); 
             $('.passage').css('border', '2px solid #353535'); 
             $('.passage').css('margin-bottom', '10px'); 
-            $('.detail_title').show();
+            // $('.detail_title').show();
             $('.detail_description').css('margin-bottom', '50px'); 
             $('.detail_description').css('margin-top', '25px');
             $('.passage').css('padding', '15px'); 
