@@ -11,7 +11,7 @@ Source variable: passage
     <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
     <% if(passage.filename){ %>
         <!-- img -->
-        <%if(['png', 'gif', 'jpeg', 'jpg'].includes(passage.filename.split('.').at(-1))){%>
+        <%if(!passage.filename.split('').includes('.') || ['png', 'gif', 'jpeg', 'jpg'].includes(passage.filename.split('.').at(-1))){%>
              <img src="/uploads/<%=passage.filename%>" alt="">
         <!-- audio -->
         <%}else if(['mp3', 'wav', 'jpeg', 'jpg'].includes(passage.filename.split('.').at(-1))){%>
