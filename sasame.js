@@ -1017,7 +1017,8 @@ app.post('/update_passage/', async (req, res) => {
         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
         let fileToUpload = req.files.file;
         let mimetype = req.files.file.mimetype;
-        uploadTitle = v4();
+        //uuid with  ext
+        uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
         //first verify that mimetype is image
         console.log(mimetype);
         // Use the mv() method to place the file somewhere on your server
