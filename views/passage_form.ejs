@@ -10,7 +10,22 @@ Source variable: passage
     <!-- <button class="passage_plus_description">+</button> -->
     <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
     <% if(passage.filename){ %>
-    <img src="/uploads/<%=passage.filename%>" alt="">
+        <!-- img -->
+        <%if(['png', 'gif', 'jpeg', 'jpg'].includes(passage.filename.split('.').at(-1))){%>
+             <img src="/uploads/<%=passage.filename%>" alt="">
+        <!-- audio -->
+        <%}else if(['mp3', 'wav', 'jpeg', 'jpg'].includes(passage.filename.split('.').at(-1))){%>
+            <audio class="passage_audio"controls>
+                <source src="/uploads/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
+                Your browser does not support the audio tag.
+            </audio> 
+        <!-- video -->
+        <%}else if(['avi', 'mp4', 'mpg', 'webm'].includes(passage.filename.split('.').at(-1))){%>
+            <video class="passage_video"width="320" height="240" controls>
+                <source src="/uploads/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
+                Your browser does not support the video tag.
+            </video> 
+        <%}%>
     <%}%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
     <div id="passage_advanced_<%=passage._id%>"class="passage_advanced">
