@@ -72,6 +72,7 @@ module.exports = {
                 let sourceList = p.sourceList;
                 sourceList.push(p._id);
                 let pcopy = await Passage.create({
+                    author: req.session.user,
                     users: user,
                     parent: copy,
                     sourceList: sourceList,
