@@ -21,6 +21,9 @@
     #page_title_container{
         margin-top: 145px;
     }
+    #ppe{
+        margin-top: 120px;
+    }
 }
 @media screen and (max-width: 550px){
     #add_passage_button{

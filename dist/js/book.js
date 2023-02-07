@@ -6,6 +6,8 @@ var Sasame = true;
 
 var page = 1;
 
+var PPEPage = 1;
+
 // if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
 //     //so only in chapters
 //     Sasame = false;
@@ -55,6 +57,27 @@ $('#search').on('keypress', function(e){
             },
             success: function(data){
                 $('#passage_wrapper').html(data);
+                page = 1;
+            }
+        });
+
+    }
+});
+$('#ppe_search').on('keypress', function(e){
+    //check what page we are on
+    var thiz = $(this);
+    if(e.which == 13){
+        $.ajax({
+            type: 'post',
+            url: '/ppe_search/',
+            data: {
+                search: thiz.val(),
+                parent: $('#chief_passage_id').val()
+            },
+            success: function(data){
+                $('#ppe_queue_view_more').remove();
+                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
+                $('#ppe_queue').html(data + icon);
                 page = 1;
             }
         });
@@ -156,6 +179,27 @@ $(document).on('click', '[id^=star_]', function(){
             }
         }
     });
+});
+$(document).on('click', '#graphic_mode', function(){
+    var thiz = $(this);
+    if(!$('#ppe').is(':visible')){
+        thiz.data('active', 'true');
+        $('#ppe').show();
+        $('.ppe_option').css('display', 'inline-block');
+        $('html, body').css({
+            overflow: 'hidden'
+        });
+        $('.book_option').hide();
+    }
+    else{
+        thiz.data('active', 'false');
+        $('#ppe').hide();
+        $('.ppe_option').hide();
+        $('.book_option').show();
+        $('html, body').css({
+            overflow: 'scroll'
+        });
+    }
 });
 $('[id^=update_order_]').on('click', function(){
     var _id = $(this).attr('id').split('_')[1];

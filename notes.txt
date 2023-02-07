@@ -2,6 +2,8 @@ TODO:
 *=external
 Anonymous Posts*
 File compression (client side)
+Minifications, optimizations*
+SEO*
 Peer to Peer*
 Admin interface
 Encryption revisited
@@ -23,10 +25,14 @@ Personal Passages (Maybe not)
 
 Daemon search and pin** priority
 Daemon Mark
-Multiple file upload
-cross origin warning
+Multiple file upload?
 Budget update
 
+PPE (priority)
+
+
+
+Auto update system records stars upon adding user
 
 
 Internal (approved daemons):

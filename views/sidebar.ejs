@@ -9,6 +9,7 @@
                       <option value="help">Help</option>
                       <option value="bookmarks">Bookmarks</option>
                       <option value="daemons">Daemons</option>
+                      <option value="passages">Graphics</option>
                   </select>
               </div>
               <!-- For Pagination -->
@@ -25,12 +26,14 @@
                 <!-- Passages -->
                 <div id="search_passages">
                   <div>
-                        <input class="control_input"id="category_search_input"placeholder="Search Passages" type="" name="" autocomplete="off">
+                        <input class="control_input"id="ppe_search"placeholder="Search Passages" type="" name="" autocomplete="off">
                         <div id="ppe_queue">
                           <!-- <input placeholder="Search..."id="ppe_search"class="control_input"type="text" name=""> -->
                           <div class="ppe_canvas_container ppe_queue_selected">
+                              <h3>Mutation</h3>
                             <canvas id="ppe_mutation"class="ppe_queue_canvas" width="100" height="100"></canvas>
                           </div>
+                          <ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>
                         </div>
                     </div>
                     <div id="cats"></div>
