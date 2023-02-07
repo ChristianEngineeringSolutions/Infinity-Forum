@@ -253,7 +253,7 @@ async function starPassage(amount, passageID, userID){
             console.log('Can\'t give stars to oneself. :)');
         }
         //The passage gets the bonus too
-        amount += numStars;
+        // amount += numStars;
     }
     //add stars to passage, sourceList, and sub Passages
     passage.stars += amount;
@@ -263,12 +263,9 @@ async function starPassage(amount, passageID, userID){
         await starPassage(amount, source._id, userID);
     }
     //star all sub passages
-    (async function lambda(passage){
-        for(const p of passage.passages){
-            await starPassage(amount, p._id, userID);
-            await lambda(p);
-        }
-    })(passage);
+    for(const p of passage.passages){
+        await starPassage(amount, p._id, userID);
+    }
     //then add stars to users appropriately (will be reflected in the main system record)
     //if starring user is passage creator,
     //they can get bonuses and star the passage,
@@ -290,6 +287,7 @@ async function starPassage(amount, passageID, userID){
         users: [userID],
         title: 'Star'
     });
+    console.log(amount);
     let MainSystemRecord = await GetMainSystemRecord();
     let systemContent = JSON.parse(MainSystemRecord.content);
     systemContent.stars += amount;
