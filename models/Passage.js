@@ -21,6 +21,8 @@ const passageSchema = mongoose.Schema({
         type: String,
         default: 'Untitled'
     },
+    //to help user apps (store JSON)
+    metadata: String,
     html: String,
     css: String,
     javascript: String,
@@ -87,6 +89,7 @@ const passageSchema = mongoose.Schema({
         default: false
     }, //content warning
     filename: String, // associated file
+    mimeType: String,
     deleted: {
         type: Boolean,
         default: false

@@ -288,6 +288,9 @@ async function notifyUser(userId, content, type="General"){
 }
 //ROUTES
 //GET (or show view)
+app.get("/api", async (req, res) => {
+    //allow cross origin
+});
 
 app.get("/profile/:_id?/", async (req, res) => {
     let bookmarks = [];
@@ -356,7 +359,7 @@ app.get('/', async (req, res) => {
 app.get('/donate', async function(req, res){
     let MainSystemRecord = await GetMainSystemRecord();
     let systemContent = JSON.parse(MainSystemRecord.content);
-    res.render('donate', {passage: {id: 'root'}, usd: systemContent.usd});
+    res.render('donate', {passage: {id: 'root'}, usd: systemContent.usd, stars: systemContent.stars});
 });
 //Search
 app.post('/search_leaderboard/', async (req, res) => {
@@ -383,6 +386,22 @@ app.post('/search_profile/', async (req, res) => {
         passages: results,
         subPassages: false,
         sub: true
+    });
+});
+app.post('/ppe_search/', async (req, res) => {
+    let parent = req.body.parent == 'root' ? null : req.body.parent;
+    let results = await Passage.find({
+        parent: parent,
+        deleted: false,
+        systemRecord: false,
+        MainSystemRecord: false,
+        mimeType: 'image',
+        title: {
+        $regex: req.body.search,
+        $options: 'i',
+    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    res.render("ppe_thumbnails", {
+        thumbnails: results,
     });
 });
 app.post('/search_passage/', async (req, res) => {
@@ -703,7 +722,8 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id, systemRecord: false}).populate('parent author users sourceList');
     let passageUsers = [];
-    if(passage.users != null){
+    if(passage.users != null && passage.users[0] != null){
+        console.log(passage.users);
         passage.users.forEach(function(u){
             passageUsers.push(u._id.toString());
         });
@@ -803,6 +823,11 @@ app.post('/login', function(req, res) {
         }
     });
 });
+app.get('/admin', function(req, res){
+    if(!req.session.user || !req.session.user.admin){
+        return res.redirect('/');
+    }
+});
 app.post('/register/', async function(req, res) {
     if ((req.body.email ||
       req.body.username) &&
@@ -896,13 +921,23 @@ app.post('/paginate', async function(req, res){
         if(profile != 'false'){
             find.author = profile;
         }
+        if(req.body.from_ppe_queue){
+            find.mimeType = 'image';
+        }
         find.systemRecord = false;
         let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
-        res.render('passages', {
-            subPassages: false,
-            passages: passages.docs,
-            sub: true
-        });
+        if(!req.body.from_ppe_queue){
+            return res.render('passages', {
+                subPassages: false,
+                passages: passages.docs,
+                sub: true
+            });
+        }
+        else{
+            res.render('ppe_thumbnails', {
+                thumbnails: passages.docs,
+            });
+        }
     }
     else{
         let find = {
@@ -925,7 +960,7 @@ app.get('/passage_form/', (req, res) => {
     res.render('passage_form');
 });
 app.post('/create_passage/', async (req, res) => {
-    if(!req.session){
+    if(!req.session.user){
         return res.send("Not logged in.");
     }
     let user = req.session.user || null;
@@ -993,6 +1028,39 @@ app.post('/update_passage_order/', async (req, res) => {
     //give back updated passage
     res.send('Done');
 });
+app.post('/ppe_add', async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var uploadTitle = v4();
+    var data = req.body.dataURL.replace(/^data:image\/\w+;base64,/, "");
+    var buf = Buffer.from(data, 'base64');
+    const fsp = require('fs').promises
+    await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
+    let passage = await Passage.create({
+        author: req.session.user,
+        users: [req.session.user],
+        parent: req.body.parent == 'root' ? null: req.body.parent,
+        filename: uploadTitle,
+        mimeType: 'image'
+    });
+    var newOne = await Passage.find({_id: passage._id});
+    if(req.body.parent !== 'root'){
+        let Parent = await Passage.findOne({_id: req.body.parent});
+        Parent.passages.push(newOne);
+        await Parent.save();
+    }
+    let find = await Passage.findOne({_id: passage._id});
+    res.render('ppe_thumbnail', {thumbnail: find});
+});
+app.get('/ppe_queue', async (req, res) => {
+    let passages = await Passage.find({
+        parent: req.body.parent == 'root' ? null : req.body.parent,
+        mimeType: 'image'
+    });
+    console.log('test');
+    return res.render('ppe_thumbnails', {thumbnails: passages});
+});
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
@@ -1028,6 +1096,7 @@ app.post('/update_passage/', async (req, res) => {
             }
         });
         passage.filename = uploadTitle;
+        passage.mimeType = mimeType.split('/')[0];
     }
     await passage.save();
     //give back updated passage

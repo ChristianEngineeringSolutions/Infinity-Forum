@@ -1,4 +1,53 @@
+var POSX;
+var POSY;
 function ppe(){
+    var share = {};
+    share.mutate = function(data, indice, iterations=0){
+        var chunks = data.split(indice);
+        var options = ['insert', 'delete', 'mutate'];
+        for(var i = 0; i < chunks.length; ++i){
+          //random num between 1 and 3
+          var random = Math.floor(Math.random() * options.length) + 1;
+          switch(options[random]){
+            case 'insert':
+            //perform an insertion by duplicating a chunk!
+            var nextChunk = chunks[i + 1];
+            chunks[i + 1] = chunks[i];
+            //then carry down the changes to the end of the array
+            for(var j = i + 1; j < chunks.length; ++j){
+              chunks[j + 1] = chunks[j];
+            }
+            break;
+            case 'delete':
+            //delete a chunk by making it equal the next chunk!
+            chunks[i] = chunks[i + 1];
+            //then make each following chunk equal the next chunk,
+            //removing the last chunk (technically just a left shift)
+            for(var j = i + 1; j < chunks.length; ++j){
+              if(j + 1 < chunks.length){
+                chunks[j] = chunks[j + 1];
+              }
+              else{
+                chunks.pop();
+              }
+            }
+            break;
+            case 'mutate':
+            var ran = Math.floor(Math.random() * chunks.length) + 1;
+            var ran2 = Math.floor(Math.random() * chunks.length) + 1;
+            if(indice != ''){
+              var points = chunks[i].split('');
+              points[ran] = points[ran2];
+              chunks[i] = points.join('');
+            }
+            else{
+              chunks[ran] = chunks[ran2];
+            }
+            break;
+          }
+        }
+        return chunks.join(indice);
+      };
     ppeActive = true;
     if(isMobile()){
         if(!sessionStorage.alertedGraphicDev){
@@ -6,9 +55,6 @@ function ppe(){
             sessionStorage.alertedGraphicDev = true;
         }
     }
-    $('html, body').css({
-        overflow: 'hidden'
-    });
     var canvas = document.getElementById('ppe_canvas');
     var cursor = document.getElementById('ppe_cursor');
     var cursorctx = cursor.getContext('2d');
@@ -34,7 +80,7 @@ function ppe(){
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     //properties come from the source passage
-    function drawImage(image, x, y, delv, realImage=false, properties={}){
+    function drawImage(image, posx, posy, x, y, delv, realImage=false, properties={}){
         delv.globalAlpha = opacity;
         delv.setTransform(masterScale, 0, 0, masterScale, posx, posy); // sets scale and origin
         delv.rotate(masterRotate*(Math.PI/180));
@@ -89,12 +135,14 @@ function ppe(){
         var pos = getMousePos(canvas, e);
         posx = pos.x;
         posy = pos.y;
-        drawCursor();
+        POSX = posx;
+        POSY = posy;
+        drawCursor(posx, posy);
         if($('#ppe_select').data('select') == 'off' && isDrawing){
             var image = getSelectedQueueImage();
             // var imageContext = image.getContext('2d');
             // fadeOut();
-            drawImage(image, (posx - image.width/2), (posy - image.height/2), ctx);
+            drawImage(image, posx, posy, (posx - image.width/2), (posy - image.height/2), ctx);
             // ctx.drawImage(image, (posx - image.width/2*scale), (posy - image.height/2*scale), image.width*scale, image.height*scale);
             drawCursor();
         }
@@ -103,20 +151,22 @@ function ppe(){
         var pos = getMousePos(canvas, e);
         posx = pos.x;
         posy = pos.y;
-        drawSelect();
+        POSX = posx;
+        POSY = posy;
+        drawSelect(posx, posy);
         if(isErasing){
             ctx.fillStyle = 'rgba(255, 255, 255, 1)';
             ctx.fillRect(posx, posy, baseSize*masterScale, baseSize*masterScale);
         }
     }
-    function drawSelect(){
+    function drawSelect(posx=POSX, posy=POSY){
         cursorctx.fillStyle = "#000000";
         cursorctx.clearRect(0, 0, canvas.width, canvas.height); 
         cursorctx.beginPath();
         cursorctx.rect(posx, posy, baseSize*masterScale, baseSize*masterScale);
         cursorctx.stroke();
     }
-    // Returns an random integer, positive or negative
+    // Returns a random integer, positive or negative
     // between the given value
     function randInt(min, max, positive) {
 
@@ -187,7 +237,7 @@ function ppe(){
         mutationctx.fill();
         drawCursor();
     });
-    function drawCursor(){
+    function drawCursor(posx=POSX, posy=POSY){
         //Queue Item
         $('#ppe_queue').find(".ppe_queue_selected").show();
         var image = getSelectedQueueImage();
@@ -203,7 +253,7 @@ function ppe(){
         cursorctx.stroke();
         var adjustedHeight = baseSize * (image.height/image.width);
         //Also need to star the related passage
-        drawImage(image, (posx - baseSize/2), (posy - adjustedHeight/2), cursorctx, isRealImage);
+        drawImage(image, posx, posy, (posx - baseSize/2), (posy - adjustedHeight/2), cursorctx, isRealImage);
 
     }
     var newPPEQueueCounter = 0;
@@ -212,7 +262,7 @@ function ppe(){
             var image = getSelectedQueueImage();
             var isRealImage = image instanceof HTMLImageElement ? true : false;
             var adjustedHeight = baseSize * (image.height/image.width);
-            drawImage(image, (posx - baseSize/2), (posy - adjustedHeight/2), ctx, isRealImage);
+            drawImage(image, posx, posy, (posx - baseSize/2), (posy - adjustedHeight/2), ctx, isRealImage);
             drawCursor();
         }
         else{
@@ -245,18 +295,17 @@ function ppe(){
                 $('.dataURL').val(dataURL);
                 cursorctx.clearRect(0, 0, canvas.width, canvas.height); 
                 drawCursor();
+                $('#ppe_queue_view_more').remove();
+                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
+                $('#ppe_queue').append(icon);
                 $(document).on('click touch', '#ppe_little_'+newPPEQueueCounter, function(){
                     //Now add the passage to database
                     $.ajax({
                         type: 'post',
-                        url: '/passage/add_passage/',
+                        url: '/ppe_add',
                         data: {
-                            type: 'passage',
-                            passage: '',
-                            property_key: 'Canvas',
-                            property_value: 'image',
                             dataURL: dataURL,
-                            special: 'ppe_queue'
+                            parent: $('#chief_passage_id').val()
                         },
                         success: function(data){
                             //and now replace it with the database version
@@ -281,6 +330,50 @@ function ppe(){
             $('#ppe_cursor').off('mousemove touchmove', select);
             $('#ppe_cursor').on('mousemove touchmove', draw);
             drawCursor();
+        });
+    });
+    $(document).on('click', '.ppe_queue_link', function(){
+
+
+    window.open(
+        $(this).data('href'),
+        '_blank'
+    );
+  
+  
+    });
+    function loadPPEQueue(){
+        $.ajax({
+            type: 'get',
+            url: '/ppe_queue',
+            data: {
+                parent: $('#chief_passage_id').val(),
+            },
+            success: function(data){
+                $('#ppe_queue_view_more').remove();
+                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
+                $('#ppe_queue').append(data + icon);
+            }
+        });
+    }
+    loadPPEQueue();
+    $(document).on('click', '.ppe_queue_view_more', function(){
+        var isProfile = $('#is_profile').val();
+        $.ajax({
+            type: 'post',
+            url: '/paginate',
+            data: {
+                page: PPEPage,
+                passage: $('#chief_passage_id').val(),
+                profile: isProfile,
+                search: $('#ppe_search').val()
+            },
+            success: function(data){
+                PPEPage += 1;
+                $('#ppe_queue_view_more').remove();
+                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
+                $('#ppe_queue').append(data + icon);
+            }
         });
     });
     $(document).on('click', '#ppe_select', function(){
@@ -323,7 +416,7 @@ function ppe(){
         $(this).toggleClass('gold');
     });
     $(document).on('keydown', function(e){
-        if($('.graphic_mode').attr('title') == 'Book Mode (b)'){
+        if($('#graphic_mode').data('active') == 'true'){
             if(e.keyCode == 80 || e.keyCode == 78){
                 //p for previous
                 if(e.keyCode == 80){
@@ -495,3 +588,7 @@ function ppe(){
         }
     }
 }
+ppe();
+$(function(){
+    $('#ppe_mutate').click();
+});
