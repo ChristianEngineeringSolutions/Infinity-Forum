@@ -62,13 +62,13 @@ module.exports = {
             let parentPassage = await Passage.findOne({_id: req.body.parent});
             copy.parent = parentPassage;
             parentPassage.passages.push(copy);
-            copy.save();
-            parentPassage.save();
+            await copy.save();
+            await parentPassage.save();
         }
         //copy children
         async function copyPassagesRecursively(passage, copy){
             let copySubPassages = [];
-            passage.passages.forEach(async function(p){
+            for(const p of passage.passages){
                 let sourceList = p.sourceList;
                 sourceList.push(p._id);
                 let pcopy = await Passage.create({
@@ -88,7 +88,7 @@ module.exports = {
                 if(p.passages){
                     await copyPassagesRecursively(p, pcopy);
                 }
-            });
+            }
             // console.log(copy.title);
             let update = await Passage.findOneAndUpdate({_id: copy._id}, {
                 passages: copy.passages
