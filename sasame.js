@@ -167,6 +167,8 @@ cron.schedule('0 12 1 * *', async () => {
     //     systemContent.stars += addStars * monthsSubscribed;
     //     subscriber.stars += addStars * monthsSubscribed;
     // });
+    // systemRecord.content = JSON.stringify(systemContent);
+    // await systemRecord.save();
     //await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
@@ -666,6 +668,9 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
             let totalStarCount = systemContent.stars;
             let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
             user.stars += starsToAdd;
+            systemContent.stars += starsToAdd;
+            MainSystemRecord.content = JSON.stringify(systemContent);
+            await MainSystemRecord.save();
             await user.save();
         }
     }
@@ -842,7 +847,7 @@ app.post('/register/', async function(req, res) {
         password: req.body.password,
         token: v4()
       }  //use schema.create to insert data into the db
-      User.create(userData, function (err, user) {
+      User.create(userData, async function (err, user) {
         if (err) {
           console.log(err);
         } else {
@@ -862,6 +867,12 @@ app.post('/register/', async function(req, res) {
                     https://christianengineeringsolutions.com/verify/`+user._id+`/`+user.token+`
                 `);
           }
+          //log stars added to system
+          let MainSystemRecord = await Passage.findOne({MainSystemRecord: true});
+          let content = JSON.parse(MainSystemRecord.content);
+          content.stars = parseInt(content.stars) + 100;
+          MainSystemRecord.content = JSON.stringify(content);
+          await MainSystemRecord.save();
           res.redirect('/profile/' + user._id);
         }
       });
