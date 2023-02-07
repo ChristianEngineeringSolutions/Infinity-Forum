@@ -160,13 +160,13 @@ cron.schedule('0 12 1 * *', async () => {
     // //if user is still subscribed
     // //they get stars
     // //plus time bonus
-    // subscribers.forEach(async function(subscriber){
+    // for(subscriber of subscribers){
     //     let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
     //     addStars = percentUSD(8000, systemContent.usd);
     //     systemContent.usd += 8000;
     //     systemContent.stars += addStars * monthsSubscribed;
     //     subscriber.stars += addStars * monthsSubscribed;
-    // });
+    // }
     // systemRecord.content = JSON.stringify(systemContent);
     // await systemRecord.save();
     //await rewardUsers();
@@ -187,7 +187,7 @@ async function rewardUsers(){
     let systemContent = JSON.parse(MainSystemRecord.content);
     let totalStarCount = systemContent.stars;
     let totalUSD = systemContent.usd;
-    users.forEach(async function(user){
+    for(const user of users){
         //appropriate percentage based on stars
         //users get same allotment as they have percentage of stars
         let userUSD = percentStars(user.stars, totalStarCount) * totalUSD;
@@ -196,7 +196,7 @@ async function rewardUsers(){
             currency: "usd",
             destination: user.stripeAccountId,
         });
-    });
+    }
 }
 async function starUser(numStars, userId){
     console.log('what');
@@ -238,7 +238,7 @@ async function starPassage(amount, passageID, userID){
         title: 'Star'
     });
     //Give bonus to all previous starrers
-    systemRecords.forEach(async function(record){
+    for(const record of systemRecords){
         let numStars = record.stars;
         if(record.stars > amount){
             numStars = (amount / record.stars) * record.stars;
@@ -254,20 +254,20 @@ async function starPassage(amount, passageID, userID){
         }
         //The passage gets the bonus too
         amount += numStars;
-    });
+    }
     //add stars to passage, sourceList, and sub Passages
     passage.stars += amount;
     await passage.save();
     //star each source
-    passage.sourceList.forEach(async function(source){
+    for(const source of passage.sourceList){
         await starPassage(amount, source._id, userID);
-    });
+    }
     //star all sub passages
     (async function lambda(passage){
-        passage.passages.forEach(async function(p){
+        for(const p of passage.passages){
             await starPassage(amount, p._id, userID);
             await lambda(p);
-        });
+        }
     })(passage);
     //then add stars to users appropriately (will be reflected in the main system record)
     //if starring user is passage creator,
