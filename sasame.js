@@ -230,7 +230,7 @@ async function starPassage(amount, passageID, userID){
     let user = await User.findOne({_id: userID});
     let passage = await Passage.findOne({_id: passageID});
     let numSources = passage.sourceList.length;
-    amount = amount * (numSources + 1);
+    var thisAmount = amount * (numSources + 1);
     //give bonuses according to previous systemrecords for this passage
     let systemRecords = await Passage.find({
         parent: passageID,
@@ -256,7 +256,7 @@ async function starPassage(amount, passageID, userID){
         // amount += numStars;
     }
     //add stars to passage, sourceList, and sub Passages
-    passage.stars += amount;
+    passage.stars += thisAmount;
     await passage.save();
     //star each source
     for(const source of passage.sourceList){
