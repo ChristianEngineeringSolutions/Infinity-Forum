@@ -1086,7 +1086,7 @@ app.get('/ppe_queue', async (req, res) => {
     let passages = await Passage.find({
         parent: req.body.parent == 'root' ? null : req.body.parent,
         mimeType: 'image'
-    });
+    }).sort('-stars');
     console.log('test');
     return res.render('ppe_thumbnails', {thumbnails: passages});
 });
