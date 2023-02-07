@@ -4,7 +4,7 @@ Christian Engineering Solutions (CES) is a Not for Profit Organization specializ
 
 # Our Technology
 
-Our Technology is scripture based in its goals and foundations. Open-Source and Free, one may use our services to both learn and solve problems with the goals of helping others and growing closer to God.
+Our Technology (Sasame) is scripture based in its goals and foundations. Open-Source and Free, one may use our services to both learn and solve problems with the goals of helping others and growing closer to God.
 
 # Features
 
