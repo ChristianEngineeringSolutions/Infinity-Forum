@@ -8,8 +8,6 @@ Peer to Peer*
 Admin interface
 Encryption revisited
 Tests
-Personal Passages*
-    Sub Passages should default personal
 Show group passages on profile?
 Database merge*
 UUIDs*
@@ -17,8 +15,8 @@ Review Database Backups/Recovery
 File Browser + Submissions
 Tab sortable fix
 Non-profit filings
-Desktop apps
-Phone apps
+
+Cordova
 
 Personal Passages (Maybe not)
 
@@ -26,13 +24,6 @@ Personal Passages (Maybe not)
 Daemon search and pin** priority
 Daemon Mark
 Multiple file upload?
-Budget update
-
-PPE (priority)
-
-
-
-Auto update system records stars upon adding user
 
 
 Internal (approved daemons):

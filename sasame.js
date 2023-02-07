@@ -199,6 +199,7 @@ async function rewardUsers(){
     });
 }
 async function starUser(numStars, userId){
+    console.log('what');
     let user = await User.findOne({_id: userId});
     user.stars += numStars;
     await user.save();
@@ -245,7 +246,12 @@ async function starPassage(amount, passageID, userID){
         else if (amount > record.stars){
             numStars = (record.stars / amount) * amount;
         }
-        await starUser(numStars, record.users[0]);
+        if(userID.toString() != passage.author.toString()){
+            await starUser(numStars, record.users[0]);
+        }
+        else{
+            console.log('Can\'t give stars to oneself. :)');
+        }
         //The passage gets the bonus too
         amount += numStars;
     });
@@ -267,8 +273,13 @@ async function starPassage(amount, passageID, userID){
     //if starring user is passage creator,
     //they can get bonuses and star the passage,
     //but they won't get initial stars; it is an investment
-    if(userID != passage.users[0]._id){
-        await starUser(amount, passage.users[0]);
+    if(userID.toString() != passage.author.toString()){
+        console.log(userID.toString());
+        console.log(passage.author.toString());
+        await starUser(amount, passage.author.toString());
+    }
+    else{
+        console.log('Can\'t give stars to oneself. :)');
     }
     //add systemrecord passage
     let systemRecord = await Passage.create({
@@ -279,6 +290,11 @@ async function starPassage(amount, passageID, userID){
         users: [userID],
         title: 'Star'
     });
+    let MainSystemRecord = await GetMainSystemRecord();
+    let systemContent = JSON.parse(MainSystemRecord.content);
+    systemContent.stars += amount;
+    MainSystemRecord.content = JSON.stringify(systemContent);
+    await MainSystemRecord.save();
     return passage;
 }
 async function notifyUser(userId, content, type="General"){
@@ -1015,7 +1031,9 @@ app.post('/star_passage/', async (req, res) => {
     if(req.session && user){
         if(sessionUser.stars > amount){
             //user must trade their own stars
-            sessionUser.stars -= amount;
+            console.log(sessionUser.stars);
+            sessionUser.stars -= parseInt(amount);
+            console.log(sessionUser.stars);
             let passage = await starPassage(amount, req.body.passage_id, sessionUser._id);
             await sessionUser.save();
             return res.render('passage', {subPassages: false, passage: passage, sub: true});
