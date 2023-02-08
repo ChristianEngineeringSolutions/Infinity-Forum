@@ -1,5 +1,6 @@
 var POSX;
 var POSY;
+var sourceList = [];
 function ppe(){
     var share = {};
     share.mutate = function(data, indice, iterations=0){
@@ -131,6 +132,14 @@ function ppe(){
     function getSelectedQueueImage(){
         return $('#ppe_queue').find(".ppe_queue_selected").children('.ppe_queue_canvas')[0];
     }
+    function getSelectedQueueId(){
+        try{
+            return $('#ppe_queue').find(".ppe_queue_selected").children('.ppe_queue_canvas').attr('id').split('_').at(-1);
+        }
+        catch(error){
+            console.log(error);
+        }
+    }
     function draw(e) {
         var pos = getMousePos(canvas, e);
         posx = pos.x;
@@ -260,6 +269,26 @@ function ppe(){
     $(document).on('click touch', '#ppe_cursor', function(){
         if($('#ppe_select').data('select') == 'off' && $('#ppe_erase').data('on') != 'true'){
             var image = getSelectedQueueImage();
+            try{
+                var source = getSelectedQueueId();
+                var added = false;
+                if(source != 'mutation'){
+                    for(const s of sourceList){
+                        //already added
+                        if(s == source){
+                            added = true;
+                            break;
+                        }
+                    }
+                    if(added == false){
+                        sourceList.push(source);
+                    }
+                }
+            }
+            catch(error){
+                console.log(error);
+            }
+                console.log(sourceList);
             var isRealImage = image instanceof HTMLImageElement ? true : false;
             var adjustedHeight = baseSize * (image.height/image.width);
             drawImage(image, posx, posy, (posx - baseSize/2), (posy - adjustedHeight/2), ctx, isRealImage);
@@ -297,7 +326,6 @@ function ppe(){
                 drawCursor();
                 $('#ppe_queue_view_more').remove();
                 let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="View More"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
-                $('#ppe_queue').append(icon);
                 $(document).on('click touch', '#ppe_little_'+newPPEQueueCounter, function(){
                     //Now add the passage to database
                     $.ajax({
@@ -305,11 +333,13 @@ function ppe(){
                         url: '/ppe_add',
                         data: {
                             dataURL: dataURL,
-                            parent: $('#chief_passage_id').val()
+                            parent: $('#chief_passage_id').val(),
+                            sourceList: sourceList
                         },
                         success: function(data){
                             //and now replace it with the database version
                             $('#ppe_little_'+newPPEQueueCounter).parent().replaceWith(data);
+                            $('#ppe_queue').append(icon);
                         }
                     });
                 });

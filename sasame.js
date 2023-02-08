@@ -995,6 +995,7 @@ app.post('/ppe_add', async (req, res) => {
         users: [req.session.user],
         parent: req.body.parent == 'root' ? null: req.body.parent,
         filename: uploadTitle,
+        sourceList: req.body.sourceList,
         mimeType: 'image'
     });
     var newOne = await Passage.find({_id: passage._id});
@@ -1037,11 +1038,11 @@ app.post('/update_passage/', async (req, res) => {
         console.log('File uploaded');
         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
         let fileToUpload = req.files.file;
-        let mimetype = req.files.file.mimetype;
+        var mimeType = req.files.file.mimetype;
         //uuid with  ext
         uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
         //first verify that mimetype is image
-        console.log(mimetype);
+        console.log(mimeType);
         // Use the mv() method to place the file somewhere on your server
         fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
             if (err){
