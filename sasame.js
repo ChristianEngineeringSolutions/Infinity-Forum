@@ -157,7 +157,7 @@ cron.schedule('0 12 1 * *', async () => {
     //if user is still subscribed
     //they get stars
     //plus time bonus
-    for(subscriber of subscribers){
+    for(const subscriber of subscribers){
         let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
         subscriber.stars += 80 * monthsSubscribed;
         await subscriber.save();
