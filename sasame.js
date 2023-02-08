@@ -1034,7 +1034,7 @@ app.post('/update_passage/', async (req, res) => {
     else{
         console.log('File uploaded');
         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-        let fileToUpload = req.files.file;
+        var fileToUpload = req.files.file;
         var mimeType = req.files.file.mimetype;
         //uuid with  ext
         uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
