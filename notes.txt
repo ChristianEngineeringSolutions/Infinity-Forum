@@ -30,13 +30,3 @@ Internal (approved daemons):
 Claims
 PPE
 Editors
-
-//////////////////////////////////////////////////////////////////////////
-
-Main system record true
-content:
-
-{
-    stars: x,
-    usd: x
-}
