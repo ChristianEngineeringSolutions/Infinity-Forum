@@ -14,6 +14,7 @@ UUIDs*
 Review Database Backups/Recovery
 File Browser + Submissions
 Tab sortable fix
+Tab full testing and bugfixes
 Non-profit filings
 
 Cordova
@@ -24,9 +25,3 @@ Personal Passages (Maybe not)
 Daemon search and pin** priority
 Daemon Mark
 Multiple file upload?
-
-
-Internal (approved daemons):
-Claims
-PPE
-Editors
