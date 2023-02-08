@@ -296,7 +296,7 @@ function ppe(){
                 cursorctx.clearRect(0, 0, canvas.width, canvas.height); 
                 drawCursor();
                 $('#ppe_queue_view_more').remove();
-                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
+                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="View More"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
                 $('#ppe_queue').append(icon);
                 $(document).on('click touch', '#ppe_little_'+newPPEQueueCounter, function(){
                     //Now add the passage to database
@@ -351,7 +351,7 @@ function ppe(){
             },
             success: function(data){
                 $('#ppe_queue_view_more').remove();
-                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
+                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="View More"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
                 $('#ppe_queue').append(data + icon);
             }
         });
@@ -371,7 +371,7 @@ function ppe(){
             success: function(data){
                 PPEPage += 1;
                 $('#ppe_queue_view_more').remove();
-                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="Distraction Free Mode"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
+                let icon = '<ion-icon title="View More"style="font-size:2em;display:inline-block;padding-bottom:10px;cursor:pointer;"id="ppe_queue_view_more"class=""title="View More"src="/images/ionicons/add-circle-outline.svg"></ion-icon>';
                 $('#ppe_queue').append(data + icon);
             }
         });
