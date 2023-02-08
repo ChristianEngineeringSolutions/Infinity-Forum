@@ -152,16 +152,6 @@ app.get('/highlight.js', function(req, res) {
 var cron = require('node-cron');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
-    //Give stars to subscribed users
-    var subscribers = await User.find({subscribed: true});
-    //if user is still subscribed
-    //they get stars
-    //plus time bonus
-    for(const subscriber of subscribers){
-        let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
-        subscriber.stars += 80 * monthsSubscribed;
-        await subscriber.save();
-    }
     //updated every month
     let Amount = 0;
     //await rewardUsers(Amount);
@@ -244,6 +234,7 @@ async function notifyUser(userId, content, type="General"){
 //GET (or show view)
 app.get("/api", async (req, res) => {
     //allow cross origin
+    //for apps
 });
 
 app.get("/profile/:_id?/", async (req, res) => {
@@ -609,12 +600,12 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         let amount = payload.data.object.amount;
         //Save recording passage in database and give user correct number of stars
         //get user from email
-        let user = await User.findOne({_id: payload.data.object.customer_details.email});
+        var user = await User.findOne({_id: payload.data.object.customer_details.email});
         if(user){
             let users = await User.find({stripeAccountId: {$ne: null}});
             var stars = 0;
-            for(const user of users){
-                stars += user.stars;
+            for(const u of users){
+                stars += u.stars;
             }
             user.stars += (amount / 100);
             await user.save();
@@ -623,9 +614,13 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     else if(event.type == "invoice.paid"){
         var email = payload.data.object.customer_email;
         if(email != null){
+            //they get stars
+            //plus time bonus
             var subscriber = await User.findOne({email: email});
             subscriber.subscribed = true;
             subscriber.lastSubscribed = Date.now().toString();
+            let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
+            subscriber.stars += 80 * monthsSubscribed;
             await subscriber.save();
         }
     }
@@ -855,7 +850,6 @@ app.get('/logout', function(req, res) {
       }
     res.redirect('/');
 });
-//simply return new object list for client to add into html
 app.post('/paginate', async function(req, res){
     console.log('test');
     let page = req.body.page;
