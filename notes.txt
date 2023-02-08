@@ -28,8 +28,6 @@ Cordova*
 
 Personal Passages (Maybe not)
 
-Clean out deprecated system record code
-
 Daemon search and pin
 Daemon Mark
 Multiple file upload?
