@@ -813,12 +813,6 @@ app.post('/register/', async function(req, res) {
                     https://christianengineeringsolutions.com/verify/`+user._id+`/`+user.token+`
                 `);
           }
-          //log stars added to system
-          let MainSystemRecord = await Passage.findOne({MainSystemRecord: true});
-          let content = JSON.parse(MainSystemRecord.content);
-          content.stars = parseInt(content.stars) + 100;
-          MainSystemRecord.content = JSON.stringify(content);
-          await MainSystemRecord.save();
           res.redirect('/profile/' + user._id);
         }
       });

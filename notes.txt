@@ -22,6 +22,6 @@ Cordova
 Personal Passages (Maybe not)
 
 
-Daemon search and pin** priority
+Daemon search and pin**
 Daemon Mark
 Multiple file upload?
