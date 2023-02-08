@@ -313,9 +313,13 @@ app.get('/', async (req, res) => {
     });
 });
 app.get('/donate', async function(req, res){
-    let MainSystemRecord = await GetMainSystemRecord();
-    let systemContent = JSON.parse(MainSystemRecord.content);
-    res.render('donate', {passage: {id: 'root'}, usd: systemContent.usd, stars: systemContent.stars});
+    let users = await User.find({stripeAccountId: {$ne: null}});
+    var stars = 0;
+    for(const user of users){
+        stars += user.stars;
+    }
+    var usd = 0;
+    res.render('donate', {passage: {id: 'root'}, usd: usd, stars: stars});
 });
 //Search
 app.post('/search_leaderboard/', async (req, res) => {
@@ -614,13 +618,6 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
             for(const user of users){
                 stars += user.stars;
             }
-            let passage = await Passage.create({
-                author: user._id,
-                users: [user._id],
-                title: 'Donation',
-                content: amount,
-                systemRecord: true
-            });
             user.stars += (amount / 100);
             await user.save();
         }
