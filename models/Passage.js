@@ -3,11 +3,6 @@ const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
 
 const passageSchema = mongoose.Schema({
-    //
-    systemRecord: {
-        type: Boolean,
-        default: false
-    },
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -26,10 +21,6 @@ const passageSchema = mongoose.Schema({
     html: String,
     css: String,
     javascript: String,
-    MainSystemRecord: {
-        type: Boolean,
-        default: false
-    },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Tag'

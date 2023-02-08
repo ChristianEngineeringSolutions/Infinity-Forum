@@ -203,7 +203,7 @@ function percentUSD(donationUSD, totalUSD){
 async function starPassage(req, amount, passageID, userID){
     let user = await User.findOne({_id: userID});
     user.stars -= amount;
-    user.save();
+    await user.save();
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
     //add stars to passage and sources
     passage.stars += amount;

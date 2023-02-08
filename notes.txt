@@ -19,6 +19,10 @@ Non-profit filings
 Replace CDNs*
 Enable ads or alt sys
 
+Add back recordings; voice activation;
+real time UI updates for every action
+bugfix make sure sources always show
+
 
 Cordova*
 
