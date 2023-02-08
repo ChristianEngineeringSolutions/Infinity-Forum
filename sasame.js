@@ -153,61 +153,47 @@ var cron = require('node-cron');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
     //Give stars to subscribed users
-    // var subscribers = await User.find({subscribed: true});
-    // var systemRecord = await GetMainSystemRecord();
-    // var systemContent = JSON.parse(systemRecord.content);
-    // var addStars = 0;
-    // //if user is still subscribed
-    // //they get stars
-    // //plus time bonus
-    // for(subscriber of subscribers){
-    //     let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
-    //     addStars = percentUSD(8000, systemContent.usd);
-    //     systemContent.usd += 8000;
-    //     systemContent.stars += addStars * monthsSubscribed;
-    //     subscriber.stars += addStars * monthsSubscribed;
-    // }
-    // systemRecord.content = JSON.stringify(systemContent);
-    // await systemRecord.save();
-    //await rewardUsers();
+    var subscribers = await User.find({subscribed: true});
+    var addStars = 1;
+    //if user is still subscribed
+    //they get stars
+    //plus time bonus
+    for(subscriber of subscribers){
+        let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
+        addStars = percentUSD(8000, systemContent.usd);
+        subscriber.stars += addStars * monthsSubscribed;
+        await subscriber.save();
+    }
+    //updated every month
+    let Amount = 0;
+    //await rewardUsers(Amount);
     console.log('Monthly Cron ran at 12pm.');
 });
 
-// function monthDiff(d1, d2) {
-//     var months;
-//     months = (d2.getFullYear() - d1.getFullYear()) * 12;
-//     months -= d1.getMonth();
-//     months += d2.getMonth();
-//     return months <= 0 ? 0 : months;
-// }
+function monthDiff(d1, d2) {
+    var months;
+    months = (d2.getFullYear() - d1.getFullYear()) * 12;
+    months -= d1.getMonth();
+    months += d2.getMonth();
+    return months <= 0 ? 0 : months;
+}
 //Get total star count and pay out users
-async function rewardUsers(){
+async function rewardUsers(Amount){
     let users = await User.find({stripeAccountId: {$ne: null}});
-    let MainSystemRecord = await GetMainSystemRecord();
-    let systemContent = JSON.parse(MainSystemRecord.content);
-    let totalStarCount = systemContent.stars;
-    let totalUSD = systemContent.usd;
+    var stars = 0;
+    for(const user of users){
+        stars += user.stars;
+    }
     for(const user of users){
         //appropriate percentage based on stars
         //users get same allotment as they have percentage of stars
-        let userUSD = percentStars(user.stars, totalStarCount) * totalUSD;
+        let userUSD = percentStars(user.stars, stars) * Amount;
         const transfer = await stripe.transfers.create({
             amount: userUSD,
             currency: "usd",
             destination: user.stripeAccountId,
         });
     }
-}
-async function starUser(numStars, userId){
-    console.log('what');
-    let user = await User.findOne({_id: userId});
-    user.stars += numStars;
-    await user.save();
-    let SystemRecord = await GetMainSystemRecord();
-    let preContent = JSON.parse(SystemRecord.content);
-    preContent.stars = parseInt(preContent.stars) + numStars;
-    SystemRecord.content = JSON.stringify(preContent);
-    await SystemRecord.save();
 }
 /**
  * db.Passages.insertOne({
@@ -226,73 +212,27 @@ function percentUSD(donationUSD, totalUSD){
     return donationUSD / totalUSD;
 }
 
-async function starPassage(amount, passageID, userID){
+async function starPassage(req, amount, passageID, userID){
     let user = await User.findOne({_id: userID});
-    let passage = await Passage.findOne({_id: passageID});
-    let numSources = passage.sourceList.length;
-    var thisAmount = amount * (numSources + 1);
-    //give bonuses according to previous systemrecords for this passage
-    let systemRecords = await Passage.find({
-        parent: passageID,
-        systemRecord: true,
-        title: 'Star'
-    });
-    //Give bonus to all previous starrers
-    for(const record of systemRecords){
-        let numStars = record.stars;
-        if(record.stars > amount){
-            numStars = (amount / record.stars) * record.stars;
-        }
-        else if (amount > record.stars){
-            numStars = (record.stars / amount) * amount;
-        }
-        if(userID.toString() != passage.author.toString()){
-            await starUser(numStars, record.users[0]);
-        }
-        else{
-            console.log('Can\'t give stars to oneself. :)');
-        }
-        //The passage gets the bonus too
-        // amount += numStars;
+    user.stars -= amount;
+    user.save();
+    let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
+    //add stars to passage and sources
+    passage.stars += amount;
+    if(passage.author._id != req.session.user._id){
+        passage.author.stars += amount;
     }
-    //add stars to passage, sourceList, and sub Passages
-    passage.stars += thisAmount;
     await passage.save();
     //star each source
     for(const source of passage.sourceList){
-        await starPassage(amount, source._id, userID);
+        source.stars += amount;
+        let sourceAuthor = await User.findOne({_id: passage.author._id});
+        if(sourceAuthor._id != req.session.user._id){
+            sourceAuthor.stars += amount;
+        }
+        await sourceAuthor.save();
+        await source.save();
     }
-    //star all sub passages
-    for(const p of passage.passages){
-        await starPassage(amount, p._id, userID);
-    }
-    //then add stars to users appropriately (will be reflected in the main system record)
-    //if starring user is passage creator,
-    //they can get bonuses and star the passage,
-    //but they won't get initial stars; it is an investment
-    if(userID.toString() != passage.author.toString()){
-        console.log(userID.toString());
-        console.log(passage.author.toString());
-        await starUser(amount, passage.author.toString());
-    }
-    else{
-        console.log('Can\'t give stars to oneself. :)');
-    }
-    //add systemrecord passage
-    let systemRecord = await Passage.create({
-        author: userID,
-        systemRecord: true,
-        parent: passageID,
-        stars: amount,
-        users: [userID],
-        title: 'Star'
-    });
-    console.log(amount);
-    let MainSystemRecord = await GetMainSystemRecord();
-    let systemContent = JSON.parse(MainSystemRecord.content);
-    systemContent.stars += amount;
-    MainSystemRecord.content = JSON.stringify(systemContent);
-    await MainSystemRecord.save();
     return passage;
 }
 async function notifyUser(userId, content, type="General"){
@@ -669,6 +609,11 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         //get user from email
         let user = await User.findOne({_id: payload.data.object.customer_details.email});
         if(user){
+            let users = await User.find({stripeAccountId: {$ne: null}});
+            var stars = 0;
+            for(const user of users){
+                stars += user.stars;
+            }
             let passage = await Passage.create({
                 author: user._id,
                 users: [user._id],
@@ -676,15 +621,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
                 content: amount,
                 systemRecord: true
             });
-            let MainSystemRecord = await GetMainSystemRecord();
-            let systemContent = JSON.parse(MainSystemRecord.content);
-            let totalUSD = systemContent.usd;
-            let totalStarCount = systemContent.stars;
-            let starsToAdd = percentUSD(amount, totalUSD) * totalStarCount;
-            user.stars += starsToAdd;
-            systemContent.stars += starsToAdd;
-            MainSystemRecord.content = JSON.stringify(systemContent);
-            await MainSystemRecord.save();
+            user.stars += (amount / 100);
             await user.save();
         }
     }
@@ -1032,7 +969,7 @@ app.post('/star_passage/', async (req, res) => {
             console.log(sessionUser.stars);
             sessionUser.stars -= parseInt(amount);
             console.log(sessionUser.stars);
-            let passage = await starPassage(amount, req.body.passage_id, sessionUser._id);
+            let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id);
             await sessionUser.save();
             return res.render('passage', {subPassages: false, passage: passage, sub: true});
         }
