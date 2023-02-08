@@ -16,11 +16,14 @@ File Browser + Submissions
 Tab sortable fix
 Tab full testing and bugfixes
 Non-profit filings
+Replace CDNs
+
 
 Cordova
 
 Personal Passages (Maybe not)
 
+Clean out deprecated system record code
 
 Daemon search and pin**
 Daemon Mark

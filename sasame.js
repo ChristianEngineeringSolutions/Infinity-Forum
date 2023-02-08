@@ -744,7 +744,7 @@ app.get('/stripeAuthorize', async function(req, res){
 //       // Retrieve the user's Stripe account and check if they have finished onboarding
 //       const account = await stripe.account.retrieve(req.user.stripeAccountId);
 //       if (account.details_submitted) {
-//         req.user.onboardingComplete = true;
+//         req.user.stripeonboardingComplete = true;
 //         req.user.save(function(){
 //             res.redirect('/profile');
 //         });
