@@ -667,6 +667,9 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id, systemRecord: false}).populate('parent author users sourceList');
+    if(passage == null){
+        return res.redirect('/');
+    }
     let passageUsers = [];
     if(passage.users != null && passage.users[0] != null){
         console.log(passage.users);
