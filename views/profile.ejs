@@ -20,9 +20,9 @@
   <%}%>
   &nbsp;
   <span id="parent_chapter_title"><%=profile.name%></span>
-  <div id="profile_stars"><%=profile.stars%> Star(s)</div>
+  <div id="profile_stars"><%=profile.stars%> Star<%-profile.stars == 1 ? '' : 's'%></div>
 </div>
-<input id="search_profile"placeholder="Search..." type="" name="" autocomplete="off">
+<input id="search_profile"placeholder="Search Profile..." type="" name="" autocomplete="off">
   <%if(user && profile._id == user._id){%>
     <button id="add_passage_button">+</button>
   <%}%>
