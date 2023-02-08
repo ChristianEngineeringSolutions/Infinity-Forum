@@ -154,14 +154,12 @@ var cron = require('node-cron');
 cron.schedule('0 12 1 * *', async () => {
     //Give stars to subscribed users
     var subscribers = await User.find({subscribed: true});
-    var addStars = 1;
     //if user is still subscribed
     //they get stars
     //plus time bonus
     for(subscriber of subscribers){
         let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
-        addStars = percentUSD(8000, systemContent.usd);
-        subscriber.stars += addStars * monthsSubscribed;
+        subscriber.stars += 80 * monthsSubscribed;
         await subscriber.save();
     }
     //updated every month
