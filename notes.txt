@@ -17,6 +17,7 @@ Tab sortable fix
 Tab full testing and bugfixes
 Non-profit filings
 Replace CDNs*
+Enable ads
 
 
 Cordova*
