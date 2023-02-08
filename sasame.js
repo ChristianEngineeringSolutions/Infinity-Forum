@@ -183,16 +183,6 @@ async function rewardUsers(Amount){
         });
     }
 }
-/**
- * db.Passages.insertOne({
- *  MainSystemRecord: true,
- *  content: '{"stars": 0, "usd": 0}'
- * });
- */
-async function GetMainSystemRecord(){
-    let passage = await Passage.findOne({MainSystemRecord: true});
-    return passage;
-}
 function percentStars(user_stars, totalStarCount){
     return users_stars / totalStarCount;
 }
@@ -249,7 +239,7 @@ app.get("/profile/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let find = {users: profile, systemRecord: false, deleted: false};
+    let find = {users: profile, deleted: false};
     //if it's their profile show personal passages
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
     //     find.$or = [{personal: true}, {personal: false}];
@@ -281,8 +271,6 @@ app.get('/', async (req, res) => {
     var user = req.session.user || null;
     let passages = await Passage.find({
         deleted: false,
-        systemRecord: false,
-        MainSystemRecord: false
     }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     let passageUsers = [];
     let bookmarks = [];
@@ -325,8 +313,6 @@ app.post('/search_profile/', async (req, res) => {
     let results = await Passage.find({
         author: req.body._id,
         deleted: false,
-        systemRecord: false,
-        MainSystemRecord: false,
         title: {
         $regex: req.body.search,
         $options: 'i',
@@ -342,8 +328,6 @@ app.post('/ppe_search/', async (req, res) => {
     let results = await Passage.find({
         parent: parent,
         deleted: false,
-        systemRecord: false,
-        MainSystemRecord: false,
         mimeType: 'image',
         title: {
         $regex: req.body.search,
@@ -357,8 +341,6 @@ app.post('/search_passage/', async (req, res) => {
     let results = await Passage.find({
         parent: req.body._id,
         deleted: false,
-        systemRecord: false,
-        MainSystemRecord: false,
         title: {
         $regex: req.body.search,
         $options: 'i',
@@ -372,8 +354,6 @@ app.post('/search_passage/', async (req, res) => {
 app.post('/search/', async (req, res) => {
     let results = await Passage.find({
         deleted: false,
-        systemRecord: false,
-        MainSystemRecord: false,
         title: {
         $regex: req.body.search,
         $options: 'i',
@@ -666,7 +646,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
-    var passage = await Passage.findOne({_id: passage_id, systemRecord: false}).populate('parent author users sourceList');
+    var passage = await Passage.findOne({_id: passage_id}).populate('parent author users sourceList');
     if(passage == null){
         return res.redirect('/');
     }
@@ -677,7 +657,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
             passageUsers.push(u._id.toString());
         });
     }
-    var subPassages = await Passage.find({parent: passage_id, systemRecord: false}).populate('author users sourceList').limit(DOCS_PER_PAGE);
+    var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').limit(DOCS_PER_PAGE);
     res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -872,7 +852,6 @@ app.post('/paginate', async function(req, res){
         if(req.body.from_ppe_queue){
             find.mimeType = 'image';
         }
-        find.systemRecord = false;
         let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
         if(!req.body.from_ppe_queue){
             return res.render('passages', {
