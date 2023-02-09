@@ -203,13 +203,14 @@ async function starPassage(req, amount, passageID, userID){
     await passage.save();
     //star each source
     for(const source of passage.sourceList){
-        source.stars += amount;
-        let sourceAuthor = await User.findOne({_id: passage.author._id});
-        if(sourceAuthor._id != req.session.user._id){
+        let sourceAuthor = await User.findOne({_id: source.author._id});
+        //you won't get extra stars for citing your own work
+        if(sourceAuthor._id != req.session.user._id && sourceAuthor._id.toString() != passage.author._id.toString()){
+            source.stars += amount;
             sourceAuthor.stars += amount;
+            await sourceAuthor.save();
+            await source.save();
         }
-        await sourceAuthor.save();
-        await source.save();
     }
     return passage;
 }
@@ -488,12 +489,9 @@ app.post('/passage_setting', async (req, res) => {
     let setting = req.body.setting;
     let user = await User.findOne({_id: req.session.user._id});
     let passage = await Passage.findOne({_id: _id}).populate('author');
-    console.log(user._id);
-    console.log(passage.author);
     switch(setting){
         case 'private':
             if(passage.author._id.toString() == user._id.toString()){
-                console.log(1);
                 passage.public = false;
             }
             break;
@@ -638,7 +636,9 @@ app.get('/eval/:passage_id', async function(req, res){
         }
         return all;
     }
-    getAllSubPassageCode(passage, all);
+    if(passage.public == false){
+        getAllSubPassageCode(passage, all);
+    }
     res.render("eval", {passage: passage, all: all});
 });
 app.get('/passage/:passage_title/:passage_id', async function(req, res){
@@ -652,12 +652,16 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     }
     let passageUsers = [];
     if(passage.users != null && passage.users[0] != null){
-        console.log(passage.users);
         passage.users.forEach(function(u){
             passageUsers.push(u._id.toString());
         });
     }
-    var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').limit(DOCS_PER_PAGE);
+    if(passage.public == true){
+        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    }
+    else{
+        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').limit(DOCS_PER_PAGE);
+    }
     res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -834,7 +838,6 @@ app.get('/logout', function(req, res) {
     res.redirect('/');
 });
 app.post('/paginate', async function(req, res){
-    console.log('test');
     let page = req.body.page;
     let profile = req.body.profile; //home, profile, or leaderboard
     let search = req.body.search;
@@ -931,9 +934,7 @@ app.post('/star_passage/', async (req, res) => {
     if(req.session && user){
         if(sessionUser.stars > amount){
             //user must trade their own stars
-            console.log(sessionUser.stars);
             sessionUser.stars -= parseInt(amount);
-            console.log(sessionUser.stars);
             let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id);
             await sessionUser.save();
             return res.render('passage', {subPassages: false, passage: passage, sub: true});
@@ -988,7 +989,6 @@ app.get('/ppe_queue', async (req, res) => {
         parent: req.body.parent == 'root' ? null : req.body.parent,
         mimeType: 'image'
     }).sort('-stars');
-    console.log('test');
     return res.render('ppe_thumbnails', {thumbnails: passages});
 });
 app.post('/update_passage/', async (req, res) => {

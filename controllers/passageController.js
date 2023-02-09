@@ -106,7 +106,6 @@ module.exports = {
         else{
             console.log('false');
         }
-        console.log(result);
         let ret = await Passage.findOne({_id: copy._id}).populate('author users sourceList');
         return ret;
         // res.render('passage', {passage: copy, sub: true});
