@@ -625,22 +625,22 @@ app.get('/eval/:passage_id', async function(req, res){
         css: [passage.css],
         javascript: [passage.javascript]
     };
-    function getAllSubPassageCode(passage, all){
-        if(passage.passages){
-            passage.passages.forEach((p)=>{
-                all.html += p.html === undefined ? '' : p.html;
-                all.css += p.css === undefined ? '' : p.css;
-                all.javascript += p.javascript === undefined ? '' : p.javascript;
-                getAllSubPassageCode(p, all);
-            });
-        }
-        return all;
-    }
     if(passage.public == false){
         getAllSubPassageCode(passage, all);
     }
     res.render("eval", {passage: passage, all: all});
 });
+function getAllSubPassageCode(passage, all){
+    if(passage.passages){
+        passage.passages.forEach((p)=>{
+            all.html += p.html === undefined ? '' : p.html;
+            all.css += p.css === undefined ? '' : p.css;
+            all.javascript += p.javascript === undefined ? '' : p.javascript;
+            getAllSubPassageCode(p, all);
+        });
+    }
+    return all;
+}
 app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
@@ -660,6 +660,15 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     }
     else{
+        var all = {
+            html: [passage.html],
+            css: [passage.css],
+            javascript: [passage.javascript]
+        };
+        getAllSubPassageCode(passage, all);
+        passage.html = all.html;
+        passage.css = all.css;
+        passage.javascript = all.javascript;
         var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').limit(DOCS_PER_PAGE);
     }
     res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
