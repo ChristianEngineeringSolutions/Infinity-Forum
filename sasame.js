@@ -167,7 +167,7 @@ function monthDiff(d1, d2) {
 }
 //Get total star count and pay out users
 async function rewardUsers(Amount){
-    let users = await User.find({stripeAccountId: {$ne: null}});
+    let users = await User.find({stripeOnboardingComplete: true});
     var stars = 0;
     for(const user of users){
         stars += user.stars;
@@ -291,7 +291,7 @@ app.get('/', async (req, res) => {
     });
 });
 app.get('/donate', async function(req, res){
-    let users = await User.find({stripeAccountId: {$ne: null}});
+    let users = await User.find({stripeOnboardingComplete: true});
     var stars = 0;
     for(const user of users){
         stars += user.stars;
@@ -578,9 +578,9 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         let amount = payload.data.object.amount;
         //Save recording passage in database and give user correct number of stars
         //get user from email
-        var user = await User.findOne({_id: payload.data.object.customer_details.email});
+        var user = await User.findOne({email: payload.data.object.customer_details.email});
         if(user){
-            let users = await User.find({stripeAccountId: {$ne: null}});
+            let users = await User.find({stripeOnboardingComplete: true});
             var stars = 0;
             for(const u of users){
                 stars += u.stars;
@@ -730,25 +730,26 @@ app.get('/stripeAuthorize', async function(req, res){
           }
     }
 });
-// app.get('/stripeOnboarded', async (req, res, next) => {
-//     try {
-//       // Retrieve the user's Stripe account and check if they have finished onboarding
-//       const account = await stripe.account.retrieve(req.user.stripeAccountId);
-//       if (account.details_submitted) {
-//         req.user.stripeonboardingComplete = true;
-//         req.user.save(function(){
-//             res.redirect('/profile');
-//         });
-//       } else {
-//         console.log('The onboarding process was not completed.');
-//         res.redirect('/profile');
-//       }
-//     } catch (err) {
-//       console.log('Failed to retrieve Stripe account information.');
-//       console.log(err);
-//       next(err);
-//     }
-//   });
+app.get('/stripeOnboarded', async (req, res, next) => {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    try {
+        let user = await User.findOne({_id: req.session.user._id});
+      // Retrieve the user's Stripe account and check if they have finished onboarding
+      const account = await stripe.account.retrieve(user.stripeAccountId);
+      if (account.details_submitted) {
+        user.stripeOnboardingComplete = true;
+        await user.save();
+        res.redirect('/profile');
+      } else {
+        console.log('The onboarding process was not completed.');
+        res.redirect('/profile');
+      }
+    } catch (err) {
+      console.log('Failed to retrieve Stripe account information.');
+      console.log(err);
+      next(err);
+    }
+  });
 
 app.post('/login', function(req, res) {
     //check if email has been verified
