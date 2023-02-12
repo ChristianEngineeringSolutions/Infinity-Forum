@@ -671,7 +671,17 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         passage.javascript = all.javascript;
         var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').limit(DOCS_PER_PAGE);
     }
-    res.render("index", {subPassages: subPassages, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
+    //reorder sub passages to match order of passage.passages
+    var reordered = Array(subPassages.length).fill(0);
+    for(var i = 0; i < passage.passages.length; ++i){
+        for(var j = 0; j < subPassages.length; ++j){
+            if(subPassages[j]._id.toString() == passage.passages[i]._id.toString()){
+                reordered[i] = subPassages[j];
+            }
+        }
+    }
+    console.log(reordered);
+    res.render("index", {subPassages: reordered, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){
@@ -965,7 +975,10 @@ app.post('/update_passage_order/', async (req, res) => {
         if(typeof req.body.passageOrder != 'undefined'){
             var passageOrder = JSON.parse(req.body.passageOrder);
             let trimmedPassageOrder = passageOrder.map(str => str.trim());
+            console.log(passage.passages);
+            console.log(trimmedPassageOrder);
             passage.passages = trimmedPassageOrder;
+            console.log(passage.passages);
             await passage.save();
         }
     }
