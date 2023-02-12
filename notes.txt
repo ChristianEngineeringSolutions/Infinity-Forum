@@ -23,12 +23,10 @@ Add back recordings; voice activation;
 real time UI updates for every action
 bugfix make sure sources always show
 
-Clean out passage controller
+Need tabs?
+StarSystem
 
-Public passages sort by stars
-Public passages don't aggregate code
-Don't get extra stars for own sources
-Dont hide passage iframe if sub passage has code in private passage
+Clean out passage controller
 
 
 Cordova*

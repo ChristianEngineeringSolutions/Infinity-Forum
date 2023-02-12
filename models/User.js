@@ -75,7 +75,10 @@ const userSchema = mongoose.Schema({
       default: null
     },
     lastSubscribed: String,
-    stripeOnboardingComplete: Boolean
+    stripeOnboardingComplete: {
+      type: Boolean,
+      default: false
+    },
 });
 userSchema.plugin(mongoosePaginate);
 module.exports = mongoose.model('User', userSchema, 'Users');
