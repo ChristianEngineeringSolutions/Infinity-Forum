@@ -3,11 +3,13 @@
     <br><br>
     <form id="settings_form" action="/update_settings/" method="POST">
         <input name="oldUsername"id="oldUsername"type="hidden"value="<%=profile.username%>" />
+        <input name="oldName"id="oldName"type="hidden"value="<%=profile.name%>" />
+        <input name="newUsername"id="newUsername"type="hidden"value="<%=profile.username%>" />
     <div>
-        Username: <span id="register_username_load"></span>
+        Username: <span id="register_username_load"><%=profile.username%></span>
         <br>
         <label>Name:</label>
-        <input id="register_username" type="text" value="<%=profile.name%>"name="username"autocomplete="off"/>
+        <input id="register_username" type="text" value="<%=profile.name%>"name="name"autocomplete="off" required/>
     </div>
     <div>
         <label>Email:</label>
