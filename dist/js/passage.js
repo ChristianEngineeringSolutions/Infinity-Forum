@@ -182,7 +182,7 @@ $(function(){
                 username: thiz.data('userId')
             },
             success: function (data) {
-                console.log(data);
+                window.location.reload();
             }
         });
     });

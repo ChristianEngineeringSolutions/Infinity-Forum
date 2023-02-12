@@ -1,3 +1,7 @@
+.passage_remove_user{
+	cursor: pointer;
+	color:red;
+}
 .passage{
     /* border-bottom: 1px dotted grey; */
     text-align: left;
