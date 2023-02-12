@@ -10,15 +10,15 @@ $(function(){
                 name: name
             },
             success: function(data){
-                if(name !== $('#original_username').val()){
-                    $('#register_username_load').text(name + data);
+                if(name !== $('#oldName').val()){
+                    $('#newUsername').val(name.split(' ').join('.') + '.' +  data);
+                    $('#register_username_load').text($('#newUsername').val());
                 }
                 else{
-                    $('#register_username_load').text(name);
+                    $('#register_username_load').text($('#oldUsername').val());
                 }
             }
         });
     });
-    $('#register_username_load').text($('#register_username').val());
-    $('#register_username').keyup();
+    // $('#register_username_load').text($('#register_username').val());
 });

@@ -812,7 +812,7 @@ app.post('/register/', async function(req, res) {
 });
 app.post('/update_settings/', async function(req, res) {
     if ((req.body.email ||
-      req.body.username) &&
+      req.body.name) &&
       req.body.password &&
       req.body.passwordConf && 
       req.body.password == req.body.passwordConf &&
@@ -822,7 +822,8 @@ app.post('/update_settings/', async function(req, res) {
                 console.log(err);
             }
             req.session.user = user;
-            user.username = req.body.username;
+            user.name = req.body.name;
+            user.username = req.body.newUsername;
             user.email = req.body.email;
             user.password = bcrypt.hash(req.body.password, 10, async function (err, hash){
                 if (err) {
@@ -830,10 +831,13 @@ app.post('/update_settings/', async function(req, res) {
                 }
                 user.password = hash;
                 await user.save();
-                res.redirect('/profile/' + user._id);
+                return res.redirect('/profile/' + user._id);
             });
         });
     } 
+    else{
+        return res.redirect("/profile");
+    }
 });
 app.get('/logout', function(req, res) {
     if (req.session) {
