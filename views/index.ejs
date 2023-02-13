@@ -5,9 +5,9 @@
             <input type="hidden" value="false", id="is_profile"/>
             <div id="page_title_container">
                 <%if(passage.parent != null){%>
-                    <div data-url="/passage/<%=passage.parent.title%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
+                    <div data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
                 <%}%>
-                 <div id="page_title"><%= passageTitle || "Christian Engineering Solutions"%></div>
+                 <div id="page_title"><%= decodeURIComponent(passageTitle)   || "Christian Engineering Solutions"%></div>
             </div>
             <%if(passages){%>
                 <input id="search"placeholder="Search Solutions..." type="" name="" autocomplete="off">
