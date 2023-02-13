@@ -101,7 +101,7 @@ $(function(){
         return $(thiz).attr('id').split('_')[$(thiz).attr('id').split('_').length - 1];
     }
     function getPassageTitle(_id){
-        return $('#passage_title_'+_id).val();
+        return encodeURIComponent($('#passage_title_'+_id).val());
     }
     function thisPassage(thiz){
         return $('#passage_' + getPassageId(thiz));
@@ -123,7 +123,7 @@ $(function(){
         let _id = getPassageId(this);
         let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
         let href = '/passage/'+ title +'/' + _id;
-        $('.active_tab').html('<span class="tab_delete">X</span>' + title);
+        $('.active_tab').html('<span class="tab_delete">X</span>' + decodeURIComponent(title));
         let tab_id = $('.active_tab').attr('id');
         localStorage.setItem(tab_id, JSON.stringify({text: title, href: href}));
         localStorage.setItem('active_tab', tab_id);

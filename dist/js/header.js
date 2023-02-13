@@ -85,7 +85,7 @@ $(function(){
         addTab(i);
         let tab_data = JSON.parse(localStorage.getItem('tab_' + i));
         if(tab_data !== null){
-            $('#tab_' + i).html('<span class="tab_delete">X</span>' + tab_data.text);
+            $('#tab_' + i).html('<span class="tab_delete">X</span>' + decodeURIComponent(tab_data.text));
             $('#tab_' + i).data('href', tab_data.href);
         }
     }
@@ -192,7 +192,7 @@ $(function(){
     });
     $(document).on('click', '.tab:not(".tab_delete")', function(){
         var href = window.location.href.split('/');
-        let title = href[href.length - 2];
+        let title = decodeURIComponent(href[href.length - 2]);
         let passage_id = href[href.length - 1];
         var _id = $(this).attr('id');
         console.log(_id);
@@ -228,7 +228,7 @@ $(function(){
             title = window.location.href.split('/')[window.location.href.split('/').length - 2];
         }
         let active_tab_id = localStorage.getItem('active_tab');
-        $('#' + active_tab_id).html('<span class="tab_delete">X</span>' + decodeURI(title));
+        $('#' + active_tab_id).html('<span class="tab_delete">X</span>' + decodeURIComponent(title));
     }
 
 });
