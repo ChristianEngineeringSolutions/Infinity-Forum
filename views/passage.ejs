@@ -49,6 +49,20 @@
             &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Invest</span>
         <% } %>
     </div>
+    <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
+    <%if(passage.content != null && passage.content != ''){%>
+        <hr class="hr">
+        <%}%>
+        <div class="detail_description" name="content" id="passage_detail_content_<%=passage._id%>"><%-passage.content%></div>
+    <!-- <ul class="passage_tabs">
+        <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
+        <!-- Display Result -->
+        <!-- <li class="passage_tab">Alternates</li> -->
+    <!-- </ul> -->
+    <%if(user && passage.author._id == user._id){%>
+        <%- include('passage_form') %>
+    <%}else{%>
+    <%}%>
     <!-- Hide Iframe window if there is neither html nor js -->
     <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
         <% hide = ' hide'; %>
@@ -63,17 +77,25 @@
             <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
         <%}%>
     </div>
-    <!-- <ul class="passage_tabs">
-        <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
-        <!-- Display Result -->
-        <!-- <li class="passage_tab">Alternates</li> -->
-    <!-- </ul> -->
-    <%if(user && passage.author._id == user._id){%>
-        <%- include('passage_form') %>
-        <%- include('passage_details') %>
-    <%}else{%>
-        <%- include('passage_details') %>
+    <!-- 
+Source variable: passage
+ -->
+<!-- <button class="passage_plus_description">+</button> -->
+<!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
+<% if(passage.filename){ %>
+    <img src="/uploads/<%=passage.filename%>" alt="">
     <%}%>
+    <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced">
+        <div class="code_display display_html" name="html" cols="30" rows="10" placeholder="HTML"><pre><code class="language-html"><%=passage.html || 'HTML'%></code></pre></div>
+            <div class="code_display display_css" name="css" cols="30" rows="10" placeholder="CSS"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
+            <div class="code_display display_js" name="js" cols="30" rows="10" placeholder="Javascript"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
+    </div>
+    <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
+    <%if((passage.html && passage.html.length> 1) || (passage.javascript && passage.javascript.length> 1) || (passage.css && passage.css.length> 1)){%>
+        <ul class="passage_tabs">
+            <li id="passage_details_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced view_code">View Code</li>
+        </ul>
+    <%}%> 
  </div>
  <%if(subPassages && sub === false){%>
     <div id="sub_passages">
