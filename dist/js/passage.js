@@ -329,7 +329,7 @@ $(function(){
                     passageOrder: JSON.stringify(orderList)
                 },
                 success: function (data) {
-                    alert(data);
+                    //alert(data);
                 }
             });
         }
