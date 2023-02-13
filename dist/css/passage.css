@@ -196,7 +196,6 @@
     overflow: scroll;
     resize: both;
     vertical-align: top;
-    max-height: 500px;
     height: 500px;
 }
 .passage_iframe{
