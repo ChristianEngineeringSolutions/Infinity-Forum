@@ -85,6 +85,7 @@ $('#ppe_search').on('keypress', function(e){
     }
 });
 $('#search_profile').on('keypress', function(e){
+    $('#search').val($(this).val());
     //check what page we are on
     var thiz = $(this);
     if(e.which == 13){
