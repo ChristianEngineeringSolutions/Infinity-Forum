@@ -134,7 +134,7 @@
     cursor: pointer;
 }
 .detail_title, .detail_description{
-    padding-left: 10px;
+    /* padding-left: 10px; */
 }
 .detail_description{
     white-space: pre-wrap;
