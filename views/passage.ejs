@@ -54,13 +54,13 @@
         <% hide = 'hide'; %>
     <%}else{%>
         <% hide = ''; %>
+        Sandbox: <a target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
     <%}%>
     <div id="passage_iframe" class="<%=hide%>" id="result_div">
-        <a style="float:right;"target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
         <%if(user && passage.personal_cross_origin && user._id == passage.users[0]._id){%>
-            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" scrolling="no" onload="resizeIframe(this)" sandbox="allow-scripts allow-same-origin"></iframe>
+            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
         <%}else{%>
-            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" scrolling="no" onload="resizeIframe(this)" sandbox="allow-scripts"></iframe>
+            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
         <%}%>
     </div>
     <!-- <ul class="passage_tabs">
