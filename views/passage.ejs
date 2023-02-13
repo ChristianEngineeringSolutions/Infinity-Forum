@@ -64,7 +64,7 @@
     <%}else{%>
     <%}%>
     <!-- Hide Iframe window if there is neither html nor js -->
-    <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
+    <%if(passage.showIframe != true && (passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
         <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>

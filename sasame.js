@@ -380,6 +380,7 @@ app.post('/bookmark_passage', async (req, res) => {
 //     res.render('passage', {subPassages: false, passage: copy, sub: true});
 // });
 app.post('/transfer_bookmark', async (req, res) => {
+    console.log('times');
     let _id = req.body._id;
     let parent = req.body.parent;
     //first check if parent allow submissions (is Public)
@@ -393,14 +394,6 @@ app.post('/transfer_bookmark', async (req, res) => {
     let copy = await passageController.copyPassage(req, res, function(){
         
     });
-    //Then move the copy into the current tab
-    if(parent !== 'root'){
-        let tab = await Passage.findOne({_id: parent}).populate('author users sourceList');
-        tab.passages.push(copy._id);
-        copy.parent = tab._id;
-        await tab.save();
-        await copy.save();
-    }
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
@@ -621,9 +614,9 @@ app.get('/eval/:passage_id', async function(req, res){
     var passage = await Passage.findOne({_id: passage_id});
     //stick together code for all sub passages
     var all = {
-        html: [passage.html],
-        css: [passage.css],
-        javascript: [passage.javascript]
+        html: passage.html,
+        css: passage.css,
+        javascript: passage.javascript
     };
     if(passage.public == false){
         getAllSubPassageCode(passage, all);
@@ -647,6 +640,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id}).populate('parent author users sourceList');
+    passage.showIframe = false;
     if(passage == null){
         return res.redirect('/');
     }
@@ -660,27 +654,28 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     }
     else{
-        // var all = {
-        //     html: [passage.html],
-        //     css: [passage.css],
-        //     javascript: [passage.javascript]
-        // };
-        // getAllSubPassageCode(passage, all);
-        // passage.html = all.html;
-        // passage.css = all.css;
-        // passage.javascript = all.javascript;
+        var all = {
+            html: passage.html,
+            css: passage.css,
+            javascript: passage.javascript
+        };
+        getAllSubPassageCode(passage, all);
+        if(all.html.length > 0 || all.css.length > 0 || all.javascript.length > 0){
+            passage.showIframe = true;
+        }
         var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').limit(DOCS_PER_PAGE);
     }
     //reorder sub passages to match order of passage.passages
     var reordered = Array(subPassages.length).fill(0);
+    console.log(passage.passages);
     for(var i = 0; i < passage.passages.length; ++i){
         for(var j = 0; j < subPassages.length; ++j){
             if(subPassages[j]._id.toString() == passage.passages[i]._id.toString()){
+                console.log(subPassages[j]._id);
                 reordered[i] = subPassages[j];
             }
         }
     }
-    console.log(reordered);
     res.render("index", {subPassages: reordered, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
