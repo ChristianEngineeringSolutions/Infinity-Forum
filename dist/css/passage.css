@@ -188,16 +188,28 @@
 .sandbox{
     /* float: left; */
 }
-#passage_iframe{
-    position: relative;
+.code_display{
     border: 1px solid black;
-    width: 100%;
+    padding: 5px;
+    display: inline-block;
+    width: 30%;
+    overflow: scroll;
+    resize: both;
+    vertical-align: top;
+    max-height: 500px;
+    height: 500px;
+}
+.passage_iframe{
+    position: relative;
+    border: 1px dashed black;
+    width: 60%;
     height: 0;
     padding-bottom: 30%;
     resize: both;
     overflow: scroll;
+    margin-bottom: 20px;
 }
-#passage_iframe .iframe{
+.passage_iframe .iframe{
     position: absolute;
     top: 0;
   left: 0;

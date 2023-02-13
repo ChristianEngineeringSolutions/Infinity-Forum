@@ -51,12 +51,12 @@
     </div>
     <!-- Hide Iframe window if there is neither html nor js -->
     <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
-        <% hide = 'hide'; %>
+        <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>
-        Sandbox: <a target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
+        <a target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
     <%}%>
-    <div id="passage_iframe" class="<%=hide%>" id="result_div">
+    <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
         <%if(user && passage.personal_cross_origin && user._id == passage.users[0]._id){%>
             <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
         <%}else{%>

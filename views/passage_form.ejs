@@ -29,12 +29,15 @@ Source variable: passage
     <%}%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
     <div id="passage_advanced_<%=passage._id%>"class="passage_advanced">
-        <textarea class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
-        <textarea class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
-        <textarea class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
+        <textarea style="display:none;"class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
+        <textarea style="display:none;"class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
+        <textarea style="display:none;"class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
+        <div contenteditable="true"class="code_display display_html" name="html" id="display_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><pre><code class="language-html"><%=passage.html || 'HTML'%></code></pre></div>
+        <div contenteditable="true"class="code_display display_css" name="css" id="display_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
+        <div contenteditable="true"class="code_display display_js" name="js" id="display_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
     </div>
     <ul class="passage_tabs">
-        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced">Advanced</li>
+        <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced view_code">Advanced</li>
     </ul>
     <br>
 </form>

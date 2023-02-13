@@ -1,4 +1,7 @@
-"use strict"
+"use strict";
+
+// const { default: hljs } = require("highlight.js");
+
 $(function(){
     hljs.configure({   // optionally configure hljs
         languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
@@ -23,9 +26,9 @@ $(function(){
     $(document).on('click', '[id^="passage_edit_"]', function(e){
         var _id = $(this).attr('id').split('_').at(-1);
         if($(this).data('quill') == false){
-            hljs.configure({   // optionally configure hljs
-                languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
-            });
+            // hljs.configure({   // optionally configure hljs
+            //     languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
+            // });
             var toolbarOptions = [
                 ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
                 ['blockquote', 'code-block'],
@@ -352,5 +355,20 @@ $(function(){
                 $('#passage_wrapper').append(data);
             }
         });
+    });
+    $(document).on('keyup', '[id^=display_html_]', function(){
+        var _id = getPassageId(this);
+        $('#passage_html_' + _id).val($(this).text());
+    });
+    $(document).on('keyup', '[id^=display_css_]', function(){
+        var _id = getPassageId(this);
+        $('#passage_css_' + _id).val($(this).text());
+    });
+    $(document).on('keyup', '[id^=display_js_]', function(){
+        var _id = getPassageId(this);
+        $('#passage_js_' + _id).val($(this).text());
+    });
+    $(document).on('click', '.view_code', function(){
+        hljs.highlightAll();
     });
 });
