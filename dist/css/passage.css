@@ -195,7 +195,7 @@
     resize: both;
     overflow: scroll;
     max-width: 99%;
-    height: 500px;
+    height: auto;
 }
 .iframe{
     width: 100%;
