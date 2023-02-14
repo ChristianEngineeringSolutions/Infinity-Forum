@@ -194,14 +194,18 @@ function percentUSD(donationUSD, totalUSD){
 
 async function starPassage(req, amount, passageID, userID){
     let user = await User.findOne({_id: userID});
+    if(user.stars < amount){
+        return "Not enough stars.";
+    }
     user.stars -= amount;
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
     //add stars to passage and sources
     passage.stars += amount;
     //you have to star someone elses passage to get stars
-    if(passage.author._id != req.session.user._id){
+    if(passage.author._id.toString() != req.session.user._id.toString()){
         user.starsGiven += amount;
         passage.author.stars += amount;
+        await passage.author.save();
     }
     await user.save();
     await passage.save();
@@ -209,7 +213,7 @@ async function starPassage(req, amount, passageID, userID){
     for(const source of passage.sourceList){
         let sourceAuthor = await User.findOne({_id: source.author._id});
         //you won't get extra stars for citing your own work
-        if(sourceAuthor._id != req.session.user._id && sourceAuthor._id.toString() != passage.author._id.toString()){
+        if(sourceAuthor._id.toString() != req.session.user._id.toString() && sourceAuthor._id.toString() != passage.author._id.toString()){
             source.stars += amount;
             sourceAuthor.stars += amount;
             await sourceAuthor.save();
