@@ -231,7 +231,7 @@ app.get("/api", async (req, res) => {
     //for apps
 });
 
-app.get("/profile/:_id?/", async (req, res) => {
+app.get("/profile/:username?/:_id?/", async (req, res) => {
     let bookmarks = [];
     let profile;
     if(typeof req.params._id == 'undefined'){
@@ -574,17 +574,12 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     //...
     // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
-        let amount = payload.data.object.amount;
+        let amount = payload.data.object.amount_total;
         //Save recording passage in database and give user correct number of stars
         //get user from email
         var user = await User.findOne({email: payload.data.object.customer_details.email});
         if(user){
-            let users = await User.find({stripeOnboardingComplete: true});
-            var stars = 0;
-            for(const u of users){
-                stars += u.stars;
-            }
-            user.stars += (amount / 100);
+            user.stars += (parseInt(amount) / 100);
             await user.save();
         }
     }
@@ -682,7 +677,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
             }
         }
     }
-    res.render("index", {subPassages: reordered, passageTitle: decodeURI(passageTitle), passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
+    res.render("index", {subPassages: reordered, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){
@@ -776,7 +771,7 @@ app.post('/login', function(req, res) {
         }
         else{
             req.session.user = user;
-            res.redirect('/profile/' + user._id);
+            res.redirect('/profile/'+ user.username + '/' + user._id);
         }
     });
 });
