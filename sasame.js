@@ -167,7 +167,7 @@ function monthDiff(d1, d2) {
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const balance = await stripe.balance.retrieve();
-    var usd = balance.available[6].amount/100;
+    var usd = balance.available[0].amount/100;
     let users = await User.find({stripeOnboardingComplete: true});
     var stars = 0;
     for(const user of users){
@@ -301,7 +301,7 @@ app.get('/donate', async function(req, res){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
     const balance = await stripe.balance.retrieve();
-    var usd = balance.available[6].amount/100;
+    var usd = balance.pending[0].amount/100;
     res.render('donate', {passage: {id: 'root'}, usd: usd, stars: stars});
 });
 //Search
