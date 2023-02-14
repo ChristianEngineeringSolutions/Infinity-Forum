@@ -703,7 +703,7 @@ app.get('/stripeAuthorize', async function(req, res){
                     },
                   });
                 try{
-                    await User.updateOne({id: user._id}, {stripeAccountId: account.id});
+                    await User.updateOne({_id: user._id}, {stripeAccountId: account.id});
                 }
                 catch(error){
                     console.error(error);
@@ -725,7 +725,6 @@ app.get('/stripeAuthorize', async function(req, res){
                 let account = await User.findOne({_id: user._id});
                 console.log(account);
                 const loginLink = await stripe.accounts.createLoginLink(account.stripeAccountId);
-                // Redirect to Stripe to start the Express onboarding flow
                 res.redirect(loginLink.url);
             }
           } catch (err) {
