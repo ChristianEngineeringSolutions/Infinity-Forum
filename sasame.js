@@ -165,7 +165,7 @@ function monthDiff(d1, d2) {
 }
 //Get total star count and pay out users
 async function rewardUsers(){
-    const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc');
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const balance = await stripe.balance.retrieve();
     var usd = balance.available[6].amount/100;
     let users = await User.find({stripeOnboardingComplete: true});
@@ -298,7 +298,7 @@ app.get('/donate', async function(req, res){
     for(const user of users){
         stars += user.starsGiven;
     }
-    const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc');
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
     const balance = await stripe.balance.retrieve();
     var usd = balance.available[6].amount/100;
