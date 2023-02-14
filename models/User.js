@@ -79,6 +79,8 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+    recoveryToken: String,
+    recoveryExp: Date
 
 });
 userSchema.plugin(mongoosePaginate);
