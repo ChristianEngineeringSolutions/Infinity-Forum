@@ -703,7 +703,7 @@ app.get('/stripeAuthorize', async function(req, res){
                     },
                   });
                 try{
-                    await User.updateOne({id: user.id}, {stripeAccountId: account.id});
+                    await User.updateOne({id: user._id}, {stripeAccountId: account.id});
                 }
                 catch(error){
                     console.error(error);
