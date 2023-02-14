@@ -1,5 +1,5 @@
 <p><%=profile.username%></p>
-    <a target="_blank"href="/stripeAuthorize">Get Paid (<%=profile.stripeAccountId != null ? "Active" : "Inactive"%>)</a>
+    <a target="_blank"href="/stripeAuthorize">Get Paid (<%=profile.stripeOnboardingComplete == true ? "Active" : "Inactive"%>)</a>
     <br><br>
     <form id="settings_form" action="/update_settings/" method="POST">
         <input name="oldUsername"id="oldUsername"type="hidden"value="<%=profile.username%>" />

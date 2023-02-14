@@ -38,3 +38,4 @@ Daemon Mark
 Multiple file upload?
 
 Show username on profile
+Recover Password Link

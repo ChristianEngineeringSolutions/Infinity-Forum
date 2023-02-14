@@ -1,0 +1,18 @@
+<%- include('html_head') %>
+</head>
+<%- include('header') %>
+<br><br><br><br><br><br>
+<input id="chief_passage_id"type="hidden" value="root"name="">
+<h1 style="text-align: center;margin-bottom: 10px;">Login</h1>
+<form id="login_form" action="/recover" method="POST">
+    <div>
+        <label>Email:</label>
+        <input id="login_username"class=""type="email" name="email"autocomplete="off" required/>
+    </div>
+    <div>
+        <input id="login_button"type="submit" value="Send Recovery Link"autocomplete="off"/>
+    </div>
+  </form>
+  <script src="/js/login_register_form.js"></script>
+  <br><br><br><br>
+  <%- include('footer') %>
