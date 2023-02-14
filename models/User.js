@@ -79,6 +79,7 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+
 });
 userSchema.plugin(mongoosePaginate);
 module.exports = mongoose.model('User', userSchema, 'Users');

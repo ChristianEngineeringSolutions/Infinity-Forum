@@ -723,16 +723,9 @@ app.get('/stripeAuthorize', async function(req, res){
             else{
                 console.log("Already has account.");
                 let account = await User.findOne({_id: user._id});
-                // Create an account link for the user's Stripe account
-                const accountLink = await stripe.accountLinks.create({
-                    account: account.stripeAccountId,
-                    refresh_url: 'https://christianengineeringsolutions.com/stripeAuthorize',
-                    return_url: 'https://christianengineeringsolutions.com/stripeOnboarded',
-                    type: 'account_onboarding'
-                });
-                console.log(accountLink);
+                const loginLink = await stripe.accounts.createLoginLink(account.stripeAccountId);
                 // Redirect to Stripe to start the Express onboarding flow
-                res.redirect(accountLink.url);
+                res.redirect(loginLink.url);
             }
           } catch (err) {
             console.log('Failed to create a Stripe account.');
@@ -740,6 +733,16 @@ app.get('/stripeAuthorize', async function(req, res){
             // next(err);
           }
     }
+});
+app.get('/recover', async(req, res) => {
+    res.render('recover');
+});
+app.post('/recover', async(req, res) => {
+    // sendEmail(req.body.email, 'Recover Email: christianengineeringsolutions.com', 
+    //             `
+    //                 https://christianengineeringsolutions.com/recover/`+user._id+`/`+user.token+`
+    //             `);
+    res.render('recover');
 });
 app.get('/stripeOnboarded', async (req, res, next) => {
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
