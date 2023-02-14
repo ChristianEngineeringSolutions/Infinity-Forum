@@ -465,7 +465,7 @@ app.post('/sort_daemons', async (req, res) => {
     }
 });
 app.get('/leaderboard', async (req, res) => {
-    let users = await User.find().sort('-stars');
+    let users = await User.find().sort('-starsGiven');
     res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts});
 });
 app.post('/add_user', async (req, res) => {
