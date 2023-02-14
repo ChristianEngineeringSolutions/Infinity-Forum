@@ -20,7 +20,11 @@
   <%}%>
   &nbsp;
   <span id="parent_chapter_title"><%=profile.name%></span>
-  <div id="profile_stars"><%=profile.stars%> Star<%-profile.stars == 1 ? '' : 's'%></div>
+  <div id="profile_stars">
+    <p><%=profile.stars%> Star<%-profile.stars == 1 ? '' : 's'%></p>
+    <p><%=profile.starsGiven%> Star<%-profile.starsGiven == 1 ? '' : 's'%> Given</p>
+  </div>
+
 </div>
 <input type="hidden" id="search">
 <input id="search_profile"placeholder="Search Profile..." type="" name="" autocomplete="off">

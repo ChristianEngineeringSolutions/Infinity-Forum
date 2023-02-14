@@ -152,9 +152,7 @@ app.get('/highlight.js', function(req, res) {
 var cron = require('node-cron');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
-    //updated every month
-    let Amount = 0;
-    //await rewardUsers(Amount);
+    await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
 
@@ -166,16 +164,19 @@ function monthDiff(d1, d2) {
     return months <= 0 ? 0 : months;
 }
 //Get total star count and pay out users
-async function rewardUsers(Amount){
+async function rewardUsers(){
+    const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc');
+    const balance = await stripe.balance.retrieve();
+    var usd = balance.available[6].amount/100;
     let users = await User.find({stripeOnboardingComplete: true});
     var stars = 0;
     for(const user of users){
-        stars += user.stars;
+        stars += user.starsGiven;
     }
     for(const user of users){
         //appropriate percentage based on stars
         //users get same allotment as they have percentage of stars
-        let userUSD = percentStars(user.stars, stars) * Amount;
+        let userUSD = percentStars(user.starsGiven, stars) * usd;
         const transfer = await stripe.transfers.create({
             amount: userUSD,
             currency: "usd",
@@ -193,6 +194,7 @@ function percentUSD(donationUSD, totalUSD){
 async function starPassage(req, amount, passageID, userID){
     let user = await User.findOne({_id: userID});
     user.stars -= amount;
+    user.starsGiven += amount;
     await user.save();
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
     //add stars to passage and sources
@@ -294,9 +296,12 @@ app.get('/donate', async function(req, res){
     let users = await User.find({stripeOnboardingComplete: true});
     var stars = 0;
     for(const user of users){
-        stars += user.stars;
+        stars += user.starsGiven;
     }
-    var usd = 0;
+    const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc');
+
+    const balance = await stripe.balance.retrieve();
+    var usd = balance.available[6].amount/100;
     res.render('donate', {passage: {id: 'root'}, usd: usd, stars: stars});
 });
 //Search
