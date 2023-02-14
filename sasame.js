@@ -248,7 +248,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let find = {users: profile, deleted: false};
+    let find = {author: profile, deleted: false};
     //if it's their profile show personal passages
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
     //     find.$or = [{personal: true}, {personal: false}];
@@ -738,11 +738,35 @@ app.get('/recover', async(req, res) => {
     res.render('recover');
 });
 app.post('/recover', async(req, res) => {
-    // sendEmail(req.body.email, 'Recover Email: christianengineeringsolutions.com', 
-    //             `
-    //                 https://christianengineeringsolutions.com/recover/`+user._id+`/`+user.token+`
-    //             `);
-    res.render('recover');
+    let user = await User.findOne({email: req.body.email});
+    user.recoveryToken = v4();
+    await user.save();
+    sendEmail(req.body.email, 'Recover Password: christianengineeringsolutions.com', 
+    'https://christianengineeringsolutions.com/recoverpassword/'+user._id+'/'+user.recoveryToken);
+    res.render('recover_password', {token: null});
+});
+app.get('/recoverpassword/:user_id/:token', async(req, res) => {
+    let user = await User.findOne({_id: req.params.user_id});
+    if(user.recoveryToken == req.params.token){
+        res.render("recover_password", {token: req.params.token, _id: user._id});
+    }
+    else{
+        res.redirect('/');
+    }
+});
+app.post('/recover_password', async(req, res) => {
+    if(req.body.newPassword == req.body.confirm){
+        var user = await User.findOne({_id: req.body._id});
+        bcrypt.hash(req.body.confirm, 10, async function (err, hash){
+            if (err) {
+              console.log(err);
+            }
+            user.password = hash;
+            await user.save();
+            req.session.user = user;
+            res.redirect('/profile/'+ user.username + '/' + user._id);
+          });
+    }
 });
 app.get('/stripeOnboarded', async (req, res, next) => {
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);

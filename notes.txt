@@ -39,4 +39,4 @@ Multiple file upload?
 
 Recover Password Link
 
-Don't show userList passages on profile
+Scroll to bottom button
