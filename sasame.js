@@ -723,6 +723,7 @@ app.get('/stripeAuthorize', async function(req, res){
             else{
                 console.log("Already has account.");
                 let account = await User.findOne({_id: user._id});
+                console.log(account);
                 const loginLink = await stripe.accounts.createLoginLink(account.stripeAccountId);
                 // Redirect to Stripe to start the Express onboarding flow
                 res.redirect(loginLink.url);
