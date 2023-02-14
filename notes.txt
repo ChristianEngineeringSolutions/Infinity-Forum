@@ -36,3 +36,5 @@ Personal Passages (Maybe not)
 Daemon search and pin
 Daemon Mark
 Multiple file upload?
+
+Show username on profile
