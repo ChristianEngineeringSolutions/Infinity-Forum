@@ -907,6 +907,7 @@ app.post('/paginate', async function(req, res){
             find.mimeType = 'image';
         }
         let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
+        console.log(find);
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
             // console.log(test);
