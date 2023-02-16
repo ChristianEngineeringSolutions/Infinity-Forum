@@ -108,6 +108,7 @@ $('#search_leaderboard').on('keypress', function(e){
     }
 });
 $('#search_passage').on('keypress', function(e){
+    $('#search').val($(this).val());
     //check what page we are on
     var thiz = $(this);
     if(e.which == 13){

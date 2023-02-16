@@ -12,6 +12,7 @@
             <%if(passages){%>
                 <input id="search"placeholder="Search Solutions..." type="" name="" autocomplete="off">
             <%}else if (passage){%>
+                <input id="search"placeholder="Search Solutions..." type="hidden" name="" autocomplete="off">
                 <input id="search_passage"placeholder="Search <%=passage.title%>..." type="" name="" autocomplete="off">
             <%} %>
             <%if((user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
