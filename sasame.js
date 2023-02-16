@@ -657,7 +657,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         });
     }
     if(passage.public == true){
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars');
+        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     }
     else{
         var all = {

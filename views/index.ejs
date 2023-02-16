@@ -39,5 +39,7 @@
         </div>
         <%if(passages){%>
             <div class="passage"id="view_more">View More</div>
-        <%}else if (passage){%><%} %>
+        <%}else if (passage && passage.public == true){%>
+            <div class="passage"id="view_more">View More</div>
+        <%} %>
         <%- include('footer') %>
