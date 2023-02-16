@@ -657,7 +657,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         });
     }
     if(passage.public == true){
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars');
     }
     else{
         var all = {
@@ -669,15 +669,13 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         if(all.html.length > 0 || all.css.length > 0 || all.javascript.length > 0){
             passage.showIframe = true;
         }
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').limit(DOCS_PER_PAGE);
+        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');
     }
     //reorder sub passages to match order of passage.passages
     var reordered = Array(subPassages.length).fill(0);
-    console.log(passage.passages);
     for(var i = 0; i < passage.passages.length; ++i){
         for(var j = 0; j < subPassages.length; ++j){
             if(subPassages[j]._id.toString() == passage.passages[i]._id.toString()){
-                console.log(subPassages[j]._id);
                 reordered[i] = subPassages[j];
             }
         }

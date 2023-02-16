@@ -19,22 +19,6 @@ var PPEPage = 1;
 //     //force height of passages only on home page
 //     document.styleSheets[0].insertRule('.passage_content{max-height:300px}');
 // }
-//For forms
-$.fn.serializeObject = function() {
-    var o = {};
-    var a = this.serializeArray();
-    $.each(a, function() {
-        if (o[this.name]) {
-            if (!o[this.name].push) {
-                o[this.name] = [o[this.name]];
-            }
-            o[this.name].push(this.value || '');
-        } else {
-            o[this.name] = this.value || '';
-        }
-    });
-    return o;
-};
 
 function isMobile(){
     return window.matchMedia("(max-width: 550px)").matches;
@@ -141,6 +125,27 @@ $('#search_passage').on('keypress', function(e){
         });
 
     }
+});
+var scrollTimer = null;
+$(window).scroll(function(){
+    $('#scroll-to-bottom').show();
+    if(scrollTimer !== null) {
+        clearTimeout(scrollTimer);        
+    }
+    scrollTimer = setTimeout(function() {
+        $('#scroll-to-bottom').hide();
+    },1750);
+});
+$(document).on('mouseover', '#scroll-to-bottom', function(){
+    clearTimeout(scrollTimer);
+});
+$(document).on('mouseleave', '#scroll-to-bottom', function(){
+    scrollTimer = setTimeout(function() {
+        $('#scroll-to-bottom').hide();
+    },1500);
+});
+$(document).on('click', '#scroll-to-bottom', function(){
+    $("html, body").animate({ scrollTop: $(document).height() - 1300 }, "slow");
 });
 
 function jqueryToggle(thiz, func1, func2, dataType='toggle', dataValue=[0, 1]){
