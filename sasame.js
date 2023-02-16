@@ -1000,7 +1000,8 @@ app.post('/star_passage/', async (req, res) => {
 });
 app.post('/update_passage_order/', async (req, res) => {
     let passage = await Passage.findOne({_id: req.body._id});
-    if(req.session.user && req.session.user._id.toString() == passage.author.toString()){
+    //Only for private passages
+    if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author.toString()){
         var passageOrder = [];
         if(typeof req.body.passageOrder != 'undefined'){
             var passageOrder = JSON.parse(req.body.passageOrder);
