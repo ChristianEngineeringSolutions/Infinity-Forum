@@ -1006,10 +1006,7 @@ app.post('/update_passage_order/', async (req, res) => {
         if(typeof req.body.passageOrder != 'undefined'){
             var passageOrder = JSON.parse(req.body.passageOrder);
             let trimmedPassageOrder = passageOrder.map(str => str.trim());
-            console.log(passage.passages);
-            console.log(trimmedPassageOrder);
             passage.passages = trimmedPassageOrder;
-            console.log(passage.passages);
             await passage.save();
         }
     }
