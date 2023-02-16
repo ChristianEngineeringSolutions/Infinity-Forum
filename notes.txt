@@ -37,6 +37,5 @@ Daemon search and pin
 Daemon Mark
 Multiple file upload?
 
-Recover Password Link
-
 Scroll to bottom button
+recovery exp
