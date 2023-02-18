@@ -167,8 +167,14 @@ function monthDiff(d1, d2) {
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const balance = await stripe.balance.retrieve();
-    //give 80%
-    var usd = balance.available[0].amount - (balance.available[0].amount/20);
+    var usd = 0;
+    for(const i of balance.available){
+        if(i.currency == 'usd'){
+            //80 of balance to Users
+            usd = (i.amount - (i.amount*0.20)) / 100;
+            break;
+        }
+    }
     let users = await User.find({stripeOnboardingComplete: true});
     var stars = 0;
     for(const user of users){
@@ -307,7 +313,13 @@ app.get('/donate', async function(req, res){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
     const balance = await stripe.balance.retrieve();
-    var usd = balance.pending[0].amount/100;
+    var usd = 0;
+    for(const i of balance.pending){
+        if(i.currency == 'usd'){
+            usd = i.amount/100;
+            break;
+        }
+    }
     res.render('donate', {passage: {id: 'root'}, usd: usd, stars: stars});
 });
 //Search
@@ -1046,6 +1058,9 @@ app.get('/ppe_queue', async (req, res) => {
     }).sort('-stars');
     return res.render('ppe_thumbnails', {thumbnails: passages});
 });
+app.get('/three', async (req, res) => {
+    res.render('three');
+});
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
@@ -1211,18 +1226,6 @@ app.get('/verify/:user_id/:token', function (req, res) {
 //       res.send('Done');
 //     });
 // });
-app.post('/ppe', function(req, res) {
-    Passage.find({canvas: true})
-    .limit(20)
-    .exec()
-    .then(function(passages){
-        var ret = '';
-        passages.forEach(passage => {
-            ret += scripts.printCanvas(passage, req.session.user);
-        });
-        res.send(ret);
-    });
-});
 app.get('/terms', function(req, res) {
     res.render('terms');
 });
