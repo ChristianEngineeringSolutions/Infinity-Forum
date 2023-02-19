@@ -150,6 +150,7 @@ app.get('/highlight.js', function(req, res) {
 
 //CRON
 var cron = require('node-cron');
+// const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
     await rewardUsers();
@@ -236,12 +237,8 @@ async function notifyUser(userId, content, type="General"){
     });
 }
 //ROUTES
-//GET (or show view)
-app.get("/api", async (req, res) => {
-    //allow cross origin
-    //for apps
-});
 
+//GET (or show view)
 app.get("/profile/:username?/:_id?/", async (req, res) => {
     let bookmarks = [];
     let profile;
@@ -1060,6 +1057,14 @@ app.get('/ppe_queue', async (req, res) => {
 });
 app.get('/three', async (req, res) => {
     res.render('three');
+});
+async function getModels(){
+    let models = await Passage.find({mimeType: 'model'});
+    return models;
+}
+app.get('/models', async (req, res) => {
+    var models = await getModels();
+    res.send(models);
 });
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
