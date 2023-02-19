@@ -670,9 +670,9 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     }
     else{
         var all = {
-            html: passage.html,
-            css: passage.css,
-            javascript: passage.javascript
+            html: passage.html || '',
+            css: passage.css || '',
+            javascript: passage.javascript || ''
         };
         getAllSubPassageCode(passage, all);
         if(all.html.length > 0 || all.css.length > 0 || all.javascript.length > 0){
