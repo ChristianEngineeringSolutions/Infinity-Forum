@@ -1076,6 +1076,10 @@ app.get('/models', async (req, res) => {
     var models = await getModels();
     res.send(models);
 });
+//for API :: blender add-on
+app.post('/upload_model', async (req, res) => {
+    
+});
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
@@ -1102,7 +1106,7 @@ app.post('/update_passage/', async (req, res) => {
         var mimeType = req.files.file.mimetype;
         //uuid with  ext
         uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
-        var thumbnailTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+        var thumbnailTitle = v4() + ".jpg";
         //first verify that mimetype is image
         console.log(mimeType);
         // Use the mv() method to place the file somewhere on your server
