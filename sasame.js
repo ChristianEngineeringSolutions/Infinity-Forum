@@ -1102,6 +1102,7 @@ app.post('/update_passage/', async (req, res) => {
         var mimeType = req.files.file.mimetype;
         //uuid with  ext
         uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+        var thumbnailTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
         //first verify that mimetype is image
         console.log(mimeType);
         // Use the mv() method to place the file somewhere on your server
@@ -1113,7 +1114,11 @@ app.post('/update_passage/', async (req, res) => {
         passage.filename = uploadTitle;
         passage.mimeType = mimeType.split('/')[0];
         if(passage.mimeType == 'model'){
-            passage.thumbnail = formData.thumbnail;
+            var data = formData.thumbnail.replace(/^data:image\/\w+;base64,/, "");
+            var buf = Buffer.from(data, 'base64');
+            const fsp = require('fs').promises
+            await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
+            passage.thumbnail = thumbnailTitle;
         }
     }
     await passage.save();

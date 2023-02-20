@@ -50,7 +50,6 @@ obj_object = bpy.context.selected_objects[0] ####<--Fix
 
 
 
-# Preparing add on from template
 
 bl_info = {
     "name": "Add-on Template",
@@ -125,6 +124,13 @@ class MyProperties(PropertyGroup):
         default="",
         maxlen=1024,
         )
+    
+    search_str: StringProperty(
+        name="",
+        description=":",
+        default="",
+        maxlen=1024,
+        )
 
     my_path: StringProperty(
         name = "Directory",
@@ -148,7 +154,7 @@ class MyProperties(PropertyGroup):
 # ------------------------------------------------------------------------
 
 class WM_OT_HelloWorld(Operator):
-    bl_label = "Print Values Operator"
+    bl_label = "Search"
     bl_idname = "wm.hello_world"
 
     def execute(self, context):
@@ -186,7 +192,7 @@ class OBJECT_MT_CustomMenu(bpy.types.Menu):
 # ------------------------------------------------------------------------
 
 class OBJECT_PT_CustomPanel(Panel):
-    bl_label = "My Panel"
+    bl_label = "CES Connect"
     bl_idname = "OBJECT_PT_custom_panel"
     bl_space_type = "VIEW_3D"   
     bl_region_type = "UI"
@@ -202,17 +208,22 @@ class OBJECT_PT_CustomPanel(Panel):
         layout = self.layout
         scene = context.scene
         mytool = scene.my_tool
-
-        layout.prop(mytool, "my_bool")
-        layout.prop(mytool, "my_enum", text="") 
-        layout.prop(mytool, "my_int")
-        layout.prop(mytool, "my_float")
-        layout.prop(mytool, "my_float_vector", text="")
-        layout.prop(mytool, "my_string")
-        layout.prop(mytool, "my_path")
+        
+        layout.label(text="Search")
+        layout.prop(mytool, "search_str")
+        
+#        layout.prop(mytool, "my_bool")
+#        layout.prop(mytool, "my_enum", text="") 
+#        layout.prop(mytool, "my_int")
+#        layout.prop(mytool, "my_float")
+#        layout.prop(mytool, "my_float_vector", text="")
+#        layout.prop(mytool, "my_string")
+#        layout.prop(mytool, "my_path")
+        
         layout.operator("wm.hello_world")
-        layout.menu(OBJECT_MT_CustomMenu.bl_idname, text="Presets", icon="SCENE")
-        layout.separator()
+        
+#        layout.menu(OBJECT_MT_CustomMenu.bl_idname, text="Presets", icon="SCENE")
+#        layout.separator()
 
 # ------------------------------------------------------------------------
 #    Registration
