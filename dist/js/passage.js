@@ -77,6 +77,61 @@ $(function(){
         let _id = $(this).attr('id').split('_').at(-1);
         $('#passage_details_advanced_' + _id).fadeToggle();
     });
+    $(document).on('change', '[id^="passage_file_"]', function(e){
+        let _id = $(this).attr('id').split('_').at(-1);
+        var mimeType = $(this)[0].files[0].type.split('/')[0];
+        var file = $(this)[0].files[0];
+        var srcLink = URL.createObjectURL(file);
+        var thiz = $(this);
+        //if model inject into three js and cut thumbnail from canvas
+        switch(mimeType){
+            case 'image':
+                //set src
+                $('#thumbnail_image_' + _id).attr('src', srcLink);
+            break;
+            case 'model':
+                //create scene in three js
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera( 75, 300 / 300, 0.1, 1000 );
+
+                const renderer = new THREE.WebGLRenderer();
+                renderer.setSize( 300, 300 );
+                // document.body.appendChild( renderer.domElement );
+                // console.log();
+                thiz.after(renderer.domElement);
+                //load model into scene
+                var loader = new THREE.GLTFLoader();
+                // loader.crossOrigin = true;
+                // srcLink = "http://localhost:3000/uploads/2c8a812f-adca-423e-bec3-ec2815413292.glb";
+                // srcLink = 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/39255/ladybug.gltf';
+                loader.load(srcLink, function(data){
+                    var object = data.scene;
+                    object.position.copy( camera.position );
+                    object.rotation.copy( camera.rotation );
+                    object.updateMatrix();
+                    object.translateZ( - 10 );
+                    scene.add( object );
+                    const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+                    const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+                    const cube = new THREE.Mesh( geometry, material );
+                    scene.add( cube );
+
+                    camera.position.z = 5;
+                        renderer.render(scene, camera);
+                });
+                // const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+                // const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+                // const cube = new THREE.Mesh( geometry, material );
+                // scene.add( cube );
+
+                // camera.position.z = 5;
+                // renderer.render(scene, camera);
+                
+            
+            break;
+        }
+        $('#passage_thumbnail_' + _id).fadeIn();
+    });
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
         //create a passage and then show it

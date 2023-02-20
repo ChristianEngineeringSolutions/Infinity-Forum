@@ -28,6 +28,9 @@ Source variable: passage
         <%}%>
     <%}%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
+    <div style="display:none;"id="passage_thumbnail_<%=passage._id%>">
+        <img id="thumbnail_image_<%=passage._id%>"src="" alt="">
+    </div>
     <div id="passage_advanced_<%=passage._id%>"class="passage_advanced">
         <textarea style="display:none;"class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
         <textarea style="display:none;"class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
