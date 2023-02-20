@@ -77,13 +77,22 @@
             <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
         <%}%>
     </div>
-    <!-- 
-Source variable: passage
- -->
-<!-- <button class="passage_plus_description">+</button> -->
-<!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
-<% if(passage.filename){ %>
-    <img src="/uploads/<%=passage.filename%>" alt="">
+    <% if(passage.filename){ %>
+        <%if(passage.mimeType == 'image'){%>
+             <img src="/uploads/<%=passage.filename%>" alt="">
+        <%}else if(passage.mimeType == 'audio'){%>
+            <audio class="passage_audio"controls>
+                <source src="/uploads/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
+                Your browser does not support the audio tag.
+            </audio> 
+        <%}else if(passage.mimeType == 'video'){%>
+            <video class="passage_video"width="320" height="240" controls>
+                <source src="/uploads/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
+                Your browser does not support the video tag.
+            </video> 
+        <%}else if(passage.mimeType == 'model'){%>
+            <img src="<%=passage.thumbnail%>" alt="">
+        <%}%>
     <%}%>
     <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced">
         <div class="code_display display_html" name="html" cols="30" rows="10" placeholder="HTML"><pre><code class="language-html"><%=passage.html || 'HTML'%></code></pre></div>

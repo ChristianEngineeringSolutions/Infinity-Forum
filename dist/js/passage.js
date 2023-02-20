@@ -81,53 +81,44 @@ $(function(){
         let _id = $(this).attr('id').split('_').at(-1);
         var mimeType = $(this)[0].files[0].type.split('/')[0];
         var file = $(this)[0].files[0];
+        //create temp source link from uploaded file
         var srcLink = URL.createObjectURL(file);
         var thiz = $(this);
-        //if model inject into three js and cut thumbnail from canvas
         switch(mimeType){
             case 'image':
                 //set src
                 $('#thumbnail_image_' + _id).attr('src', srcLink);
             break;
+            //inject into 3js and cut from canvas to save thumbnail
             case 'model':
                 //create scene in three js
                 const scene = new THREE.Scene();
                 const camera = new THREE.PerspectiveCamera( 75, 300 / 300, 0.1, 1000 );
 
                 const renderer = new THREE.WebGLRenderer();
+                renderer.domElement.id = "model_thumbnail_canvas_" + _id;
+                renderer.domElement.style = "display:none;";
                 renderer.setSize( 300, 300 );
-                // document.body.appendChild( renderer.domElement );
-                // console.log();
                 thiz.after(renderer.domElement);
                 //load model into scene
                 var loader = new THREE.GLTFLoader();
-                // loader.crossOrigin = true;
-                // srcLink = "http://localhost:3000/uploads/2c8a812f-adca-423e-bec3-ec2815413292.glb";
-                // srcLink = 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/39255/ladybug.gltf';
                 loader.load(srcLink, function(data){
-                    var object = data.scene;
-                    object.position.copy( camera.position );
-                    object.rotation.copy( camera.rotation );
-                    object.updateMatrix();
-                    object.translateZ( - 10 );
-                    scene.add( object );
-                    const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-                    const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-                    const cube = new THREE.Mesh( geometry, material );
-                    scene.add( cube );
-
+                    scene.add( data.scene );
                     camera.position.z = 5;
-                        renderer.render(scene, camera);
-                });
-                // const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-                // const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-                // const cube = new THREE.Mesh( geometry, material );
-                // scene.add( cube );
+                    //make sure there is light to see the object
+                    var light = new THREE.PointLight( 0xffffcc, 20, 200 );
+                    light.position.set( 4, 30, -20 );
+                    scene.add( light );
 
-                // camera.position.z = 5;
-                // renderer.render(scene, camera);
-                
-            
+                    var light2 = new THREE.AmbientLight( 0x20202A, 20, 100 );
+                    light2.position.set( 30, -10, 30 );
+                    scene.add( light2 );
+                    renderer.render(scene, camera);
+                    //save snapshot of canvas to thumbnail field as data url
+                    var base64Image = renderer.domElement.toDataURL();
+                    $('#thumbnail_image_' + _id).attr('src', base64Image);
+                    $('#thumbnail_clip_' + _id).val(base64Image);
+                });
             break;
         }
         $('#passage_thumbnail_' + _id).fadeIn();
