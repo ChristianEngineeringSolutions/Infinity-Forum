@@ -80,6 +80,8 @@ const passageSchema = mongoose.Schema({
         default: false
     }, //content warning
     filename: String, // associated file
+    filenames: [String], //If we go with file upload multiple
+    thumbnail: String, //For models, vids, etc.
     mimeType: String,
     deleted: {
         type: Boolean,

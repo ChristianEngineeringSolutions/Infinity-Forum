@@ -150,6 +150,7 @@ app.get('/highlight.js', function(req, res) {
 
 //CRON
 var cron = require('node-cron');
+const { exit } = require('process');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
@@ -273,33 +274,42 @@ app.post('/get_username_number', async function(req, res){
 });
 //HOME/INDEX
 app.get('/', async (req, res) => {
-    //scripts.renderBookPage(req, res);
-    let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-    let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-    let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
-    let golden = '';
-    let addPassageAllowed = true;
-    let addChapterAllowed = true;
-    var user = req.session.user || null;
-    let passages = await Passage.find({
-        deleted: false,
-    }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    let passageUsers = [];
-    let bookmarks = [];
-    if(req.session.user){
-        bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+    // DEV AUTO LOGIN
+    if(!req.session.user && process.env.DEVELOPMENT == 'true'){
+        authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
+            req.session.user = user;
+            return res.redirect('/');
+        });
     }
-    res.render("index", {
-        subPassages: false,
-        passageTitle: 'Christian Engineering Solutions', 
-        scripts: scripts, 
-        passages: passages, 
-        passage: {id:'root', author: {
-            _id: 'root',
-            username: 'Sasame'
-        }},
-        bookmarks: bookmarks,
-    });
+    else{
+        //scripts.renderBookPage(req, res);
+        let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+        let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+        let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+        let golden = '';
+        let addPassageAllowed = true;
+        let addChapterAllowed = true;
+        var user = req.session.user || null;
+        let passages = await Passage.find({
+            deleted: false,
+        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        let passageUsers = [];
+        let bookmarks = [];
+        if(req.session.user){
+            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        }
+        res.render("index", {
+            subPassages: false,
+            passageTitle: 'Christian Engineering Solutions', 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+        });
+    }
 });
 app.get('/donate', async function(req, res){
     let users = await User.find({stripeOnboardingComplete: true});
