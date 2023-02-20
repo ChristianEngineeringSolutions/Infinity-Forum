@@ -1112,6 +1112,9 @@ app.post('/update_passage/', async (req, res) => {
         });
         passage.filename = uploadTitle;
         passage.mimeType = mimeType.split('/')[0];
+        if(passage.mimeType == 'model'){
+            passage.thumbnail = formData.thumbnail;
+        }
     }
     await passage.save();
     //give back updated passage

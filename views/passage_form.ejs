@@ -7,29 +7,10 @@ Source variable: passage
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
     <input id="quill-data-<%=passage._id%>"value="<%=passage.content%>"name="content"type="hidden">
     <div class="passage_description" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"></div>
-    <!-- <button class="passage_plus_description">+</button> -->
-    <!-- <textarea class="passage_description" name="tags" id="" cols="30" rows="10" placeholder="Tags"></textarea> -->
-    <% if(passage.filename){ %>
-        <!-- img -->
-        <%if(!passage.filename.split('').includes('.') || ['png', 'gif', 'jpeg', 'jpg'].includes(passage.filename.split('.').at(-1))){%>
-             <img src="/uploads/<%=passage.filename%>" alt="">
-        <!-- audio -->
-        <%}else if(['mp3', 'wav', 'jpeg', 'jpg'].includes(passage.filename.split('.').at(-1))){%>
-            <audio class="passage_audio"controls>
-                <source src="/uploads/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
-                Your browser does not support the audio tag.
-            </audio> 
-        <!-- video -->
-        <%}else if(['avi', 'mp4', 'mpg', 'webm'].includes(passage.filename.split('.').at(-1))){%>
-            <video class="passage_video"width="320" height="240" controls>
-                <source src="/uploads/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
-                Your browser does not support the video tag.
-            </video> 
-        <%}%>
-    <%}%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
     <div style="display:none;"id="passage_thumbnail_<%=passage._id%>">
         <img id="thumbnail_image_<%=passage._id%>"src="" alt="">
+        <input id="thumbnail_clip_<%=passage._id%>"type="hidden" name="thumbnail">
     </div>
     <div id="passage_advanced_<%=passage._id%>"class="passage_advanced">
         <textarea style="display:none;"class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
