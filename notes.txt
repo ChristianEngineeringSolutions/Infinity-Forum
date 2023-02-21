@@ -38,6 +38,3 @@ Daemon Mark
 Multiple file upload?
 
 recovery exp
-
-Add thumbnail after uploading a model
-client side check mimetype

@@ -1,6 +1,8 @@
 #Blender add-on for christianengineeringsolutions.com
-#Requirements:
-#GET all passages with mimetype.split('/')[0] == model
+#Currently, copy/paste into blender scripts and run
+# Official app on the way
+# Combine models while maintaining sources
+# Work on CES through blender!
 
 import bpy
 import requests
@@ -17,7 +19,7 @@ sources = [];
 search = ''
 
 website = "https://christianengineeringsolutions.com"
-website = "http://localhost:3000"
+# website = "http://localhost:3000"
 
 #for alerts
 def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
