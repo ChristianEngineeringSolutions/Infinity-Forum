@@ -231,7 +231,15 @@ class Add_Object(Operator):
         imported_object = bpy.ops.import_scene.gltf(filepath=power_list[self.test]["filepath"])
         obj_object = bpy.context.selected_objects[0] ####<--Fix
         
-        sources.append(power_list[self.test]["_id"])
+        new_source = power_list[self.test]["_id"]
+        added = false
+#        Only add source if not there already
+        for source in sources:
+            if(new_source == source):
+                added = true
+                break
+        if added == false:
+            sources.append(power_list[self.test]["_id"])
 
         return {'FINISHED'}
 
