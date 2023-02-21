@@ -4,14 +4,17 @@
 <input id="chief_passage_id"type="hidden" value="root"name="">
     <br><br><br><br><br><br>
     <div style="margin:auto;text-align:center;">
-        <h1>Donate</h1>
+        <h1 style="font-size:3em;">Invest.</h1>
+        <h4>Use your profile email to earn your investment in stars.</h4>
         <h2><a target="_blank"href="https://buy.stripe.com/eVabLl8QJ5Wb11KaEE">Custom Amount</a></h2>
         <h2><a target="_blank"href="https://buy.stripe.com/fZe9Dd7MFfwL11K5kl">Subscribe</a></h2>
+        <h5>(Subscriber stars are multiplied by the number of months subscribed.)</h5>
         <br><br>
-        <h1><span style="color:black;"><%=stars%> Star<%-stars == 1 ? '' : 's'%> Given: $<%=usd%></span></h1>
+        <h1><span style="color:black;"><%=stars%> Star<%-stars == 1 ? '' : 's'%> Invested: $<%=usd%></span></h1>
         <h3>Tithe: 10%</h3>
         <h3>Operating Costs: 10%</h3>
         <h3>User rewards: 80%</h3>
+        <h5 style="font-weight: normal; color: red;">Get Paid Monthly by Investing Stars in Projects.</h5>
         <br><br>
     </div>
 <%- include('footer') %>
