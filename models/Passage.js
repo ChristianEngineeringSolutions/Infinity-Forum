@@ -111,6 +111,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isSVG: {
+        type: Boolean,
+        default: false
+    },
 
 });
 var autoPopulateChildren = function(next) {

@@ -1088,6 +1088,74 @@ app.get('/models', async (req, res) => {
     var models = await getModels(req.query);
     res.send(models);
 });
+async function getSVGs(data){
+    var find = {
+        mimeType: 'image',
+        isSVG: true,
+        title: {
+            $regex: data.query,
+            $options: 'i',
+        }
+    };
+    let svgs = await Passage.paginate(find, {
+        page: data.page,
+        limit: DOCS_PER_PAGE,
+        populate: 'author',
+        sort: '-stars'
+    });
+    return svgs.docs;
+}
+app.get('/svgs', async (req, res) => {
+    var svgs = await getSVGs(req.query);
+    res.send(svgs);
+});
+app.post('/upload_svg', async (req, res) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let obj = {};
+    let search = '';
+    if(req.body.username.match(regex) === null){
+        //it's a username
+        search = "username";
+    }
+    else{
+        //it's an email
+        search = "email";
+    }
+    obj[search] = req.body.username;
+    User.findOne(obj)
+      .exec(function (err, user) {
+        if (err) {
+          return callback(err)
+        } else if (!user) {
+          var err = new Error('User not found.');
+          err.status = 401;
+          return res.send("User not found.");
+        }
+        bcrypt.compare(req.body.password, user.password, async function (err, result) {
+          if (result === true) {
+            var fileToUpload = req.files.file;
+            var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+            fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
+                if (err){
+                    return res.status(500).send(err);
+                }
+            });
+            var passage = await Passage.create({
+                sourceList: req.body.sources,
+                author: user._id,
+                title: req.body.title,
+                mimeType: 'model',
+                filename: uploadTitle,
+                thumbnail: null,
+                isSVG: true
+            });
+            return res.send("Done");
+          } else {
+            return res.send("Wrong Credentials.");
+          }
+        })
+      });
+});
 app.post('/update_thumbnail', async (req, res) => {
     var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
     var buf = Buffer.from(data, 'base64');
@@ -1106,7 +1174,6 @@ app.post('/upload_model', async (req, res) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let obj = {};
     let search = '';
-    console.log(req.body);
     if(req.body.username.match(regex) === null){
         //it's a username
         search = "username";
@@ -1185,6 +1252,10 @@ app.post('/update_passage/', async (req, res) => {
             }
         });
         passage.filename = uploadTitle;
+        if(passage.mimeType.split('/')[0] == 'image'
+        && passage.mimeType.split('+')[0].split('/')[1] == 'svg'){
+            passage.isSVG = true;
+        }
         passage.mimeType = mimeType.split('/')[0];
         if(passage.mimeType == 'model'){
             var data = formData.thumbnail.replace(/^data:image\/\w+;base64,/, "");
@@ -1192,6 +1263,9 @@ app.post('/update_passage/', async (req, res) => {
             const fsp = require('fs').promises;
             await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
             passage.thumbnail = thumbnailTitle;
+        }
+        else{
+            passage.thumbnail = null;
         }
     }
     await passage.save();
