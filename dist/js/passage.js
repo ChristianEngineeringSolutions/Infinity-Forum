@@ -80,6 +80,15 @@ $(function(){
     $(document).on('change', '[id^="passage_file_"]', function(e){
         let _id = $(this).attr('id').split('_').at(-1);
         var mimeType = $(this)[0].files[0].type.split('/')[0];
+        var isSVG = false;
+        if($(this)[0].files[0].type.split('/')[0] == 'image'
+        && $(this)[0].files[0].type.split('+')[0].split('/')[1] == 'svg'){
+            isSVG = true;
+            mimeType = 'svg';
+        }
+        else{
+            isSVG = false;
+        }
         var file = $(this)[0].files[0];
         //create temp source link from uploaded file
         var srcLink = URL.createObjectURL(file);
@@ -119,6 +128,30 @@ $(function(){
                     $('#thumbnail_image_' + _id).attr('src', base64Image);
                     $('#thumbnail_clip_' + _id).val(base64Image);
                 });
+            break;
+            case 'svg':
+                // inject svg into canvas and save image as thumbnail
+                const canvas = document.getElementById('thumbnail_canvas_' + _id);
+                var ctx = canvas.getContext("2d");
+                var img = new Image();
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0);
+                    var thumbnail = canvas.toDataURL();
+                    $.ajax({
+                        type: 'post',
+                        url: '/update_thumbnail/',
+                        data: {
+                            passageID: _id,
+                            thumbnail: thumbnail
+                        },
+                        success: function(data){
+                            // alert(data);
+                        }
+                    });
+                    $('#thumbnail_image_' + _id).attr('src', thumbnail);
+                    $('#thumbnail_clip_' + _id).val(thumbnail);
+                }
+                img.src = srcLink;
             break;
         }
         $('#passage_thumbnail_' + _id).fadeIn();

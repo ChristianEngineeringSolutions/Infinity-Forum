@@ -77,9 +77,12 @@
             <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
         <%}%>
     </div>
+    <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
     <% if(passage.filename){ %>
-        <%if(passage.mimeType == 'image'){%>
+        <%if(!passage.isSVG && passage.mimeType == 'image'){%>
              <img src="/uploads/<%=passage.filename%>" alt="">
+        <%}else if (passage.isSVG){%>
+            <img src="/uploads/<%=passage.filename%>" alt="">
         <%}else if(passage.mimeType == 'audio'){%>
             <audio class="passage_audio"controls>
                 <source src="/uploads/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">

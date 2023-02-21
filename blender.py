@@ -16,7 +16,8 @@ list_raw = []
 
 sources = [];
 
-
+#Where you want to save data
+dir = "/home/uriah/Desktop/"
 
 search = ''
 
@@ -64,27 +65,55 @@ power_list = {};
 
 # /GOOD CODE
 
-def SearchModels(query=""):
+def SearchModels(query="", which="Models"):
     global models
-    data = {
-        "query": query,
-        "page": page
-    }
-    r = requests.get(website + '/models', params=data)
-    models = json.loads(r.text)
-#    ShowMessageBox(json.dumps(models))
-    #List thumbnails
-    for model in models:
-    #    get thumbnail
-        req = requests.get(website + '/uploads/' + model["thumbnail"])
-        model["image"] = '/home/uriah/Desktop/' + model["thumbnail"]
-        with open('/home/uriah/Desktop/' + model["thumbnail"], 'wb') as f:
-            f.write(req.content)
-        power_list[model["title"]] = {
-            "filepath": '/home/uriah/Desktop/' + model["filename"],
-            "_id": model["_id"]
+    global dir
+    models = []
+    if which == "Models":
+        data = {
+            "query": query,
+            "page": page
         }
-#    redraw_panel()
+        r = requests.get(website + '/models', params=data)
+        models = json.loads(r.text)
+    #    ShowMessageBox(json.dumps(models))
+        #List thumbnails
+        for model in models:
+        #    get thumbnail
+            req = requests.get(website + '/uploads/' + model["thumbnail"])
+            model["image"] = dir + model["thumbnail"]
+            with open(dir + model["thumbnail"], 'wb') as f:
+                f.write(req.content)
+            power_list[model["title"]] = {
+                "filepath": dir + model["filename"],
+                "_id": model["_id"]
+            }
+    elif which == "SVGs":
+        data = {
+            "query": query,
+            "page": page
+        }
+        r = requests.get(website + '/svgs', params=data)
+        models = json.loads(r.text)
+    #    ShowMessageBox(json.dumps(models))
+        #List thumbnails
+        for model in models:
+        #    get thumbnail
+            req = requests.get(website + '/uploads/' + model["thumbnail"])
+            model["image"] = dir + model["thumbnail"]
+            with open(dir + model["thumbnail"], 'wb') as f:
+                f.write(req.content)
+            power_list[model["title"]] = {
+                "filepath": dir + model["filename"],
+                "_id": model["_id"]
+            }
+    global custom_icons
+    custom_icons = bpy.utils.previews.new()
+
+    for model in models:
+        if model["title"] == "SVG":
+            ShowMessageBox(model["title"])
+        custom_icons.load(model["thumbnail"][:-4], os.path.join(directory, model["image"]), 'IMAGE')
 
 SearchModels()
 
@@ -124,6 +153,10 @@ from bpy.types import (Panel,
 # ------------------------------------------------------------------------
 
 class MyProperties(PropertyGroup):
+    test_items = [
+    ("Models", "Models", "", 1),
+    ("SVGs", "SVGs", "", 2),
+]
     
     search_str: StringProperty(
         name="",
@@ -153,6 +186,12 @@ class MyProperties(PropertyGroup):
         maxlen=1024,
         subtype="PASSWORD"
         )
+        
+    which: EnumProperty(
+        name="",
+        items=test_items,
+        description="offers....",
+    )
 
 # ------------------------------------------------------------------------
 #    Operators
@@ -168,7 +207,7 @@ class Search(Operator):
         global page
         
         page = 1
-        SearchModels(mytool.search_str)
+        SearchModels(mytool.search_str, mytool.which)
 
         return {'FINISHED'}
 
@@ -183,7 +222,7 @@ class ViewMore(Operator):
         
         page += 1
         
-        SearchModels(mytool.search_str)
+        SearchModels(mytool.search_str, mytool.which)
         
 
         return {'FINISHED'}
@@ -195,13 +234,19 @@ class Upload(Operator):
     def execute(self, context):
         scene = context.scene
         mytool = scene.my_tool
-    
+        
+        which = mytool.which
 #        Export and save file
         blend_file_path = bpy.data.filepath
         directory = os.path.dirname(blend_file_path)
         target_file = os.path.join(directory, 'myfile.glb')
-
-        bpy.ops.export_scene.gltf(filepath=target_file)
+        
+        if which == "Models":
+            target_file = os.path.join(directory, 'myfile.glb')
+            bpy.ops.export_scene.gltf(filepath=target_file)
+        elif which == "SVGs":
+            target_file = os.path.join(directory, 'myfile.svg')
+            bpy.ops.wm.gpencil_export_svg(filepath=target_file)
         
 #        Upload to CES
         upload_data = {
@@ -211,7 +256,10 @@ class Upload(Operator):
             "title": mytool.title_str
         }
         files = {'file': open(target_file,'rb')}
-        x = requests.post(website + "/upload_model", files=files, data=upload_data)
+        if which == "Models":
+            x = requests.post(website + "/upload_model", files=files, data=upload_data)
+        elif which == "SVGs":
+            x = requests.post(website + "/upload_svg", files=files, data=upload_data)
         ShowMessageBox(x.text)
 
 
@@ -224,15 +272,22 @@ class Add_Object(Operator):
     filename: bpy.props.StringProperty()
 
     def execute(self, context):
+        global dir
         scene = context.scene
         mytool = scene.my_tool
             #    get file
         req = requests.get(website + '/uploads/' + self.filename)
-        with open('/home/uriah/Desktop/' + self.filename, 'wb') as f:
+        with open(dir + self.filename, 'wb') as f:
             f.write(req.content)
 #        Import Object
-        imported_object = bpy.ops.import_scene.gltf(filepath=power_list[self.title]["filepath"])
+
+        if mytool.which == "Models":
+            imported_object = bpy.ops.import_scene.gltf(filepath=power_list[self.title]["filepath"])
+        elif mytool.which == "SVGs":
+            imported_object = bpy.ops.wm.gpencil_import_svg(filepath=power_list[self.title]["filepath"])
+            
         obj_object = bpy.context.selected_objects[0] ####<--Fix
+        
         
         new_source = power_list[self.title]["_id"]
         added = False
@@ -288,6 +343,7 @@ class OBJECT_PT_CustomPanel(Panel):
         mytool = scene.my_tool
         
         layout.label(text="Search")
+        layout.prop(mytool, "which")
         layout.prop(mytool, "search_str")
         layout.operator("wm.search")
         layout.separator()
@@ -308,16 +364,6 @@ class OBJECT_PT_CustomPanel(Panel):
         layout.separator()
         layout.operator("wm.view_more")
 
-
-def redraw_panel():
-    try:
-        bpy.utils.unregister_class(OBJECT_PT_CustomPanel)
-    except:
-        pass
-
-
-    bpy.utils.register_class(OBJECT_PT_CustomPanel)
-
 # ------------------------------------------------------------------------
 #    Registration
 # ------------------------------------------------------------------------
@@ -336,12 +382,6 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-    global custom_icons
-    custom_icons = bpy.utils.previews.new()
-
-    for model in models:
-        ShowMessageBox(model["thumbnail"][:-4])
-        custom_icons.load(model["thumbnail"][:-4], os.path.join(directory, model["image"]), 'IMAGE')
 
     bpy.types.Scene.my_tool = PointerProperty(type=MyProperties)
 
