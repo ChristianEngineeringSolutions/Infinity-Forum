@@ -19,7 +19,7 @@ sources = [];
 search = ''
 
 website = "https://christianengineeringsolutions.com"
-# website = "http://localhost:3000"
+website = "http://localhost:3000"
 
 #for alerts
 def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
@@ -234,13 +234,13 @@ class Add_Object(Operator):
         obj_object = bpy.context.selected_objects[0] ####<--Fix
         
         new_source = power_list[self.test]["_id"]
-        added = false
+        added = False
 #        Only add source if not there already
         for source in sources:
             if(new_source == source):
-                added = true
+                added = True
                 break
-        if added == false:
+        if added == False:
             sources.append(power_list[self.test]["_id"])
 
         return {'FINISHED'}
@@ -338,6 +338,7 @@ def register():
     custom_icons = bpy.utils.previews.new()
 
     for model in models:
+        ShowMessageBox(model["thumbnail"][:-4])
         custom_icons.load(model["thumbnail"][:-4], os.path.join(directory, model["image"]), 'IMAGE')
 
     bpy.types.Scene.my_tool = PointerProperty(type=MyProperties)
