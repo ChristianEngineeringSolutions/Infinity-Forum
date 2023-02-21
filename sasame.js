@@ -1076,9 +1076,66 @@ app.get('/models', async (req, res) => {
     var models = await getModels();
     res.send(models);
 });
+app.post('/update_thumbnail', async (req, res) => {
+    var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
+    var buf = Buffer.from(data, 'base64');
+    const fsp = require('fs').promises;
+    var thumbnailTitle = v4() + ".jpg";
+    await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
+    await Passage.findOneAndUpdate({_id: req.body.passageID}, {
+        $set: {
+            thumbnail: thumbnailTitle
+        }
+    });
+    res.send("Done");
+});
 //for API :: blender add-on
 app.post('/upload_model', async (req, res) => {
-    
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let obj = {};
+    let search = '';
+    console.log(req.body);
+    if(req.body.username.match(regex) === null){
+        //it's a username
+        search = "username";
+    }
+    else{
+        //it's an email
+        search = "email";
+    }
+    obj[search] = req.body.username;
+    User.findOne(obj)
+      .exec(function (err, user) {
+        if (err) {
+          return callback(err)
+        } else if (!user) {
+          var err = new Error('User not found.');
+          err.status = 401;
+          return res.send("User not found.");
+        }
+        bcrypt.compare(req.body.password, user.password, async function (err, result) {
+          if (result === true) {
+            var fileToUpload = req.files.file;
+            var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+            fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
+                if (err){
+                    return res.status(500).send(err);
+                }
+            });
+            var passage = await Passage.create({
+                sourceList: req.body.sources,
+                author: user._id,
+                title: req.body.title,
+                mimeType: 'model',
+                filename: uploadTitle,
+                thumbnail: null
+            });
+            return res.send("Done");
+          } else {
+            return res.send("Wrong Credentials.");
+          }
+        })
+      });
 });
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
@@ -1120,7 +1177,7 @@ app.post('/update_passage/', async (req, res) => {
         if(passage.mimeType == 'model'){
             var data = formData.thumbnail.replace(/^data:image\/\w+;base64,/, "");
             var buf = Buffer.from(data, 'base64');
-            const fsp = require('fs').promises
+            const fsp = require('fs').promises;
             await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
             passage.thumbnail = thumbnailTitle;
         }

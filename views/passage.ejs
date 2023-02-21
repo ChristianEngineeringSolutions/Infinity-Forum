@@ -91,7 +91,54 @@
                 Your browser does not support the video tag.
             </video> 
         <%}else if(passage.mimeType == 'model'){%>
-            <img src="/uploads/<%=passage.thumbnail%>" alt="">
+            <%if(passage.thumbnail == null){%>
+                <img id="p_thumbnail_<%=passage._id%>" alt="">
+                <!-- Create and upload thumbnail if it does not exist -->
+                <script>
+                    var _id = "<%=passage._id%>";
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera( 75, 300 / 300, 0.1, 1000 );
+                    var srcLink = "/uploads/<%=passage.filename%>";
+                    const renderer = new THREE.WebGLRenderer();
+                    renderer.domElement.id = "model_thumbnail_canvas_" + _id;
+                    renderer.domElement.style = "display:none;";
+                    renderer.setSize( 300, 300 );
+                    $("#p_thumbnail_" + _id).after(renderer.domElement);
+                    //load model into scene
+                    var loader = new THREE.GLTFLoader();
+                    loader.load(srcLink, function(data){
+                        scene.add( data.scene );
+                        camera.position.z = 5;
+                        //make sure there is light to see the object
+                        var light = new THREE.PointLight( 0xffffcc, 20, 200 );
+                        light.position.set( 4, 30, -20 );
+                        scene.add( light );
+    
+                        var light2 = new THREE.AmbientLight( 0x20202A, 20, 100 );
+                        light2.position.set( 30, -10, 30 );
+                        scene.add( light2 );
+                        renderer.render(scene, camera);
+                        //save snapshot of canvas to thumbnail field as data url
+                        var base64Image = renderer.domElement.toDataURL();
+                        $('#p_thumbnail_' + _id).attr('src', base64Image);
+                        $.ajax({
+                            type: 'post',
+                            url: '/update_thumbnail/',
+                            data: {
+                                passageID: _id,
+                                thumbnail: base64Image
+                            },
+                            success: function(data){
+                                // alert(data);
+                            }
+                        });
+
+                        // $('#thumbnail_clip_' + id).val(base64Image);
+                    });
+                </script>
+            <%}else{%>
+                <img id="p_thumbnail_<%=passage._id%>" src="/uploads/<%=passage.thumbnail%>" alt="">
+            <%}%>
         <%}%>
     <%}%>
     <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced">

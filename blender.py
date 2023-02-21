@@ -242,9 +242,10 @@ class Upload(Operator):
 #        Export and save file
         blend_file_path = bpy.data.filepath
         directory = os.path.dirname(blend_file_path)
-        target_file = os.path.join(directory, 'myfile.obj')
+        target_file = os.path.join(directory, 'myfile.glb')
 
-        bpy.ops.export_scene.obj(filepath=target_file)
+        bpy.ops.export_scene.gltf(filepath=target_file)
+        ShowMessageBox(mytool.username)
         
 #        Upload to CES
         upload_data = {
@@ -253,8 +254,9 @@ class Upload(Operator):
             "password": mytool.password,
             "title": mytool.title_str
         }
-        files = {'upload_file': open(target_file,'rb')}
-        x = requests.post(website + "/upload_model", files=files, json=upload_data)
+        files = {'file': open(target_file,'rb')}
+        x = requests.post(website + "/upload_model", files=files, data=upload_data)
+        ShowMessageBox(x.text)
 
 
         return {'FINISHED'}
