@@ -1252,8 +1252,8 @@ app.post('/update_passage/', async (req, res) => {
             }
         });
         passage.filename = uploadTitle;
-        if(passage.mimeType.split('/')[0] == 'image'
-        && passage.mimeType.split('+')[0].split('/')[1] == 'svg'){
+        if(mimeType.split('/')[0] == 'image'
+        && mimeType.split('+')[0].split('/')[1] == 'svg'){
             passage.isSVG = true;
         }
         passage.mimeType = mimeType.split('/')[0];
