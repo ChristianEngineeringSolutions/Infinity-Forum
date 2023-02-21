@@ -925,7 +925,7 @@ app.post('/paginate', async function(req, res){
         if(req.body.from_ppe_queue){
             find.mimeType = 'image';
         }
-        let passages = await Passage.paginate(find, {page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
+        let passages = await Passage.paginate(find, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
         console.log(find);
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
@@ -946,7 +946,7 @@ app.post('/paginate', async function(req, res){
         let find = {
             username: new RegExp(''+search+'', "i")
         };
-        let users = await User.paginate(find, {page: page, limit: DOCS_PER_PAGE});
+        let users = await User.paginate(find, {sort: "-stars", page: page, limit: DOCS_PER_PAGE});
         res.render('leaderboard', {users: users.docs});
     }
 });
@@ -1068,12 +1068,24 @@ app.get('/ppe_queue', async (req, res) => {
 app.get('/three', async (req, res) => {
     res.render('three');
 });
-async function getModels(){
-    let models = await Passage.find({mimeType: 'model'});
-    return models;
+async function getModels(data){
+    var find = {
+        mimeType: 'model',
+        title: {
+            $regex: data.query,
+            $options: 'i',
+        }
+    };
+    let models = await Passage.paginate(find, {
+        page: data.page,
+        limit: DOCS_PER_PAGE,
+        populate: 'author',
+        sort: '-stars'
+    });
+    return models.docs;
 }
 app.get('/models', async (req, res) => {
-    var models = await getModels();
+    var models = await getModels(req.query);
     res.send(models);
 });
 app.post('/update_thumbnail', async (req, res) => {
