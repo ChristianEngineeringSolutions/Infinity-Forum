@@ -27,31 +27,12 @@ def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
 
     bpy.context.window_manager.popup_menu(draw, title = title, icon = icon)
 
-#get list of models
-#r = requests.get('https://christianengineeringsolutions.com/models');
-r = requests.get(website + '/models');
-#load dict from json from server response text
-#test with one model first ([0])
-models = json.loads(r.text)
+page = 1
+models = []
+
 
 power_list = {};
 
-#List thumbnails
-for model in models:
-#    get file
-    req = requests.get(website + '/uploads/' + model["filename"])
-    model["file"] = req.content
-    with open('/home/uriah/Desktop/' + model["filename"], 'wb') as f:
-        f.write(req.content)
-#    get thumbnail
-    req = requests.get(website + '/uploads/' + model["thumbnail"])
-    model["image"] = '/home/uriah/Desktop/' + model["thumbnail"]
-    with open('/home/uriah/Desktop/' + model["thumbnail"], 'wb') as f:
-        f.write(req.content)
-        power_list[model["title"]] = {
-            "filepath": '/home/uriah/Desktop/' + model["filename"],
-            "_id": model["_id"]
-        }
 #    if model["title"] == "Test":
 #        selected = model
 #        req = requests.get('http://localhost:3000/uploads/' + selected["filename"])
@@ -79,15 +60,41 @@ for model in models:
 
 # /GOOD CODE
 
+def SearchModels(query=""):
+    global models
+    data = {
+        "query": query,
+        "page": page
+    }
+    r = requests.get(website + '/models', params=data)
+    models = json.loads(r.text)
+#    ShowMessageBox(json.dumps(models))
+    #List thumbnails
+    for model in models:
+    #    get file
+        req = requests.get(website + '/uploads/' + model["filename"])
+        model["file"] = req.content
+        with open('/home/uriah/Desktop/' + model["filename"], 'wb') as f:
+            f.write(req.content)
+    #    get thumbnail
+        req = requests.get(website + '/uploads/' + model["thumbnail"])
+        model["image"] = '/home/uriah/Desktop/' + model["thumbnail"]
+        with open('/home/uriah/Desktop/' + model["thumbnail"], 'wb') as f:
+            f.write(req.content)
+            power_list[model["title"]] = {
+                "filepath": '/home/uriah/Desktop/' + model["filename"],
+                "_id": model["_id"]
+            }
+#    redraw_panel()
 
-
+SearchModels()
 
 bl_info = {
-    "name": "Add-on Template",
-    "description": "",
-    "author": "p2or",
-    "version": (0, 0, 3),
-    "blender": (2, 80, 0),
+    "name": "CES Connect",
+    "description": "Blender Add-On for ChristianEngineeringSolutions.com",
+    "author": "Uriah Sanders",
+    "version": (0, 0, 1),
+    "blender": (3, 0, 1),
     "location": "3D View > Tools",
     "warning": "", # used for warning icon and text in addons panel
     "wiki_url": "",
@@ -118,43 +125,6 @@ from bpy.types import (Panel,
 # ------------------------------------------------------------------------
 
 class MyProperties(PropertyGroup):
-
-    my_bool: BoolProperty(
-        name="Enable or Disable",
-        description="A bool property",
-        default = False
-        )
-
-    my_int: IntProperty(
-        name = "Int Value",
-        description="A integer property",
-        default = 23,
-        min = 10,
-        max = 100
-        )
-
-    my_float: FloatProperty(
-        name = "Float Value",
-        description = "A float property",
-        default = 23.7,
-        min = 0.01,
-        max = 30.0
-        )
-
-    my_float_vector: FloatVectorProperty(
-        name = "Float Vector Value",
-        description="Something",
-        default=(0.0, 0.0, 0.0), 
-        min= 0.0, # float
-        max = 0.1
-    ) 
-
-    my_string: StringProperty(
-        name="User Input",
-        description=":",
-        default="",
-        maxlen=1024,
-        )
     
     search_str: StringProperty(
         name="",
@@ -185,44 +155,37 @@ class MyProperties(PropertyGroup):
         subtype="PASSWORD"
         )
 
-    my_path: StringProperty(
-        name = "Directory",
-        description="Choose a directory:",
-        default="",
-        maxlen=1024,
-        subtype='DIR_PATH'
-        )
-        
-    my_enum: EnumProperty(
-        name="Dropdown:",
-        description="Apply Data to attribute.",
-        items=[ ('OP1', "Option 1", ""),
-                ('OP2', "Option 2", ""),
-                ('OP3', "Option 3", ""),
-               ]
-        )
-
 # ------------------------------------------------------------------------
 #    Operators
 # ------------------------------------------------------------------------
 
-libs = bpy.data.libraries
-
-class WM_OT_HelloWorld(Operator):
+class Search(Operator):
     bl_label = "Search"
-    bl_idname = "wm.hello_world"
+    bl_idname = "wm.search"
 
     def execute(self, context):
         scene = context.scene
         mytool = scene.my_tool
+        global page
+        
+        page = 1
+        SearchModels(mytool.search_str)
 
-        # print the values to the console
-        print("Hello World")
-        print("bool state:", mytool.my_bool)
-        print("int value:", mytool.my_int)
-        print("float value:", mytool.my_float)
-        print("string value:", mytool.my_string)
-        print("enum state:", mytool.my_enum)
+        return {'FINISHED'}
+
+class ViewMore(Operator):
+    bl_label = "View More"
+    bl_idname = "wm.view_more"
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        global page
+        
+        page += 1
+        
+        SearchModels(mytool.search_str)
+        
 
         return {'FINISHED'}
 
@@ -233,11 +196,6 @@ class Upload(Operator):
     def execute(self, context):
         scene = context.scene
         mytool = scene.my_tool
-
-        # print the values to the console
-        print("Hello World")
-        print("username state:", mytool.username)
-        print("password value:", mytool.password)
     
 #        Export and save file
         blend_file_path = bpy.data.filepath
@@ -245,7 +203,6 @@ class Upload(Operator):
         target_file = os.path.join(directory, 'myfile.glb')
 
         bpy.ops.export_scene.gltf(filepath=target_file)
-        ShowMessageBox(mytool.username)
         
 #        Upload to CES
         upload_data = {
@@ -275,8 +232,6 @@ class Add_Object(Operator):
         obj_object = bpy.context.selected_objects[0] ####<--Fix
         
         sources.append(power_list[self.test]["_id"])
-        
-        ShowMessageBox(json.dumps(sources))
 
         return {'FINISHED'}
 
@@ -314,20 +269,22 @@ class OBJECT_PT_CustomPanel(Panel):
         return context.object is not None
 
     def draw(self, context):
+#        SearchModels()
         global custom_icons
+        global models
         layout = self.layout
         scene = context.scene
         mytool = scene.my_tool
         
         layout.label(text="Search")
         layout.prop(mytool, "search_str")
-        layout.operator("wm.hello_world")
+        layout.operator("wm.search")
         layout.separator()
         layout.prop(mytool, "title_str")
         layout.operator("wm.upload")
         layout.prop(mytool, "username")
         layout.prop(mytool, "password")
-        
+#        ShowMessageBox(json.dumps(models))
 #        list out model titles
         for model in models:
             layout.label(text=model["title"])
@@ -335,17 +292,19 @@ class OBJECT_PT_CustomPanel(Panel):
             operator = layout.operator("wm.cite")
             operator.test = model['title']
             layout.separator()
-            
         
-#        layout.prop(mytool, "my_bool")
-#        layout.prop(mytool, "my_enum", text="") 
-#        layout.prop(mytool, "my_int")
-#        layout.prop(mytool, "my_float")
-#        layout.prop(mytool, "my_float_vector", text="")
-#        layout.prop(mytool, "my_string")
-#        layout.prop(mytool, "my_path")
-        
-#        layout.menu(OBJECT_MT_CustomMenu.bl_idname, text="Presets", icon="SCENE")
+        layout.separator()
+        layout.operator("wm.view_more")
+
+
+def redraw_panel():
+    try:
+        bpy.utils.unregister_class(OBJECT_PT_CustomPanel)
+    except:
+        pass
+
+
+    bpy.utils.register_class(OBJECT_PT_CustomPanel)
 
 # ------------------------------------------------------------------------
 #    Registration
@@ -353,8 +312,9 @@ class OBJECT_PT_CustomPanel(Panel):
 
 classes = (
     MyProperties,
-    WM_OT_HelloWorld,
+    Search,
     Upload,
+    ViewMore,
     Add_Object,
     OBJECT_MT_CustomMenu,
     OBJECT_PT_CustomPanel
@@ -377,6 +337,9 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
     del bpy.types.Scene.my_tool
+
+
+
 
 
 if __name__ == "__main__":
