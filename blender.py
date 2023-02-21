@@ -16,6 +16,8 @@ list_raw = []
 
 sources = [];
 
+
+
 search = ''
 
 website = "https://christianengineeringsolutions.com"
@@ -73,20 +75,15 @@ def SearchModels(query=""):
 #    ShowMessageBox(json.dumps(models))
     #List thumbnails
     for model in models:
-    #    get file
-        req = requests.get(website + '/uploads/' + model["filename"])
-        model["file"] = req.content
-        with open('/home/uriah/Desktop/' + model["filename"], 'wb') as f:
-            f.write(req.content)
     #    get thumbnail
         req = requests.get(website + '/uploads/' + model["thumbnail"])
         model["image"] = '/home/uriah/Desktop/' + model["thumbnail"]
         with open('/home/uriah/Desktop/' + model["thumbnail"], 'wb') as f:
             f.write(req.content)
-            power_list[model["title"]] = {
-                "filepath": '/home/uriah/Desktop/' + model["filename"],
-                "_id": model["_id"]
-            }
+        power_list[model["title"]] = {
+            "filepath": '/home/uriah/Desktop/' + model["filename"],
+            "_id": model["_id"]
+        }
 #    redraw_panel()
 
 SearchModels()
@@ -223,17 +220,21 @@ class Upload(Operator):
 class Add_Object(Operator):
     bl_label = "Cite"
     bl_idname = "wm.cite"
-    test: bpy.props.StringProperty()
+    title: bpy.props.StringProperty()
+    filename: bpy.props.StringProperty()
 
     def execute(self, context):
         scene = context.scene
         mytool = scene.my_tool
-        
+            #    get file
+        req = requests.get(website + '/uploads/' + self.filename)
+        with open('/home/uriah/Desktop/' + self.filename, 'wb') as f:
+            f.write(req.content)
 #        Import Object
-        imported_object = bpy.ops.import_scene.gltf(filepath=power_list[self.test]["filepath"])
+        imported_object = bpy.ops.import_scene.gltf(filepath=power_list[self.title]["filepath"])
         obj_object = bpy.context.selected_objects[0] ####<--Fix
         
-        new_source = power_list[self.test]["_id"]
+        new_source = power_list[self.title]["_id"]
         added = False
 #        Only add source if not there already
         for source in sources:
@@ -241,7 +242,7 @@ class Add_Object(Operator):
                 added = True
                 break
         if added == False:
-            sources.append(power_list[self.test]["_id"])
+            sources.append(power_list[self.title]["_id"])
 
         return {'FINISHED'}
 
@@ -300,7 +301,8 @@ class OBJECT_PT_CustomPanel(Panel):
             layout.label(text=model["title"])
             self.layout.template_icon(icon_value=custom_icons[model["thumbnail"][:-4]].icon_id,scale=10)
             operator = layout.operator("wm.cite")
-            operator.test = model['title']
+            operator.title = model['title']
+            operator.filename = model['filename']
             layout.separator()
         
         layout.separator()
