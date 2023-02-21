@@ -1107,6 +1107,7 @@ async function getSVGs(data){
 }
 app.get('/svgs', async (req, res) => {
     var svgs = await getSVGs(req.query);
+    console.log(svgs);
     res.send(svgs);
 });
 app.post('/upload_svg', async (req, res) => {
@@ -1160,8 +1161,9 @@ app.post('/update_thumbnail', async (req, res) => {
     var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
     var buf = Buffer.from(data, 'base64');
     const fsp = require('fs').promises;
-    var thumbnailTitle = v4() + ".jpg";
+    var thumbnailTitle = v4() + ".png";
     await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
+    console.log("Okay");
     await Passage.findOneAndUpdate({_id: req.body.passageID}, {
         $set: {
             thumbnail: thumbnailTitle
@@ -1256,8 +1258,11 @@ app.post('/update_passage/', async (req, res) => {
         && mimeType.split('+')[0].split('/')[1] == 'svg'){
             passage.isSVG = true;
         }
+        else{
+            passage.isSVG = false;
+        }
         passage.mimeType = mimeType.split('/')[0];
-        if(passage.mimeType == 'model'){
+        if(passage.mimeType == 'model' || passage.isSVG){
             var data = formData.thumbnail.replace(/^data:image\/\w+;base64,/, "");
             var buf = Buffer.from(data, 'base64');
             const fsp = require('fs').promises;
@@ -1269,6 +1274,7 @@ app.post('/update_passage/', async (req, res) => {
         }
     }
     await passage.save();
+    console.log(passage);
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
