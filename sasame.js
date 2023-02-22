@@ -321,7 +321,7 @@ app.get('/donate', async function(req, res){
 
     const balance = await stripe.balance.retrieve();
     var usd = 0;
-    for(const i of balance.pending){
+    for(const i of balance.available){
         if(i.currency == 'usd'){
             usd = i.amount/100;
             break;
