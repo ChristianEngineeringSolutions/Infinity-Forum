@@ -37,8 +37,8 @@ Daemon search and pin
 Daemon Mark
 Multiple file upload?
 
-svg support
 blender add-on save temp files
+blender add-on enable chapters
 
 
 recovery exp
