@@ -2,6 +2,9 @@
 	cursor: pointer;
 	color:red;
 }
+.ql-tooltip{
+    left: 0px !important;
+}
 .passage{
     /* border-bottom: 1px dotted grey; */
     text-align: left;
