@@ -6,7 +6,6 @@ $(function(){
     hljs.configure({   // optionally configure hljs
         languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
       });
-      codeInput.registerTemplate("syntax-highlighted", codeInput.templates.hljs(hljs, [] /* Array of plugins (see below) */));
       window.onload = function() {
         var aCodes = document.getElementsByTagName('pre');
         for (var i=0; i < aCodes.length; i++) {
