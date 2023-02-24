@@ -168,6 +168,31 @@ function monthDiff(d1, d2) {
 //Get total star count and pay out users
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    var usd = totalUSD();
+    let users = await User.find({stripeOnboardingComplete: true});
+    for(const user of users){
+        //appropriate percentage based on stars
+        //users get same allotment as they have percentage of stars
+        let userUSD = (await percentStars(user.starsGiven)) * usd;
+        const transfer = await stripe.transfers.create({
+            amount: userUSD,
+            currency: "usd",
+            destination: user.stripeAccountId,
+        });
+    }
+}
+//get percentage of total stars
+async function percentStars(user_stars){
+    let final = user_stars / (await totalStars());
+    return final;
+}
+//get percentage of total usd
+async function percentUSD(donationUSD){
+    let final = donationUSD / (await totalUSD());
+    return final;
+}
+async function totalUSD(){
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const balance = await stripe.balance.retrieve();
     var usd = 0;
     for(const i of balance.available){
@@ -177,27 +202,15 @@ async function rewardUsers(){
             break;
         }
     }
+    return usd;
+}
+async function totalStars(){
     let users = await User.find({stripeOnboardingComplete: true});
     var stars = 0;
     for(const user of users){
         stars += user.starsGiven;
     }
-    for(const user of users){
-        //appropriate percentage based on stars
-        //users get same allotment as they have percentage of stars
-        let userUSD = percentStars(user.starsGiven, stars) * usd;
-        const transfer = await stripe.transfers.create({
-            amount: userUSD,
-            currency: "usd",
-            destination: user.stripeAccountId,
-        });
-    }
-}
-function percentStars(user_stars, totalStarCount){
-    return users_stars / totalStarCount;
-}
-function percentUSD(donationUSD, totalUSD){
-    return donationUSD / totalUSD;
+    return stars;
 }
 
 async function starPassage(req, amount, passageID, userID){
@@ -261,8 +274,8 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
-    // console.log(profile[0].username);
-    res.render("profile", {subPassages: false, passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
+    var usd = (await percentStars(profile.starsGiven)) * (await totalUSD());
+    res.render("profile", {usd: usd, subPassages: false, passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
@@ -274,7 +287,6 @@ app.post('/get_username_number', async function(req, res){
 });
 //HOME/INDEX
 app.get('/', async (req, res) => {
-    console.log('que');
     // DEV AUTO LOGIN
     if(!req.session.user && process.env.DEVELOPMENT == 'true'){
         console.log('2');
@@ -317,21 +329,8 @@ app.get('/', async (req, res) => {
     }
 });
 app.get('/donate', async function(req, res){
-    let users = await User.find({stripeOnboardingComplete: true});
-    var stars = 0;
-    for(const user of users){
-        stars += user.starsGiven;
-    }
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-    const balance = await stripe.balance.retrieve();
-    var usd = 0;
-    for(const i of balance.available){
-        if(i.currency == 'usd'){
-            usd = i.amount/100;
-            break;
-        }
-    }
+    var usd = await totalUSD();
+    var stars = await totalStars();
     res.render('donate', {passage: {id: 'root'}, usd: usd, stars: stars});
 });
 //Search
@@ -609,6 +608,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         var user = await User.findOne({email: payload.data.object.customer_details.email});
         if(user){
             user.stars += (parseInt(amount) / 100);
+            users.stars += (await percentUSD(parseInt(amount))) * (await totalStars());
             await user.save();
         }
     }
@@ -621,7 +621,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
             subscriber.subscribed = true;
             subscriber.lastSubscribed = Date.now().toString();
             let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
-            subscriber.stars += 80 * monthsSubscribed;
+            subscriber.stars += (await percentUSD(80 * monthsSubscribed)) * (await totalStars());
             await subscriber.save();
         }
     }
@@ -639,6 +639,9 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
   
     response.status(200).end();
   });
+  function getStarsFromUSD(usd){
+    return percentUSD(usd) * totalStars();
+  }
 app.get('/eval/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
