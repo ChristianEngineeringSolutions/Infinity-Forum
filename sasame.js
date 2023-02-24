@@ -274,9 +274,14 @@ app.post('/get_username_number', async function(req, res){
 });
 //HOME/INDEX
 app.get('/', async (req, res) => {
+    console.log('que');
     // DEV AUTO LOGIN
     if(!req.session.user && process.env.DEVELOPMENT == 'true'){
+        console.log('2');
+
         authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
+            console.log('3');
+
             req.session.user = user;
             return res.redirect('/');
         });
@@ -1446,6 +1451,7 @@ function authenticateUsername(username, password, callback) {
         } else if (!user) {
           var err = new Error('User not found.');
           err.status = 401;
+          console.log(err);
           return callback(err);
         }
         bcrypt.compare(password, user.password, function (err, result) {

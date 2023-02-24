@@ -7,11 +7,16 @@ $(function(){
         languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
       });
       window.onload = function() {
-        var aCodes = document.getElementsByTagName('pre');
-        for (var i=0; i < aCodes.length; i++) {
-            hljs.highlightBlock(aCodes[i]);
-        }
+        syntaxHighlight();
     };
+    function syntaxHighlight(){
+        var codes = document.getElementsByTagName('pre');
+        for (var i=0; i < codes.length; i++) {
+            if(codes[i].parentElement.nodeName !== 'CODE-INPUT'){
+                hljs.highlightBlock(codes[i]);
+            }
+        }
+    }
     $('#sub_passages').sortable({
         handle: '.passage_options'
     });
@@ -388,10 +393,7 @@ $(function(){
         // var content = $('#passage_content_' + _id).html();
         // $('#quill-data-' + _id).val(content);
         $('#passage_form_' + _id).submit();
-        var aCodes = document.getElementsByTagName('pre');
-        for (var i=0; i < aCodes.length; i++) {
-            hljs.highlightBlock(aCodes[i]);
-        }
+        syntaxHighlight();
         //if chapter passage in view,
         //update passage order according to sortable
         //pending ....
@@ -449,6 +451,6 @@ $(function(){
         $('#passage_js_' + _id).val($(this).val());
     });
     $(document).on('click', '.view_code', function(){
-        hljs.highlightAll();
+        syntaxHighlight();
     });
 });
