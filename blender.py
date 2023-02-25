@@ -211,6 +211,18 @@ class Search(Operator):
 
         return {'FINISHED'}
 
+# View Chapter and add index (content) to cursor
+class Select(Operator):
+    bl_label = "Select"
+    bl_idname = "wm.select"
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        pass
+
+        return {'FINISHED'}
+
 class ViewMore(Operator):
     bl_label = "View More"
     bl_idname = "wm.view_more"

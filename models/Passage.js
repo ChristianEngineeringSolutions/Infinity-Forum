@@ -21,6 +21,10 @@ const passageSchema = mongoose.Schema({
     html: String,
     css: String,
     javascript: String,
+    ext: {
+        type: String,
+        default: '.rtf'
+    },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Tag'
@@ -115,6 +119,7 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    license: String
 
 });
 var autoPopulateChildren = function(next) {
