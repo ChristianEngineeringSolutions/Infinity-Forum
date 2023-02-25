@@ -1,4 +1,5 @@
     <body>
+        <input type="hidden" id="DOMAIN"value="<%=DOMAIN%>">
         <%-include('sidebar')%>
         <div id="control_panel">
             <div id="control_nav">
@@ -6,9 +7,17 @@
                         <a href="/" class="basic_link">
                           <!-- <div id="perm_chapter">Christian Engineering Solutions</div> -->
                         </a>
+                        <%if(LOCAL == 'true'){%>
+                            <%if(CESCONNECT){%>
+                                <%var color = 'green';%>
+                            <%}else{%>
+                                <%var color = 'red';%>
+                            <%}%>
+                            <ion-icon class="<%=color%>"id="remote_toggle"title="Remote"src="/images/ionicons/sync-circle.svg"></ion-icon>
+                        <%}%>
                         <div id="options">
-                            <ion-icon id="home_link"title="Start"src="/images/ionicons/home-outline.svg"></ion-icon></a>
-                            <ion-icon class="help_read_more book_option"id=""title="Help"src="/images/ionicons/help-circle-outline.svg"></ion-icon></a>
+                            <ion-icon id="home_link"title="Start"src="/images/ionicons/home-outline.svg"></ion-icon>
+                            <!-- <ion-icon class="help_read_more book_option"id=""title="Help"src="/images/ionicons/help-circle-outline.svg"></ion-icon></a> -->
                             <%if(user != null){%>
                                 <ion-icon data-active="false"id="graphic_mode"title="Graphic Mode"src="/images/ionicons/brush-outline.svg"></ion-icon>
                                 <ion-icon class="book_option"id="bookmarks_icon"title="Bookmarks"src="/images/ionicons/bookmarks-outline.svg"></ion-icon>

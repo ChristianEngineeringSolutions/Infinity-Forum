@@ -2,7 +2,7 @@
 function updateBookmarks(){
     $.ajax({
         type: 'get',
-        url: '/get_bookmarks',
+        url: DOMAIN + '/get_bookmarks',
         success: function(data){
             $('#bookmarks').html(data);
         }
@@ -11,7 +11,7 @@ function updateBookmarks(){
 function updateDaemons(){
     $.ajax({
         type: 'get',
-        url: '/get_daemons',
+        url: DOMAIN + '/get_daemons',
         success: function(data){
             $('#daemons').html(data);
         }
@@ -26,7 +26,7 @@ $(function(){
                 orderList[i] = orderList[i].split('_')[1];
             });
             $.ajax({
-                url: '/sort_daemons',
+                url: DOMAIN + '/sort_daemons',
                 type: 'POST',
                 data: {
                     daemonOrder: JSON.stringify(orderList)
@@ -44,7 +44,7 @@ $(function(){
         var _id = $(thiz).attr('id').split('_')[2];
         $.ajax({
             type: 'post',
-            url: '/add_daemon',
+            url: DOMAIN + '/add_daemon',
             data: {
                 _id: _id,
             },
@@ -59,7 +59,7 @@ $(function(){
         var _id = $(thiz).attr('id').split('_')[2];
         $.ajax({
             type: 'post',
-            url: '/remove_daemon',
+            url: DOMAIN + '/remove_daemon',
             data: {
                 _id: _id,
             },
@@ -74,7 +74,7 @@ $(function(){
         var _chief = $('#chief_passage_id').val();
         $.ajax({
             type: 'post',
-            url: '/transfer_bookmark',
+            url: DOMAIN + '/transfer_bookmark',
             data: {
                 _id: _id,
                 parent: _chief
@@ -90,7 +90,7 @@ $(function(){
         var _id = $(thiz).attr('id').split('_')[2];
         $.ajax({
             type: 'post',
-            url: '/remove_bookmark',
+            url: DOMAIN + '/remove_bookmark',
             data: {
                 _id: _id,
             },
