@@ -9,8 +9,9 @@ const cors = require("cors");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
+var http = require('http');
+const https = require('https');
+var io = require('socket.io')(http.Server(app));
 // Models
 const User = require('./models/User');
 const Passage = require('./models/Passage');
@@ -98,8 +99,24 @@ app.use(session({
     // })
 }));
 app.use(function(req, res, next) {
-  res.locals.user = req.session.user;
-  next();
+    //shortcuts for ejs
+    res.locals.user = req.session.user;
+    res.locals.DOMAIN = process.env.DOMAIN;
+    //session var for if we are in local mode
+    //default local = true for desktop app
+    req.session.local = process.env.LOCAL;
+    req.session.local = 'true';
+    //DEV AUTO LOGIN
+    if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
+        authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
+            req.session.user = user;
+            next();
+        });
+    }
+    else{
+        next();
+    }
+
 });
 //Serving Files
 app.get('/jquery.min.js', function(req, res) {
@@ -287,46 +304,45 @@ app.post('/get_username_number', async function(req, res){
 });
 //HOME/INDEX
 app.get('/', async (req, res) => {
-    // DEV AUTO LOGIN
-    if(!req.session.user && process.env.DEVELOPMENT == 'true'){
-        console.log('2');
-
-        authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
-            console.log('3');
-
-            req.session.user = user;
-            return res.redirect('/');
+    //REX
+    if(req.session.local == 'false'){
+        //get same route from server
+        var route = req.originalUrl;
+        const remoteURL = 'https://christianengineeringsolutions.com' + route;
+        var request = https.request(remoteURL, function(response){
+            response.setEncoding('utf8');
+            response.on('data', function(data){
+                return res.send(data);
+            });
         });
+        request.end();
     }
-    else{
-        //scripts.renderBookPage(req, res);
-        let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-        let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-        let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
-        let golden = '';
-        let addPassageAllowed = true;
-        let addChapterAllowed = true;
-        var user = req.session.user || null;
-        let passages = await Passage.find({
-            deleted: false,
-        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        let passageUsers = [];
-        let bookmarks = [];
-        if(req.session.user){
-            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
-        }
-        res.render("index", {
-            subPassages: false,
-            passageTitle: 'Christian Engineering Solutions', 
-            scripts: scripts, 
-            passages: passages, 
-            passage: {id:'root', author: {
-                _id: 'root',
-                username: 'Sasame'
-            }},
-            bookmarks: bookmarks,
-        });
+    let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+    let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+    let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+    let golden = '';
+    let addPassageAllowed = true;
+    let addChapterAllowed = true;
+    var user = req.session.user || null;
+    let passages = await Passage.find({
+        deleted: false,
+    }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    let passageUsers = [];
+    let bookmarks = [];
+    if(req.session.user){
+        bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
     }
+    res.render("index", {
+        subPassages: false,
+        passageTitle: 'Christian Engineering Solutions', 
+        scripts: scripts, 
+        passages: passages, 
+        passage: {id:'root', author: {
+            _id: 'root',
+            username: 'Sasame'
+        }},
+        bookmarks: bookmarks,
+    });
 });
 app.get('/donate', async function(req, res){
     var usd = await totalUSD();

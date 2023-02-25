@@ -44,3 +44,14 @@ File system/ sasame rex -CES Connect/ blender chapter/cursor
 
 
 recovery exp
+
+---------------------------------------------------
+
+Database merge notes:
+reset passages to 0 stars on local.
+When sent back to remote also reset to 0 stars.
+So credit not gained until on mainserver or subserver
+
+add passages to author based on same email
+
+Sending passage forward or back is the same as a citation
