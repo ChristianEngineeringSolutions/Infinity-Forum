@@ -28,26 +28,14 @@ module.exports = {
         await Passage.deleteOne({_id: passageID.trim()});
         callback();
     },
-    copyPassage: async function(req, res, callback){
-        console.log('copied');
-        //get passage to copy
-        let user;
-        let passage = await Passage.findOne({_id: req.body._id});
-        //reset author list
-        if (typeof req.session.user === 'undefined' || req.session.user === null) {
-            user = null;
-        }
-        else{
-            user = [req.session.user];
-        }
+    copyPassage: async function(passage, user, parent, callback){
         //add source
         let sourceList = passage.sourceList;
         sourceList.push(passage._id);
-        var parent = req.body.parent == 'root' ? null : req.body.parent;
         //duplicate main passage
         let copy = await Passage.create({
             parent: parent,
-            author: req.session.user,
+            author: user[0],
             users: user,
             sourceList: sourceList,
             title: passage.title,
@@ -58,8 +46,8 @@ module.exports = {
             filename: passage.filename
         });
         //Add copy to passage it was duplicated into
-        if(req.body.parent != "root"){
-            let parentPassage = await Passage.findOne({_id: req.body.parent});
+        if(parent != "root"){
+            let parentPassage = await Passage.findOne({_id: parent});
             copy.parent = parentPassage;
             parentPassage.passages.push(copy);
             await copy.save();
@@ -72,7 +60,7 @@ module.exports = {
                 let sourceList = p.sourceList;
                 sourceList.push(p._id);
                 let pcopy = await Passage.create({
-                    author: req.session.user,
+                    author: user[0],
                     users: user,
                     parent: copy,
                     sourceList: sourceList,
