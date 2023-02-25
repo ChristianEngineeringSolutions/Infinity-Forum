@@ -1239,6 +1239,8 @@ app.post('/update_passage/', async (req, res) => {
     passage.title = formData.title;
     passage.content = formData.content;
     passage.tags = formData.tags;
+    passage.code = formData.code;
+    passage.ext = formData.ext;
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
@@ -1305,6 +1307,70 @@ app.get('/verify/:user_id/:token', function (req, res) {
         }
     });
 });
+
+//For Sasame Rex - CES Connect
+class Directory {
+    constructor(passage){
+        this.title = passage.title;
+        //index.html (rtf from quill)
+        this.index = passage.content;
+        this.contents = [];
+    }
+}
+class File {
+    constructor(passage){
+        this.title = passage.title;
+        this.content = passage.content;
+        this.ext = passage.ext;
+    }
+}
+
+function getDirectoryStructure(passage){
+    var directory = new Directory(passage);
+    // populate directory recursively
+    (function lambda(passages, directory){
+        for(const p of passages){
+            if(p.passages.length > 0){
+                let dir = new Directory(p);
+                directory.contents.push(dir);
+                lambda(p, dir);
+            }
+            else{
+                let file = new File(p);
+                directory.content.push(file);
+            }
+        }
+    })(passage.passages, directory);
+    return directory;
+}
+
+async function decodeDirectoryStructure(location, directory){
+    await fs.mkdir(location + '/' + directory.title);
+    await fs.writeFile(location + '/' + directory.title + '/index.html', directory.content);
+    for(const item of directory.contents){
+        if(item instanceof Directory){
+            await decodeDirectoryStructure(location + '/' + directory.title, item);
+        }
+        else if(item instanceof File){
+            await fs.writeFile(location + '/' + directory.title + '/' + item.title + '.' + item.ext, item.content);
+        }
+    }
+}
+
+async function loadFileSystem(){
+    var location = '/filesystem';
+    //get all root passages
+    var passages = await Passage.find({parent: null});
+    //get all root directories
+    var directories = [];
+    for(const passage of passages){
+        directories.push(getDirectoryStructure(passage));
+    }
+    //implement in filesystem
+    for(const directory of directories){
+        await decodeDirectoryStructure(location, directory);
+    }
+}
 
 /*
     ROUTERS FOR FILESTREAM

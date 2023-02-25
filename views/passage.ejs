@@ -145,9 +145,14 @@
         <%}%>
     <%}%>
     <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced">
+        <!-- TODO: If ext is mixed -->
         <div class="code_display display_html" name="html" cols="30" rows="10" placeholder="HTML"><pre><code class="language-html"><%=passage.html || 'HTML'%></code></pre></div>
-            <div class="code_display display_css" name="css" cols="30" rows="10" placeholder="CSS"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
-            <div class="code_display display_js" name="js" cols="30" rows="10" placeholder="Javascript"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
+        <div class="code_display display_css" name="css" cols="30" rows="10" placeholder="CSS"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
+        <div class="code_display display_js" name="js" cols="30" rows="10" placeholder="Javascript"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
+        <!-- Else just show code for ext -->
+        <!--  -->
+        <!-- Show .EXT -->
+        <!-- Show License -->
     </div>
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
     <%if((passage.html && passage.html.length> 1) || (passage.javascript && passage.javascript.length> 1) || (passage.css && passage.css.length> 1)){%>
