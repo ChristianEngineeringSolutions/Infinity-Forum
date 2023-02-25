@@ -46,7 +46,7 @@ module.exports = {
             filename: passage.filename
         });
         //Add copy to passage it was duplicated into
-        if(parent != "root"){
+        if(parent != "root" && parent != null){
             let parentPassage = await Passage.findOne({_id: parent});
             copy.parent = parentPassage;
             parentPassage.passages.push(copy);

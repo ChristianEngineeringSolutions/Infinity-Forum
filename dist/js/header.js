@@ -164,7 +164,7 @@ $(function(){
             let pdom = ui.draggable;
             $.ajax({
                 type: 'post',
-                url: '/move_passage',
+                url: DOMAIN + '/move_passage',
                 data: {
                     destination_id: destination_id,
                     passage_id: passage_id
@@ -206,7 +206,7 @@ $(function(){
             // $(this).text(title);
             // $.ajax({
             //     type: 'get',
-            //     url: '/tab/' + href,
+            //     url: DOMAIN + '/tab/' + href,
             //     success: function(data){
             //         $('#passage_wrapper').html(data);
             //     }

@@ -103,11 +103,10 @@ app.use(function(req, res, next) {
     res.locals.user = req.session.user;
     res.locals.DOMAIN = process.env.DOMAIN;
     res.locals.LOCAL = process.env.LOCAL;
-    //session var for if we are in local mode
-    //default local = true for desktop app
-    req.session.local = process.env.LOCAL;
-    req.session.local = 'false';
-    req.session.local = 'true';
+    if(!req.session.CESCONNECT){
+        req.session.CESCONNECT = false;
+    }
+    res.locals.CESCONNECT = req.session.CESCONNECT;
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
         authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
@@ -118,7 +117,6 @@ app.use(function(req, res, next) {
     else{
         next();
     }
-
 });
 //Serving Files
 app.get('/jquery.min.js', function(req, res) {
@@ -387,6 +385,33 @@ function getRemotePage(req, res){
             var script = `
             <script>
                 $(function(){
+                    var html = '<ion-icon style="float:left;"class="green"id="remote_toggle"title="Remote"src="/images/ionicons/sync-circle.svg"></ion-icon>';
+                    $(document).on('click', '#remote_toggle', function(){
+                        //green
+                        if($(this).css('color') == 'rgb(0, 128, 0)'){
+                            $(this).css('color', 'red');
+                            $.ajax({
+                                type: 'post',
+                                url: '/cesconnect/',
+                                data: {},
+                                success: function(data){
+                                    window.location.reload();
+                                }
+                            });
+                        }
+                        else{
+                            $(this).css('color', 'rgb(0, 128, 0)');
+                            $.ajax({
+                                type: 'post',
+                                url: '/cesconnect/',
+                                data: {},
+                                success: function(data){
+                                    window.location.reload();
+                                }
+                            });
+                        }
+                    });
+                    $('#main_header').prepend(html);
                     $('.passage').each(function(p){
                         $(this).children('.passage_options').append('<li class="rex_cite passage_option">Cite</li>');
                     });
@@ -430,9 +455,14 @@ function getRemotePage(req, res){
     });
     request.end();
 }
+app.post('/cesconnect', function(req, res){
+    req.session.CESCONNECT = !req.session.CESCONNECT;
+    res.send("Done.");
+});
 app.get('/', async (req, res) => {
     //REX
-    if(req.session.local == 'false'){
+    if(req.session.CESCONNECT){
+        console.log('test');
         getRemotePage(req, res);
     }
     else{
@@ -465,6 +495,9 @@ app.get('/', async (req, res) => {
     }
 });
 app.get('/donate', async function(req, res){
+    if(req.session.local == 'false'){
+        return getRemotePage(req, res);
+    }
     var usd = await totalUSD();
     var stars = await totalStars();
     res.render('donate', {passage: {id: 'root'}, usd: usd, stars: stars});

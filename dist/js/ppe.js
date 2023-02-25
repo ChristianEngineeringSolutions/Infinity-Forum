@@ -331,7 +331,7 @@ $(function(){
                         //Now add the passage to database
                         $.ajax({
                             type: 'post',
-                            url: '/ppe_add',
+                            url: DOMAIN + '/ppe_add',
                             data: {
                                 dataURL: dataURL,
                                 parent: $('#chief_passage_id').val(),
@@ -376,7 +376,7 @@ $(function(){
         function loadPPEQueue(){
             $.ajax({
                 type: 'get',
-                url: '/ppe_queue',
+                url: DOMAIN + '/ppe_queue',
                 data: {
                     parent: $('#chief_passage_id').val(),
                 },
@@ -392,7 +392,7 @@ $(function(){
             var isProfile = $('#is_profile').val();
             $.ajax({
                 type: 'post',
-                url: '/paginate',
+                url: DOMAIN + '/paginate',
                 data: {
                     page: PPEPage,
                     passage: $('#chief_passage_id').val(),

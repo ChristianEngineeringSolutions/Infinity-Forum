@@ -2,6 +2,9 @@
     #side_panel, #side_panel_inner{
         width: 100%;
     }
+    #remote_toggle{
+        font-size: 0.7em;
+    }
     #side_panel_close{
         font-size: 2em;
         float: right;

@@ -8,6 +8,9 @@ var page = 1;
 
 var PPEPage = 1;
 
+var DOMAIN;
+
+
 function isMobile(){
     return window.matchMedia("(max-width: 550px)").matches;
 }
@@ -15,6 +18,7 @@ $( function() {
     if(!isMobile()){
         $(document).tooltip();
     }
+    DOMAIN = $('#DOMAIN').val();
 } );    
 
 function jqueryToggle(thiz, func1, func2, dataType='toggle', dataValue=[0, 1]){
@@ -58,7 +62,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: '/search/',
+                url: DOMAIN + '/search/',
                 data: {
                     search: thiz.val()
                 },
@@ -76,7 +80,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: '/ppe_search/',
+                url: DOMAIN + '/ppe_search/',
                 data: {
                     search: thiz.val(),
                     parent: $('#chief_passage_id').val()
@@ -98,7 +102,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: '/search_profile/',
+                url: DOMAIN + '/search_profile/',
                 data: {
                     search: thiz.val(),
                     _id: $('#is_profile').val()
@@ -118,7 +122,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: '/search_leaderboard/',
+                url: DOMAIN + '/search_leaderboard/',
                 data: {
                     search: thiz.val()
                 },
@@ -137,7 +141,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: '/search_passage/',
+                url: DOMAIN + '/search_passage/',
                 data: {
                     search: thiz.val(),
                     _id: $('#chief_passage_id').val()
@@ -178,7 +182,7 @@ $(function(){
         var newCount = parseInt($('.star_count_'+_id).text(), 10) + 1;
         $.ajax({
             type: 'post',
-            url: '/star/',
+            url: DOMAIN + '/star/',
             data: {
                 _id: _id
             },
@@ -214,11 +218,36 @@ $(function(){
             });
         }
     });
+    $(document).on('click', '#remote_toggle', function(){
+        //green
+        if($(this).css('color') == 'rgb(0, 128, 0)'){
+            $(this).css('color', 'red');
+            $.ajax({
+                type: 'post',
+                url: DOMAIN + '/cesconnect/',
+                data: {},
+                success: function(data){
+                    window.location.reload();
+                }
+            });
+        }
+        else{
+            $(this).css('color', 'rgb(0, 128, 0)');
+            $.ajax({
+                type: 'post',
+                url: DOMAIN + '/cesconnect/',
+                data: {},
+                success: function(data){
+                    window.location.reload();
+                }
+            });
+        }
+    });
     $('[id^=update_order_]').on('click', function(){
         var _id = $(this).attr('id').split('_')[1];
         $.ajax({
             type: 'post',
-            url: '/update_chapter_order/',
+            url: DOMAIN + '/update_chapter_order/',
             data: {
                 passages: JSON.stringify($('#sub_passages').sortable('toArray')),
                 chapterID: $('#parent_chapter_id').val()

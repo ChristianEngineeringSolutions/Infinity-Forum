@@ -30,7 +30,7 @@
             <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
             <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
             <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
-            <%if(LOCAL){%>
+            <%if(LOCAL == 'true'){%>
                 <!-- Push passage to server -->
                 <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
             <%}%>

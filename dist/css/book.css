@@ -1,6 +1,16 @@
 body{
     /*background: #000;*/
 }
+#remote_toggle{
+    float: left;
+    /* font-size: 0.7em; */
+}
+.green{
+    color: green;
+}
+.red{
+    color: red;
+}
 .basic_link{
     text-decoration: none;
     color: inherit;

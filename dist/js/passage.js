@@ -144,7 +144,7 @@ $(function(){
                     var thumbnail = canvas.toDataURL();
                     $.ajax({
                         type: 'post',
-                        url: '/update_thumbnail/',
+                        url: DOMAIN + '/update_thumbnail/',
                         data: {
                             passageID: _id,
                             thumbnail: thumbnail
@@ -166,7 +166,7 @@ $(function(){
         //create a passage and then show it
         $.ajax({
             type: 'post',
-            url: '/create_passage/',
+            url: DOMAIN + '/create_passage/',
             data: {
                 passageID: chief
             },
@@ -194,7 +194,7 @@ $(function(){
         var _id = getPassageId(this);
         $.ajax({
             type: 'post',
-            url: '/delete_passage/',
+            url: DOMAIN + '/delete_passage/',
             data: {
                 _id: _id
             },
@@ -218,7 +218,7 @@ $(function(){
         var thiz = $(this);
         $.ajax({
             type: 'post',
-            url: '/copy_passage',
+            url: DOMAIN + '/copy_passage',
             data: {
                 _id: _id,
                 parent: $('#chief_passage_id').val()
@@ -234,7 +234,7 @@ $(function(){
         var thiz = $(this);
         $.ajax({
             type: 'post',
-            url: '/bookmark_passage',
+            url: DOMAIN + '/bookmark_passage',
             data: {
                 _id: _id,
             },
@@ -248,7 +248,7 @@ $(function(){
         if(e.keyCode == 13){
             var thiz = $(this);
             $.ajax({
-                url: '/add_user',
+                url: DOMAIN + '/add_user',
                 type: 'POST',
                 data: {
                     passageId: thiz.attr('id').split('_').at(-1),
@@ -263,7 +263,7 @@ $(function(){
     });
     $(document).on('click', '.passage_remove_user', function(e){
         $.ajax({
-            url: '/remove_user',
+            url: DOMAIN + '/remove_user',
             type: 'POST',
             data: {
                 passageId: $(this).attr('id').split('_').at(-1),
@@ -282,7 +282,7 @@ $(function(){
         let setting = $(this).data('setting');
         var thiz = $(this);
         $.ajax({
-            url: '/passage_setting',
+            url: DOMAIN + '/passage_setting',
             type: 'POST',
             data: {
                 _id: _id,
@@ -356,7 +356,7 @@ $(function(){
         var thiz = $(this);
         var formData = new FormData(this);
         $.ajax({
-            url: '/update_passage',
+            url: DOMAIN + '/update_passage',
             type: 'POST',
             data: formData,
             success: function (data) {
@@ -372,7 +372,7 @@ $(function(){
         var passage_id = $(this).attr('id').split('_').at(-1);
         var amount = $('#star_number_' + passage_id).val();
         $.ajax({
-            url: '/star_passage/',
+            url: DOMAIN + '/star_passage/',
             type: 'POST',
             data: {
                 passage_id: passage_id,
@@ -407,7 +407,7 @@ $(function(){
                 });
             }
             $.ajax({
-                url: '/update_passage_order',
+                url: DOMAIN + '/update_passage_order',
                 type: 'POST',
                 data: {
                     _id: _id,
@@ -426,7 +426,7 @@ $(function(){
         page += 1;
         $.ajax({
             type: 'post',
-            url: '/paginate',
+            url: DOMAIN + '/paginate',
             data: {
                 page: page,
                 passage: $('#chief_passage_id').val(),
