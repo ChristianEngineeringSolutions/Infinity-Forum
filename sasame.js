@@ -102,9 +102,11 @@ app.use(function(req, res, next) {
     //shortcuts for ejs
     res.locals.user = req.session.user;
     res.locals.DOMAIN = process.env.DOMAIN;
+    res.locals.LOCAL = process.env.LOCAL;
     //session var for if we are in local mode
     //default local = true for desktop app
     req.session.local = process.env.LOCAL;
+    req.session.local = 'false';
     req.session.local = 'true';
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
@@ -303,46 +305,164 @@ app.post('/get_username_number', async function(req, res){
     res.send(number + '');
 });
 //HOME/INDEX
+app.get('/rex_login', async (req, res) => {
+    res.render('rex_login');
+});
+async function getFullPassage(_id){
+    //get fully populated passage as JSON
+    var passage = await Passage.findOne({_id: _id});
+}
+// function getFromRemote(url){
+//     var request = https.request(remoteURL, function(response){
+//         response.setEncoding('utf8');
+//         response.on('data', function(data){
+//             var final = data.replaceAll("/css/", "https://christianengineeringsolutions.com/css/");
+//             var final = data.replaceAll("/js/", "https://christianengineeringsolutions.com/js/");
+//             var final = data.replaceAll("/images/", "https://christianengineeringsolutions.com/images/");
+//             return res.send(final);
+//         });
+//     });
+//     request.end();
+// }
+
+if(process.env.LOCAL == 'true'){
+    app.post('/push', async (req, res) => {
+        var passage = await Passage.findOne({_id: req.body._id});
+        var postData = {
+            passage: passage
+        };
+        var options = {
+            hostname: 'https://christianengineeringsolutions.com',
+            path: '/pull',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': postData.length
+            }
+          };
+        var request = https.request("https://christianengineeringsolutions.com/pull", function(response){
+
+        });
+    });
+}
+app.get('/pull', async (req, res) => {
+    //all pulled passages start off at root level
+    //copy passage
+    passageController.copyPassage(req.params.passage, [req.session.user], null, function(){
+
+    });
+});
+app.get('/get_passage', async (req, res) => {
+    return await Passage.findOne({_id: req.params._id});
+});
+app.post('/passage_from_json', async (req, res) => {
+    //copy passage
+    var copy = passageController.copyPassage(req.params.passage, [req.session.user], null, function(){
+        
+    });
+    //bookmark passage
+    let user = await User.findOne({_id: req.session.user._id});
+    user.bookmarks.push(copy._id);
+    await user.save();
+});
+function getRemotePage(req, res){
+    //get same route from server
+    var route = req.originalUrl;
+    const remoteURL = 'https://christianengineeringsolutions.com' + route;
+    var output = '';
+    var request = https.request(remoteURL, function(response){
+        response.setEncoding('utf8');
+        response.on('data', function(data){
+            var final = data.replaceAll("/css/", "https://christianengineeringsolutions.com/css/");
+            final = final.replaceAll("/js/", "https://christianengineeringsolutions.com/js/");
+            final = final.replaceAll("/eval/", "https://christianengineeringsolutions.com/eval/");
+            final = final.replaceAll("/images/", "https://christianengineeringsolutions.com/images/");
+            final = final.replaceAll("/jquery", "https://christianengineeringsolutions.com/jquery");
+            final = final.replaceAll("https://unpkg.com/three@0.87.1/exampleshttps://christianengineeringsolutions.com/js/loaders/GLTFLoader.js", "https://unpkg.com/three@0.87.1/examples/js/loaders/GLTFLoader.js");
+            final = final.replaceAll("/ionicons.esm.js", "https://christianengineeringsolutions.com/ionicons.esm.js");
+            final = final.replaceAll("/ionicons.js", "https://christianengineeringsolutions.com/ionicons.js");
+            output += final;
+        });
+        response.on('end', function(){
+            var script = `
+            <script>
+                $(function(){
+                    $('.passage').each(function(p){
+                        $(this).children('.passage_options').append('<li class="rex_cite passage_option">Cite</li>');
+                    });
+                    $(document).on('click', '.rex_cite', function(){
+                        var _id = ''; //get from DOM
+                        //1. Get passage from remote
+                        $.ajax({
+                            type: 'get',
+                            url: 'https://christianengineeringsolutions/get_passage',
+                            data: {
+                                _id: _id,
+                            },
+                            success: function(data){
+                                flashIcon($('#transfer_bookmark_' + _id), 'green');
+                                $('#passage_wrapper').append(data);
+                                //2. update details to local
+                                $.ajax({
+                                    type: 'post',
+                                    url: '/passage_from_json',
+                                    data: {
+                                        passage: data,
+                                    },
+                                    //this route should also bookmark the passage
+                                    success: function(data){
+                                       //show some success alert
+                                       alert("Done"); //temp
+    
+                                    }
+                                });
+
+
+                            }
+                        });
+
+                    });
+                });
+            </script>
+            `;
+            return res.send(output + script);
+        });
+    });
+    request.end();
+}
 app.get('/', async (req, res) => {
     //REX
     if(req.session.local == 'false'){
-        //get same route from server
-        var route = req.originalUrl;
-        const remoteURL = 'https://christianengineeringsolutions.com' + route;
-        var request = https.request(remoteURL, function(response){
-            response.setEncoding('utf8');
-            response.on('data', function(data){
-                return res.send(data);
-            });
+        getRemotePage(req, res);
+    }
+    else{
+        let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+        let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+        let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+        let golden = '';
+        let addPassageAllowed = true;
+        let addChapterAllowed = true;
+        var user = req.session.user || null;
+        let passages = await Passage.find({
+            deleted: false,
+        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        let passageUsers = [];
+        let bookmarks = [];
+        if(req.session.user){
+            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        }
+        res.render("index", {
+            subPassages: false,
+            passageTitle: 'Christian Engineering Solutions', 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
         });
-        request.end();
     }
-    let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-    let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-    let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
-    let golden = '';
-    let addPassageAllowed = true;
-    let addChapterAllowed = true;
-    var user = req.session.user || null;
-    let passages = await Passage.find({
-        deleted: false,
-    }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    let passageUsers = [];
-    let bookmarks = [];
-    if(req.session.user){
-        bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
-    }
-    res.render("index", {
-        subPassages: false,
-        passageTitle: 'Christian Engineering Solutions', 
-        scripts: scripts, 
-        passages: passages, 
-        passage: {id:'root', author: {
-            _id: 'root',
-            username: 'Sasame'
-        }},
-        bookmarks: bookmarks,
-    });
 });
 app.get('/donate', async function(req, res){
     var usd = await totalUSD();
@@ -440,8 +560,18 @@ app.post('/transfer_bookmark', async (req, res) => {
             return res.send("<h2 style='text-align:center;color:red;'>Passage is private. Ask to be on the Userlist, or consider Bookmarking it, and copying it over to your own passage.</h2>");
         }
     }
-    //First copy the passage
-    let copy = await passageController.copyPassage(req, res, function(){
+    //get passage to copy
+    let user;
+    let passage = await Passage.findOne({_id: req.body._id});
+    //reset author list
+    if (typeof req.session.user === 'undefined' || req.session.user === null) {
+        user = null;
+    }
+    else{
+        user = [req.session.user];
+    }
+    parent = req.body.parent == 'root' ? null : req.body.parent;
+    let copy = await passageController.copyPassage(passage, user, parent, function(){
         
     });
     res.render('passage', {subPassages: false, passage: copy, sub: true});

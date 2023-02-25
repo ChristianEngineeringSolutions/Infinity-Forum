@@ -423,6 +423,7 @@ $(function(){
     $(document).on('click', '#view_more', function(){
         //check if home, search, or profile
         var isProfile = $('#is_profile').val();
+        page += 1;
         $.ajax({
             type: 'post',
             url: '/paginate',
@@ -433,7 +434,6 @@ $(function(){
                 search: $('#search').val()
             },
             success: function(data){
-                page += 1;
                 $('#passage_wrapper').append(data);
             }
         });

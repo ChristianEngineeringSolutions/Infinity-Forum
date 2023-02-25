@@ -1,0 +1,51 @@
+<%- include('html_head') %>
+</head>
+<%- include('header') %>
+<br><br><br><br><br><br>
+<input id="chief_passage_id"type="hidden" value="root"name="">
+<h1 style="text-align: center;margin-bottom: 10px;">Login</h1>
+<form id="login_form" action="/login/" method="POST">
+    <div>
+        <label>Username or Email:</label>
+        <input id="login_username"class=""type="text" name="username"autocomplete="off"/>
+    </div>
+    <div>
+        <label>Password:</label>
+        <input id="login_password"class=""type="password" name="password"autocomplete="off"/>
+    </div>
+    <div>
+        <input id="login_button"type="submit" value="Login"autocomplete="off"/>
+    </div>
+    <a href="/recover">Recover Password</a>
+  </form>
+  <h1 style="text-align: center;margin-bottom: 10px;">Register</h1>
+  <form id="register_form" action="/register/" method="POST">
+    Username: <span id="register_username_load"></span>
+    <br><br>
+    <div>
+        <label>Name:</label>
+        <input placeholder="" id="register_username" type="text" name="username"autocomplete="off" required/>
+    </div>
+    <div>
+        <label>Email:</label>
+        <input placeholder="Recommended" id="register_email" type="text" name="email"autocomplete="off"/>
+    </div>
+    <div>
+        <label>Password:</label>
+        <input id="register_password" type="password" name="password"autocomplete="off" required/>
+    </div>
+    <div>
+        <label>Confirm Password:</label>
+        <input id="register_confirm" type="password" name="passwordConf"autocomplete="off" required/>
+    </div>
+    <div>
+        <label>I accept the <a target="_blank"href="/terms">terms</a></label>
+        <input type="checkbox" required>
+    </div>
+    <div>
+        <input id="register_button"type="submit" value="Register"/>
+    </div>
+  </form>
+  <script src="/js/login_register_form.js"></script>
+  <br><br><br><br>
+  <%- include('footer') %>
