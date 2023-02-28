@@ -55,3 +55,10 @@ So credit not gained until on mainserver or subserver
 add passages to author based on same email
 
 Sending passage forward or back is the same as a citation
+
+
+Order:
+Editor,
+Download Passage (FileSystem)
+Push/pull
+Blender extension

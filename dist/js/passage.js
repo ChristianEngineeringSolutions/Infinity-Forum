@@ -54,18 +54,27 @@ $(function(){
             
                 ['clean']                                         // remove formatting button
             ];
-            var quill = new Quill('#passage_content_' + _id, {
-            modules: {
-                syntax: true,              // Include syntax module
-                toolbar: toolbarOptions,  // Include button in toolbar
-            },
-            theme: 'snow'
-            });
-            quill.root.innerHTML = document.getElementById('quill-data-' + _id).value;
-            quill.on('text-change', function(delta, source) {
-                var justHtml = quill.root.innerHTML;
-                document.getElementById('quill-data-' + _id).value = justHtml;
-            });
+            // Only do if quill container exists (rtf)
+            try{
+                var quill = new Quill('#passage_content_' + _id, {
+                modules: {
+                    syntax: true,              // Include syntax module
+                    toolbar: toolbarOptions,  // Include button in toolbar
+                },
+                theme: 'snow'
+                });
+                quill.root.innerHTML = document.getElementById('quill-data-' + _id).value;
+                quill.on('text-change', function(delta, source) {
+                    var justHtml = quill.root.innerHTML;
+                    document.getElementById('quill-data-' + _id).value = justHtml;
+                });
+            }
+            catch(error){
+                console.log(error);
+            }
+            finally{
+
+            }
             $(this).data('quill', true);
         }
         $('#passage_form_' + _id).slideToggle();
@@ -452,5 +461,27 @@ $(function(){
     });
     $(document).on('click', '.view_code', function(){
         syntaxHighlight();
+    });
+    $(document).on('keyup', '.passage_ext', function(){
+        var _id = $(this).attr('id').split('_').at(-1);
+        var langList = {
+            ".py": 'python',
+            ".js": 'javascript',
+            ".css": 'css',
+            ".html": 'html',
+        };
+        //GET more extensive list
+        function getLang(val){
+            return {
+                ".py": 'python',
+                ".js": 'javascript',
+                ".css": 'css',
+                ".html": 'html',
+            }[val];
+        }
+        var lang = getLang($(this).val());
+        alert(lang);
+        var code = $('#display_ext_'+_id).val();
+        $('#display_ext_'+_id).replaceWith('<code-input value="'+code+'"lang="'+lang.toString()+'"class="code_display display_ext" id="display_ext_'+_id+'>"></code-input>');
     });
 });
