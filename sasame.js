@@ -185,7 +185,8 @@ function monthDiff(d1, d2) {
 //Get total star count and pay out users
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    var usd = totalUSD();
+    //80% of funds to users
+    var usd = totalUSD() * 0.80;
     let users = await User.find({stripeOnboardingComplete: true});
     for(const user of users){
         //appropriate percentage based on stars
@@ -198,6 +199,7 @@ async function rewardUsers(){
         });
     }
 }
+
 //get percentage of total stars
 async function percentStars(user_stars){
     let final = user_stars / (await totalStars());
@@ -214,8 +216,7 @@ async function totalUSD(){
     var usd = 0;
     for(const i of balance.available){
         if(i.currency == 'usd'){
-            //80 of balance to Users
-            usd = (i.amount - (i.amount*0.20)) / 100;
+            usd = i.amount / 100;
             break;
         }
     }
@@ -291,7 +292,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
-    var usd = (await percentStars(profile.starsGiven)) * (await totalUSD());
+    var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
     res.render("profile", {usd: usd, subPassages: false, passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
 });
 app.get('/loginform', function(req, res){
@@ -495,7 +496,7 @@ app.get('/', async (req, res) => {
     }
 });
 app.get('/donate', async function(req, res){
-    if(req.session.local == 'false'){
+    if(req.session.CESCONNECT){
         return getRemotePage(req, res);
     }
     var usd = await totalUSD();
@@ -673,6 +674,9 @@ app.post('/sort_daemons', async (req, res) => {
     }
 });
 app.get('/leaderboard', async (req, res) => {
+    if(req.session.CESCONNECT){
+        return getRemotePage(req, res);
+    }
     let users = await User.find().sort('-starsGiven');
     res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts});
 });
@@ -822,6 +826,9 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     return percentUSD(usd) * totalStars();
   }
 app.get('/eval/:passage_id', async function(req, res){
+    if(req.session.CESCONNECT){
+        return getRemotePage(req, res);
+    }
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
     //stick together code for all sub passages
@@ -847,6 +854,9 @@ function getAllSubPassageCode(passage, all){
     return all;
 }
 app.get('/passage/:passage_title/:passage_id', async function(req, res){
+    if(req.session.CESCONNECT){
+        return getRemotePage(req, res);
+    }
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
@@ -1531,7 +1541,11 @@ async function decodeDirectoryStructure(location, directory){
             await decodeDirectoryStructure(location + '/' + directory.title, item);
         }
         else if(item instanceof File){
-            await fs.writeFile(location + '/' + directory.title + '/' + item.title + '.' + item.ext, item.content);
+            var ext = item.ext;
+            if(ext == 'mixed'){
+                ext = 'html';
+            }
+            await fs.writeFile(location + '/' + directory.title + '/' + item.title + '.' + ext, item.content);
         }
     }
 }

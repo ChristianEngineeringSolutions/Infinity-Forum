@@ -116,7 +116,7 @@
     cursor: pointer;
     color: black;
 }
-.passage_title, .passage_file, .passage_plus_description{
+.passage_title, .passage_file, .passage_plus_description, .passage_ext{
     all: revert;
     display: block;
     width: 99%;
