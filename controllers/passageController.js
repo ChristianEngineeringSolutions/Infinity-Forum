@@ -44,6 +44,8 @@ module.exports = {
             css: passage.css,
             javascript: passage.javascript,
             filename: passage.filename
+            code: passage.code,
+            lang: passage.lang
         });
         //Add copy to passage it was duplicated into
         if(parent != "root" && parent != null){
@@ -69,7 +71,9 @@ module.exports = {
                     html: p.html,
                     css: p.css,
                     javascript: p.javascript,
-                    filename: p.filename
+                    filename: p.filename,
+                    code: p.code,
+                    lang: p.lang
                 });
                 copy.passages.push(pcopy._id);
                 await copy.save();
