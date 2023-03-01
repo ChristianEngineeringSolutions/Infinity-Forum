@@ -1,6 +1,7 @@
 node_modules
 dist/recordings/*
 dist/uploads/*
+dist/filesystem/*
 *.swp
 *.log
 .env
