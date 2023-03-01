@@ -16,8 +16,11 @@ Our Technology (Sasame) is scripture based in its goals and foundations. Open-So
 # App
 
 Currently:
+
 Git clone
+
 Update env file
+
 install and run mongod
 
 # Website
