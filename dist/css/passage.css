@@ -127,7 +127,7 @@
     padding-right: 0px;
 }
 .hljs{
-    background: transparent;
+    /* background: transparent; */
 }
 .ql-snow .ql-editor pre.ql-syntax{
     color: #000;
@@ -200,6 +200,7 @@
     resize: both;
     vertical-align: top;
     height: 500px;
+    background: white;
 }
 .display_code{
     width: 99%;
