@@ -12,3 +12,18 @@ Our Technology (Sasame) is scripture based in its goals and foundations. Open-So
 ## Streamlined Search and Citations
 ## Modular Applications
 ## Peer-to-Peer and Encryption Technologies (Under Development)
+
+# App
+
+Currently:
+Git clone
+Update env file
+install and run mongod
+
+# Website
+
+Public Version available at:
+christianengineeringsolutions.com
+
+Use the App for more features
+(CES Connect, Filesystem, and More!)
