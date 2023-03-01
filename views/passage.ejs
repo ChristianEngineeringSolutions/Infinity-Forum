@@ -33,6 +33,8 @@
             <%if(LOCAL == 'true'){%>
                 <!-- Push passage to server -->
                 <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
+                <!-- Install to FileSystem -->
+                <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
             <%}%>
         <%}%>
         <%}%>
@@ -64,7 +66,7 @@
         <!-- <li class="passage_tab">Alternates</li> -->
     <!-- </ul> -->
     <%if(user && passage.author._id == user._id){%>
-        <%- include('passage_form') %>
+        <%- include('editor') %>
     <%}else{%>
     <%}%>
     <!-- Hide Iframe window if there is neither html nor js -->
@@ -149,17 +151,18 @@
         <%}%>
     <%}%>
     <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced">
-        <!-- TODO: If ext is mixed -->
-        <div class="code_display display_html" name="html" cols="30" rows="10" placeholder="HTML"><pre><code class="language-html"><%=passage.html || 'HTML'%></code></pre></div>
-        <div class="code_display display_css" name="css" cols="30" rows="10" placeholder="CSS"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
-        <div class="code_display display_js" name="js" cols="30" rows="10" placeholder="Javascript"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
-        <!-- Else just show code for ext -->
-        <!--  -->
+        <%if(passage.lang == 'mixed' || passage.lang == 'rich'){%>
+            <div class="code_display display_html"><pre><code class="language-html"></code><%=passage.html || 'HTML'%></code></pre></div>
+            <div class="code_display display_css"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
+            <div class="code_display display_js"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
+        <%}else{%>
+            <div class="display_code"><pre><code class="language-<%=passage.lang%>"><%=passage.code || passage.lang%></code></pre></div>
+        <%}%>
         <!-- Show .EXT -->
         <!-- Show License -->
     </div>
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
-    <%if((passage.html && passage.html.length> 1) || (passage.javascript && passage.javascript.length> 1) || (passage.css && passage.css.length> 1)){%>
+    <%if((passage.code && passage.code.length > 1) || (passage.html && passage.html.length > 1) || (passage.javascript && passage.javascript.length > 1) || (passage.css && passage.css.length > 1)){%>
         <ul class="passage_tabs">
             <li id="passage_details_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced view_code">View Code</li>
         </ul>

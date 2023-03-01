@@ -18,6 +18,7 @@ Tab full testing and bugfixes
 Non-profit filings
 Replace CDNs*
 Enable ads or alt sys
+Editor live updates
 
 Add back recordings; voice activation;
 real time UI updates for every action
@@ -58,7 +59,6 @@ Sending passage forward or back is the same as a citation
 
 
 Order:
-Editor,
-Download Passage (FileSystem)
 Push/pull
+    If remote add pull option to passage
 Blender extension

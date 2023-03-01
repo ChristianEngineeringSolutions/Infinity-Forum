@@ -195,7 +195,6 @@ $(function(){
         let title = decodeURIComponent(href[href.length - 2]);
         let passage_id = href[href.length - 1];
         var _id = $(this).attr('id');
-        console.log(_id);
         href = title + '/' + passage_id;
         if($(this).attr('id') !== 'new_tab'){
             $('.tab:not(#new_tab)').css('background', 'gold');

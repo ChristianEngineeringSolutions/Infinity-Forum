@@ -21,9 +21,11 @@ const passageSchema = mongoose.Schema({
     html: String,
     css: String,
     javascript: String,
-    ext: {
+    //to replace html/css/javascript
+    code: String,
+    lang: {
         type: String,
-        default: '.rtf'
+        default: 'mixed'
     },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,
