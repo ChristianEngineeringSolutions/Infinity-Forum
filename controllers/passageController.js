@@ -43,7 +43,7 @@ module.exports = {
             html: passage.html,
             css: passage.css,
             javascript: passage.javascript,
-            filename: passage.filename
+            filename: passage.filename,
             code: passage.code,
             lang: passage.lang
         });
