@@ -201,6 +201,16 @@
     vertical-align: top;
     height: 500px;
 }
+.display_code{
+    width: 99%;
+    overflow: scroll;
+    resize: both;
+    height: 500px;
+    padding: 5px;
+    border: 1px solid black;
+    background: white;
+    margin: auto;
+}
 .passage_iframe{
     position: relative;
     border: 1px dashed black;

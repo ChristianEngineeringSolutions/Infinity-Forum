@@ -1429,7 +1429,7 @@ app.post('/update_passage/', async (req, res) => {
     passage.content = formData.content;
     passage.tags = formData.tags;
     passage.code = formData.code;
-    passage.ext = formData.ext;
+    passage.lang = formData.lang;
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
@@ -1497,20 +1497,32 @@ app.get('/verify/:user_id/:token', function (req, res) {
     });
 });
 
+var extList = {
+    'python' : '.py',
+    'javascript' : '.js',
+    'css' : '.css',
+    'mixed' : '.html',
+};
+//GET more extensive list
+function getExt(lang){
+    return extList[lang].toString();
+}
+
 //For Sasame Rex - CES Connect
 class Directory {
     constructor(passage){
-        this.title = passage.title;
+        this.title = encodeURIComponent(passage.title);
         //index.html (rtf from quill)
-        this.index = passage.content;
+        this.code = passage.code || '';
         this.contents = [];
+        this.ext = getExt(passage.lang);
     }
 }
 class File {
     constructor(passage){
-        this.title = passage.title;
-        this.content = passage.content;
-        this.ext = passage.ext;
+        this.title = encodeURIComponent(passage.title);
+        this.code = passage.code || '';
+        this.ext = getExt(passage.lang);
     }
 }
 
@@ -1526,16 +1538,22 @@ function getDirectoryStructure(passage){
             }
             else{
                 let file = new File(p);
-                directory.content.push(file);
+                directory.contents.push(file);
             }
         }
     })(passage.passages, directory);
     return directory;
 }
 
-async function decodeDirectoryStructure(location, directory){
-    await fs.mkdir(location + '/' + directory.title);
-    await fs.writeFile(location + '/' + directory.title + '/index.html', directory.content);
+async function decodeDirectoryStructure(directory, location="./dist/filesystem"){
+    const fsp = require('fs').promises;
+    //clear filesystem
+    await fsp.rmdir('./dist/filesystem', {recursive: true, force: true});
+    //regenerate
+    await fsp.mkdir("./dist/filesystem");
+    //add new directory
+    await fsp.mkdir(location + '/' + directory.title);
+    await fsp.writeFile(location + '/' + directory.title + '/index' + directory.ext, directory.code);
     for(const item of directory.contents){
         if(item instanceof Directory){
             await decodeDirectoryStructure(location + '/' + directory.title, item);
@@ -1543,9 +1561,26 @@ async function decodeDirectoryStructure(location, directory){
         else if(item instanceof File){
             var ext = item.ext;
             if(ext == 'mixed'){
+                item.code = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>`+item.title+`</title>
+                    <style>`+item.css+`</style>
+                    <script src="/jquery.min.js"></script>
+                </head>
+                <body>
+                    <%-`+item.html+`%>
+                    <script>`+item.javascript+`</script>
+                </body>
+                </html>
+                `;
                 ext = 'html';
             }
-            await fs.writeFile(location + '/' + directory.title + '/' + item.title + '.' + ext, item.content);
+            await fsp.writeFile(location + '/' + directory.title + '/' + item.title + '.' + ext, item.code);
         }
     }
 }
@@ -1564,6 +1599,14 @@ async function loadFileSystem(){
         await decodeDirectoryStructure(location, directory);
     }
 }
+
+app.post('/install_passage', async function(req, res){
+    const fsp = require('fs').promises;
+    var passage = await Passage.findOne({_id: req.body._id});
+    var directory = getDirectoryStructure(passage);
+    await decodeDirectoryStructure(directory);
+    res.send("Done")
+});
 
 /*
     ROUTERS FOR FILESTREAM

@@ -13,6 +13,7 @@ $(function(){
         var codes = document.getElementsByTagName('pre');
         for (var i=0; i < codes.length; i++) {
             if(codes[i].parentElement.nodeName !== 'CODE-INPUT'){
+                console.log('test');
                 hljs.highlightBlock(codes[i]);
             }
         }
@@ -209,6 +210,19 @@ $(function(){
             },
             success: function(data){
                 $('#passage_'+_id).remove();
+            }
+        });
+    });
+    $(document).on('click', '[id^="passage_install_"]', function(e){
+        var _id = getPassageId(this);
+        $.ajax({
+            type: 'post',
+            url: DOMAIN + '/install_passage/',
+            data: {
+                _id: _id
+            },
+            success: function(data){
+                flashIcon($('#passage_install_' + _id), 'green');
             }
         });
     });
@@ -459,29 +473,16 @@ $(function(){
         var _id = getPassageId(this);
         $('#passage_js_' + _id).val($(this).val());
     });
+    $(document).on('keyup', '[id^=display_code]', function(){
+        var _id = getPassageId(this);
+        $('#passage_code_' + _id).val($(this).val());
+    });
     $(document).on('click', '.view_code', function(){
         syntaxHighlight();
     });
-    $(document).on('keyup', '.passage_ext', function(){
-        var _id = $(this).attr('id').split('_').at(-1);
-        var langList = {
-            ".py": 'python',
-            ".js": 'javascript',
-            ".css": 'css',
-            ".html": 'html',
-        };
-        //GET more extensive list
-        function getLang(val){
-            return {
-                ".py": 'python',
-                ".js": 'javascript',
-                ".css": 'css',
-                ".html": 'html',
-            }[val];
-        }
-        var lang = getLang($(this).val());
-        alert(lang);
-        var code = $('#display_ext_'+_id).val();
-        $('#display_ext_'+_id).replaceWith('<code-input value="'+code+'"lang="'+lang.toString()+'"class="code_display display_ext" id="display_ext_'+_id+'>"></code-input>');
-    });
+    // $(document).on('keyup', '.passage_ext', function(){
+    //     var _id = $(this).attr('id').split('_').at(-1);
+    //     var code = $('#display_code_'+_id).val();
+    //     $('#display_code_'+_id).replaceWith('<code-input value="'+code+'"lang="'+$(this).val()+'"class="code_display display_code" id="display_ext_'+_id+'>"></code-input>');
+    // });
 });
