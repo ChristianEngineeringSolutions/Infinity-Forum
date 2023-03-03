@@ -342,6 +342,7 @@ async function getFullPassage(_id){
 if(process.env.LOCAL == 'true'){
     //send a passsage from local sasame to remote
     app.post('/push', async (req, res) => {
+        const fsp = require('fs').promises;
         var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
 
           var url = 'https://christianengineeringsolutions.com/pull';
@@ -386,6 +387,7 @@ if(process.env.LOCAL == 'true'){
 }
 //recieve a passage from remote
 app.post('/pull', async (req, res) => {
+    const fsp = require('fs').promises;
     //all pulled passages start off at root level
     //copy passage
     var passage = JSON.parse(req.body.passage);
@@ -1328,7 +1330,7 @@ app.post('/ppe_add', async (req, res) => {
     var uploadTitle = v4();
     var data = req.body.dataURL.replace(/^data:image\/\w+;base64,/, "");
     var buf = Buffer.from(data, 'base64');
-    const fsp = require('fs').promises
+    const fsp = require('fs').promises;
     await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
     let passage = await Passage.create({
         author: req.session.user,
