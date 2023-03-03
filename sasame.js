@@ -354,7 +354,7 @@ if(process.env.LOCAL == 'true'){
 app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
-    console.log(req.body.passage);
+    console.log("Pulled");
     var passage = JSON.parse(req.body.passage);
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
@@ -382,6 +382,7 @@ app.post('/pull', async (req, res) => {
     }
     //remote is recieving passage from a local sasame
     else if(process.env.REMOTE == 'true'){
+	console.log("good");
         //file from form sent by requests module
         //(local sasame may not have public URL)
         //upload main file
