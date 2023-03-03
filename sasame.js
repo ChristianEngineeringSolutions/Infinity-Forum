@@ -344,10 +344,10 @@ if(process.env.LOCAL == 'true'){
 
           var url = 'https://christianengineeringsolutions.com/pull';
             
-          var postData = JSON.stringify({
-            'passage' : passage,
-            'file': fs.createReadStream("./dist/uploads/" + passage.filename)
-        });
+          var postData = {
+            passage : passage,
+            file: fs.createReadStream("./dist/uploads/" + passage.filename)
+        };
           var options = {
               hostname: 'christianengineeringsolutions.com',
               path: '/pull',
@@ -355,7 +355,7 @@ if(process.env.LOCAL == 'true'){
               thumbnail: '',
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': postData.length
+                'Content-Length': JSON.stringify(postData).length
               }
           }
           
@@ -367,7 +367,7 @@ if(process.env.LOCAL == 'true'){
             response.on('data', (d) => {
                 process.stdout.write(d);
             });
-            res.send(body);
+            res.send(response);
           });
           request.on('error', (e) => {
             console.error(e);
@@ -381,8 +381,7 @@ if(process.env.LOCAL == 'true'){
 app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
-    console.log("Pulled");
-    var passage = JSON.parse(req.body.passage);
+    var passage = req.body.passage;
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
