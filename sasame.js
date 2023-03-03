@@ -370,7 +370,7 @@ app.post('/pull', async (req, res) => {
     await bookmarkPassage(copy._id, pushingAuthor._id);
     //local is recieving a passage from a remote sasame
     //associate proper file
-    if(process.env.LOCAL){
+    if(process.env.LOCAL == 'true'){
         //file from passage
         const file = fs.createReadStream('./dist/uploads/' + v4() + passage.filename.split('.').at(-1));
         const request = https.get('https://christianengineeringsolutions.com/uploads/' + passage.filename, function(response){
@@ -379,9 +379,10 @@ app.post('/pull', async (req, res) => {
                 file.close();
             });
         });
+        return res.send("Done.");
     }
     //remote is recieving passage from a local sasame
-    else if(process.env.REMOTE){
+    else if(process.env.REMOTE == 'true'){
         //file from form sent by requests module
         //(local sasame may not have public URL)
         //upload main file
@@ -389,9 +390,6 @@ app.post('/pull', async (req, res) => {
         return res.send('https://christianengineeringsolutions.com/' + copy.title + '/' + copy._id);
 
     }
-    //get file from url in req body and save
-    //...
-    res.send("Done.");
 });
 
 
