@@ -420,7 +420,7 @@ app.post('/pull', async (req, res) => {
         //(local sasame may not have public URL)
         //upload main file
         // await uploadFile(req, res, copy);
-        return res.send('https://christianengineeringsolutions.com/' + encodeURIComponent(copy.title) + '/' + copy._id);
+        return res.send('https://christianengineeringsolutions.com/passage/' + encodeURIComponent(copy.title) + '/' + copy._id);
 
     }
 });
