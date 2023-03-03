@@ -381,7 +381,8 @@ if(process.env.LOCAL == 'true'){
 app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
-    var data = JSON.parse(req.body);
+    console.log(req.body[0]);
+    var data = JSON.parse(req.body[0]);
     req.files.file = data.file;
     var passage = data.passage;
     passage.sourceList = [];
