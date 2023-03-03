@@ -501,7 +501,7 @@ function getRemotePage(req, res){
                     });
                     $('#main_header').prepend(html);
                     $(document).on('click', '[id^="passage_pull_"]', function(e){
-                        var _id = getPassageId(this);
+                        var _id = $(this).attr('id').split('_').at(-1);
                         //submit proper form
                         $('#pull_form_' + _id).submit();
                         flashIcon($('#passage_pull_' + _id), 'green');
@@ -1218,7 +1218,6 @@ app.post('/paginate', async function(req, res){
             find.mimeType = 'image';
         }
         let passages = await Passage.paginate(find, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
-        console.log(find);
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
             // console.log(test);
