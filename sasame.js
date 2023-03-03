@@ -26,6 +26,8 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const { v4 } = require('uuid');
 
+const FormData = require('form-data');
+
 const writeFile = promisify(fs.writeFile);
 const readdir = promisify(fs.readdir);
 
@@ -326,32 +328,64 @@ async function getFullPassage(_id){
 //     request.end();
 // }
 
-if(process.env.LOCAL == 'true'){
-    app.post('/push', async (req, res) => {
-        var passage = await Passage.findOne({_id: req.body._id});
-        var postData = {
-            passage: passage
-        };
-        var options = {
-            hostname: 'https://christianengineeringsolutions.com',
-            path: '/pull',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': postData.length
-            }
-          };
-        var request = https.request("https://christianengineeringsolutions.com/pull", function(response){
 
-        });
+/**
+ * Save associated files,
+ * Add novel sourceLink for pushed/pulled passages
+ */
+if(process.env.LOCAL == 'true'){
+    //send a passsage from local sasame to remote
+    app.post('/push', async (req, res) => {
+        const form = new FormData();
+        var passage = await Passage.findOne({_id: req.body._id});
+        form.append('file', 'fileData');
+        form.append('thumbnail', '');
+        form.append('passage', JSON.stringify(passage));
+        form.append('buffer', new Buffer(10)); //appending buffer in key my_buffer
+        form.append('filename', fs.createReadStream('/uploads/' + passage.filename));
+        const uploadResponse = await fetch('https://christianengineeringsolutions.com/pull', {method: 'POST', body: form });
+        res.send("Done.");
     });
 }
-app.get('/pull', async (req, res) => {
+//recieve a passage from remote
+app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
-    passageController.copyPassage(req.params.passage, [req.session.user], null, function(){
+    var passage = JSON.parse(req.body.passage);
+    passage.sourceList = [];
+    passage.sourceLink = DOMAIN + '/' + passage.title + '/' + passage._id;
+    var copyAuthor = await User.findOne({email: passage.author.email});
+    var copy = await passageController.copyPassage(passage, [copyAuthor || req.session.user], null, function(){
 
     });
+    //TODO: modify copy to ensure thumbnail creation onload
+    //...
+
+    //bookmark passage
+    await bookmarkPassage(copy._id);
+    //local is recieving a passage from a remote sasame
+    //associate proper file
+    if(LOCAL){
+        //file from passage
+        const file = fs.createReadStream('./dist/uploads/' + v4() + passage.filename.split('.').at(-1));
+        const request = https.get('https://christianengineeringsolutions.com/uploads/' + passage.filename, function(response){
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close();
+            });
+        });
+    }
+    //remote is recieving passage from a local sasame
+    else if(REMOTE){
+        //file from form sent by requests module
+        //(local sasame may not have public URL)
+        //upload main file
+        await uploadFile(req, res, copy);
+
+    }
+    //get file from url in req body and save
+    //...
+    res.send("Done.");
 });
 
 
@@ -422,8 +456,11 @@ function getRemotePage(req, res){
                         }
                     });
                     $('#main_header').prepend(html);
-                    $('.passage').each(function(p){
-                        $(this).children('.passage_options').append('<li class="rex_cite passage_option">Cite</li>');
+                    $(document).on('click', '[id^="passage_pull_"]', function(e){
+                        var _id = getPassageId(this);
+                        //submit proper form
+                        $('#pull_form_' + _id).submit();
+                        flashIcon($('#passage_pull_' + _id), 'green');
                     });
                     $(document).on('click', '.rex_cite', function(){
                         var _id = ''; //get from DOM
@@ -469,10 +506,10 @@ app.post('/cesconnect', function(req, res){
     req.session.CESCONNECT = !req.session.CESCONNECT;
     res.send("Done.");
 });
+//index.html
 app.get('/', async (req, res) => {
     //REX
     if(req.session.CESCONNECT){
-        console.log('test');
         getRemotePage(req, res);
     }
     else{
@@ -578,11 +615,15 @@ app.post('/search/', async (req, res) => {
         sub: true
     });
 });
-app.post('/bookmark_passage', async (req, res) => {
+async function bookmarkPasage(_id){
     let user = await User.findOne({_id: req.session.user._id});
-    user.bookmarks.push(req.body._id);
+    user.bookmarks.push(_id);
     await user.save();
-    res.send('done.');
+    return "Done.";
+}
+app.post('/bookmark_passage', async (req, res) => {
+    await bookmarkPassage(req.body._id);
+    res.send('Done.');
 });
 // Add security if reactivating check if passage user first
 // app.post('/copy_passage/', async (req, res) => {
@@ -1447,44 +1488,46 @@ app.post('/update_passage/', async (req, res) => {
     }
     else{
         console.log('File uploaded');
-        // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-        var fileToUpload = req.files.file;
-        var mimeType = req.files.file.mimetype;
-        //uuid with  ext
-        uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
-        var thumbnailTitle = v4() + ".jpg";
-        //first verify that mimetype is image
-        console.log(mimeType);
-        // Use the mv() method to place the file somewhere on your server
-        fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
-            if (err){
-                return res.status(500).send(err);
-            }
-        });
-        passage.filename = uploadTitle;
-        if(mimeType.split('/')[0] == 'image'
-        && mimeType.split('+')[0].split('/')[1] == 'svg'){
-            passage.isSVG = true;
-        }
-        else{
-            passage.isSVG = false;
-        }
-        passage.mimeType = mimeType.split('/')[0];
-        if(passage.mimeType == 'model' || passage.isSVG){
-            var data = formData.thumbnail.replace(/^data:image\/\w+;base64,/, "");
-            var buf = Buffer.from(data, 'base64');
-            const fsp = require('fs').promises;
-            await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
-            passage.thumbnail = thumbnailTitle;
-        }
-        else{
-            passage.thumbnail = null;
-        }
+        await uploadFile(req, res, passage);
     }
     await passage.save();
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
+async function uploadFile(req, res, passage){
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var fileToUpload = req.files.file;
+    var mimeType = req.files.file.mimetype;
+    //uuid with  ext
+    var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+    var thumbnailTitle = v4() + ".jpg";
+    // Use the mv() method to place the file somewhere on your server
+    fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
+        if (err){
+            return res.status(500).send(err);
+        }
+    });
+    passage.filename = uploadTitle;
+    if(mimeType.split('/')[0] == 'image'
+    && mimeType.split('+')[0].split('/')[1] == 'svg'){
+        passage.isSVG = true;
+    }
+    else{
+        passage.isSVG = false;
+    }
+    passage.mimeType = mimeType.split('/')[0];
+    if(passage.mimeType == 'model' || passage.isSVG){
+        var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
+        var buf = Buffer.from(data, 'base64');
+        const fsp = require('fs').promises;
+        await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
+        passage.thumbnail = thumbnailTitle;
+    }
+    else{
+        passage.thumbnail = null;
+    }
+    await passage.save();
+}
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
     var token = req.params.token;

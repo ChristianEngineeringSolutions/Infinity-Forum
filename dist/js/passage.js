@@ -410,6 +410,19 @@ $(function(){
         let _id = $(this).attr('id').split('_')[$(this).attr('id').split('_').length - 1];
         // $('#passage_file_' + _id).
     });
+    $(document).on('click', '[id^="passage_push_"]', function(e){
+        var _id = getPassageId(this);
+        $.ajax({
+            type: 'post',
+            url: 'https://christianengineeringsolutions.com/pull',
+            data: {
+                _id: _id
+            },
+            success: function(data){
+                flashIcon($('#passage_push_' + _id), 'green');
+            }
+        });
+    });
     $(document).on('click', '[id^=passage_update_]', function(){
         var _id = getPassageId(this);
         flashIcon($('#passage_update_' + _id), 'green');

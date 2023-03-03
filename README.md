@@ -23,6 +23,8 @@ Update env file
 
 install and run mongod
 
+Use same email as on CES for full features
+
 # Website
 
 Public Version available at:
