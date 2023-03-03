@@ -45,7 +45,7 @@
             <!-- Displayed via CES Connect -->
             <!-- Pull passage from server -->
             <li id="passage_pull_<%=passage._id%>" class="passage_option">Pull</li>
-            <form id="pull_form_<%=passage._id%>"style="display:none" action="/pull"type="post"enctype="multipart/form-data">
+            <form id="pull_form_<%=passage._id%>"style="display:none" action="/pull"method="POST"enctype="multipart/form-data">
                 <input type="text"name="passage"value="<%=JSON.stringify(passage)%>">
                 <input type="text"name="thumbnail"value="">
             </form>
