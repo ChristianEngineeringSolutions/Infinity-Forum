@@ -119,7 +119,12 @@ app.use(function(req, res, next) {
         });
     }
     else{
-        next();
+        try{
+            next();
+        }
+        catch(error){
+            console.log(error);
+        }
     }
 });
 //Serving Files
@@ -344,7 +349,7 @@ if(process.env.LOCAL == 'true'){
         form.append('buffer', new Buffer(10)); //appending buffer in key my_buffer
         form.append('filename', fs.createReadStream('/uploads/' + passage.filename));
         const uploadResponse = await fetch('https://christianengineeringsolutions.com/pull', {method: 'POST', body: form });
-        res.send("Done.");
+        res.send(uploadResponse);
     });
 }
 //recieve a passage from remote
@@ -381,6 +386,7 @@ app.post('/pull', async (req, res) => {
         //(local sasame may not have public URL)
         //upload main file
         await uploadFile(req, res, copy);
+        return res.send('https://christianengineeringsolutions.com/' + copy.title + '/' + copy._id);
 
     }
     //get file from url in req body and save
