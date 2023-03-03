@@ -412,11 +412,13 @@ $(function(){
     });
     $(document).on('click', '[id^="passage_push_"]', function(e){
         var _id = getPassageId(this);
+        var passage = $('#full_push_passage_' + _id).val();
         $.ajax({
             type: 'post',
             url: 'https://christianengineeringsolutions.com/pull',
             data: {
-                _id: _id
+                _id: _id,
+                passage: passage
             },
             success: function(data){
                 alert(data);
