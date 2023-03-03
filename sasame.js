@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const fileUpload = require('express-fileupload');
+const querystring = require('querystring');
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 const bodyParser = require("body-parser");
@@ -345,10 +346,10 @@ if(process.env.LOCAL == 'true'){
 
           var url = 'https://christianengineeringsolutions.com/pull';
             
-          var data = {
+          var data = querystring.stringify({
             passage : passage,
             file: fs.createReadStream("./dist/uploads/" + passage.filename)
-        };
+        });
           var options = {
               hostname: 'christianengineeringsolutions.com',
               path: '/pull',
