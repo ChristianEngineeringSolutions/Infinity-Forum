@@ -465,7 +465,7 @@ $(function(){
         page += 1;
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/paginate',
+            url: DOMAIN + '/paginate/' + fromOtro,
             data: {
                 page: page,
                 passage: $('#chief_passage_id').val(),
