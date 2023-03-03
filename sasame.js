@@ -107,7 +107,7 @@ app.use(function(req, res, next) {
         req.session.CESCONNECT = false;
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
-    res.locals.fromOtro = req.session.fromOtro || false;
+    res.locals.fromOtro = req.params.fromOtro || false;
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
         authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
@@ -374,7 +374,7 @@ app.post('/passage_from_json', async (req, res) => {
 });
 function getRemotePage(req, res){
     //get same route from server
-    var route = req.originalUrl;
+    var route = req.originalUrl + '?fromOtro=true';
     const remoteURL = 'https://christianengineeringsolutions.com' + route;
     var output = '';
     var request = https.request(remoteURL, function(response){
@@ -466,7 +466,6 @@ function getRemotePage(req, res){
 }
 app.post('/cesconnect', function(req, res){
     req.session.CESCONNECT = !req.session.CESCONNECT;
-    req.session.fromOtro = true;
     res.send("Done.");
 });
 app.get('/', async (req, res) => {
