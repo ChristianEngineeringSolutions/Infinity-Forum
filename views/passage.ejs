@@ -36,6 +36,7 @@
             <%if(LOCAL == 'true'){%>
                 <!-- Push passage to server -->
                 <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
+                <input type="hidden" id="full_push_passage_<%=passage._id%>" value="<%=JSON.stringify(passage)%>">
                 <!-- Install to FileSystem -->
                 <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
             <%}%>
