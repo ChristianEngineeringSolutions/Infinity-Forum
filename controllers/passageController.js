@@ -45,7 +45,13 @@ module.exports = {
             javascript: passage.javascript,
             filename: passage.filename,
             code: passage.code,
-            lang: passage.lang
+            lang: passage.lang,
+            isSVG: passage.isSVG,
+            license: passage.license,
+            mimeType: passage.mimeType,
+            thumbnail: passage.thumbnail,
+            metadata: passage.metadata,
+            sourceLink: passage.sourceLink
         });
         //Add copy to passage it was duplicated into
         if(parent != "root" && parent != null){
@@ -73,7 +79,13 @@ module.exports = {
                     javascript: p.javascript,
                     filename: p.filename,
                     code: p.code,
-                    lang: p.lang
+                    lang: p.lang,
+                    isSVG: p.isSVG,
+                    license: p.license,
+                    mimeType: p.mimeType,
+                    thumbnail: p.thumbnail,
+                    metadata: p.metadata,
+                    sourceLink: p.sourceLink
                 });
                 copy.passages.push(pcopy._id);
                 await copy.save();

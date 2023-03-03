@@ -50,6 +50,8 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],
+    //Send them to the server with the sources if they are external
+    sourceLink: String,
     content: String,
     //forces content to be a unique value unless null
     // content: {
