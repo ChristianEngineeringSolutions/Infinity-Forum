@@ -373,7 +373,7 @@ if(process.env.LOCAL == 'true'){
             console.error(e);
           });
           
-          request.write(postData);
+          request.write(JSON.stringify(postData));
           request.end();
     });
 }
@@ -381,7 +381,9 @@ if(process.env.LOCAL == 'true'){
 app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
-    var passage = req.body.passage;
+    var data = JSON.parse(req.body);
+    req.files.file = data.file;
+    var passage = data.passage;
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
