@@ -14,6 +14,9 @@ var fromOtro;
 
 $(function(){
     fromOtro = $('#remote_toggle').data('cesconnect') == false ? '' : '?fromOtro=true';
+    if($('#remote_toggle').length < 1){
+        fromOtro = '';
+    }
 });
 
 function isMobile(){
