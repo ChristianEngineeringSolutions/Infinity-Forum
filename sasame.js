@@ -385,7 +385,6 @@ app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
     console.log(req.body);
-    req.files.file = req.body.file;
     var passage = req.body.passage;
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
