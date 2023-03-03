@@ -348,7 +348,7 @@ if(process.env.LOCAL == 'true'){
           //TODO add file
             
           var data = querystring.stringify({
-            passage : passage,
+            passage : JSON.stringify(passage),
         });
           var options = {
               hostname: 'christianengineeringsolutions.com',
@@ -366,11 +366,13 @@ if(process.env.LOCAL == 'true'){
             console.log('statusCode:', res.statusCode);
             console.log('headers:', res.headers);
             response.setEncoding('utf8');
+            var fin = '';
             response.on('data', (d) => {
+                fin += d;
                 console.log("body: " + d);
             });
             response.on('end', function(){
-                res.send(response);
+                res.send(fin);
             });
           });
           request.on('error', (e) => {
@@ -418,7 +420,7 @@ app.post('/pull', async (req, res) => {
         //(local sasame may not have public URL)
         //upload main file
         // await uploadFile(req, res, copy);
-        return res.send('https://christianengineeringsolutions.com/' + copy.title + '/' + copy._id);
+        return res.send('https://christianengineeringsolutions.com/' + encodeURIComponent(copy.title) + '/' + copy._id);
 
     }
 });
