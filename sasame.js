@@ -107,7 +107,8 @@ app.use(function(req, res, next) {
         req.session.CESCONNECT = false;
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
-    res.locals.fromOtro = req.params.fromOtro || false;
+    res.locals.fromOtro = req.query.fromOtro || false;
+    console.log(res.locals.fromOtro);
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
         authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
