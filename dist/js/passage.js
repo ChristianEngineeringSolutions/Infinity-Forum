@@ -421,8 +421,8 @@ $(function(){
                 passage: passage
             },
             success: function(data){
-                alert(data);
                 flashIcon($('#passage_push_' + _id), 'green');
+                alert(data);
             }
         });
     });
