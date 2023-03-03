@@ -345,10 +345,10 @@ if(process.env.LOCAL == 'true'){
         var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
 
           var url = 'https://christianengineeringsolutions.com/pull';
+          //TODO add file
             
           var data = querystring.stringify({
             passage : passage,
-            file: fs.createReadStream("./dist/uploads/" + passage.filename)
         });
           var options = {
               hostname: 'christianengineeringsolutions.com',
@@ -375,7 +375,8 @@ if(process.env.LOCAL == 'true'){
           });
           request.on('error', (e) => {
             console.error(e);
-          });          
+          });  
+          console.log(data);        
           request.write(data);
           request.end();
     });
@@ -385,9 +386,7 @@ app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
     console.log(req.body);
-    var data = JSON.parse(req.body);
-    req.files.file = data.file;
-    var passage = data.passage;
+    var passage = req.body.passage;
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
@@ -418,7 +417,7 @@ app.post('/pull', async (req, res) => {
         //file from form sent by requests module
         //(local sasame may not have public URL)
         //upload main file
-        await uploadFile(req, res, copy);
+        // await uploadFile(req, res, copy);
         return res.send('https://christianengineeringsolutions.com/' + copy.title + '/' + copy._id);
 
     }
