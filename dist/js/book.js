@@ -12,11 +12,15 @@ var DOMAIN;
 
 var fromOtro;
 
-$(function(){
+function checkIfFromOtro(){
     fromOtro = $('#remote_toggle').data('cesconnect') == false ? '' : '?fromOtro=true';
     if($('#remote_toggle').length < 1){
         fromOtro = '';
     }
+}
+
+$(function(){
+    checkIfFromOtro();
 });
 
 function isMobile(){
@@ -65,6 +69,7 @@ $(function(){
 
     //search
     $('#search').on('keypress', function(e){
+        checkIfFromOtro();
         //check what page we are on
         var thiz = $(this);
         if(e.which == 13){

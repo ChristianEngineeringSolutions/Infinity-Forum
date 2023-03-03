@@ -460,6 +460,7 @@ $(function(){
     });
     //For Home, Search, and Profile
     $(document).on('click', '#view_more', function(){
+        checkIfFromOtro();
         //check if home, search, or profile
         var isProfile = $('#is_profile').val();
         page += 1;
