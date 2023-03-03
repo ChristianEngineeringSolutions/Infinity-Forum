@@ -110,7 +110,6 @@ app.use(function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
-    console.log(res.locals.fromOtro);
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
         authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
@@ -342,10 +341,10 @@ if(process.env.LOCAL == 'true'){
     //send a passsage from local sasame to remote
     app.post('/push', async (req, res) => {
         const form = new FormData();
-        var passage = await Passage.findOne({_id: req.body._id});
+        var passage = req.body.passage;
         form.append('file', 'fileData');
         form.append('thumbnail', '');
-        form.append('passage', JSON.stringify(passage));
+        form.append('passage', passage);
         form.append('buffer', new Buffer(10)); //appending buffer in key my_buffer
         form.append('filename', fs.createReadStream('/uploads/' + passage.filename));
         const uploadResponse = await fetch('https://christianengineeringsolutions.com/pull', {method: 'POST', body: form });
