@@ -410,6 +410,7 @@ app.post('/pull', async (req, res) => {
     }
     //remote is recieving passage from a local sasame
     else if(process.env.REMOTE == 'true'){
+	console.log("good");
         //file from form sent by requests module
         //(local sasame may not have public URL)
         //upload main file
