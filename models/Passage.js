@@ -1,6 +1,7 @@
 'use strict';
 const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
+const { v4 } = require('uuid');
 
 const passageSchema = mongoose.Schema({
     author: {
@@ -12,6 +13,10 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    uuid: {
+        type: String,
+        default: () => v4()
+    },
     title: {
         type: String,
         default: 'Untitled'
