@@ -346,9 +346,10 @@ if(process.env.LOCAL == 'true'){
 
           var url = 'https://christianengineeringsolutions.com/pull';
           //TODO add file
-            
+          var file = await fsp.readfile('./dist/uploads/' + passage.filename, "base64");
           var data = querystring.stringify({
             passage : JSON.stringify(passage),
+            file: file
         });
           var options = {
               hostname: 'christianengineeringsolutions.com',
@@ -387,14 +388,17 @@ if(process.env.LOCAL == 'true'){
 app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
-    console.log(req.body);
     var passage = JSON.parse(req.body.passage);
+    var uploadTitle = v4();
+    var buf = Buffer.from(req.body.file, 'base64');
+    await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
     var copy = await passageController.copyPassage(passage, [pushingAuthor || req.session.user], null, function(){
 
     });
+    passage.filename = uploadTitle;
     //TODO: modify copy to ensure thumbnail creation onload
     //...
 
