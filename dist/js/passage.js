@@ -94,10 +94,10 @@ $(function(){
     });
     $(document).on('change', '[id^="passage_file_"]', function(e){
         let _id = $(this).attr('id').split('_').at(-1);
-        var mimeType = $(this)[0].files[0].type.split('/')[0];
+        var mimeType = $(this)[0].files[0].type.split('/' + fromOtro)[0];
         var isSVG = false;
-        if($(this)[0].files[0].type.split('/')[0] == 'image'
-        && $(this)[0].files[0].type.split('+')[0].split('/')[1] == 'svg'){
+        if($(this)[0].files[0].type.split('/' + fromOtro)[0] == 'image'
+        && $(this)[0].files[0].type.split('+')[0].split('/' + fromOtro)[1] == 'svg'){
             isSVG = true;
             mimeType = 'svg';
         }
@@ -154,7 +154,7 @@ $(function(){
                     var thumbnail = canvas.toDataURL();
                     $.ajax({
                         type: 'post',
-                        url: DOMAIN + '/update_thumbnail/',
+                        url: DOMAIN + '/update_thumbnail/' + fromOtro,
                         data: {
                             passageID: _id,
                             thumbnail: thumbnail
@@ -176,7 +176,7 @@ $(function(){
         //create a passage and then show it
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/create_passage/',
+            url: DOMAIN + '/create_passage/' + fromOtro,
             data: {
                 passageID: chief
             },
@@ -204,7 +204,7 @@ $(function(){
         var _id = getPassageId(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/delete_passage/',
+            url: DOMAIN + '/delete_passage/' + fromOtro,
             data: {
                 _id: _id
             },
@@ -217,7 +217,7 @@ $(function(){
         var _id = getPassageId(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/install_passage/',
+            url: DOMAIN + '/install_passage/' + fromOtro,
             data: {
                 _id: _id
             },
@@ -229,7 +229,7 @@ $(function(){
     $(document).on('click', '[id^="passage_more_"]', function(e){
         let _id = getPassageId(this);
         let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
-        let href = '/passage/'+ title +'/' + _id;
+        let href = '/passage/' + fromOtro+ title +'/' + fromOtro + _id;
         $('.active_tab').html('<span class="tab_delete">X</span>' + decodeURIComponent(title));
         let tab_id = $('.active_tab').attr('id');
         localStorage.setItem(tab_id, JSON.stringify({text: title, href: href}));
@@ -395,7 +395,7 @@ $(function(){
         var passage_id = $(this).attr('id').split('_').at(-1);
         var amount = $('#star_number_' + passage_id).val();
         $.ajax({
-            url: DOMAIN + '/star_passage/',
+            url: DOMAIN + '/star_passage/' + fromOtro,
             type: 'POST',
             data: {
                 passage_id: passage_id,

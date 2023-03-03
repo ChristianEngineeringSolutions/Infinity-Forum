@@ -10,6 +10,11 @@ var PPEPage = 1;
 
 var DOMAIN;
 
+var fromOtro;
+
+$(function(){
+    fromOtro = $('#remote_toggle').data('cesconnect') == false ? '' : '?fromOtro=true';
+});
 
 function isMobile(){
     return window.matchMedia("(max-width: 550px)").matches;
@@ -62,7 +67,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search/',
+                url: DOMAIN + '/search/' + fromOtro,
                 data: {
                     search: thiz.val()
                 },
@@ -80,7 +85,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/ppe_search/',
+                url: DOMAIN + '/ppe_search/' + fromOtro,
                 data: {
                     search: thiz.val(),
                     parent: $('#chief_passage_id').val()
@@ -102,7 +107,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search_profile/',
+                url: DOMAIN + '/search_profile/' + fromOtro,
                 data: {
                     search: thiz.val(),
                     _id: $('#is_profile').val()
@@ -122,7 +127,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search_leaderboard/',
+                url: DOMAIN + '/search_leaderboard/' + fromOtro,
                 data: {
                     search: thiz.val()
                 },
@@ -141,7 +146,7 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search_passage/',
+                url: DOMAIN + '/search_passage/' + fromOtro,
                 data: {
                     search: thiz.val(),
                     _id: $('#chief_passage_id').val()
@@ -182,7 +187,7 @@ $(function(){
         var newCount = parseInt($('.star_count_'+_id).text(), 10) + 1;
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/star/',
+            url: DOMAIN + '/star/' + fromOtro,
             data: {
                 _id: _id
             },
@@ -224,7 +229,7 @@ $(function(){
             $(this).css('color', 'red');
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/cesconnect/',
+                url: DOMAIN + '/cesconnect/' + fromOtro,
                 data: {},
                 success: function(data){
                     window.location.reload();
@@ -235,7 +240,7 @@ $(function(){
             $(this).css('color', 'rgb(0, 128, 0)');
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/cesconnect/',
+                url: DOMAIN + '/cesconnect/' + fromOtro,
                 data: {},
                 success: function(data){
                     window.location.reload();
@@ -247,7 +252,7 @@ $(function(){
         var _id = $(this).attr('id').split('_')[1];
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/update_chapter_order/',
+            url: DOMAIN + '/update_chapter_order/' + fromOtro,
             data: {
                 passages: JSON.stringify($('#sub_passages').sortable('toArray')),
                 chapterID: $('#parent_chapter_id').val()
