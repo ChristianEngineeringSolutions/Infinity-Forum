@@ -342,11 +342,10 @@ if(process.env.LOCAL == 'true'){
     app.post('/push', async (req, res) => {
         const form = new FormData();
         var passage = req.body.passage;
-        form.append('file', 'fileData');
         form.append('thumbnail', '');
         form.append('passage', passage);
         form.append('buffer', new Buffer(10)); //appending buffer in key my_buffer
-        form.append('filename', fs.createReadStream('/uploads/' + passage.filename));
+        form.append('file', fs.createReadStream('/uploads/' + passage.filename));
         const uploadResponse = await fetch('https://christianengineeringsolutions.com/pull', {method: 'POST', body: form });
         res.send(uploadResponse);
     });
@@ -1500,6 +1499,8 @@ app.post('/update_passage/', async (req, res) => {
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
 async function uploadFile(req, res, passage){
+    console.log(req.body);
+    console.log(req.files);
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
     var mimeType = req.files.file.mimetype;
