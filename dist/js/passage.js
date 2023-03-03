@@ -415,7 +415,7 @@ $(function(){
         var passage = $('#full_push_passage_' + _id).val();
         $.ajax({
             type: 'post',
-            url: 'https://christianengineeringsolutions.com/pull',
+            url: '/push',
             data: {
                 _id: _id,
                 passage: passage
