@@ -388,7 +388,7 @@ app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
     console.log(req.body);
-    var passage = req.body.passage;
+    var passage = JSON.parse(req.body.passage);
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
