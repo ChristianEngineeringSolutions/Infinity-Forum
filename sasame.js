@@ -392,16 +392,12 @@ app.post('/pull', async (req, res) => {
     //copy passage
     var passage = JSON.parse(req.body.passage);
     var uploadTitle = v4();
-    var buf = Buffer.from(req.body.file, 'base64');
-    await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
     passage.sourceList = [];
-    passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
+    passage.sourceLink = process.env.DOMAIN + '/' + encodeURIComponent(passage.title) + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
     var copy = await passageController.copyPassage(passage, [pushingAuthor || req.session.user], null, function(){
 
     });
-    copy.filename = uploadTitle;
-    await copy.save();
     //TODO: modify copy to ensure thumbnail creation onload
     //...
 
@@ -410,23 +406,32 @@ app.post('/pull', async (req, res) => {
     //local is recieving a passage from a remote sasame
     //associate proper file
     if(process.env.LOCAL == 'true'){
-        //file from passage
-        const file = fs.createReadStream('./dist/uploads/' + v4() + passage.filename.split('.').at(-1));
+        if(passage.filename){
+            uploadTitle = uploadTitle + passage.filename.split('.').at(-1);
+        }
+        copy.filename = uploadTitle;
+        await copy.save();
+        //file from passage 
+
+        const file = await fs.createWriteStream('./dist/uploads/' + uploadTitle);
         const request = https.get('https://christianengineeringsolutions.com/uploads/' + passage.filename, function(response){
             response.pipe(file);
             file.on('finish', () => {
                 file.close();
             });
         });
-        return res.send("Done.");
+        return res.redirect('/');
     }
     //remote is recieving passage from a local sasame
     else if(process.env.REMOTE == 'true'){
-	console.log("good");
+	    console.log("good");
         //file from form sent by requests module
         //(local sasame may not have public URL)
         //upload main file
-        // await uploadFile(req, res, copy);
+        copy.filename = uploadTitle;
+        await copy.save();
+        var buf = Buffer.from(req.body.file, 'base64');
+        await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
         return res.send('https://christianengineeringsolutions.com/passage/' + encodeURIComponent(copy.title) + '/' + copy._id);
 
     }
@@ -473,7 +478,7 @@ function getRemotePage(req, res){
             var script = `
             <script>
                 $(function(){
-                    var html = '<ion-icon style="float:left;"class="green"id="remote_toggle"title="Remote"src="/images/ionicons/sync-circle.svg"></ion-icon>';
+                    var html = '<ion-icon data-cesconnect="true"style="float:left;"class="green"id="remote_toggle"title="Remote"src="/images/ionicons/sync-circle.svg"></ion-icon>';
                     $(document).on('click', '#remote_toggle', function(){
                         //green
                         if($(this).css('color') == 'rgb(0, 128, 0)'){
