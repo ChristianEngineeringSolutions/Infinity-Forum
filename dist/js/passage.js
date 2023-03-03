@@ -419,6 +419,7 @@ $(function(){
                 _id: _id
             },
             success: function(data){
+                alert(data);
                 flashIcon($('#passage_push_' + _id), 'green');
             }
         });
