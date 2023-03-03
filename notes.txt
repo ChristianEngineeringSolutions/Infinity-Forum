@@ -58,7 +58,7 @@ add passages to author based on same email
 Sending passage forward or back is the same as a citation
 
 
-Order:
+Tasks:
 Push/pull
-    If remote add pull option to passage
+    If remote add pull option to passage in CES Connect
 Blender extension

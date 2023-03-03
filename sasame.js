@@ -107,6 +107,7 @@ app.use(function(req, res, next) {
         req.session.CESCONNECT = false;
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
+    res.locals.fromOtro = req.session.fromOtro || false;
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
         authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
@@ -351,6 +352,13 @@ app.get('/pull', async (req, res) => {
 
     });
 });
+
+
+//use email to assign transferred (push or pull) passage to the correct author for merit
+function updateTransferredPassageAuthor(){
+
+}
+
 app.get('/get_passage', async (req, res) => {
     return await Passage.findOne({_id: req.params._id});
 });
@@ -458,6 +466,7 @@ function getRemotePage(req, res){
 }
 app.post('/cesconnect', function(req, res){
     req.session.CESCONNECT = !req.session.CESCONNECT;
+    req.session.fromOtro = true;
     res.send("Done.");
 });
 app.get('/', async (req, res) => {
@@ -1473,7 +1482,6 @@ app.post('/update_passage/', async (req, res) => {
         }
     }
     await passage.save();
-    console.log(passage);
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
