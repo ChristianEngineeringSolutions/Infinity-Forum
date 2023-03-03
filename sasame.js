@@ -176,6 +176,7 @@ app.get('/highlight.js', function(req, res) {
 //CRON
 var cron = require('node-cron');
 const { exit } = require('process');
+const { response } = require('express');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
@@ -344,7 +345,7 @@ if(process.env.LOCAL == 'true'){
 
           var url = 'https://christianengineeringsolutions.com/pull';
             
-          var postData = {
+          var data = {
             passage : passage,
             file: fs.createReadStream("./dist/uploads/" + passage.filename)
         };
@@ -355,7 +356,7 @@ if(process.env.LOCAL == 'true'){
               thumbnail: '',
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': JSON.stringify(postData).length
+                'Content-Length': Buffer.byteLength(data)
               }
           }
           
@@ -363,17 +364,18 @@ if(process.env.LOCAL == 'true'){
             // done
             console.log('statusCode:', res.statusCode);
             console.log('headers:', res.headers);
-
+            response.setEncoding('utf8');
             response.on('data', (d) => {
-                process.stdout.write(d);
+                console.log("body: " + d);
             });
-            res.send(response);
+            response.on('end', function(){
+                res.send(response);
+            });
           });
           request.on('error', (e) => {
             console.error(e);
-          });
-          
-          request.write(JSON.stringify(postData));
+          });          
+          request.write(data);
           request.end();
     });
 }
@@ -381,10 +383,9 @@ if(process.env.LOCAL == 'true'){
 app.post('/pull', async (req, res) => {
     //all pulled passages start off at root level
     //copy passage
-    console.log(req.body[0]);
-    var data = JSON.parse(req.body[0]);
-    req.files.file = data.file;
-    var passage = data.passage;
+    console.log(req.body);
+    req.files.file = req.body.file;
+    var passage = req.body.passage;
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
