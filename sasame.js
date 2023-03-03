@@ -340,14 +340,41 @@ async function getFullPassage(_id){
 if(process.env.LOCAL == 'true'){
     //send a passsage from local sasame to remote
     app.post('/push', async (req, res) => {
-        const form = new FormData();
-        var passage = req.body.passage;
-        form.append('thumbnail', '');
-        form.append('passage', passage);
-        form.append('buffer', new Buffer(10)); //appending buffer in key my_buffer
-        form.append('file', fs.createReadStream('/uploads/' + passage.filename));
-        const uploadResponse = await fetch('https://christianengineeringsolutions.com/pull', {method: 'POST', body: form });
-        res.send(uploadResponse);
+        var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
+
+          var url = 'https://christianengineeringsolutions.com/pull';
+            
+          var postData = JSON.stringify({
+            'passage' : passage,
+            'file': fs.createReadStream("./dist/uploads/" + passage.filename)
+        });
+          var options = {
+              hostname: 'christianengineeringsolutions.com',
+              path: '/pull',
+              method: 'POST',
+              thumbnail: '',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': postData.length
+              }
+          }
+          
+          var request = https.request(options, function (response) {
+            // done
+            console.log('statusCode:', res.statusCode);
+            console.log('headers:', res.headers);
+
+            response.on('data', (d) => {
+                process.stdout.write(d);
+            });
+            res.send(body);
+          });
+          request.on('error', (e) => {
+            console.error(e);
+          });
+          
+          request.write(postData);
+          request.end();
     });
 }
 //recieve a passage from remote
