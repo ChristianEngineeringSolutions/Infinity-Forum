@@ -359,15 +359,15 @@ app.post('/pull', async (req, res) => {
     var passage = JSON.parse(req.body.passage);
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + passage.title + '/' + passage._id;
-    var copyAuthor = await User.findOne({email: passage.author.email});
-    var copy = await passageController.copyPassage(passage, [copyAuthor || req.session.user], null, function(){
+    var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
+    var copy = await passageController.copyPassage(passage, [pushingAuthor || req.session.user], null, function(){
 
     });
     //TODO: modify copy to ensure thumbnail creation onload
     //...
 
     //bookmark passage
-    await bookmarkPassage(copy._id, req.session.user._id);
+    await bookmarkPassage(copy._id, pushingAuthor._id);
     //local is recieving a passage from a remote sasame
     //associate proper file
     if(process.env.LOCAL){
