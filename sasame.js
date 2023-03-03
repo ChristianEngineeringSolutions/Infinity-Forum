@@ -347,7 +347,7 @@ if(process.env.LOCAL == 'true'){
 
           var url = 'https://christianengineeringsolutions.com/pull';
           //TODO add file
-          var file = await fsp.readfile('./dist/uploads/' + passage.filename, "base64");
+          var file = await fsp.readFile('./dist/uploads/' + passage.filename, "base64");
           var data = querystring.stringify({
             passage : JSON.stringify(passage),
             file: file
@@ -400,7 +400,8 @@ app.post('/pull', async (req, res) => {
     var copy = await passageController.copyPassage(passage, [pushingAuthor || req.session.user], null, function(){
 
     });
-    passage.filename = uploadTitle;
+    copy.filename = uploadTitle;
+    await copy.save();
     //TODO: modify copy to ensure thumbnail creation onload
     //...
 
