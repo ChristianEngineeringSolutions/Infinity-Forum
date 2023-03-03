@@ -367,7 +367,7 @@ app.post('/pull', async (req, res) => {
     //...
 
     //bookmark passage
-    await bookmarkPassage(copy._id);
+    await bookmarkPassage(copy._id, req.session.user._id);
     //local is recieving a passage from a remote sasame
     //associate proper file
     if(process.env.LOCAL){
@@ -621,14 +621,14 @@ app.post('/search/', async (req, res) => {
         sub: true
     });
 });
-async function bookmarkPasage(_id){
-    let user = await User.findOne({_id: req.session.user._id});
+async function bookmarkPassage(_id, _for){
+    let user = await User.findOne({_id: _for});
     user.bookmarks.push(_id);
     await user.save();
     return "Done.";
 }
 app.post('/bookmark_passage', async (req, res) => {
-    await bookmarkPassage(req.body._id);
+    await bookmarkPassage(req.body._id, req.session.user._id);
     res.send('Done.');
 });
 // Add security if reactivating check if passage user first
@@ -667,6 +667,7 @@ app.post('/transfer_bookmark', async (req, res) => {
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
+    console.log('test');
     let bookmarks = [];
     if(req.session.user){
         let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
