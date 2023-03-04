@@ -1820,38 +1820,6 @@ function authenticateUser(email, password, callback) {
       })
     });
 }
-// function authenticateUsername(username, password, callback) {
-//     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     let obj = {};
-//     let search = '';
-//     if(username.match(regex) === null){
-//         //it's a username
-//         search = "username";
-//     }
-//     else{
-//         //it's an email
-//         search = "email";
-//     }
-//     obj[search] = username;
-//     User.findOne(obj)
-//       .exec(function (err, user) {
-//         if (err) {
-//           return callback(err)
-//         } else if (!user) {
-//           var err = new Error('User not found.');
-//           err.status = 401;
-//           console.log(err);
-//           return callback(err);
-//         }
-//         bcrypt.compare(password, user.password, function (err, result) {
-//           if (result === true) {
-//             return callback(err, user);
-//           } else {
-//             return callback(err);
-//           }
-//         })
-//       });
-//   }
   async function authenticateUsername(username, password){
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let obj = {};
