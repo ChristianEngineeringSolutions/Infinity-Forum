@@ -101,7 +101,7 @@ app.use(session({
     //     port: 3000
     // })
 }));
-app.use(function(req, res, next) {
+app.use(async function(req, res, next) {
     //shortcuts for ejs
     res.locals.user = req.session.user;
     res.locals.DOMAIN = process.env.DOMAIN;
@@ -113,10 +113,11 @@ app.use(function(req, res, next) {
     res.locals.fromOtro = req.query.fromOtro || false;
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
-        authenticateUsername("christianengineeringsolutions@gmail.com", "testing", function(err, user){
+        var user = await authenticateUsername("christianengineeringsolutions@gmail.com", "testing");
+        if(user){
             req.session.user = user;
             next();
-        });
+        }
     }
     else{
         try{
@@ -395,17 +396,16 @@ app.post('/pull', async (req, res) => {
     passage.sourceList = [];
     passage.sourceLink = process.env.DOMAIN + '/' + encodeURIComponent(passage.title) + '/' + passage._id;
     var pushingAuthor = await User.findOne({email: passage.author.email}) || req.session.user;
-    var copy = await passageController.copyPassage(passage, [pushingAuthor || req.session.user], null, function(){
-
-    });
     //TODO: modify copy to ensure thumbnail creation onload
     //...
-
-    //bookmark passage
-    await bookmarkPassage(copy._id, pushingAuthor._id);
     //local is recieving a passage from a remote sasame
     //associate proper file
     if(process.env.LOCAL == 'true'){
+        var copy = await passageController.copyPassage(passage, [pushingAuthor || req.session.user], null, function(){
+
+        });
+        //bookmark passage
+        await bookmarkPassage(copy._id, pushingAuthor._id);
         if(passage.filename){
             uploadTitle = uploadTitle + passage.filename.split('.').at(-1);
         }
@@ -424,16 +424,26 @@ app.post('/pull', async (req, res) => {
     }
     //remote is recieving passage from a local sasame
     else if(process.env.REMOTE == 'true'){
-	    console.log("good");
-        //file from form sent by requests module
-        //(local sasame may not have public URL)
-        //upload main file
-        copy.filename = uploadTitle;
-        await copy.save();
-        var buf = Buffer.from(req.body.file, 'base64');
-        await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
-        return res.send('https://christianengineeringsolutions.com/passage/' + encodeURIComponent(copy.title) + '/' + copy._id);
+        var user = await authenticateUsername(passage.author.email, req.body.password);
+        if(user){
+            var copy = await passageController.copyPassage(passage, [pushingAuthor || req.session.user], null, function(){
 
+            });
+            //bookmark passage
+            await bookmarkPassage(copy._id, pushingAuthor._id);
+            copy.sourceLink = null;
+            //file from form sent by requests module
+            //(local sasame may not have public URL)
+            //upload main file
+            copy.filename = uploadTitle;
+            await copy.save();
+            var buf = Buffer.from(req.body.file, 'base64');
+            await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
+            return res.send('https://christianengineeringsolutions.com/passage/' + encodeURIComponent(copy.title) + '/' + copy._id);
+        }
+        else{
+            return res.send("Wrong Credentials.");
+        }
     }
 });
 
@@ -1103,20 +1113,16 @@ app.get('/stripeOnboarded', async (req, res, next) => {
     }
   });
 
-app.post('/login', function(req, res) {
+app.post('/login', async function(req, res) {
     //check if email has been verified
-    authenticateUsername(req.body.username, req.body.password, function(err, user){
-        if(err){
-            console.log(err);
-        }
-        if(!user){
-            res.redirect('/loginform');
-        }
-        else{
-            req.session.user = user;
-            res.redirect('/profile/'+ user.username + '/' + user._id);
-        }
-    });
+    var user = await authenticateUsername(req.body.username, req.body.password);
+    if(user){
+        req.session.user = user;
+        return res.redirect('/profile/'+ user.username + '/' + user._id);
+    }
+    else{
+        return res.redirect('/loginform');
+    }
 });
 app.get('/admin', function(req, res){
     if(!req.session.user || !req.session.user.admin){
@@ -1169,24 +1175,17 @@ app.post('/update_settings/', async function(req, res) {
       req.body.passwordConf && 
       req.body.password == req.body.passwordConf &&
       req.body.oldPassword) {  
-        authenticateUsername(req.body.oldUsername, req.body.oldPassword, function(err, user){
-            if(err){
-                console.log(err);
-            }
+        var user = await authenticateUsername(req.body.oldUsername, req.body.oldPassword);
+        if(user){
             req.session.user = user;
             user.name = req.body.name;
             user.username = req.body.newUsername;
             user.email = req.body.email;
-            user.password = bcrypt.hash(req.body.password, 10, async function (err, hash){
-                if (err) {
-                  console.log(err);
-                }
-                user.password = hash;
-                await user.save();
-                return res.redirect('/profile/' + user._id);
-            });
-        });
-    } 
+            user.password = await bcrypt.hash(req.body.password, 10);
+            await user.save();
+            return res.redirect('/profile/' + user._id);
+        }
+    }
     else{
         return res.redirect("/profile");
     }
@@ -1467,52 +1466,34 @@ app.post('/update_thumbnail', async (req, res) => {
     });
     res.send("Done");
 });
+
 //for API :: blender add-on
 app.post('/upload_model', async (req, res) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let obj = {};
     let search = '';
-    if(req.body.username.match(regex) === null){
-        //it's a username
-        search = "username";
+    var user = await authenticateUsername(req.body.username, req.body.password);
+    if(user){
+        var fileToUpload = req.files.file;
+        var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+        fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
+            if (err){
+                return res.status(500).send(err);
+            }
+        });
+        var passage = await Passage.create({
+            sourceList: req.body.sources,
+            author: user._id,
+            title: req.body.title,
+            mimeType: 'model',
+            filename: uploadTitle,
+            thumbnail: null
+        });
+        return res.send("Done");
     }
     else{
-        //it's an email
-        search = "email";
+        return res.send("Wrong Credentials.");
     }
-    obj[search] = req.body.username;
-    User.findOne(obj)
-      .exec(function (err, user) {
-        if (err) {
-          return callback(err)
-        } else if (!user) {
-          var err = new Error('User not found.');
-          err.status = 401;
-          return res.send("User not found.");
-        }
-        bcrypt.compare(req.body.password, user.password, async function (err, result) {
-          if (result === true) {
-            var fileToUpload = req.files.file;
-            var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
-            fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
-                if (err){
-                    return res.status(500).send(err);
-                }
-            });
-            var passage = await Passage.create({
-                sourceList: req.body.sources,
-                author: user._id,
-                title: req.body.title,
-                mimeType: 'model',
-                filename: uploadTitle,
-                thumbnail: null
-            });
-            return res.send("Done");
-          } else {
-            return res.send("Wrong Credentials.");
-          }
-        })
-      });
 });
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
@@ -1604,6 +1585,7 @@ var extList = {
     'javascript' : '.js',
     'css' : '.css',
     'mixed' : '.html',
+    'bash': '.sh'
 };
 //GET more extensive list
 function getExt(lang){
@@ -1838,7 +1820,39 @@ function authenticateUser(email, password, callback) {
       })
     });
 }
-function authenticateUsername(username, password, callback) {
+// function authenticateUsername(username, password, callback) {
+//     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     let obj = {};
+//     let search = '';
+//     if(username.match(regex) === null){
+//         //it's a username
+//         search = "username";
+//     }
+//     else{
+//         //it's an email
+//         search = "email";
+//     }
+//     obj[search] = username;
+//     User.findOne(obj)
+//       .exec(function (err, user) {
+//         if (err) {
+//           return callback(err)
+//         } else if (!user) {
+//           var err = new Error('User not found.');
+//           err.status = 401;
+//           console.log(err);
+//           return callback(err);
+//         }
+//         bcrypt.compare(password, user.password, function (err, result) {
+//           if (result === true) {
+//             return callback(err, user);
+//           } else {
+//             return callback(err);
+//           }
+//         })
+//       });
+//   }
+  async function authenticateUsername(username, password){
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let obj = {};
     let search = '';
@@ -1851,24 +1865,15 @@ function authenticateUsername(username, password, callback) {
         search = "email";
     }
     obj[search] = username;
-    User.findOne(obj)
-      .exec(function (err, user) {
-        if (err) {
-          return callback(err)
-        } else if (!user) {
-          var err = new Error('User not found.');
-          err.status = 401;
-          console.log(err);
-          return callback(err);
-        }
-        bcrypt.compare(password, user.password, function (err, result) {
-          if (result === true) {
-            return callback(err, user);
-          } else {
-            return callback(err);
-          }
-        })
-      });
+    var user = await User.findOne(obj);
+    if(!user){
+        return false;
+    }
+    var result = await bcrypt.compare(password, user.password);
+    if(result === true){
+        return user;
+    }
+    return false;
   }
 function sendEmail(to, subject, body){
     var transporter = nodemailer.createTransport({

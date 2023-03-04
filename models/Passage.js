@@ -128,7 +128,7 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    license: String
+    license: String,
 
 });
 var autoPopulateChildren = function(next) {
