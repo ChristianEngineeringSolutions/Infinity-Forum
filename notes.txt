@@ -64,5 +64,3 @@ Peer to Peer w/ Encryption
 FileSystem Terminal
 Blender extension update
 Tests
-For push auth:
-prompt password; add to form; submit()
