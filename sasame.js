@@ -197,20 +197,20 @@ function monthDiff(d1, d2) {
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     //80% of funds to users
-    var usd = totalUSD() * 0.80;
+    var usd = parseInt(await totalUSD()) * 0.80;
     let users = await User.find({stripeOnboardingComplete: true});
     for(const user of users){
         //appropriate percentage based on stars
         //users get same allotment as they have percentage of stars
-        let userUSD = (await percentStars(user.starsGiven)) * usd;
+        let userUSD = parseInt((await percentStars(user.starsGiven)) * usd);
         const transfer = await stripe.transfers.create({
             amount: userUSD,
             currency: "usd",
             destination: user.stripeAccountId,
         });
     }
+    console.log("Users paid");
 }
-
 //get percentage of total stars
 async function percentStars(user_stars){
     let final = user_stars / (await totalStars());
@@ -227,7 +227,7 @@ async function totalUSD(){
     var usd = 0;
     for(const i of balance.available){
         if(i.currency == 'usd'){
-            usd = i.amount / 100;
+            usd = i.amount;
             break;
         }
     }
@@ -304,7 +304,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
     var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
-    res.render("profile", {usd: usd, subPassages: false, passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
+    res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
@@ -606,7 +606,7 @@ app.get('/donate', async function(req, res){
     }
     var usd = await totalUSD();
     var stars = await totalStars();
-    res.render('donate', {passage: {id: 'root'}, usd: usd, stars: stars});
+    res.render('donate', {passage: {id: 'root'}, usd: (usd/100), stars: stars});
 });
 //Search
 app.post('/search_leaderboard/', async (req, res) => {
