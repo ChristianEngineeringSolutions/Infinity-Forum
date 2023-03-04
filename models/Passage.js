@@ -52,6 +52,11 @@ const passageSchema = mongoose.Schema({
     }],
     //Send them to the server with the sources if they are external
     sourceLink: String,
+    //for keeping track of contributors peer to peer or from local pushes
+    collaborators: {
+        type: [String],
+        default: []
+    },
     content: String,
     //forces content to be a unique value unless null
     // content: {

@@ -255,6 +255,18 @@ async function starPassage(req, amount, passageID, userID){
     if(passage.author._id.toString() != req.session.user._id.toString()){
         user.starsGiven += amount;
         passage.author.stars += amount;
+        //give stars to collaborators if applicable
+        if(passage.collaborators.length > 0){
+            for(const collaborator in passage.collaborators){
+                if(collaborator == passage.author.email){
+                    //we already starred the author
+                    continue;
+                }
+                let collaber = await User.findOne({email:collaborator});
+                collaber.stars += amount;
+                await collaber.save();
+            }
+        }
         await passage.author.save();
     }
     await user.save();
@@ -432,6 +444,7 @@ app.post('/pull', async (req, res) => {
             //bookmark passage
             await bookmarkPassage(copy._id, pushingAuthor._id);
             copy.sourceLink = null;
+            copy.collaborators.push(copy.author.email);
             //file from form sent by requests module
             //(local sasame may not have public URL)
             //upload main file
@@ -1875,6 +1888,16 @@ function requiresLogin(req, res, next) {
     err.status = 401;
     return next(err);
   }
+}
+
+
+//AI
+async function PrimeEngine(){
+
+}
+
+async function BetaEngine(){
+
 }
 
 
