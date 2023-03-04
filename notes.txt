@@ -59,6 +59,10 @@ Sending passage forward or back is the same as a citation
 
 
 Tasks:
-Push/pull
-    If remote add pull option to passage in CES Connect
-Blender extension
+Polish CES Connect
+Peer to Peer w/ Encryption
+FileSystem Terminal
+Blender extension update
+Tests
+For push auth:
+prompt password; add to form; submit()

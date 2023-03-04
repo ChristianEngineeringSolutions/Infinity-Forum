@@ -412,13 +412,15 @@ $(function(){
     });
     $(document).on('click', '[id^="passage_push_"]', function(e){
         var _id = getPassageId(this);
+        var password = prompt("Password:");
         var passage = $('#full_push_passage_' + _id).val();
         $.ajax({
             type: 'post',
             url: '/push',
             data: {
                 _id: _id,
-                passage: passage
+                passage: passage,
+                password: password
             },
             success: function(data){
                 flashIcon($('#passage_push_' + _id), 'green');
