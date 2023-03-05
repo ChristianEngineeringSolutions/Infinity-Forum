@@ -31,7 +31,6 @@ const FormData = require('form-data');
 
 const writeFile = promisify(fs.writeFile);
 const readdir = promisify(fs.readdir);
-
 //pagination for home and profile
 const DOCS_PER_PAGE = 10; // Documents per Page Limit (Pagination)
 
@@ -294,21 +293,45 @@ async function notifyUser(userId, content, type="General"){
     });
 }
 //ROUTES
+app.get('/personal/:user_id', async (req, res) => {
+    if(!req.session.user || req.session.user._id != req.params.user_id){
+        return res.redirect('/');
+    }
+    else{
+        var passages = await Passage.find({author: req.params.user_id, personal: true});
+        let bookmarks = [];
+        if(req.session.user){
+            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        }
+        return res.render("index", {
+            subPassages: false,
+            passageTitle: 'Christian Engineering Solutions', 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+        });
+    }
+});
 
 //GET (or show view)
 app.get("/profile/:username?/:_id?/", async (req, res) => {
     let bookmarks = [];
     let profile;
-    if(typeof req.params._id == 'undefined'){
+    if(typeof req.params.username == 'undefined'){
         if(!req.session.user){
-            res.redirect('/');
+            console.log('testingggg');
+            return res.redirect('/');
         }
         profile = req.session.user;
     }
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let find = {author: profile, deleted: false};
+    let find = {author: profile, deleted: false, personal: false};
     //if it's their profile show personal passages
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
     //     find.$or = [{personal: true}, {personal: false}];
@@ -596,6 +619,7 @@ app.get('/', async (req, res) => {
         var user = req.session.user || null;
         let passages = await Passage.find({
             deleted: false,
+            personal: false,
         }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
         let passageUsers = [];
         let bookmarks = [];
@@ -638,6 +662,7 @@ app.post('/search_profile/', async (req, res) => {
     let results = await Passage.find({
         author: req.body._id,
         deleted: false,
+        personal: false,
         title: {
         $regex: req.body.search,
         $options: 'i',
@@ -653,6 +678,7 @@ app.post('/ppe_search/', async (req, res) => {
     let results = await Passage.find({
         parent: parent,
         deleted: false,
+        personal: false,
         mimeType: 'image',
         title: {
         $regex: req.body.search,
@@ -666,6 +692,7 @@ app.post('/search_passage/', async (req, res) => {
     let results = await Passage.find({
         parent: req.body._id,
         deleted: false,
+        personal: false,
         title: {
         $regex: req.body.search,
         $options: 'i',
@@ -677,8 +704,10 @@ app.post('/search_passage/', async (req, res) => {
     });
 });
 app.post('/search/', async (req, res) => {
+    console.log("hey: " + req.body.personal);
     let results = await Passage.find({
         deleted: false,
+        personal: req.body.personal,
         title: {
         $regex: req.body.search,
         $options: 'i',
@@ -987,6 +1016,9 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id}).populate('parent author users sourceList');
+    if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
+        return res.send("Must be on Userlist");
+    }
     passage.showIframe = false;
     if(passage == null){
         return res.redirect('/');
@@ -998,7 +1030,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         });
     }
     if(passage.public == true){
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     }
     else{
         var all = {
@@ -1010,7 +1042,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         if(all.html.length > 0 || all.css.length > 0 || all.javascript.length > 0){
             passage.showIframe = true;
         }
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');
+        var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
     }
     //reorder sub passages to match order of passage.passages
     var reordered = Array(subPassages.length).fill(0);
@@ -1227,7 +1259,8 @@ app.post('/paginate', async function(req, res){
     let parent = req.body.passage;
     if(profile != 'leaderboard'){
         let find = {
-            title: new RegExp(''+search+'', "i")
+            title: new RegExp(''+search+'', "i"),
+            personal: false
         };
         if(parent != 'root'){
             find.parent = parent;
@@ -1291,7 +1324,8 @@ app.post('/create_passage/', async (req, res) => {
     else{
         parentId = parentPassageId;
         parent = await Passage.findOne({_id: parentId});
-        if(!scripts.isPassageUser(req.session.user, parent) && !parent.public){
+        //can only add to private or personal if on the userlist
+        if(!scripts.isPassageUser(req.session.user, parent) && (!parent.public || parent.personal)){
             return res.send("Must be on userlist.");
         }
     }
