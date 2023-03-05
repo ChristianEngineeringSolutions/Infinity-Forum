@@ -310,3 +310,26 @@ $(function(){
         }
     });
 });
+
+//SOCKETS
+// var passageID = '6404133eae65f8dc5be79946';
+// const socket = io();
+
+
+// //CORS
+// // const socket = io("https://api.example.com", {
+// //   withCredentials: true,
+// //   extraHeaders: {
+// //     "my-custom-header": "abcd"
+// //   }
+// // });
+
+
+// //create room
+// socket.emit('controlPassage', passageID);
+// //recieve response
+// socket.on(passageID, function(msg) {
+//     console.log(msg);
+//   });
+// //send message to room
+// socket.emit('add', 'Hello');

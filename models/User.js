@@ -75,6 +75,10 @@ const userSchema = mongoose.Schema({
       default: null
     },
     lastSubscribed: String,
+    room: {
+      type: String,
+      default: 'root'
+    }, //handle sockets by passage
     stripeOnboardingComplete: {
       type: Boolean,
       default: false

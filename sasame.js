@@ -12,7 +12,8 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 var http = require('http');
 const https = require('https');
-var io = require('socket.io')(http.Server(app));
+
+
 // Models
 const User = require('./models/User');
 const Passage = require('./models/Passage');
@@ -43,6 +44,19 @@ mongoose.connect(process.env.MONGODB_CONNECTION_URL, {
 });
 
 var app = express();
+var server = http.Server(app);
+
+//socket io
+const io = require('socket.io')(server);
+// const io = require("socket.io")(server, {
+//     cors: {
+//       origin: "https://example.com",
+//       methods: ["GET", "POST"],
+//       allowedHeaders: ["my-custom-header"],
+//       credentials: true
+//     }
+//   });
+
 app.use(cors());
 app.use(helmet());
 app.use(fileUpload());
@@ -72,7 +86,17 @@ app.use(bodyParser.json({
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // User Session Setup Logic
-const session = require('express-session');
+const session = require('express-session')({
+    secret: "ls",
+    resave: true,
+    saveUninitialized: true,
+    // store: new MongoStore({
+    //     db: 'sasame',
+    //     host: '127.0.0.1',
+    //     port: 3000
+    // })
+});
+var sharedsession = require("express-socket.io-session");
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
 var MongoStore  = require('connect-mongo');
@@ -90,15 +114,9 @@ scripts.isPassageUser = function(user, passage){
     return false;
 };
 app.use(cookieParser());
-app.use(session({
-    secret: "ls",
-    resave: true,
-    saveUninitialized: true,
-    // store: new MongoStore({
-    //     db: 'sasame',
-    //     host: '127.0.0.1',
-    //     port: 3000
-    // })
+app.use(session);
+io.use(sharedsession(session, {
+    autoSave: true
 }));
 app.use(async function(req, res, next) {
     //shortcuts for ejs
@@ -764,7 +782,6 @@ app.post('/transfer_bookmark', async (req, res) => {
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
-    console.log('test');
     let bookmarks = [];
     if(req.session.user){
         let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
@@ -1984,7 +2001,6 @@ async function PrimeEngine(){
 //beta engine makes passage into daemon and feeds PrimeEngine
 //anneal by rank
 async function BetaEngine(original){
-    console.log('test');
     var titleEnd = " - Sasame AI";
     var author = await User.findOne({admin:true});
     //get random passage as daemon
@@ -2021,9 +2037,35 @@ async function cleanEngine(){
 }
 // cleanEngine();
 
+//SOCKETS 
+io.on('connection', async (socket) => {
+    socket.join('root');
+    console.log('A user connected');
+    //set room from client by sending passageID
+    socket.on('controlPassage', async (passageID) => {
+        console.log('works');
+        // console.log(socket.handshake.session);
+        var passage = await Passage.findOne({_id: passageID});
+        socket.leave('root');
+        socket.join(passage._id.toString());
+        await User.findOneAndUpdate({_id: socket.handshake.session.user._id.toString()}, {$set: {room: passage._id.toString()}});
+        io.sockets.in(passage._id.toString()).emit(passage._id.toString(), "Room for Passage: " + passage.title);
+      });
+    //send messages to room from client
+    socket.on('add', async (msg) => {
+        var user = await User.findOne({_id: socket.handshake.session.user._id.toString()});
+        var room = user.room;
+        console.log(room);
+        io.sockets.in(room).emit(room, user.name + ': ' + msg);
+
+    });
+    socket.on('disconnect', function () {
+        console.log('A user disconnected');
+     });
+});
 
 // CLOSING LOGIC
-var server = app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Sasame started on Port ${PORT}`);
 });
 process.on('uncaughtException', function(err){
@@ -2036,3 +2078,4 @@ process.on('SIGTERM', function(err){
     console.log(err);
     server.close();
 });
+
