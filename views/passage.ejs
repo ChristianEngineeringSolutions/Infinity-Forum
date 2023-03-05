@@ -70,15 +70,16 @@
         <% } %>
     </div>
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
+    <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
     <%if(passage.content != null && passage.content != ''){%>
         <hr class="hr">
         <%}%>
         <div class="detail_description" name="content" id="passage_detail_content_<%=passage._id%>"><%-passage.content%></div>
-    <!-- <ul class="passage_tabs">
-        <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
-        <!-- Display Result -->
-        <!-- <li class="passage_tab">Alternates</li> -->
-    <!-- </ul> -->
+        <!-- <ul class="passage_tabs">
+            <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
+            <!-- Display Result -->
+            <!-- <li class="passage_tab">Alternates</li> -->
+        <!-- </ul> -->
     <%if(user && passage.author._id == user._id){%>
         <%- include('editor') %>
     <%}else{%>
