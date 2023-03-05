@@ -22,7 +22,6 @@ Editor live updates
 
 Add back recordings; voice activation;
 real time UI updates for every action
-bugfix make sure sources always show
 
 Need tabs?
 StarSystem
@@ -32,7 +31,7 @@ Clean out passage controller
 
 Cordova*
 
-Personal Passages (Maybe not)
+Personal Passages (Maybe not) (Use Subscription)
 
 Daemon search and pin
 Daemon Mark
@@ -48,20 +47,9 @@ recovery exp
 
 ---------------------------------------------------
 
-Database merge notes:
-reset passages to 0 stars on local.
-When sent back to remote also reset to 0 stars.
-So credit not gained until on mainserver or subserver
-
-add passages to author based on same email
-
-Sending passage forward or back is the same as a citation
-
-
 Tasks:
-Polish CES Connect
+Polish CES Connect (check all URLS)
 Peer to Peer w/ Encryption
-FileSystem Terminal
+FileSystem Terminal/run files
 Blender extension update
 Tests
-Prime Engine

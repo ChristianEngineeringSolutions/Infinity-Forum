@@ -1958,7 +1958,7 @@ async function BetaEngine(original){
     //might need to stringify personalDaemon.params
     //anyway; this makes it easy for a daemon to access its parameters
     //then, might I suggest NOHTML?
-    personalDaemon.libs = 'const PARAMTITLES = ['+paramTitles+'];';
+    personalDaemon.libs = 'const PARAMTITLES = ['+paramTitles+'];\n';
     personalDaemon.libs +=  'const PARAMS = '+personalDaemon.params+';\n'; //wont show in editor (long) but they can access the var
     personalDaemon.javascript = '//const PARAMTITLES = ['+paramTitles+'];\n//Parse JSON after indexing by int\n// ex. var param1 = JSON.parse(PARAMS[0]); // (Returns Passage)\n' + personalDaemon.javascript;
     //ex. var button = params[0].title; //make button from param
