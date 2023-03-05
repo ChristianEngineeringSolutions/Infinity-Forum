@@ -582,7 +582,6 @@ app.post('/cesconnect', function(req, res){
 });
 //index.html
 app.get('/', async (req, res) => {
-    await PrimeEngine();
     //REX
     if(req.session.CESCONNECT){
         getRemotePage(req, res);
@@ -1905,9 +1904,9 @@ function requiresLogin(req, res, next) {
 }
 
 //AI
-(async function(){
-    await PrimeEngine();
-})();
+// (async function(){
+//     await PrimeEngine();
+// })();
 //run every minute
 cron.schedule('* * * * *', async () => {
     await PrimeEngine();
@@ -1958,8 +1957,6 @@ async function BetaEngine(original){
     var numDaemons = await Passage.countDocuments();
     // Get a random entry
     var slide = await anneal();
-    console.log(numDaemons);
-    console.log(slide);
     // var random = Math.floor(Math.random() * numDaemons);
     var daemon = await Passage.findOne().sort('stars').skip(slide).exec();
     //personalize daemon to affect target passage
@@ -1988,7 +1985,7 @@ async function cleanEngine(){
     await Passage.deleteMany({synthetic: true, stars: 0});
     console.log("Cleaned AI.");
 }
-cleanEngine();
+// cleanEngine();
 
 
 // CLOSING LOGIC
