@@ -1897,6 +1897,9 @@ function requiresLogin(req, res, next) {
 }
 
 //AI
+// (async function(){
+//     await PrimeEngine();
+// })();
 //run every minute
 cron.schedule('* * * * *', async () => {
     await PrimeEngine();
@@ -1943,36 +1946,28 @@ async function BetaEngine(original){
         
     }, true);
     personalDaemon.synthetic = true;
-    personalDaemon.params = [];
-    for(const sub of original.passages){
-        if(!personalDaemon.sourceList.includes(sub._id)){
-            personalDaemon.sourceList.push(sub._id);
-        }
-        personalDaemon.params.push(JSON.stringify(sub));
-    }
+    personalDaemon.param = JSON.stringify(original);
     personalDaemon.title = personalDaemon.title.split(' - Sasame AI')[0] + titleEnd;
-    var paramTitles = '';
-    for(const param in personalDaemon.params){
-        paramTitles += JSON.parse(param).title + ',';
-    }
+    var paramTitle = '';
+    paramTitle += JSON.parse(personalDaemon.param).title;
     //might need to stringify personalDaemon.params
     //anyway; this makes it easy for a daemon to access its parameters
     //then, might I suggest NOHTML?
-    personalDaemon.libs = 'const PARAMTITLES = ['+paramTitles+'];\n';
-    personalDaemon.libs +=  'const PARAMS = '+personalDaemon.params+';\n'; //wont show in editor (long) but they can access the var
-    personalDaemon.javascript = '//const PARAMTITLES = ['+paramTitles+'];\n//Parse JSON after indexing by int\n// ex. var param1 = JSON.parse(PARAMS[0]); // (Returns Passage)\n' + personalDaemon.javascript;
+    personalDaemon.libs = 'const PARAMTITLE = "'+paramTitle+'";\n';
+    personalDaemon.libs +=  'const PARAM = '+personalDaemon.param+';\n'; //wont show in editor (long) but they can access the var
+    personalDaemon.javascript = '//const PARAMTITLE = "'+paramTitle+'";\n// ex. var paramDetails = JSON.stringify(PARAM); // (PARAM is a passage)\n' + (personalDaemon.javascript || '');
     //ex. var button = params[0].title; //make button from param
     await personalDaemon.save();
     //in iframe will be a modification of the original passage
     return personalDaemon;
 }
-
 async function cleanEngine(){
     //delete all synthetic passage with 0 stars
     //and all sub passages
     await Passage.deleteMany({synthetic: true, stars: 0});
+    console.log("Cleaned AI.");
 }
-
+// cleanEngine();
 
 
 // CLOSING LOGIC

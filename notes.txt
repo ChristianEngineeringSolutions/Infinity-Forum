@@ -24,7 +24,6 @@ Add back recordings; voice activation;
 real time UI updates for every action
 
 Need tabs?
-StarSystem
 
 Clean out passage controller
 
@@ -53,3 +52,4 @@ Peer to Peer w/ Encryption
 FileSystem Terminal/run files
 Blender extension update
 Tests
+Insert AI passages into AI Chapter :)
