@@ -77,7 +77,8 @@ $(function(){
                 type: 'post',
                 url: DOMAIN + '/search/' + fromOtro,
                 data: {
-                    search: thiz.val()
+                    search: thiz.val(),
+                    personal: window.location.href.split('/').at(-2) == 'personal' ? true : false
                 },
                 success: function(data){
                     $('#passage_wrapper').html(data);

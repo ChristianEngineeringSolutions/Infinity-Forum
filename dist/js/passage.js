@@ -345,6 +345,17 @@ $(function(){
                             publicSetting.addClass('green');
                         }
                         break;
+                    case 'personal':
+                        let personalSetting = $('#passage_setting_make_personal_' + _id);
+                        if(personalSetting.hasClass('green')){
+                            personalSetting.removeClass('green');
+                            personalSetting.addClass('red');
+                        }
+                        else if(personalSetting.hasClass('red')){
+                            personalSetting.removeClass('red');
+                            personalSetting.addClass('green');
+                        }
+                        break;
                     case 'request-public-daemon':
                         if(thiz.hasClass('yellow')){
                             thiz.removeClass('yellow');
