@@ -26,9 +26,12 @@ const passageSchema = mongoose.Schema({
     html: String,
     css: String,
     javascript: String,
-    libs: String, //included libs for JS, for starting synthetic passages
+    libs: {
+        type: String,
+        default: ``
+    }, //included libs for JS, for starting synthetic passages
     //for daemons:
-    params: [String],
+    param: String,
     //to replace html/css/javascript
     code: String,
     lang: {

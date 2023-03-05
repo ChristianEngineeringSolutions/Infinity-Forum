@@ -179,6 +179,7 @@ app.get('/highlight.js', function(req, res) {
 var cron = require('node-cron');
 const { exit } = require('process');
 const { response } = require('express');
+const e = require('express');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
@@ -581,6 +582,7 @@ app.post('/cesconnect', function(req, res){
 });
 //index.html
 app.get('/', async (req, res) => {
+    await PrimeEngine();
     //REX
     if(req.session.CESCONNECT){
         getRemotePage(req, res);
@@ -1818,6 +1820,12 @@ app.post('/install_passage', async function(req, res){
 app.get('/terms', function(req, res) {
     res.render('terms');
 });
+//API Funcs for returning objects directly
+//TODO: Just check for api parameter in original routes
+//for daemons to get passages
+app.get('/findOne', async function(req, res) {
+    return res.send(await Passage.findOne({_id: req.query._id}));
+});
 //FUNCTIONS
 //authenticate input against database
 function authenticateUser(email, password, callback) {
@@ -1897,27 +1905,34 @@ function requiresLogin(req, res, next) {
 }
 
 //AI
-// (async function(){
-//     await PrimeEngine();
-// })();
+(async function(){
+    await PrimeEngine();
+})();
 //run every minute
 cron.schedule('* * * * *', async () => {
     await PrimeEngine();
-    console.log('Synthetic Passage Created.');
 });
 //clean engine every 10 minutes
 cron.schedule('*/10 * * * *', async () => {
     await cleanEngine();
     console.log('Cleaned AI.');
 });
-function annealInsert(){
-    //
-}
-function annealByRank(){
-
-}
-function annealByDate(){
-
+//return synthetically annealled random passage
+//in other words, bias towards a greater number of stars
+async function anneal(){
+    var numDaemons = await Passage.countDocuments();
+    //bias towards later records (more stars)
+    var random1 = Math.floor(Math.random() * numDaemons * 3.3333333);
+    //go back some
+    var random2 = Math.floor(Math.random() * numDaemons);
+    var slide = random1 - random2;
+    if(slide >= numDaemons){
+        slide = numDaemons - 1;
+    }
+    else if(slide < 0){
+        slide = 0;
+    }
+    return slide;
 }
 //just treats all passages as daemons
 async function PrimeEngine(){
@@ -1925,24 +1940,30 @@ async function PrimeEngine(){
     //Get random passage from database
     var numDaemons = await Passage.countDocuments();
     // Get a random entry
-    var random = Math.floor(Math.random() * numDaemons);
-    var passage = await Passage.findOne().skip(random).exec();
+    // var random = Math.floor(Math.random() * numDaemons);
+    var slide = await anneal();
+    var passage = await Passage.findOne().sort('stars').skip(slide).exec();
     //modify daemon with another daemon
-    let modifiedPassage = BetaEngine(passage);
+    var modifiedPassage = await BetaEngine(passage);
+    console.log('Synthetic Passage Created: ' + modifiedPassage.title);
 }
 
 //beta engine makes passage into daemon and feeds PrimeEngine
 //anneal by rank
 async function BetaEngine(original){
+    console.log('test');
     var titleEnd = " - Sasame AI";
     var author = await User.findOne({admin:true});
     //get random passage as daemon
     var numDaemons = await Passage.countDocuments();
     // Get a random entry
-    var random = Math.floor(Math.random() * numDaemons);
-    var daemon = await Passage.findOne().skip(random).exec();
+    var slide = await anneal();
+    console.log(numDaemons);
+    console.log(slide);
+    // var random = Math.floor(Math.random() * numDaemons);
+    var daemon = await Passage.findOne().sort('stars').skip(slide).exec();
     //personalize daemon to affect target passage
-    var personalDaemon = await passageController.copyPassage(daemon, [author], null, function(){
+    var personalDaemon = await passageController.copyPassage(daemon, [author], null, async function(){
         
     }, true);
     personalDaemon.synthetic = true;
@@ -1967,7 +1988,7 @@ async function cleanEngine(){
     await Passage.deleteMany({synthetic: true, stars: 0});
     console.log("Cleaned AI.");
 }
-// cleanEngine();
+cleanEngine();
 
 
 // CLOSING LOGIC
