@@ -28,7 +28,7 @@ module.exports = {
         await Passage.deleteOne({_id: passageID.trim()});
         callback();
     },
-    copyPassage: async function(passage, user, parent, callback){
+    copyPassage: async function(passage, user, parent, callback, synthetic=false){
         //add source
         let sourceList = passage.sourceList;
         sourceList.push(passage._id);
@@ -51,7 +51,8 @@ module.exports = {
             mimeType: passage.mimeType,
             thumbnail: passage.thumbnail,
             metadata: passage.metadata,
-            sourceLink: passage.sourceLink
+            sourceLink: passage.sourceLink,
+            synthetic: synthetic
         });
         //Add copy to passage it was duplicated into
         if(parent != "root" && parent != null){
@@ -85,7 +86,8 @@ module.exports = {
                     mimeType: p.mimeType,
                     thumbnail: p.thumbnail,
                     metadata: p.metadata,
-                    sourceLink: p.sourceLink
+                    sourceLink: p.sourceLink,
+                    synthetic: synthetic
                 });
                 copy.passages.push(pcopy._id);
                 await copy.save();

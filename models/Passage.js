@@ -26,6 +26,9 @@ const passageSchema = mongoose.Schema({
     html: String,
     css: String,
     javascript: String,
+    libs: String, //included libs for JS, for starting synthetic passages
+    //for daemons:
+    params: [String],
     //to replace html/css/javascript
     code: String,
     lang: {
@@ -117,6 +120,11 @@ const passageSchema = mongoose.Schema({
     },
     // allow same origin iframes
     personal_cross_origin: {
+        type: Boolean,
+        default: false
+    },
+    //Made by the AI?
+    synthetic: {
         type: Boolean,
         default: false
     },

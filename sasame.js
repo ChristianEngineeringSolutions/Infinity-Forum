@@ -244,7 +244,8 @@ async function totalStars(){
 
 async function starPassage(req, amount, passageID, userID){
     let user = await User.findOne({_id: userID});
-    if(user.stars < amount){
+    //infinite stars on a local sasame
+    if(user.stars < amount && process.env.REMOTE == 'true'){
         return "Not enough stars.";
     }
     user.stars -= amount;
@@ -1141,6 +1142,9 @@ app.get('/admin', function(req, res){
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
+    else{
+        return res.render('admin');
+    }
 });
 app.post('/register/', async function(req, res) {
     if ((req.body.email ||
@@ -1523,6 +1527,8 @@ app.post('/update_passage/', async (req, res) => {
     passage.tags = formData.tags;
     passage.code = formData.code;
     passage.lang = formData.lang;
+    //no longer synthetic if it has been edited
+    passage.synthetic = false;
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
@@ -1890,14 +1896,81 @@ function requiresLogin(req, res, next) {
   }
 }
 
-
 //AI
-async function PrimeEngine(){
+//run every minute
+cron.schedule('* * * * *', async () => {
+    await PrimeEngine();
+    console.log('Synthetic Passage Created.');
+});
+//clean engine every 10 minutes
+cron.schedule('*/10 * * * *', async () => {
+    await cleanEngine();
+    console.log('Cleaned AI.');
+});
+function annealInsert(){
+    //
+}
+function annealByRank(){
 
 }
+function annealByDate(){
 
-async function BetaEngine(){
+}
+//just treats all passages as daemons
+async function PrimeEngine(){
+    var passage;
+    //Get random passage from database
+    var numDaemons = await Passage.countDocuments();
+    // Get a random entry
+    var random = Math.floor(Math.random() * numDaemons);
+    var passage = await Passage.findOne().skip(random).exec();
+    //modify daemon with another daemon
+    let modifiedPassage = BetaEngine(passage);
+}
 
+//beta engine makes passage into daemon and feeds PrimeEngine
+//anneal by rank
+async function BetaEngine(original){
+    var titleEnd = " - Sasame AI";
+    var author = await User.findOne({admin:true});
+    //get random passage as daemon
+    var numDaemons = await Passage.countDocuments();
+    // Get a random entry
+    var random = Math.floor(Math.random() * numDaemons);
+    var daemon = await Passage.findOne().skip(random).exec();
+    //personalize daemon to affect target passage
+    var personalDaemon = await passageController.copyPassage(daemon, [author], null, function(){
+        
+    }, true);
+    personalDaemon.synthetic = true;
+    personalDaemon.params = [];
+    for(const sub of original.passages){
+        if(!personalDaemon.sourceList.includes(sub._id)){
+            personalDaemon.sourceList.push(sub._id);
+        }
+        personalDaemon.params.push(JSON.stringify(sub));
+    }
+    personalDaemon.title = personalDaemon.title.split(' - Sasame AI')[0] + titleEnd;
+    var paramTitles = '';
+    for(const param in personalDaemon.params){
+        paramTitles += JSON.parse(param).title + ',';
+    }
+    //might need to stringify personalDaemon.params
+    //anyway; this makes it easy for a daemon to access its parameters
+    //then, might I suggest NOHTML?
+    personalDaemon.libs = 'const PARAMTITLES = ['+paramTitles+'];';
+    personalDaemon.libs +=  'const PARAMS = '+personalDaemon.params+';\n'; //wont show in editor (long) but they can access the var
+    personalDaemon.javascript = '//const PARAMTITLES = ['+paramTitles+'];\n//Parse JSON after indexing by int\n// ex. var param1 = JSON.parse(PARAMS[0]); // (Returns Passage)\n' + personalDaemon.javascript;
+    //ex. var button = params[0].title; //make button from param
+    await personalDaemon.save();
+    //in iframe will be a modification of the original passage
+    return personalDaemon;
+}
+
+async function cleanEngine(){
+    //delete all synthetic passage with 0 stars
+    //and all sub passages
+    await Passage.deleteMany({synthetic: true, stars: 0});
 }
 
 
