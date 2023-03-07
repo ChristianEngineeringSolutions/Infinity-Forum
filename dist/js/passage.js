@@ -336,11 +336,13 @@ $(function(){
                         break;
                     case 'private':
                         let publicSetting = $('#passage_setting_make_public_' + _id);
+                        console.log(publicSetting);
                         if(publicSetting.hasClass('green')){
                             publicSetting.removeClass('green');
                             publicSetting.addClass('red');
                         }
                         else if(publicSetting.hasClass('red')){
+                            console.log('?');
                             publicSetting.removeClass('red');
                             publicSetting.addClass('green');
                         }
