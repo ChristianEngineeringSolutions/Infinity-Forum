@@ -12,6 +12,7 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 var http = require('http');
 const https = require('https');
+var compression = require('compression');
 
 
 // Models
@@ -57,9 +58,11 @@ const io = require('socket.io')(server);
 //     }
 //   });
 
+app.use(compression());
 app.use(cors());
 app.use(helmet());
 app.use(fileUpload());
+
 // make sure recordings folder exists
 const recordingFolder = './dist/recordings/';
 if (!fs.existsSync(recordingFolder)) {
@@ -715,6 +718,18 @@ app.post('/search_passage/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    if(results.length < 1 && req.session.user){
+        var parent = await Passage.findOne({_id: req.body._id});
+        if(parent.public){
+            let passage = await Passage.create({
+                author: req.session.user,
+                parent: req.body._id,
+                title: req.body.search,
+                public: true
+            });
+            results = [passage];
+        }
+    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -722,7 +737,6 @@ app.post('/search_passage/', async (req, res) => {
     });
 });
 app.post('/search/', async (req, res) => {
-    console.log("hey: " + req.body.personal);
     let results = await Passage.find({
         deleted: false,
         personal: req.body.personal,
@@ -730,6 +744,16 @@ app.post('/search/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    console.log(results.length);
+    if(results.length < 1 && req.session.user){
+        let passage = await Passage.create({
+            author: req.session.user,
+            parent: null,
+            title: req.body.search,
+            public: true
+        });
+        results = [passage];
+    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1008,6 +1032,9 @@ app.get('/eval/:passage_id', async function(req, res){
         css: passage.css,
         javascript: passage.javascript
     };
+    if(passage.lang == 'javascript'){
+        all.javascript = passage.code;
+    }
     if(passage.public == false){
         getAllSubPassageCode(passage, all);
     }
@@ -1188,12 +1215,30 @@ app.post('/login', async function(req, res) {
         return res.redirect('/loginform');
     }
 });
-app.get('/admin', function(req, res){
+//test
+app.get('/admin', async function(req, res){
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
     else{
-        return res.render('admin');
+        //view all passages requesting to be a public daemon
+        var passages = await Passage.find({public_daemon:1}).sort('-stars');
+        let bookmarks = [];
+        if(req.session.user){
+            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        }
+        return res.render("admin", {
+            subPassages: false,
+            test: 'test',
+            passageTitle: 'Christian Engineering Solutions', 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+        });
     }
 });
 app.post('/register/', async function(req, res) {
@@ -1562,6 +1607,13 @@ app.post('/upload_model', async (req, res) => {
     }
     else{
         return res.send("Wrong Credentials.");
+    }
+});
+app.post('/update_metadata', async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body._id});
+    if(req.session.user && passage.author._id.toString() == req.session.user._id.toString()){
+        passage.metadata = req.body.metadata;
+        await passage.save();
     }
 });
 app.post('/update_passage/', async (req, res) => {

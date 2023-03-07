@@ -140,6 +140,11 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // Makes it a daemon for all users by default
+    default_daemon: {
+        type: Boolean,
+        default: false
+    },
     isSVG: {
         type: Boolean,
         default: false
