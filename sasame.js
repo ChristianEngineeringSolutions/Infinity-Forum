@@ -745,6 +745,26 @@ app.post('/ppe_search/', async (req, res) => {
         thumbnails: results,
     });
 });
+// async function fixMissingInParent(){
+//     let passages = await Passage.find();
+//     for(const passage of passages){
+//         if(passage.parent != null){
+//             console.log('test:'+passage.parent);
+//             var parent = await Passage.findOne({_id: passage.parent.toString()});
+//             console.log(parent);
+//             console.log(parent.passages.includes(passage));
+//             // if(!parent.passages.includes(passage)){
+//             //     parent.passages.push(passages);
+//             // }
+//             // else{
+//             //     continue;
+//             // }
+//         }
+//     }
+// }
+// (async function(){
+//     await fixMissingInParent();
+// })();
 app.post('/search_passage/', async (req, res) => {
     let results = await Passage.find({
         parent: req.body._id,
@@ -758,11 +778,13 @@ app.post('/search_passage/', async (req, res) => {
         var parent = await Passage.findOne({_id: req.body._id});
         if(parent.public){
             let passage = await Passage.create({
-                author: req.session.user,
+                author: req.session.user._id,
                 parent: req.body._id,
                 title: req.body.search,
                 public: true
             });
+            parent.passages.push(passage);
+            await parent.save();
             results = [passage];
         }
     }
@@ -783,7 +805,7 @@ app.post('/search/', async (req, res) => {
     console.log(results.length);
     if(results.length < 1 && req.session.user){
         let passage = await Passage.create({
-            author: req.session.user,
+            author: req.session.user._id,
             parent: null,
             title: req.body.search,
             public: true
