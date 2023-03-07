@@ -28,8 +28,7 @@
         <%if(user){%>
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <%}%>
-        <%if(passage.users != null && passage.users[0]){%>
-        <%if(passage.users && user && passage.users[0]._id == user._id){%>
+        <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
             <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
             <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
             <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
@@ -50,7 +49,6 @@
                 <input type="text"name="thumbnail"value="">
             </form>
             <input id="passage_json_<%=passage._id%>"type="hidden" value="<%=JSON.stringify(passage)%>">
-        <%}%>
         <%}%>
     </ul>
     <ul class="passage_users">
@@ -85,14 +83,14 @@
     <%}else{%>
     <%}%>
     <!-- Hide Iframe window if there is neither html nor js -->
-    <%if((passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
+    <%if((passage.lang != 'javascript') && (passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
         <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>
         <a target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
     <%}%>
     <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
-        <%if(user && passage.personal_cross_origin && user._id == passage.users[0]._id){%>
+        <%if((user && passage.personal_cross_origin && user._id == passage.users[0]._id) || (passage.public_daemon == 2)){%>
             <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
         <%}else{%>
             <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
@@ -177,7 +175,7 @@
         <!-- Show License -->
     </div>
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
-    <%if((passage.code && passage.code.length > 1) || (passage.html && passage.html.length > 1) || (passage.javascript && passage.javascript.length > 1) || (passage.css && passage.css.length > 1)){%>
+    <%if(passage.lang == 'javascript' || (passage.code && passage.code.length > 1) || (passage.html && passage.html.length > 1) || (passage.javascript && passage.javascript.length > 1) || (passage.css && passage.css.length > 1)){%>
         <ul class="passage_tabs">
             <li id="passage_details_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced view_code">View Code</li>
         </ul>
