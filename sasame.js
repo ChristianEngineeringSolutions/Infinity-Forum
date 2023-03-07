@@ -15,6 +15,35 @@ const https = require('https');
 var compression = require('compression');
 
 
+//for daemons access to help code
+function DAEMONLIBS(passage){
+    return `
+    
+    const THIS = `+JSON.stringify(passage)+`;
+    async function GETDAEMON(daemon, param){
+        var passage = await GETPASSAGE(daemon);
+        var code = passage.code;
+        var parameter = await GETPASSAGE(param);
+        //add Param Line
+        code = "const PARAM = " + JSON.stringify(parameter) + ';' + code;
+        
+        //then eval code
+        return code;
+    }
+    async function GETPASSAGE(_id){
+        //run ajax
+        const result = await $.ajax({
+            type: 'get',
+            url: '`+process.env.DOMAIN+`/get_passage',
+            data: {
+                _id: _id
+            }});
+        return result;
+    }
+    
+    `;
+}
+
 // Models
 const User = require('./models/User');
 const Passage = require('./models/Passage');
@@ -513,7 +542,14 @@ function updateTransferredPassageAuthor(){
 }
 
 app.get('/get_passage', async (req, res) => {
-    return await Passage.findOne({_id: req.params._id});
+    //run authentication for personal passages
+    var passage = await Passage.findOne({_id: req.query._id})
+    if(!passage.personal || (passage.personal && req.session.user._id.toString() == passage.author._id.toString())){
+        return res.send(JSON.stringify(passage));
+    }
+    else{
+        return res.send('Improper Credentials.');
+    }
 });
 app.post('/passage_from_json', async (req, res) => {
     //copy passage
@@ -897,22 +933,22 @@ app.post('/passage_setting', async (req, res) => {
     switch(setting){
         case 'private':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.public = false;
+                passage.public = !passage.public;
             }
             break;
         case 'public':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.public = true;
+                passage.public = !passage.public;
             }
             break;
         case 'personal':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.personal = true;
+                passage.personal = !passage.personal;
             }
             break;
         case 'cross-origin-allowed':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.personal_cross_origin = true;
+                passage.personal_cross_origin = !passage.personal_cross_origin;
             }
             break;
         case 'request-public-daemon':
@@ -1035,6 +1071,8 @@ app.get('/eval/:passage_id', async function(req, res){
     if(passage.lang == 'javascript'){
         all.javascript = passage.code;
     }
+    console.log(DAEMONLIBS(passage));
+    all.javascript = DAEMONLIBS(passage) + all.javascript;
     if(passage.public == false){
         getAllSubPassageCode(passage, all);
     }
@@ -2131,3 +2169,12 @@ process.on('SIGTERM', function(err){
     server.close();
 });
 
+//debugging
+/**
+ * 
+(async function(){
+	var passage = await GETPASSAGE('63faabffa5dc86b7e4d28180');
+	document.write(passage);
+})();
+
+*/
