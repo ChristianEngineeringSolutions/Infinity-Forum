@@ -53,3 +53,6 @@ FileSystem Terminal/run files
 Blender extension update
 Tests
 Insert AI passages into AI Chapter :)
+
+Interactions
+Minifications
