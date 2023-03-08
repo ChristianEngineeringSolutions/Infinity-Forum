@@ -1153,7 +1153,10 @@ app.get('/eval/:passage_id', async function(req, res){
     if(passage.lang == 'javascript'){
         all.javascript = passage.code;
     }
-    var userID = req.session.user._id || null;
+    var userID = null;
+    if(req.session.user){
+        userID = req.session.user._id.toString();
+    }
     all.javascript = DAEMONLIBS(passage, userID) + all.javascript;
     if(passage.public == false){
         getAllSubPassageCode(passage, all);
