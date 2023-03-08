@@ -16,10 +16,20 @@ var compression = require('compression');
 
 
 //for daemons access to help code
-function DAEMONLIBS(passage){
+function DAEMONLIBS(passage, USERID){
     return `
     
     const THIS = `+JSON.stringify(passage)+`;
+    const USERID = "`+(USERID)+`";
+    // async function INTERACT(content){
+    //     const result = await $.ajax({
+    //         type: 'post',
+    //         url: '`+process.env.DOMAIN+`/interact',
+    //         data: {
+    //             _id: _id
+    //         }});
+    //     return result;
+    // }
     async function GETDAEMON(daemon, param){
         var passage = await GETPASSAGE(daemon);
         var code = passage.code;
@@ -47,6 +57,7 @@ function DAEMONLIBS(passage){
 // Models
 const User = require('./models/User');
 const Passage = require('./models/Passage');
+const Interaction = require('./models/Interaction');
 // Controllers
 const passageController = require('./controllers/passageController');
 // Routes
@@ -696,6 +707,28 @@ app.get('/', async (req, res) => {
         });
     }
 });
+app.post('/interact', async (req, res) => {
+    await Interaction.create({
+        keeper: req.body.keeper,
+        user: req.body.userID,
+        passage: req.body.passageID,
+        control: req.body.control || 0,
+        content: req.body.content
+    });
+    res.send("Done.");
+});
+app.get('/interactions', async (req, res) => {
+    if(req.session.user._id .toString() == req.query.keeper || req.session.user._id.toString() == req.query.userID){
+        var interactions = await Interaction.find({
+            control: req.query.control,
+            passage: req.query.passage,
+            keeper: req.query.keeper,
+            user: req.query.userID
+        });
+        return res.send(JSON.stringify(interactions));
+    }
+    return res.send(false);
+});
 app.get('/donate', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
@@ -774,6 +807,34 @@ app.post('/search_passage/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    // results = await Passage.aggregate([{
+    //     $match: {
+    //         "title": new RegExp(req.body.search, "i"), // find all documents that somehow match "pat" in a case-insensitive fashion
+    //         "parent": req.body._id,
+    //         "deleted": false,
+    //         "personal": false
+    //     }
+    //     }, {
+    //         $addFields: {
+    //             "exact": { 
+    //                 $eq: [ "$title", req.body.search ] // add a field that indicates if a document matches exactly
+    //             },
+    //             "startswith": { 
+    //                 $eq: [ { $substr: [ "$title", 0, (req.body.search.length - 1) ] }, req.body.search ] // add a field that indicates if a document matches at the start
+    //             }
+        
+    //         }
+    //     }, {
+    //         $sort: {
+    //             "exact": -1, // sort by our primary temporary field
+    //             "startswith": -1 // sort by our seconday temporary
+    //         }
+    //     }, {
+    //         $project: {
+    //             "exact": 0, // get rid of the "exact" field,
+    //             "startswith": 0 // same for "startswith"
+    //         }
+    // }]);
     if(results.length < 1 && req.session.user){
         var parent = await Passage.findOne({_id: req.body._id});
         if(parent.public){
@@ -802,7 +863,6 @@ app.post('/search/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    console.log(results.length);
     if(results.length < 1 && req.session.user){
         let passage = await Passage.create({
             author: req.session.user._id,
@@ -1093,8 +1153,7 @@ app.get('/eval/:passage_id', async function(req, res){
     if(passage.lang == 'javascript'){
         all.javascript = passage.code;
     }
-    console.log(DAEMONLIBS(passage));
-    all.javascript = DAEMONLIBS(passage) + all.javascript;
+    all.javascript = DAEMONLIBS(passage, req.session.user._id) + all.javascript;
     if(passage.public == false){
         getAllSubPassageCode(passage, all);
     }
