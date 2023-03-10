@@ -708,13 +708,16 @@ app.get('/', async (req, res) => {
     }
 });
 app.post('/interact', async (req, res) => {
-    await Interaction.create({
+    var interaction = await Interaction.create({
         keeper: req.body.keeper,
         user: req.body.userID,
         passage: req.body.passageID,
         control: req.body.control || 0,
         content: req.body.content
     });
+    var passage = await Passage.findOne({_id: req.body.passageID});
+    passage.interactions.push(interaction._id);
+    await passage.save();
     res.send("Done.");
 });
 app.get('/interactions', async (req, res) => {
@@ -831,8 +834,7 @@ app.post('/search_passage/', async (req, res) => {
     //         }
     //     }, {
     //         $project: {
-    //             "exact": 0, // get rid of the "exact" field,
-    //             "startswith": 0 // same for "startswith"
+    //             "document": '$$ROOT'
     //         }
     // }]);
     if(results.length < 1 && req.session.user){
@@ -2196,7 +2198,7 @@ async function BetaEngine(original){
     //might need to stringify personalDaemon.params
     //anyway; this makes it easy for a daemon to access its parameters
     //then, might I suggest NOHTML?
-    personalDaemon.libs = 'const PARAMTITLE = "'+paramTitle+'";\n';
+    personalDaemon.libs = 'const PARAMTITLE =   "'+paramTitle+'";\n';
     personalDaemon.libs +=  'const PARAM = '+personalDaemon.param+';\n'; //wont show in editor (long) but they can access the var
     personalDaemon.javascript = '//const PARAMTITLE = "'+paramTitle+'";\n// ex. var paramDetails = JSON.stringify(PARAM); // (PARAM is a passage)\n' + (personalDaemon.javascript || '');
     //ex. var button = params[0].title; //make button from param
