@@ -11,6 +11,7 @@ import tempfile
 import bpy.utils.previews
 import os
 
+print("Test")
 directory   = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", "scatter_presets_custom\\")
 list_raw = []
 
@@ -21,7 +22,7 @@ dir = "/home/uriah/Desktop/"
 
 search = ''
 
-website = "https://christianengineeringsolutions.com"
+#website = "https://christianengineeringsolutions.com"
 website = "http://localhost:3000"
 
 #for alerts
@@ -82,6 +83,8 @@ def SearchModels(query="", which="Models"):
         #    get thumbnail
             req = requests.get(website + '/uploads/' + model["thumbnail"])
             model["image"] = dir + model["thumbnail"]
+            print(model["thumbnail"])
+            print(model["image"])
             with open(dir + model["thumbnail"], 'wb') as f:
                 f.write(req.content)
             power_list[model["title"]] = {
@@ -109,11 +112,12 @@ def SearchModels(query="", which="Models"):
             }
     global custom_icons
     custom_icons = bpy.utils.previews.new()
-
+    
     for model in models:
         if model["title"] == "SVG":
             ShowMessageBox(model["title"])
-        custom_icons.load(model["thumbnail"][:-4], os.path.join(directory, model["image"]), 'IMAGE')
+        if model["thumbnail"][:-4] not in custom_icons:
+            custom_icons.load(model["thumbnail"][:-4], os.path.join(directory, model["image"]), 'IMAGE', force_reload=True)
 
 SearchModels()
 
@@ -208,18 +212,6 @@ class Search(Operator):
         
         page = 1
         SearchModels(mytool.search_str, mytool.which)
-
-        return {'FINISHED'}
-
-# View Chapter and add index (content) to cursor
-class Select(Operator):
-    bl_label = "Select"
-    bl_idname = "wm.select"
-
-    def execute(self, context):
-        scene = context.scene
-        mytool = scene.my_tool
-        pass
 
         return {'FINISHED'}
 
@@ -402,6 +394,10 @@ def unregister():
     for cls in reversed(classes):
         unregister_class(cls)
     del bpy.types.Scene.my_tool
+    for pcoll in custom_icons.values():
+        print("Done.");
+        bpy.utils.previews.remove(pcoll)
+    custom_icons.clear()
 
 
 
