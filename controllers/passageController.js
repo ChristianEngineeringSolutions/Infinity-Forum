@@ -52,6 +52,7 @@ module.exports = {
             thumbnail: passage.thumbnail,
             metadata: passage.metadata,
             sourceLink: passage.sourceLink,
+            personal: passage.personal,
             synthetic: synthetic
         });
         //Add copy to passage it was duplicated into
@@ -87,7 +88,8 @@ module.exports = {
                     thumbnail: p.thumbnail,
                     metadata: p.metadata,
                     sourceLink: p.sourceLink,
-                    synthetic: synthetic
+                    synthetic: synthetic,
+                    personal: p.personal
                 });
                 copy.passages.push(pcopy._id);
                 await copy.save();

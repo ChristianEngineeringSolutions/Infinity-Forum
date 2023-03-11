@@ -81,7 +81,12 @@ $(function(){
             },
             success: function(data){
                 flashIcon($('#transfer_bookmark_' + _id), 'green');
-                $('#passage_wrapper').append(data);
+                if(_chief == 'root'){
+                    $('#passage_wrapper').prepend(data);
+                }
+                else{
+                    $('#passage_wrapper').append(data);
+                }
             }
         });
     });
