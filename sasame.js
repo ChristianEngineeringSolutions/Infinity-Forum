@@ -1050,12 +1050,12 @@ app.post('/passage_setting', async (req, res) => {
     res.send("Done")
 });
 app.post('/remove_user', async (req, res) => {
-    let passageId = req.body.passageId;
-    let user_id = req.body.user_id;
-    let passage = await Passage.findOne({_id: passageId});
+    let passageID = req.body.passageID;
+    let userID = req.body.userID;
+    let passage = await Passage.findOne({_id: passageID});
     if(req.session.user && req.session.user._id == passage.users[0]._id){
-        passage.users.forEach(function(u, index){
-            if(u == user_id){
+        passage.users.forEach(async function(u, index){
+            if(u == userID){
                 //remove user
                 passage.users.splice(index, 1);
             }
@@ -1505,19 +1505,32 @@ app.post('/create_passage/', async (req, res) => {
     let parentId = null;
     var isRoot = parentPassageId == 'root';
     var parent;
+    var personal = false;
+    if(user){
+        users = [user];
+    }
     if(isRoot){
         parentId = null;
     }
     else{
         parentId = parentPassageId;
         parent = await Passage.findOne({_id: parentId});
+        personal = parent.personal;
+        //by default additions should have the same userlist
+        if(user){
+            if(parent.users.includes(user._id)){
+                users = parent.users;
+            }
+            else{
+                for(const u of parent.users){
+                    users.push(u);
+                }
+            }
+        }
         //can only add to private or personal if on the userlist
         if(!scripts.isPassageUser(req.session.user, parent) && (!parent.public || parent.personal)){
             return res.send("Must be on userlist.");
         }
-    }
-    if(user){
-        users = [user];
     }
     let passage = await Passage.create({
         author: user,
@@ -1932,6 +1945,10 @@ async function loadFileSystem(){
     }
 }
 
+async function passageFromDirectory(filePath){
+
+}
+
 app.post('/install_passage', async function(req, res){
     const fsp = require('fs').promises;
     var passage = await Passage.findOne({_id: req.body._id});
@@ -1948,6 +1965,8 @@ app.post('/install_passage', async function(req, res){
 //         eval(req.code);
 //     });
 // }
+
+//Make an actual passage for each file and directory
 // app.post('/fileStream', function(req, res) {
 //     var result = '';
 //     var dir = __dirname + '/';
