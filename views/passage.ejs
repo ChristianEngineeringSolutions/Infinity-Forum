@@ -90,8 +90,13 @@
         <a target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
     <%}%>
     <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
-        <%if((user && passage.personal_cross_origin && user._id == passage.users[0]._id) || (passage.public_daemon == 2)){%>
-            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+        <%if((user && passage.personal_cross_origin && user._id == passage.author._id) || (passage.public_daemon == 2)){%>
+            <!-- Only allow daemon in scope -->
+            <%if(sub === false){%>
+                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+            <%}else{%>
+                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+            <%}%>
         <%}else{%>
             <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
         <%}%>

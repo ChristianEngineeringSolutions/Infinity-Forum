@@ -810,33 +810,6 @@ app.post('/search_passage/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    // results = await Passage.aggregate([{
-    //     $match: {
-    //         "title": new RegExp(req.body.search, "i"), // find all documents that somehow match "pat" in a case-insensitive fashion
-    //         "parent": req.body._id,
-    //         "deleted": false,
-    //         "personal": false
-    //     }
-    //     }, {
-    //         $addFields: {
-    //             "exact": { 
-    //                 $eq: [ "$title", req.body.search ] // add a field that indicates if a document matches exactly
-    //             },
-    //             "startswith": { 
-    //                 $eq: [ { $substr: [ "$title", 0, (req.body.search.length - 1) ] }, req.body.search ] // add a field that indicates if a document matches at the start
-    //             }
-        
-    //         }
-    //     }, {
-    //         $sort: {
-    //             "exact": -1, // sort by our primary temporary field
-    //             "startswith": -1 // sort by our seconday temporary
-    //         }
-    //     }, {
-    //         $project: {
-    //             "document": '$$ROOT'
-    //         }
-    // }]);
     if(results.length < 1 && req.session.user){
         var parent = await Passage.findOne({_id: req.body._id});
         if(parent.public){
