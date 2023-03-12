@@ -1594,9 +1594,10 @@ app.get('/ppe_queue', async (req, res) => {
 app.get('/three', async (req, res) => {
     res.render('three');
 });
-async function getModels(data){
+async function getModels(data, parent=null){
     var find = {
         mimeType: 'model',
+        parent: parent,
         title: {
             $regex: data.query,
             $options: 'i',
@@ -1612,6 +1613,12 @@ async function getModels(data){
 }
 app.get('/models', async (req, res) => {
     var models = await getModels(req.query);
+    res.send(models);
+});
+
+app.get('/models/:title/:_id', async (req, res) => {
+    var model = await Passage.findOne({_id: req.params._id});
+    var models = await getModels(req.query, model._id);
     res.send(models);
 });
 async function getSVGs(data){
