@@ -5,11 +5,11 @@ File compression (client side)
 Minifications, optimizations
 SEO
 Peer to Peer
-Admin interface
+Admin interface //in progress
 Encryption revisited
 Tests
 Show group passages on profile?
-Database merge
+Database merge //mostly done
 UUIDs
 Review Database Backups/Recovery
 File Browser + Submissions
@@ -50,9 +50,12 @@ Tasks:
 Polish CES Connect (check all URLS)
 Peer to Peer w/ Encryption
 FileSystem Terminal/run files
-Blender extension update
+Passages from Filesystem
+Blender extension update (chapters, cursor)
 Tests
 Insert AI passages into AI Chapter :)
+Package app
+Scripts in Blender extension
+Allow users to add collaborators
 
-Interactions
 Minifications

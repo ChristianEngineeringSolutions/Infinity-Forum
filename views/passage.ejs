@@ -12,6 +12,7 @@
         <%passage.sourceList.forEach(function(source) { %>
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
         <%});}%>
+        <!-- List collaborators and allow them to be added (permanent) -->
     </div>
     <ul class="passage_options">
         <% if(sub === true){%>
