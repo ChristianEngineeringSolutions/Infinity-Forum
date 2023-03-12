@@ -1,3 +1,4 @@
+#Version 2
 #Blender add-on for christianengineeringsolutions.com
 #Currently, copy/paste into blender scripts and run
 # Official app on the way
@@ -22,8 +23,8 @@ dir = "/home/uriah/Desktop/"
 
 search = ''
 
-#website = "https://christianengineeringsolutions.com"
-website = "http://localhost:3000"
+website = "https://christianengineeringsolutions.com"
+#website = "http://localhost:3000"
 
 #for alerts
 def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
@@ -35,6 +36,8 @@ def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
 
 page = 1
 models = []
+#Selected model (cursor)
+selected = 0
 
 
 power_list = {};
@@ -66,7 +69,14 @@ power_list = {};
 
 # /GOOD CODE
 
-def SearchModels(query="", which="Models"):
+#NOTES
+
+#On Select get Passage as Chapter
+#Next/Previous Iterate over Chapter
+
+#/NOTES
+
+def SearchModels(query="", which="Models", title=None, id=None):
     global models
     global dir
     models = []
@@ -75,8 +85,15 @@ def SearchModels(query="", which="Models"):
             "query": query,
             "page": page
         }
-        r = requests.get(website + '/models', params=data)
-        models = json.loads(r.text)
+        if id is None:
+            r = requests.get(website + '/models', params=data)
+        else:
+            r = requests.get(website + '/models/' + title + '/' + id, params=data)
+            print(r.text)
+        if r.text is not None:
+            models = json.loads(r.text)
+        else:
+            models = []
     #    ShowMessageBox(json.dumps(models))
         #List thumbnails
         for model in models:
@@ -120,6 +137,76 @@ def SearchModels(query="", which="Models"):
             custom_icons.load(model["thumbnail"][:-4], os.path.join(directory, model["image"]), 'IMAGE', force_reload=True)
 
 SearchModels()
+
+def SelectModel(_id, context):
+    global models
+    global dir
+    global selected
+    old = GetModel(selected)
+    #deleted previously selected model and remove from sourcelist
+    bpy.ops.object.delete()
+    try:
+        sources.remove(old)
+    except:
+        pass
+    #put selected model under cursor and add to sourcelist
+    AddObject(_id, context) #Also adds source
+    index = 0
+    for model in models:
+        if model["_id"] == _id:
+            return index
+        index += 1
+    selected = index
+    
+    pass
+
+def CiteModel(_id, context):
+    global models
+    global dir
+    #Add selected model under cursor and deselect
+    #Add to sourcelist
+    AddObject(_id, context)
+    bpy.ops.object.select_all(action='DESELECT')
+
+def AddObject(_id, context):
+    global power_list
+    global dir
+    scene = context.scene
+    mytool = scene.my_tool
+    model = GetModel(_id)
+        #    get file
+    req = requests.get(website + '/uploads/' + model['filename'])
+    with open(dir + model['filename'], 'wb') as f:
+        f.write(req.content)
+#        Import Object
+
+    if mytool.which == "Models":
+        imported_object = bpy.ops.import_scene.gltf(filepath=power_list[model['title']]["filepath"])
+    elif mytool.which == "SVGs":
+        imported_object = bpy.ops.wm.gpencil_import_svg(filepath=power_list[model['title']]["filepath"])
+        
+    obj_object = bpy.context.selected_objects[0] ####<--Fix
+    
+    
+    new_source = power_list[model['title']]["_id"]
+    added = False
+#        Only add source if not there already
+    for source in sources:
+        if(new_source == source):
+            added = True
+            break
+    if added == False:
+        sources.append(power_list[model['title']]["_id"])
+
+def GetModel(_id):
+    global models
+    for model in models:
+        print(model["_id"])
+        print(_id)
+        if model["_id"] == _id:
+            return model
+    
+
 
 bl_info = {
     "name": "CES Connect",
@@ -201,6 +288,20 @@ class MyProperties(PropertyGroup):
 #    Operators
 # ------------------------------------------------------------------------
 
+class Root(Operator):
+    bl_label = "Root"
+    bl_idname = "wm.root"
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        global page
+        
+        page = 1
+        SearchModels(mytool.search_str, mytool.which)
+
+        return {'FINISHED'}
+
 class Search(Operator):
     bl_label = "Search"
     bl_idname = "wm.search"
@@ -212,6 +313,42 @@ class Search(Operator):
         
         page = 1
         SearchModels(mytool.search_str, mytool.which)
+
+        return {'FINISHED'}
+
+#Get previous thumbnail
+class Previous(Operator):
+    bl_label = "Previous"
+    bl_idname = "wm.previous"
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        global page
+        global selected
+        
+        selected -= 1
+        if selected < len(models):
+            selected = 0
+        SelectModel(models[selected]["_id"], context)
+
+        return {'FINISHED'}
+
+#Get next thumbnail
+class Next(Operator):
+    bl_label = "Next"
+    bl_idname = "wm.next"
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        global page
+        global selected
+        
+        selected += 1
+        if selected >= len(models):
+            selected = len(models) - 1
+        SelectModel(models[selected]["_id"], context)
 
         return {'FINISHED'}
 
@@ -264,7 +401,7 @@ class Upload(Operator):
             x = requests.post(website + "/upload_model", files=files, data=upload_data)
         elif which == "SVGs":
             x = requests.post(website + "/upload_svg", files=files, data=upload_data)
-        ShowMessageBox(x.text)
+        
 
 
         return {'FINISHED'}
@@ -273,6 +410,7 @@ class Add_Object(Operator):
     bl_label = "Cite"
     bl_idname = "wm.cite"
     title: bpy.props.StringProperty()
+    id: bpy.props.StringProperty()
     filename: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -280,28 +418,44 @@ class Add_Object(Operator):
         scene = context.scene
         mytool = scene.my_tool
             #    get file
-        req = requests.get(website + '/uploads/' + self.filename)
-        with open(dir + self.filename, 'wb') as f:
-            f.write(req.content)
-#        Import Object
+        CiteModel(self.id, context)
 
-        if mytool.which == "Models":
-            imported_object = bpy.ops.import_scene.gltf(filepath=power_list[self.title]["filepath"])
-        elif mytool.which == "SVGs":
-            imported_object = bpy.ops.wm.gpencil_import_svg(filepath=power_list[self.title]["filepath"])
-            
-        obj_object = bpy.context.selected_objects[0] ####<--Fix
-        
-        
-        new_source = power_list[self.title]["_id"]
-        added = False
-#        Only add source if not there already
-        for source in sources:
-            if(new_source == source):
-                added = True
-                break
-        if added == False:
-            sources.append(power_list[self.title]["_id"])
+        return {'FINISHED'}
+
+#Add to scene
+class Select(Operator):
+    bl_label = "Select"
+    bl_idname = "wm.select"
+    #change title to selected when selected
+    title: bpy.props.StringProperty()
+    id: bpy.props.StringProperty()
+    filename: bpy.props.StringProperty()
+
+    def execute(self, context):
+        global dir
+        scene = context.scene
+        mytool = scene.my_tool
+            #    get file
+        SelectModel(self.id, context)
+
+        return {'FINISHED'}
+    
+
+#Display As Chapter
+class Enter(Operator):
+    bl_label = "Enter"
+    bl_idname = "wm.enter"
+    #change title to selected when selected
+    title: bpy.props.StringProperty()
+    id: bpy.props.StringProperty()
+    filename: bpy.props.StringProperty()
+
+    def execute(self, context):
+        global dir
+        scene = context.scene
+        mytool = scene.my_tool
+        # Get chapter
+        SearchModels(mytool.search_str, mytool.which, self.title, self.id)
 
         return {'FINISHED'}
 
@@ -346,10 +500,14 @@ class OBJECT_PT_CustomPanel(Panel):
         scene = context.scene
         mytool = scene.my_tool
         
+        layout.operator("wm.root")
+        layout.separator()
         layout.label(text="Search")
         layout.prop(mytool, "which")
         layout.prop(mytool, "search_str")
         layout.operator("wm.search")
+        layout.operator("wm.previous")
+        layout.operator("wm.next")
         layout.separator()
         layout.prop(mytool, "title_str")
         layout.operator("wm.upload")
@@ -363,6 +521,15 @@ class OBJECT_PT_CustomPanel(Panel):
             operator = layout.operator("wm.cite")
             operator.title = model['title']
             operator.filename = model['filename']
+            operator.id = model['_id']
+            operator2 = layout.operator("wm.select")
+            operator2.title = model['title']
+            operator2.filename = model['filename']
+            operator2.id = model['_id']
+            operator3 = layout.operator("wm.enter")
+            operator3.title = model['title']
+            operator3.filename = model['filename']
+            operator3.id = model['_id']
             layout.separator()
         
         layout.separator()
@@ -374,10 +541,15 @@ class OBJECT_PT_CustomPanel(Panel):
 
 classes = (
     MyProperties,
+    Root,
     Search,
+    Next,
+    Previous,
     Upload,
     ViewMore,
     Add_Object,
+    Select,
+    Enter,
     OBJECT_MT_CustomMenu,
     OBJECT_PT_CustomPanel
 )
