@@ -51,11 +51,11 @@ Polish CES Connect (check all URLS)
 Peer to Peer w/ Encryption
 FileSystem Terminal/run files
 Passages from Filesystem
-Blender extension update (chapters, cursor)
 Tests
 Insert AI passages into AI Chapter :)
 Package app
 Scripts in Blender extension
 Allow users to add collaborators
+Loading Screen for Daemons or faster daemon load
 
 Minifications
