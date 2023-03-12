@@ -872,7 +872,6 @@ app.post('/bookmark_passage', async (req, res) => {
 //     res.render('passage', {subPassages: false, passage: copy, sub: true});
 // });
 app.post('/transfer_bookmark', async (req, res) => {
-    console.log('times');
     let _id = req.body._id;
     let parent = req.body.parent;
     //first check if parent allow submissions (is Public)
@@ -973,13 +972,20 @@ app.post('/add_user', async (req, res) => {
     let username = req.body.username;
     let user = await User.findOne({username: username});
     let passage = await Passage.findOne({_id: passageId});
-    if(user && req.session.user && req.session.user._id == passage.users[0]._id){
+    if(user && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         passage.users.push(user._id);
         await passage.save();
         res.send("User Added");
     }
     else{
         res.send("User not found.");
+    }
+});
+app.post('/add_collaborator', async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body.passageID});
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        passage.collaborators.push(req.body.email);
+        passage.save();
     }
 });
 app.post('/passage_setting', async (req, res) => {
@@ -1026,7 +1032,7 @@ app.post('/remove_user', async (req, res) => {
     let passageID = req.body.passageID;
     let userID = req.body.userID;
     let passage = await Passage.findOne({_id: passageID});
-    if(req.session.user && req.session.user._id == passage.users[0]._id){
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         passage.users.forEach(async function(u, index){
             if(u == userID){
                 //remove user
@@ -1580,7 +1586,7 @@ app.post('/ppe_add', async (req, res) => {
 });
 app.get('/ppe_queue', async (req, res) => {
     let passages = await Passage.find({
-        parent: req.body.parent == 'root' ? null : req.body.parent,
+        parent: req.query.parent == 'root' ? null : req.query.parent,
         mimeType: 'image'
     }).sort('-stars');
     return res.render('ppe_thumbnails', {thumbnails: passages});
@@ -1627,7 +1633,6 @@ async function getSVGs(data){
 }
 app.get('/svgs', async (req, res) => {
     var svgs = await getSVGs(req.query);
-    console.log(svgs);
     res.send(svgs);
 });
 app.post('/upload_svg', async (req, res) => {
@@ -1683,7 +1688,6 @@ app.post('/update_thumbnail', async (req, res) => {
     const fsp = require('fs').promises;
     var thumbnailTitle = v4() + ".png";
     await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
-    console.log("Okay");
     await Passage.findOneAndUpdate({_id: req.body.passageID}, {
         $set: {
             thumbnail: thumbnailTitle
@@ -1759,8 +1763,6 @@ app.post('/update_passage/', async (req, res) => {
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
 async function uploadFile(req, res, passage){
-    console.log(req.body);
-    console.log(req.files);
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
     var mimeType = req.files.file.mimetype;
