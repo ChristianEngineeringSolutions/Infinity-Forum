@@ -911,6 +911,8 @@ app.get('/get_daemons', async (req, res) => {
         let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
         daemons = user.daemons;
     }
+    let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
+    daemons = daemons.concat(defaults);
     res.render('daemons', {daemons: daemons});
 });
 app.post('/add_daemon', async (req, res) => {
@@ -1021,7 +1023,12 @@ app.post('/passage_setting', async (req, res) => {
             break;
         case 'admin-make-public-daemon':
             if(user.admin){
-                passage.public_daemon = 2;
+                passage.public_daemon == 2 ? 1 :  2;
+            }
+            break;
+        case 'admin-make-default-daemon':
+            if(user.admin){
+                passage.default_daemon = !passage.default_daemon;
             }
             break;
     }
@@ -1510,6 +1517,9 @@ app.post('/create_passage/', async (req, res) => {
         if(!scripts.isPassageUser(req.session.user, parent) && (!parent.public || parent.personal)){
             return res.send("Must be on userlist.");
         }
+        else if(parent.public_daemon == 2 || parent.default_daemon){
+            return res.send("Not allowed.");
+        }
     }
     let passage = await Passage.create({
         author: user,
@@ -1744,6 +1754,9 @@ app.post('/update_passage/', async (req, res) => {
     var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
+    }
+    else if(passage.public_daemon == 2 || passage.default_daemon){
+        return res.send("Not allowed.");
     }
     passage.html = formData.html;
     passage.css = formData.css;

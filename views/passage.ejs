@@ -30,9 +30,11 @@
         <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
         <%}%>
         <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
-            <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
-            <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
-            <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+            <%if(passage.public_daemon != 2 && passage.default_daemon != true){%>
+                <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
+                <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
+                <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+            <%}%>
             <%if(LOCAL == 'true'){%>
                 <!-- Push passage to server -->
                 <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
@@ -79,7 +81,7 @@
             <!-- Display Result -->
             <!-- <li class="passage_tab">Alternates</li> -->
         <!-- </ul> -->
-    <%if(user && passage.author._id == user._id){%>
+    <%if(passage.author && user && passage.author._id == user._id){%>
         <%- include('editor') %>
     <%}else{%>
     <%}%>
