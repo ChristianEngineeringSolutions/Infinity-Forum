@@ -56,6 +56,5 @@ Insert AI passages into AI Chapter :)
 Package app
 Scripts in Blender extension
 Allow users to add collaborators
-Loading Screen for Daemons or faster daemon load
 
 Minifications
