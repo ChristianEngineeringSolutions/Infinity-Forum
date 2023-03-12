@@ -171,6 +171,34 @@ app.use(async function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
+    let daemons = [];
+    if(req.session.user){
+        let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
+        daemons = user.daemons;
+    }
+    let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
+    daemons = daemons.concat(defaults);
+    for(const daemon of daemons){
+        //stick together code for all sub passages
+        var all = {
+            html: daemon.html,
+            css: daemon.css,
+            javascript: daemon.javascript
+        };
+        if(daemon.lang == 'javascript'){
+            all.javascript = daemon.code;
+        }
+        var userID = null;
+        if(req.session.user){
+            userID = req.session.user._id.toString();
+        }
+        all.javascript = DAEMONLIBS(daemon, userID) + all.javascript;
+        if(daemon.public == false){
+            getAllSubPassageCode(daemon, all);
+        }
+        daemon.all = all;
+    }
+    res.locals.DAEMONS = daemons;
     //DEV AUTO LOGIN
     if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
         var user = await authenticateUsername("christianengineeringsolutions@gmail.com", "testing");
@@ -187,6 +215,7 @@ app.use(async function(req, res, next) {
             console.log(error);
         }
     }
+
 });
 //Serving Files
 app.get('/jquery.min.js', function(req, res) {
