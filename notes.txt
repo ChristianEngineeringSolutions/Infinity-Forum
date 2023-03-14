@@ -55,6 +55,5 @@ Tests
 Insert AI passages into AI Chapter :)
 Package app
 Scripts in Blender extension
-Allow users to add collaborators
 
 Minifications
