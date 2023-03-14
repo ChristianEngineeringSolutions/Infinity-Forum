@@ -112,9 +112,6 @@ if (!fs.existsSync(recordingFolder)) {
 
 // Setup Frontend Templating Engine - ejs
 const ejs = require('ejs');
-app.use(express.static('./dist'));
-app.set('view engine', 'ejs');
-app.set('views', './views');
 
 // app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.json({
@@ -161,8 +158,27 @@ app.use(session);
 io.use(sharedsession(session, {
     autoSave: true
 }));
+app.use('/protected/:pID', async function(req, res, next){
+    if(!req.session.user){
+        return res.redirect('/');
+    }
+    else{
+        var passage = await Passage.findOne({filename:req.params.pID});
+        if(passage.author._id.toString() != req.session.user._id.toString() && !scripts.isPassageUser(req.session.user, passage)){
+            return res.redirect('/');
+        }
+    }
+    next();
+});
+app.use(express.static('./dist'));
+app.set('view engine', 'ejs');
+app.set('views', './views');
+function getUploadFolder(passage){
+    return passage.personal ? 'protected' : 'uploads';
+}
 app.use(async function(req, res, next) {
     //shortcuts for ejs
+    res.locals.getUploadFolder = getUploadFolder;
     res.locals.user = req.session.user;
     res.locals.DOMAIN = process.env.DOMAIN;
     res.locals.LOCAL = process.env.LOCAL;
@@ -1818,8 +1834,9 @@ async function uploadFile(req, res, passage){
     //uuid with  ext
     var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
     var thumbnailTitle = v4() + ".jpg";
+    var where = passage.personal ? 'protected' : 'uploads';
     // Use the mv() method to place the file somewhere on your server
-    fileToUpload.mv('./dist/uploads/'+uploadTitle, function(err) {
+    fileToUpload.mv('./dist/'+where+'/'+uploadTitle, function(err) {
         if (err){
             return res.status(500).send(err);
         }
@@ -1837,7 +1854,7 @@ async function uploadFile(req, res, passage){
         var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
         var buf = Buffer.from(data, 'base64');
         const fsp = require('fs').promises;
-        await fsp.writeFile('./dist/uploads/'+thumbnailTitle, buf);
+        await fsp.writeFile('./dist/'+where+'/'+thumbnailTitle, buf);
         passage.thumbnail = thumbnailTitle;
     }
     else{
