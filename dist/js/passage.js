@@ -284,6 +284,23 @@ $(function(){
             });
         }
     });
+    $(document).on('keyup', '.passage_add_collaborator', function(e){
+        if(e.keyCode == 13){
+            var thiz = $(this);
+            $.ajax({
+                url: DOMAIN + '/add_collaborator',
+                type: 'POST',
+                data: {
+                    passageId: thiz.attr('id').split('_').at(-1),
+                    email: thiz.val()
+                },
+                success: function (data) {
+                    alert(data);
+                    window.location.reload();
+                }
+            });
+        }
+    });
     $(document).on('click', '.passage_remove_user', function(e){
         var thiz = $(this);
         $.ajax({

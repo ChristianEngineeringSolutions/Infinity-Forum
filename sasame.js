@@ -370,8 +370,10 @@ async function starPassage(req, amount, passageID, userID){
                     continue;
                 }
                 let collaber = await User.findOne({email:collaborator});
-                collaber.stars += amount;
-                await collaber.save();
+                if(collaber != null){
+                    collaber.stars += amount;
+                    await collaber.save();
+                }
             }
         }
         await passage.author.save();
@@ -1032,7 +1034,11 @@ app.post('/add_collaborator', async (req, res) => {
     var passage = await Passage.findOne({_id: req.body.passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         passage.collaborators.push(req.body.email);
-        passage.save();
+        await passage.save();
+        return res.send("User Added");
+    }
+    else{
+        return res.send("Wrong permissions.");
     }
 });
 app.post('/passage_setting', async (req, res) => {
