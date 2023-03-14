@@ -5,13 +5,23 @@ Users:
         <span class="passage_remove_user"data-userid="<%=user._id%>"id="delete_passage_user_<%=passage._id%>">X</span>
     <%}%>
     ,
+<%});}%>
+<br><br>
+Collaborators:
+<%if(passage.collaborators && passage.collaborators.length > 0){passage.collaborators.forEach(function(collaber, i) { %>
+    <%=collaber%>
+    ,
 <%});}else{%>
-Anonymous
+    None
 <%}%>
+<br><br>
+Add User (Read/Write Access): <br>
+<input placeholder="Username..."class="passage_add_user"id="passage_add_user_<%=passage._id%>"type="">
 <br>
-Add User:
-<input class="passage_add_user"id="passage_add_user_<%=passage._id%>"type="">
 <br>
+Add Collaborator (Split Stars): <br>
+<input placeholder="Email..."class="passage_add_collaborator"id="passage_add_collaborator_<%=passage._id%>"type="">
+<br><br>
 Toggle Green/Red for Active/Inactive
 <br>
 <div data-setting="private"class="passage_setting <%=passage.public == false ? 'green' : 'red';%>"id="passage_setting_make_private_<%=passage._id%>">Make Private (Default) (Only Team members can add passages)</div>
