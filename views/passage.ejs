@@ -107,17 +107,17 @@
     <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
     <% if(passage.filename){ %>
         <%if(!passage.isSVG && passage.mimeType == 'image'){%>
-             <img src="/uploads/<%=passage.filename%>" alt="">
+             <img src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" alt="">
         <%}else if (passage.isSVG){%>
-            <img src="/uploads/<%=passage.filename%>" alt="">
+            <img src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" alt="">
         <%}else if(passage.mimeType == 'audio'){%>
             <audio class="passage_audio"controls>
-                <source src="/uploads/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
+                <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
                 Your browser does not support the audio tag.
             </audio> 
         <%}else if(passage.mimeType == 'video'){%>
             <video class="passage_video"width="320" height="240" controls>
-                <source src="/uploads/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
+                <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
                 Your browser does not support the video tag.
             </video> 
         <%}else if(passage.mimeType == 'model'){%>
@@ -128,7 +128,7 @@
                     var _id = "<%=passage._id%>";
                     const scene = new THREE.Scene();
                     const camera = new THREE.PerspectiveCamera( 75, 300 / 300, 0.1, 1000 );
-                    var srcLink = "/uploads/<%=passage.filename%>";
+                    var srcLink = "/<%=getUploadFolder(passage)%>/<%=passage.filename%>";
                     const renderer = new THREE.WebGLRenderer();
                     renderer.domElement.id = "model_thumbnail_canvas_" + _id;
                     renderer.domElement.style = "display:none;";
@@ -167,7 +167,7 @@
                     });
                 </script>
             <%}else{%>
-                <img id="p_thumbnail_<%=passage._id%>" src="/uploads/<%=passage.thumbnail%>" alt="">
+                <img id="p_thumbnail_<%=passage._id%>" src="/<%=getUploadFolder(passage)%>/<%=passage.thumbnail%>" alt="">
             <%}%>
         <%}%>
     <%}%>
