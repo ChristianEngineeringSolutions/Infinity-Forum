@@ -291,7 +291,7 @@ $(function(){
                 url: DOMAIN + '/add_collaborator',
                 type: 'POST',
                 data: {
-                    passageId: thiz.attr('id').split('_').at(-1),
+                    passageID: thiz.attr('id').split('_').at(-1),
                     email: thiz.val()
                 },
                 success: function (data) {
