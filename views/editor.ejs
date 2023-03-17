@@ -20,7 +20,7 @@
                 <code-input template="code-input"lang="javascript"class="code_display display_js" id="display_js_<%=passage._id%>" placeholder="Javascript"value="<%=passage.javascript || 'Javascript'%>"></code-input>
                 <%break;
                 default:%>
-                <code-input template="code-input"lang="<%=passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || passage.ext%>"></code-input>
+                <code-input template="code-input"lang="<%=passage.lang == 'node' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || passage.ext%>"></code-input>
                 <textarea style="display:none;"class="passage_code" name="code" id="passage_code_<%=passage._id%>" cols="30" rows="10"><%=passage.code%></textarea>
             <%}%>
             <textarea style="display:none;"class="passage_license" name="license" id="passage_license_<%=passage._id%>" cols="30" rows="10" placeholder="LICENSE">All modules submitted to CES must first comply with the terms and agreements. You are allowed to utilize this work through citations on christianengineeringsolutions.com.&#13;&#10;<%=passage.license%></textarea>
