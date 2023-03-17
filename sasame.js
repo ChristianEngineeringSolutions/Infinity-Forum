@@ -1269,16 +1269,21 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         }
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
     }
-    //reorder sub passages to match order of passage.passages
-    var reordered = Array(subPassages.length).fill(0);
-    for(var i = 0; i < passage.passages.length; ++i){
-        for(var j = 0; j < subPassages.length; ++j){
-            if(subPassages[j]._id.toString() == passage.passages[i]._id.toString()){
-                reordered[i] = subPassages[j];
+    if(!passage.public){
+        //reorder sub passages to match order of passage.passages
+        var reordered = Array(subPassages.length).fill(0);
+        for(var i = 0; i < passage.passages.length; ++i){
+            for(var j = 0; j < subPassages.length; ++j){
+                if(subPassages[j]._id.toString() == passage.passages[i]._id.toString()){
+                    reordered[i] = subPassages[j];
+                }
             }
         }
+        reordered = reordered.filter(x => x !== 0);
     }
-    reordered = reordered.filter(x => x !== 0);
+    else{
+        var reordered = subPassages;
+    }
     res.render("index", {subPassages: reordered, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
