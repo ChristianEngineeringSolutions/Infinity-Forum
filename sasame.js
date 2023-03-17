@@ -1269,6 +1269,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         }
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
     }
+    //we have to do this because of issues with populating passage.passages foreign keys
     if(!passage.public){
         //reorder sub passages to match order of passage.passages
         var reordered = Array(subPassages.length).fill(0);
@@ -1279,6 +1280,8 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
                 }
             }
         }
+        //idk why but sometimes in production there were extra 0s...
+        //need to test more and bugfix algorithm above
         reordered = reordered.filter(x => x !== 0);
     }
     else{
