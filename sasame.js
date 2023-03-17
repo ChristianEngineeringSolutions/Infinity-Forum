@@ -400,6 +400,25 @@ async function notifyUser(userId, content, type="General"){
         type: type
     });
 }
+//get highest rank passage with title
+async function bestOf(title){
+    return await Passage.find({title:title, personal: false}).sort('-stars').limit(1)[0];
+}
+//get best passage in best module for passage
+//hard to tell the difference from the above function
+//still thinking about it...
+//but this is better (more useful), I think...
+async function bestOfPassage(title){
+    var parent = await Passage.find({title:title, public: true, personal: false}).sort('-stars').limit(1)[0];
+    if(parent != null){
+        var sub = await Passage.find({parent: parent._id, personal: false}).sort('-stars').limit(1);
+        return sub;
+    }
+    return 'No public passage "' + title + '"';
+}
+app.get('/bestOf/:title', async(req, res) => {
+    res.send(await bestOfPassage(req.params.title));
+})
 //ROUTES
 app.get('/personal/:user_id', async (req, res) => {
     if(!req.session.user || req.session.user._id != req.params.user_id){
