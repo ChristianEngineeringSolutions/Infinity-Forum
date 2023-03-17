@@ -1208,7 +1208,7 @@ app.get('/eval/:passage_id', async function(req, res){
         css: passage.css,
         javascript: passage.javascript
     };
-    if(passage.lang == 'javascript'){
+    if(passage.lang == 'daemon'){
         all.javascript = passage.code;
     }
     var userID = null;
@@ -1282,7 +1282,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         }
         //idk why but sometimes in production there were extra 0s...
         //need to test more and bugfix algorithm above
-        reordered = reordered.filter(x => x !== 0);
+        reordered = reordered.filter(x => x !== 0); //just get rid of extra 0s
     }
     else{
         var reordered = subPassages;
