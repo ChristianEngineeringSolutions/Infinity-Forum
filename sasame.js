@@ -1278,6 +1278,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
             }
         }
     }
+    reordered = reordered.filter(x => x !== 0);
     res.render("index", {subPassages: reordered, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
