@@ -133,6 +133,11 @@ $(function(){
             $('.detail_description').css('margin-bottom', '0'); 
             $('.detail_description').css('margin-top', '0');
             $('.hr').hide();
+            $('#search_passage').hide();
+            $('#page_title').hide();
+            $('#tab_panel').hide();
+            $('#add_passage_button').hide();
+            $('#top_spacer').hide();
             distractionFree = true;
         }
         else{
@@ -148,6 +153,11 @@ $(function(){
             $('.detail_description').css('margin-bottom', '50px'); 
             $('.detail_description').css('margin-top', '25px');
             $('.passage').css('padding', '15px'); 
+            $('#search_passage').show();
+            $('#page_title').show();
+            $('#tab_panel').show();
+            $('#add_passage_button').show();
+            $('#top_spacer').show();
             distractionFree = false;
         }
     });
