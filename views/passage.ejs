@@ -85,8 +85,8 @@
         <%- include('editor') %>
     <%}else{%>
     <%}%>
-    <!-- Hide Iframe window if there is neither html nor js -->
-    <%if((passage.lang != 'javascript') && (passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
+    <!-- Hide Iframe window if there is neither html nor js, or if it is not a daemon -->
+    <%if((passage.lang != 'daemon') && (passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
         <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>
@@ -177,7 +177,7 @@
             <div class="code_display display_css"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
             <div class="code_display display_js"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
         <%}else{%>
-            <div class="display_code"><pre><code class="language-<%=passage.lang%>"><%=passage.code || passage.lang%></code></pre></div>
+            <div class="display_code"><pre><code class="language-<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"><%=passage.code || passage.lang%></code></pre></div>
         <%}%>
         <!-- Show .EXT -->
         <!-- Show License -->
