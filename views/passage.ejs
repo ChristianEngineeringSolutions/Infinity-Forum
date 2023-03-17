@@ -90,7 +90,7 @@
         <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>
-        <a target="_blank"href="/eval/<%=passage._id%>">Full Screen</a>
+        <a target="_blank"href="/eval/<%=passage._id%>"><ion-icon title="Full Screen"src="/images/ionicons/expand-outline.svg"></ion-icon></a>
     <%}%>
     <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
         <%if((user && passage.personal_cross_origin && user._id == passage.author._id) || (passage.public_daemon == 2)){%>

@@ -55,8 +55,6 @@ Tests
 Insert AI passages into AI Chapter :)
 Package app
 Scripts in Blender extension
-Iframe fullscreen icon
-lang option for node
-Split bookmark copy
+Split bookmark copy (review)
 
 Minifications
