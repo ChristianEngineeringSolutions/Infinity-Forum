@@ -1289,6 +1289,8 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
     }
     //we have to do this because of issues with populating passage.passages foreign keys
+	console.log(passage.passages.length);
+	console.log(subPassages.length);
     if(!passage.public){
         //reorder sub passages to match order of passage.passages
         var reordered = Array(subPassages.length).fill(0);
@@ -1305,6 +1307,9 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     }
     else{
         var reordered = subPassages;
+    }
+    if(passage.passages.length < 1){
+	reordered = subPassages;
     }
     res.render("index", {subPassages: reordered, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
@@ -1626,6 +1631,7 @@ app.post('/create_passage/', async (req, res) => {
     });
     if(!isRoot){
         //add passage to parent sub passage list
+	   console.log('okayzz');
         parent.passages.push(passage);
         await parent.save();
     }
