@@ -425,7 +425,13 @@ app.get('/personal/:user_id', async (req, res) => {
         return res.redirect('/');
     }
     else{
-        var passages = await Passage.find({author: req.params.user_id, personal: true});
+        var passages = await Passage.find({
+            //author: req.params.user_id, 
+            personal: true,
+            users: {
+                $in: [req.params.user_id]
+            }
+        });
         let bookmarks = [];
         if(req.session.user){
             bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
@@ -450,7 +456,6 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     let profile;
     if(typeof req.params.username == 'undefined'){
         if(!req.session.user){
-            console.log('testingggg');
             return res.redirect('/');
         }
         profile = req.session.user;
@@ -458,7 +463,14 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     else{
         profile = await User.findOne({_id: req.params._id});
     }
-    let find = {author: profile, deleted: false, personal: false};
+    let find = {
+        //author: profile, 
+        users: {
+            $in: [profile]
+        },
+        deleted: false, 
+        personal: false
+    };
     //if it's their profile show personal passages
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
     //     find.$or = [{personal: true}, {personal: false}];
@@ -2321,7 +2333,7 @@ io.on('connection', async (socket) => {
         socket.join(passage._id.toString());
         await User.findOneAndUpdate({_id: socket.handshake.session.user._id.toString()}, {$set: {room: passage._id.toString()}});
         io.sockets.in(passage._id.toString()).emit(passage._id.toString(), "Room for Passage: " + passage.title);
-      });
+    });
     //send messages to room from client
     socket.on('add', async (msg) => {
         var user = await User.findOne({_id: socket.handshake.session.user._id.toString()});
@@ -2332,7 +2344,7 @@ io.on('connection', async (socket) => {
     });
     socket.on('disconnect', function () {
         console.log('A user disconnected');
-     });
+    });
 });
 
 // CLOSING LOGIC

@@ -1,4 +1,7 @@
     <body>
+        <%DAEMONS.forEach(function(daemon){%>
+            <%=daemon.all.html%>
+        <%});%>
         <input type="hidden" id="DOMAIN"value="<%=DOMAIN%>">
         <%-include('sidebar')%>
         <div id="control_panel">
