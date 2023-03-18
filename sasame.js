@@ -1064,7 +1064,14 @@ app.post('/add_user', async (req, res) => {
 app.post('/add_collaborator', async (req, res) => {
     var passage = await Passage.findOne({_id: req.body.passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        passage.collaborators.push(req.body.email);
+        if(!passage.collaborators.includes(req.body.email)){
+            passage.collaborators.push(req.body.email);
+        }
+        //if possible add user
+        let collabUser = await User.findOne({email: req.body.email});
+        if(collabUser != null && !isPassageUser(collabUser, passage)){
+            passage.users.push(collabUser._id);
+        }
         await passage.save();
         return res.send("User Added");
     }
