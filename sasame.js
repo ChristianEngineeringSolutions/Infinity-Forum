@@ -1201,8 +1201,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         //get user from email
         var user = await User.findOne({email: payload.data.object.customer_details.email});
         if(user){
-            user.stars += (parseInt(amount) / 100);
-            users.stars += (await percentUSD(parseInt(amount))) * (await totalStars());
+            user.stars += (await percentUSD(parseInt(amount))) * (await totalStars());
             await user.save();
         }
     }
