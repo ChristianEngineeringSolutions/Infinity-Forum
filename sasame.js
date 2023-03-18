@@ -890,16 +890,36 @@ app.post('/search_passage/', async (req, res) => {
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     if(results.length < 1 && req.session.user){
         var parent = await Passage.findOne({_id: req.body._id});
-        if(parent.public){
-            let passage = await Passage.create({
-                author: req.session.user._id,
-                parent: req.body._id,
-                title: req.body.search,
-                public: true
-            });
-            parent.passages.push(passage);
-            await parent.save();
-            results = [passage];
+        let users = [req.session.user._id];
+        if(parent.public && !parent.personal){
+            //by default additions should have the same userlist
+            if(parent.users.includes(req.session.user._id)){
+                users = parent.users;
+            }
+            else{
+                for(const u of parent.users){
+                    users.push(u);
+                }
+            }
+            //can only add to private or personal if on the userlist
+            if(!scripts.isPassageUser(user, parent) && (!parent.public || parent.personal)){
+                //do nothing
+            }
+            else if(parent.public_daemon == 2 || parent.default_daemon){
+                //do nothing
+            }
+            else{
+                let passage = await Passage.create({
+                    author: req.session.user._id,
+                    users: users,
+                    parent: req.body._id,
+                    title: req.body.search,
+                    public: true
+                });
+                parent.passages.push(passage);
+                await parent.save();
+                results = [passage];
+            }
         }
     }
     res.render("passages", {
@@ -919,6 +939,7 @@ app.post('/search/', async (req, res) => {
     if(results.length < 1 && req.session.user){
         let passage = await Passage.create({
             author: req.session.user._id,
+            users: [req.session.user._id],
             parent: null,
             title: req.body.search,
             public: true
@@ -1579,13 +1600,8 @@ app.use('/passage', passageRoutes);
 app.get('/passage_form/', (req, res) => {
     res.render('passage_form');
 });
-app.post('/create_passage/', async (req, res) => {
-    if(!req.session.user){
-        return res.send("Not logged in.");
-    }
-    let user = req.session.user || null;
+async function createPassage(user, parentPassageId){
     let users = null;
-    let parentPassageId = req.body.passageID;
     let parentId = null;
     var isRoot = parentPassageId == 'root';
     var parent;
@@ -1612,7 +1628,7 @@ app.post('/create_passage/', async (req, res) => {
             }
         }
         //can only add to private or personal if on the userlist
-        if(!scripts.isPassageUser(req.session.user, parent) && (!parent.public || parent.personal)){
+        if(!scripts.isPassageUser(user, parent) && (!parent.public || parent.personal)){
             return res.send("Must be on userlist.");
         }
         else if(parent.public_daemon == 2 || parent.default_daemon){
@@ -1630,7 +1646,15 @@ app.post('/create_passage/', async (req, res) => {
         await parent.save();
     }
     let find = await Passage.findOne({_id: passage._id}).populate('author sourceList');
-    res.render('passage', {subPassages: false, passage: find, sub: true});
+    return find;
+}
+app.post('/create_passage/', async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    let user = req.session.user || null;
+    var newPassage = await createPassage(user, req.body.passageID);
+    res.render('passage', {subPassages: false, passage: newPassage, sub: true});
 });
 app.post('/star_passage/', async (req, res) => {
     var passage_id = req.body.passage_id;
