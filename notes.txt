@@ -58,6 +58,6 @@ Scripts in Blender extension
 Split bookmark copy (review)
 Chat Daemon w/ whisper
 Room Creation
-Daemon html insert
+Keys in passage options and metadata reader
 
 Minifications
