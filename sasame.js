@@ -1875,6 +1875,20 @@ app.post('/update_metadata', async (req, res) => {
         await passage.save();
     }
 });
+//temp function for external api (mostly to work with metadata)
+app.post('/passage_update', async (req, res) => {
+    return res.send(await updatePassage(req.body._id, req.body.attributes));
+});
+//attributes is an object
+async function updatePassage(_id, attributes){
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
+    const keys = Object.keys(attributes);
+    keys.forEach((key, index) => {
+        passage[key] = attributes[key];
+    });
+    await passage.save();
+    return 'Done';
+}
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
