@@ -6,6 +6,8 @@ Minifications, optimizations
 SEO
 Peer to Peer
 Admin interface //in progress
+    Lock site for updates
+    Approve daemons (done)
 Encryption revisited
 Tests
 Show group passages on profile?
@@ -18,47 +20,43 @@ Tab full testing and bugfixes
 Non-profit filings
 Replace CDNs*
 Enable ads or alt sys
-Editor live updates
+Editor live updates (updating language)
 
 Add back recordings; voice activation;
-real time UI updates for every action
+real time UI updates for every action (long polling)
 
 Need tabs?
 
-Clean out passage controller
+Clean out passage controller deprecated code
 
 
 Cordova*
-
-Personal Passages (Maybe not) (Use Subscription)
 
 Daemon search and pin
 Daemon Mark
 Multiple file upload?
 
 blender add-on save temp files
-blender add-on enable chapters
-
-File system/ sasame rex -CES Connect/ blender chapter/cursor
-
 
 recovery exp
 
 ---------------------------------------------------
 
 Tasks:
-Polish CES Connect (check all URLS)
-Peer to Peer w/ Encryption
+Polish CES Connect (node app) (check all URLS)
+Peer to Peer w/ Encryption (polish)
 FileSystem Terminal/run files
 Passages from Filesystem
 Tests
 Insert AI passages into AI Chapter :)
 Package app
 Scripts in Blender extension
-Split bookmark copy (review)
 Chat Daemon w/ whisper
 Room Creation
-Keys in passage options and metadata reader
+Keys in passage settings and metadata reader (review)
 Search in Sidebar (search all/search bookmarks); bookmarks section
+Alternate passages
+Blender crumple
+Flex program (review)
 
 Minifications
