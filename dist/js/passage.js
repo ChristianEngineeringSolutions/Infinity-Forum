@@ -252,14 +252,28 @@ $(function(){
             }
         });
     });
+    $(document).on('mouseup', '[id^="passage_detail_content_"], [id^="passage_detail_code_"],[id^="passage_detail_html_"],[id^="passage_detail_css_"], [id^="passage_detail_javascript_"]', function(){
+        if(window.getSelection().toString() != ''){
+            $('#selection').val(window.getSelection());
+            //save what part of passage is being selected
+            //(content, html, css, javascript, or code)
+            $('#selection').data('type', $(this).attr('id').split('_')[2]);
+        }
+        setTimeout(function(){
+            $('#selection').val('');
+        }, 3000);
+    });
     $(document).on('click', '[id^="passage_bookmark_"]', function(e){
         var _id = getPassageId(this);
         var thiz = $(this);
+        var content = $('#selection').val();
         $.ajax({
             type: 'post',
             url: DOMAIN + '/bookmark_passage',
             data: {
                 _id: _id,
+                content: content,
+                which: $('#selection').data('type')
             },
             success: function(data){
                 updateBookmarks();
@@ -278,7 +292,6 @@ $(function(){
                     username: thiz.val()
                 },
                 success: function (data) {
-                    alert(data);
                     window.location.reload();
                 }
             });
@@ -295,7 +308,6 @@ $(function(){
                     email: thiz.val()
                 },
                 success: function (data) {
-                    alert(data);
                     window.location.reload();
                 }
             });
@@ -455,7 +467,6 @@ $(function(){
             },
             success: function(data){
                 flashIcon($('#passage_push_' + _id), 'green');
-                alert(data);
             }
         });
     });
