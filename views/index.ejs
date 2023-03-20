@@ -3,6 +3,7 @@
 <%- include('header') %>
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
             <input type="hidden" value="false", id="is_profile"/>
+            <input type="hidden" id="selection">
             <div id="page_title_container">
                 <%if(passage.parent != null){%>
                     <div data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>

@@ -59,5 +59,6 @@ Split bookmark copy (review)
 Chat Daemon w/ whisper
 Room Creation
 Keys in passage options and metadata reader
+Search in Sidebar (search all/search bookmarks); bookmarks section
 
 Minifications

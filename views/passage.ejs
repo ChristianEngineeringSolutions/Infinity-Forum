@@ -173,11 +173,11 @@
     <%}%>
     <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced">
         <%if(passage.lang == 'mixed' || passage.lang == 'rich'){%>
-            <div class="code_display display_html"><pre><code class="language-html"></code><%=passage.html || 'HTML'%></code></pre></div>
-            <div class="code_display display_css"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
-            <div class="code_display display_js"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
+            <div id="passage_detail_html_<%=passage._id%>"class="code_display display_html"><pre><code class="language-html"></code><%=passage.html || 'HTML'%></code></pre></div>
+            <div id="passage_detail_css_<%=passage._id%>"class="code_display display_css"><pre><code class="language-css"><%=passage.css || 'CSS'%></code></pre></div>
+            <div id="passage_detail_js_<%=passage._id%>"class="code_display display_js"><pre><code class="language-javascript"><%=passage.javascript || 'Javascript'%></code></pre></div>
         <%}else{%>
-            <div class="display_code"><pre><code class="language-<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"><%=passage.code || passage.lang%></code></pre></div>
+            <div id="passage_detail_code_<%=passage._id%>"class="display_code"><pre><code class="language-<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"><%=passage.code || passage.lang%></code></pre></div>
         <%}%>
         <!-- Show .EXT -->
         <!-- Show License -->

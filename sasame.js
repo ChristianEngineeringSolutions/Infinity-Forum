@@ -959,7 +959,16 @@ async function bookmarkPassage(_id, _for){
     return "Done.";
 }
 app.post('/bookmark_passage', async (req, res) => {
-    await bookmarkPassage(req.body._id, req.session.user._id);
+    if(req.body.content == ''){
+        await bookmarkPassage(req.body._id, req.session.user._id);
+    }
+    else{
+        let passage = await Passage.findOne({_id: req.body._id});
+        let copy = await passageController.copyPassage(passage, [req.session.user], null, function(){});
+        copy[req.body.which] = req.body.content;
+        await copy.save();
+        await bookmarkPassage(copy._id, req.session.user._id);
+    }
     res.send('Done.');
 });
 // Add security if reactivating check if passage user first
@@ -1877,7 +1886,10 @@ app.post('/update_metadata', async (req, res) => {
 });
 //temp function for external api (mostly to work with metadata)
 app.post('/passage_update', async (req, res) => {
-    return res.send(await updatePassage(req.body._id, req.body.attributes));
+    var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        return res.send(await updatePassage(req.body._id, req.body.attributes));
+    }
 });
 //attributes is an object
 async function updatePassage(_id, attributes){
