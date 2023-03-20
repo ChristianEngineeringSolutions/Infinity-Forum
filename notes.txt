@@ -27,8 +27,6 @@ real time UI updates for every action (long polling)
 
 Need tabs?
 
-Clean out passage controller deprecated code
-
 
 Cordova*
 

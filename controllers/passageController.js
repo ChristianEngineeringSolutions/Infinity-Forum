@@ -5,20 +5,6 @@ const scripts = {};
 var fs = require('fs'); 
 
 module.exports = {
-    updatePassage: function(options) {
-        Passage.findOneAndUpdate({_id: options.id.trim()}, {
-            content: options.content,
-            canvas: options.canvas,
-            label: options.label,
-            metadata: options.metadata,
-            categories: options.categories
-        }, {new: true}, function(err, doc){
-            if(err){
-                console.log(err);
-            }
-            options.callback(doc);
-        });
-    },
     deletePassage: async function(req, res, callback) {
         let passageID = req.body._id;
         let passage = await Passage.findOne({_id: passageID});
@@ -117,15 +103,5 @@ module.exports = {
         let ret = await Passage.findOne({_id: copy._id}).populate('author users sourceList');
         return ret;
         // res.render('passage', {passage: copy, sub: true});
-    },
-    //update order of sub-passages in passage
-    updatePassageOrder: async function(req, res, callback) {
-        var passageId = req.body.passageId;
-        var passages = JSON.parse(req.body.passages);
-        let trimmedPassages = passages.map(str => str.trim());
-        let passage = await Passage.updateOne({_id: passageId.trim()}, {
-            passages: trimmedPassages,
-        });
-        res.send("Done");
     },
 }

@@ -61,7 +61,7 @@ const Interaction = require('./models/Interaction');
 // Controllers
 const passageController = require('./controllers/passageController');
 // Routes
-const passageRoutes = require('./routes/passage');
+// const passageRoutes = require('./routes/passage');
 
 var fs = require('fs'); 
 var path = require('path');
@@ -1572,7 +1572,6 @@ app.post('/paginate', async function(req, res){
         }
         if(profile != 'false'){
             find.author = profile;
-            console.log(find);
         }
         if(req.body.from_ppe_queue){
             find.mimeType = 'image';
@@ -1609,7 +1608,7 @@ app.post(/\/delete_passage\/?/, (req, res) => {
     });
 });
 
-app.use('/passage', passageRoutes);
+// app.use('/passage', passageRoutes);
 app.get('/passage_form/', (req, res) => {
     res.render('passage_form');
 });
