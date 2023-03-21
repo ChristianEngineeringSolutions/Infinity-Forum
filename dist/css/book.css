@@ -286,6 +286,27 @@ body{
     border: 2px solid black;
     border-left: 5px solid black;
 }
+#left-side-panel, #left-side-panel-inner{
+    float: left;
+    padding: 10px;
+    z-index: 9999999999;
+    width: 50%;
+    background: gold;
+    color: #000;
+    /*border: 1px solid #ccc;*/
+    height: 100%;
+    /*position: fixed;
+    right: 0px;*/
+}
+#left-side-panel-inner{
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    overflow-y: scroll;
+    padding-top: 30px;
+    border: 2px solid black;
+    border-left: 5px solid black;
+}
 .category{
     /* border-bottom: 1px dotted grey; */
     padding-top: 20px;

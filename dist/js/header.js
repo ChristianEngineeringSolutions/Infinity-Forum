@@ -1,6 +1,7 @@
 distractionFree = false;
 $(function(){
     $(document).on('click', '#bookmarks_icon', function(){
+        $('#left-side-panel').hide();
         $('#right_side_select').val('bookmarks').change();
         $('#side_panel').toggle();
         $('.blocker').click();
@@ -102,7 +103,7 @@ $(function(){
     $(document).on('click', '#login_register_link', function(){
         window.location.href = "/loginform";
     });
-    $(document).on('click', '#home_link', function(){
+    $(document).on('click', '#home_link, .home-link', function(){
         var title = 'Home';
         let href = '/';
         $('.active_tab').html('<span class="tab_delete">X</span>' + title);
@@ -111,6 +112,12 @@ $(function(){
         localStorage.setItem('active_tab', tab_id);
         window.location.href = "/";
     });
+    $(document).on('click', '#menu-button', function(){
+        $('#left-side-panel').show()
+    });
+    $(document).on('click', '#menu-close', function(){
+        $('#left-side-panel').hide()
+    });
     $(document).on('click', '#profile_link', function(){
         window.location.href = "/profile/";
     });
@@ -118,6 +125,7 @@ $(function(){
         
     });
     $(document).on('click', '#distraction_free', function(){
+        $('#left-side-panel').hide();
         if(distractionFree == false){
             $('.passage_options').hide();
             $('.passage_tabs').hide();
