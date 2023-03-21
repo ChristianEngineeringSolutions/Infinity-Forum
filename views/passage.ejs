@@ -15,7 +15,7 @@
         <!-- List collaborators and allow them to be added (permanent) -->
     </div>
     <ul class="passage_options">
-        <% if(sub === true){%>
+        <% if(sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || passage.passages.length > 0 || passage.public || passage.parent == null)){%>
         <li id="passage_more_<%=passage.id%>" class="passage_option">Details</li>
         <%}%>
         <!-- Show them settings only if they made the passage -->
