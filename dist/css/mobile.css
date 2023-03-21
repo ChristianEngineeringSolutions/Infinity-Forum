@@ -1,4 +1,28 @@
 @media screen and (max-width: 715px){
+    #graphic_mode{
+        display: none;
+    }
+    .no_mobile{
+        display: none;
+    }
+    #profile_header{
+        margin-top: 5px;
+    }
+    #home_link, #menu-button{
+        font-size: 0.5em;
+    }
+    #menu-button{
+        font-size: 0.7em !important;
+        float: left;
+    }
+    #home_link{
+        float: left;
+        /* position: relative;
+        left: 5%; */
+    }
+    #control_nav{
+        height: 45px !important;
+    }
     #side_panel, #side_panel_inner{
         width: 100%;
     }
@@ -22,7 +46,7 @@
         font-size: 1.5em;
     }
     #page_title_container{
-        margin-top: 145px;
+        margin-top: 90px;
     }
     #ppe{
         margin-top: 120px;
@@ -41,12 +65,12 @@
         padding: 0;
         margin-bottom: 10px;
     }
-    .tab{
+    /* .tab{
         font-size: 0.5em;
-    }
-    #tab_panel{
+    } */
+    /* #tab_panel{
         height: 80px !important;
-    }
+    } */
     #control_nav{
         font-size: 1.5em;
         padding-bottom: 5px;

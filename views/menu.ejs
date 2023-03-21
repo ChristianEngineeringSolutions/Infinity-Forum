@@ -1,0 +1,37 @@
+<div id="left-side-panel">
+    <div id="left-side-panel-inner">
+      <div style="float:left;"id="side_panel_close">
+        <ion-icon id="menu-close"src="/images/ionicons/menu-outline.svg"></ion-icon>
+      </div>
+      <div id="side_panel_body">
+        <ul id="menu-options">
+            <li class="menu-option home-link">Home</li>
+            <%if(user != null){%>
+                <li data-active="false"id="graphic_mode"class="menu-option">Graphic Mode</li>
+                <li id="bookmarks_icon"class="menu-option">Bookmarks</li>
+            <%}%>
+            <%if(typeof passage == 'undefined' || passage.id !== 'root'){%>
+                <li id="distraction_free"class="menu-option">Distraction Free Mode</li>
+            <%}%>
+            <li id="leaderboard_link"class="menu-option">Leaderboard</li>
+            <li id="nav_donate"class="menu-option">Invest ($)</li>
+            <% if(user != null){ %>
+                <li id="profile_link"class="menu-option">Profile</li>
+                <li id="logout"class="menu-option">Log Out</li>
+                <input id="logged_in"value="true"type="hidden" name="">
+            <%} else{ %>
+                <li id="login_register_link"class="menu-option">Login/Register</li>
+                <input id="logged_in"value="false"type="hidden" name="">
+            <%} %>
+        </ul>
+        <div id="tab_panel">
+            <h3 style="text-align: center;">Tabs</h3>
+            <ul id="tab_list">
+                <li id="new_tab" class="tab">+</li>
+            </ul>
+            <br><br><br>
+        </div>
+        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+      </div>
+    </div>
+  </div>

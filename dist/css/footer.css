@@ -2,12 +2,13 @@
     margin: auto;
     text-align: center;
     margin-top: 100px;
-    padding-top: 100px;
-    padding-bottom: 150px;
-    color: gold;
-    background: black;
-    font-size: 2em;
+    padding-top: 50px;
+    padding-bottom: 75px;
+    color: black;
+    background: gold;
+    font-size: 1.5em;
     font-weight: bold;
+    border-top: 1px solid black;
 }
 #editor{
     position: fixed;

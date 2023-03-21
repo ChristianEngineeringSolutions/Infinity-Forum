@@ -216,6 +216,8 @@ $(function(){
         if(!$('#ppe').is(':visible')){
             thiz.data('active', 'true');
             $('#ppe').show();
+            $('#left-side-panel').hide();
+            $('#options').show();
             $('.ppe_option').css('display', 'inline-block');
             $('html, body').css({
                 overflow: 'hidden'
@@ -225,6 +227,7 @@ $(function(){
         else{
             thiz.data('active', 'false');
             $('#ppe').hide();
+            $('#options').hide();
             $('.ppe_option').hide();
             $('.book_option').show();
             $('html, body').css({

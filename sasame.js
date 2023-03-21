@@ -774,7 +774,7 @@ app.get('/', async (req, res) => {
         }
         res.render("index", {
             subPassages: false,
-            passageTitle: 'Christian Engineering Solutions', 
+            passageTitle: false, 
             scripts: scripts, 
             passages: passages, 
             passage: {id:'root', author: {

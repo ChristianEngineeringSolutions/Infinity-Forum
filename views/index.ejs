@@ -8,7 +8,9 @@
                 <%if(passage.parent != null){%>
                     <div data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
                 <%}%>
-                 <div id="page_title"><%= decodeURIComponent(passageTitle)   || "Christian Engineering Solutions"%></div>
+                <%if(passageTitle){%>
+                    <div id="page_title"><%= decodeURIComponent(passageTitle)%></div>
+                <%}%>
             </div>
             <%if(passages){%>
                 <input id="search"placeholder="Search Solutions..." type="" name="" autocomplete="off">
