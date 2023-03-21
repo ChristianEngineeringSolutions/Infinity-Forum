@@ -1,4 +1,10 @@
 @media screen and (max-width: 715px){
+    #login_form, #register_form{
+        width: 75% !important;
+    }
+    .mobile_none{
+        display: none;
+    }
     #graphic_mode{
         display: none;
     }
