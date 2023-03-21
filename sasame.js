@@ -908,7 +908,7 @@ app.post('/search_passage/', async (req, res) => {
             else if(parent.public_daemon == 2 || parent.default_daemon){
                 //do nothing
             }
-            else{
+            else if(parent.public){
                 let passage = await Passage.create({
                     author: req.session.user._id,
                     users: users,
@@ -929,14 +929,8 @@ app.post('/search_passage/', async (req, res) => {
     });
 });
 app.post('/search/', async (req, res) => {
-    let results = await Passage.find({
-        deleted: false,
-        personal: req.body.personal,
-        title: {
-        $regex: req.body.search,
-        $options: 'i',
-    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    if(results.length < 1 && req.session.user){
+    let exact = await Passage.findOne({personal:false,deleted:false,title:req.body.search});
+    if(exact == null && req.session.user){
         let passage = await Passage.create({
             author: req.session.user._id,
             users: [req.session.user._id],
@@ -944,8 +938,14 @@ app.post('/search/', async (req, res) => {
             title: req.body.search,
             public: true
         });
-        results = [passage];
     }
+    let results = await Passage.find({
+        deleted: false,
+        personal: req.body.personal,
+        title: {
+        $regex: req.body.search,
+        $options: 'i',
+    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     res.render("passages", {
         passages: results,
         subPassages: false,
