@@ -66,3 +66,5 @@ Minifications
 Express Server Production mode on Remote
 Reintroduce Brief
 Reorder passages from brief
+Retest Subscriptions
+Stripe webhooks in bash file

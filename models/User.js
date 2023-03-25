@@ -74,7 +74,7 @@ const userSchema = mongoose.Schema({
       type: String,
       default: null
     },
-    lastSubscribed: String,
+    lastSubscribed: {type: Date, default: null},
     room: {
       type: String,
       default: 'root'
