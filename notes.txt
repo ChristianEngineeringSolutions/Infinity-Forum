@@ -66,5 +66,5 @@ Minifications
 Express Server Production mode on Remote
 Reintroduce Brief
 Reorder passages from brief
-Contact
-Subscription Settings (Cancel Subscription)
+Contact Us
+Revisit Messages (As Passages)
