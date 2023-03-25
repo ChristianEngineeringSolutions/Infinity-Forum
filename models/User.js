@@ -74,6 +74,10 @@ const userSchema = mongoose.Schema({
       type: String,
       default: null
     },
+    subscriptionID: {
+      type: String,
+      default: null
+    },
     lastSubscribed: {type: Date, default: null},
     room: {
       type: String,
