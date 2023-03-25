@@ -59,10 +59,11 @@ Flex program (review)
 Distraction free mode maintain border color
 Root passages from anywhere (button)
 Only show details passage option for non authors if there is content
-Anonymouse support:
+Anonymous support:
     Create Passage
     Bookmarks
     PPE
 Minifications
 Express Server Production mode on Remote
+Reintroduce Brief
 Reorder passages from brief
