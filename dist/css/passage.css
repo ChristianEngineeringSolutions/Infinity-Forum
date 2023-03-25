@@ -191,6 +191,9 @@
 .sandbox{
     /* float: left; */
 }
+.condensed{
+    display: none;
+}
 .code_display{
     border: 1px solid black;
     padding: 5px;
