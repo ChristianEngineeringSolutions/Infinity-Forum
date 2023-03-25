@@ -56,9 +56,8 @@ Search in Sidebar (search all/search bookmarks); bookmarks section
 Alternate passages
 Blender crumple
 Flex program (review)
-Distraction free mode maintain border color
+Distraction free mode maintain border color (and thorough persistence checks/ improve algorithm)
 Root passages from anywhere (button)
-Only show details passage option for non authors if there is content
 Anonymous support:
     Create Passage
     Bookmarks

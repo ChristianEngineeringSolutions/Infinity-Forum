@@ -285,7 +285,8 @@ const e = require('express');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
-    await rewardUsers();
+    // Rewards beginning May 1st 2023
+    // await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
 
@@ -300,7 +301,7 @@ function monthDiff(d1, d2) {
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     //80% of funds to users
-    var usd = parseInt(await totalUSD()) * 0.80;
+    var usd = parseInt(await totalUSD());
     let users = await User.find({stripeOnboardingComplete: true});
     for(const user of users){
         //appropriate percentage based on stars
