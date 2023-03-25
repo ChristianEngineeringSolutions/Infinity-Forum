@@ -1,3 +1,13 @@
+/* Tablets */
+@media screen and (max-width: 1200px){
+    .passage_option_expand{
+        display: inline;
+    }
+    .condensed{
+        display: none;
+    }
+}
+/* Large Phones */
 @media screen and (max-width: 715px){
     #login_form, #register_form{
         width: 75% !important;
@@ -58,6 +68,7 @@
         margin-top: 120px;
     }
 }
+/* Small Phones */
 @media screen and (max-width: 550px){
     #add_passage_button{
         width: 95%;
