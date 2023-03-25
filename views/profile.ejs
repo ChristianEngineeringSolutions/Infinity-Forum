@@ -21,7 +21,7 @@
   &nbsp;
   <span id="parent_chapter_title"><%=profile.name%></span>
   <div id="profile_stars">
-    <p><%=profile.stars%> Star<%-parseInt(profile.stars) == 1 ? '' : 's'%>. <%=profile.starsGiven%> Star<%-profile.starsGiven == 1 ? '' : 's'%> Invested ($<%=usd%>)</p>
+    <p><%=parseInt(profile.stars)%> Star<%-parseInt(profile.stars) == 1 ? '' : 's'%>. <%=profile.starsGiven%> Star<%-profile.starsGiven == 1 ? '' : 's'%> Invested ($<%=usd%>)</p>
   </div>
 
 </div>
