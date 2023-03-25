@@ -125,21 +125,18 @@ app.use(bodyParser.json({
   
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
+const MongoStore  = require('connect-mongo');
+
 // User Session Setup Logic
 const session = require('express-session')({
     secret: "ls",
     resave: true,
     saveUninitialized: true,
-    // store: new MongoStore({
-    //     db: 'sasame',
-    //     host: '127.0.0.1',
-    //     port: 3000
-    // })
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_CONNECTION_URL })
 });
 var sharedsession = require("express-socket.io-session");
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
-var MongoStore  = require('connect-mongo');
 const scripts = {};
 scripts.isPassageUser = function(user, passage){
     var ret;
@@ -216,7 +213,7 @@ app.use(async function(req, res, next) {
     }
     res.locals.DAEMONS = daemons;
     //DEV AUTO LOGIN
-    if(!req.session.user && process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
+    if(!req.session.user && !process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
         var user = await authenticateUsername("christianengineeringsolutions@gmail.com", "testing");
         if(user){
             req.session.user = user;
@@ -2411,6 +2408,7 @@ io.on('connection', async (socket) => {
 // CLOSING LOGIC
 server.listen(PORT, () => {
     console.log(`Sasame started on Port ${PORT}`);
+    io.sockets.emit("serverRestart", "Test");
 });
 process.on('uncaughtException', function(err){
     console.log('uncaughtExceptionError');
