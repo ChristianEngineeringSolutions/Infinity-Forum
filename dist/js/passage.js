@@ -417,6 +417,10 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^=passage_expand]', function(e){
+        var _id = getPassageId(this);
+        $('#passage_condensed_' + _id).fadeToggle();
+    });
     $(document).on('submit', '[id^=passage_form_]', function(e){
         e.preventDefault();
         var thiz = $(this);

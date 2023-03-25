@@ -16,42 +16,49 @@
     </div>
     <ul class="passage_options">
         <% if(sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || passage.passages.length > 0 || passage.public || passage.parent == null)){%>
-        <li id="passage_more_<%=passage.id%>" class="passage_option">Details</li>
+        <li id="passage_more_<%=passage._id%>" class="passage_option">Details</li>
         <%}%>
-        <!-- Show them settings only if they made the passage -->
-        <%if(passage.author != null && passage.author){%>
-            <%if(passage.author && user && passage.author._id == user._id){%>
-                <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
-                <%}%>
-        <%}%>
-        <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
-        <!-- Shift passage location -->
         <%if(user){%>
-        <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
-        <%}%>
-        <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
-            <%if(passage.public_daemon != 2 && passage.default_daemon != true){%>
-                <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
-                <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
-                <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
-            <%}%>
-            <%if(LOCAL == 'true'){%>
-                <!-- Push passage to server -->
-                <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
-                <input type="hidden" id="full_push_passage_<%=passage._id%>" value="<%=JSON.stringify(passage)%>">
-                <!-- Install to FileSystem -->
-                <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
-            <%}%>
-        <%}%>
-        <%if(fromOtro){%>
-            <!-- Displayed via CES Connect -->
-            <!-- Pull passage from server -->
-            <li id="passage_pull_<%=passage._id%>" class="passage_option">Pull</li>
-            <form id="pull_form_<%=passage._id%>"style="display:none" action="/pull"method="POST"enctype="multipart/form-data">
-                <input type="text"name="passage"value="<%=JSON.stringify(passage)%>">
-                <input type="text"name="thumbnail"value="">
-            </form>
-            <input id="passage_json_<%=passage._id%>"type="hidden" value="<%=JSON.stringify(passage)%>">
+            <li id="passage_expand_<%=passage._id%>" class="passage_option">Options</li>
+            <span id="passage_condensed_<%=passage._id%>"class="condensed">
+                <!-- Show them settings only if they made the passage -->
+                <%if(passage.author != null && passage.author){%>
+                    <%if(passage.author && user && passage.author._id == user._id){%>
+                        <a class="basic_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
+                        <%}%>
+                <%}%>
+                <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
+                <!-- Shift passage location -->
+                <%if(user){%>
+                <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
+                <%}%>
+                <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
+                    <%if(passage.public_daemon != 2 && passage.default_daemon != true){%>
+                        <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
+                        <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
+                        <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+                    <%}%>
+                    <%if(LOCAL == 'true'){%>
+                        <!-- Push passage to server -->
+                        <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
+                        <input type="hidden" id="full_push_passage_<%=passage._id%>" value="<%=JSON.stringify(passage)%>">
+                        <!-- Install to FileSystem -->
+                        <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
+                    <%}%>
+                <%}%>
+                <%if(fromOtro){%>
+                    <!-- Displayed via CES Connect -->
+                    <!-- Pull passage from server -->
+                    <li id="passage_pull_<%=passage._id%>" class="passage_option">Pull</li>
+                    <form id="pull_form_<%=passage._id%>"style="display:none" action="/pull"method="POST"enctype="multipart/form-data">
+                        <input type="text"name="passage"value="<%=JSON.stringify(passage)%>">
+                        <input type="text"name="thumbnail"value="">
+                    </form>
+                    <input id="passage_json_<%=passage._id%>"type="hidden" value="<%=JSON.stringify(passage)%>">
+                <%}%>
+            </span>
+        <%}else{%>
+            <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
         <%}%>
     </ul>
     <ul class="passage_users">
