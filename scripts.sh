@@ -15,3 +15,7 @@
 # Helper Scripts here
 
 # Minify JS/CSS
+
+# Stripe Webhook testing
+
+#stripe listen --forward-to localhost:3000/stripe_webhook

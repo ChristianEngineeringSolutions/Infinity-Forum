@@ -814,7 +814,11 @@ app.get('/donate', async function(req, res){
     }
     var usd = await totalUSD();
     var stars = await totalStars();
-    res.render('donate', {passage: {id: 'root'}, usd: (usd/100), stars: stars});
+    res.render('donate', {
+        passage: {id: 'root'}, usd: (usd/100), stars: stars,
+        donateLink: process.env.STRIPE_DONATE_LINK,
+        subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK
+    });
 });
 //Search
 app.post('/search_leaderboard/', async (req, res) => {
@@ -1202,6 +1206,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     //update subscription data in db
     //...
     // Handle the checkout.session.completed event
+    // For Custom Amount Investment
     if (event.type === 'checkout.session.completed') {
         let amount = payload.data.object.amount_total;
         //Save recording passage in database and give user correct number of stars
@@ -1212,15 +1217,17 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
             await user.save();
         }
     }
+    //For Subscriptions
     else if(event.type == "invoice.paid"){
+        console.log("Test");
         var email = payload.data.object.customer_email;
         if(email != null){
             //they get stars
             //plus time bonus
             var subscriber = await User.findOne({email: email});
             subscriber.subscribed = true;
-            subscriber.lastSubscribed = Date.now().toString();
-            let monthsSubscribed = monthDiff(Date.parse(subscriber.lastSubscribed), Date.now());
+            subscriber.lastSubscribed = new Date();
+            let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
             subscriber.stars += (await percentUSD(80 * monthsSubscribed)) * (await totalStars());
             await subscriber.save();
         }
