@@ -68,4 +68,3 @@ Reintroduce Brief
 Reorder passages from brief
 Contact
 Subscription Settings (Cancel Subscription)
-Condense passage options

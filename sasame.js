@@ -187,6 +187,7 @@ app.use(async function(req, res, next) {
     let daemons = [];
     if(req.session.user){
         let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
+        regenerateSession(req);
         daemons = user.daemons;
     }
     let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
@@ -1171,6 +1172,12 @@ app.post('/remove_user', async (req, res) => {
         res.send("Done.");
     }
 });
+async function regenerateSession(req){
+    if(req.session.user){
+        let user = await User.findOne({_id: req.session.user._id});
+        req.session.user = user;
+    }
+}
 app.post('/remove_bookmark', async (req, res) => {
     let _id = req.body._id;
     let user = await User.findOne({_id: req.session.user._id});
@@ -1219,12 +1226,13 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     }
     //For Subscriptions
     else if(event.type == "invoice.paid"){
-        console.log("Test");
+        console.log(JSON.stringify(payload.data.object.subscription));
         var email = payload.data.object.customer_email;
         if(email != null){
             //they get stars
             //plus time bonus
             var subscriber = await User.findOne({email: email});
+            subscriber.subscriptionID = payload.data.object.subscription;
             subscriber.subscribed = true;
             subscriber.lastSubscribed = new Date();
             let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
@@ -1242,13 +1250,27 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     }
     else{
         console.log(event.type);
-    }
-  
+    }  
     response.status(200).end();
   });
   function getStarsFromUSD(usd){
     return percentUSD(usd) * totalStars();
   }
+app.post('/unsubscribe', async function(req, res){
+    if(req.session.user){
+        console.log("here");
+        var user = await User.findOne({_id: req.session.user._id});
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const deleted = await stripe.subscriptions.del(
+            user.subscriptionID
+        );
+        user.subscribed = false;
+        user.subscriptionID = null;
+        await user.save();
+        req.session.user = user;
+    }
+    res.send("Done.");
+});
 app.get('/eval/:passage_id', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
@@ -1543,6 +1565,7 @@ app.post('/update_settings/', async function(req, res) {
             user.email = req.body.email;
             user.password = await bcrypt.hash(req.body.password, 10);
             await user.save();
+            req.session.user = user;
             return res.redirect('/profile/' + user._id);
         }
     }

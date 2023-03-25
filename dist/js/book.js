@@ -235,6 +235,16 @@ $(function(){
             });
         }
     });
+    $(document).on('click', '#cancel-subscription', function(){
+        $.ajax({
+            type: 'post',
+            url: DOMAIN + '/unsubscribe',
+            data: {},
+            success: function(){
+                window.location.reload();
+            }
+        });
+    });
     $(document).on('click', '#remote_toggle', function(){
         //green
         if($(this).css('color') == 'rgb(0, 128, 0)'){
