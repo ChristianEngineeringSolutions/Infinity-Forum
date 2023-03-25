@@ -19,7 +19,7 @@
         <li id="passage_more_<%=passage._id%>" class="passage_option">Details</li>
         <%}%>
         <%if(user){%>
-            <li id="passage_expand_<%=passage._id%>" class="passage_option">Options</li>
+            <li id="passage_expand_<%=passage._id%>" class="passage_option passage_option_expand">Options</li>
             <span id="passage_condensed_<%=passage._id%>"class="condensed">
                 <!-- Show them settings only if they made the passage -->
                 <%if(passage.author != null && passage.author){%>

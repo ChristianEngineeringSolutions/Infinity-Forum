@@ -57,9 +57,11 @@
     display: none;
 }
 .star_number{
-    width: 80px;
+    width: 60px;
     border: 0;
     padding: 5px;
+    background-color: transparent;
+    border: 1px solid black;
 }
 .hide{
     display: none !important;
@@ -192,6 +194,9 @@
     /* float: left; */
 }
 .condensed{
+    /* display: none; */
+}
+.passage_option_expand{
     display: none;
 }
 .code_display{
