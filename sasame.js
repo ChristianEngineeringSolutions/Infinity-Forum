@@ -286,8 +286,7 @@ const e = require('express');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
-    // Rewards beginning May 1st 2023
-    // await rewardUsers();
+    await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
 
