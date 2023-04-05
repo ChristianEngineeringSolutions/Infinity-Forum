@@ -42,6 +42,11 @@ const passageSchema = mongoose.Schema({
         type: String,
         default: 'mixed'
     },
+    fileStreamPath: {
+        type: String,
+        default: null,
+        unique: true
+    },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Tag'
@@ -88,6 +93,11 @@ const passageSchema = mongoose.Schema({
     },
     // sub passages under this passage
     passages: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    }],
+    // daemons to be used as functions in passage
+    daemons: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],

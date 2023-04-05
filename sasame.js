@@ -177,6 +177,7 @@ app.use(async function(req, res, next) {
     //shortcuts for ejs
     res.locals.getUploadFolder = getUploadFolder;
     res.locals.user = req.session.user;
+    res.locals.daemonLibs = DAEMONLIBS;
     res.locals.DOMAIN = process.env.DOMAIN;
     res.locals.LOCAL = process.env.LOCAL;
     if(!req.session.CESCONNECT){
@@ -289,7 +290,6 @@ cron.schedule('0 12 1 * *', async () => {
     await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
-
 function monthDiff(d1, d2) {
     var months;
     months = (d2.getFullYear() - d1.getFullYear()) * 12;
@@ -398,6 +398,21 @@ async function notifyUser(userId, content, type="General"){
         type: type
     });
 }
+//basically messages
+async function sharePassage(_id, userID){
+    let user = User.findOne({_id: userID});
+    user.messages.push(_id);
+    await user.messages.save();
+}
+app.get('/messages', async(req, res) => {
+    //paginate messages
+    //...TODO
+
+    //serve messages
+    res.render('passages', {
+        passages: req.session.user.messages,
+    });
+});
 //get highest rank passage with title
 async function bestOf(title){
     return await Passage.find({title:title, personal: false}).sort('-stars').limit(1)[0];
@@ -416,7 +431,7 @@ async function bestOfPassage(title){
 }
 app.get('/bestOf/:title', async(req, res) => {
     res.send(await bestOfPassage(req.params.title));
-})
+});
 //ROUTES
 app.get('/personal/:user_id', async (req, res) => {
     if(!req.session.user || req.session.user._id != req.params.user_id){
@@ -2135,109 +2150,96 @@ app.post('/install_passage', async function(req, res){
 /*
     ROUTERS FOR FILESTREAM
 */
-// if(process.env.DOMAIN == 'localhost'){
-//     app.post('/server_eval', function(req, res) {
-//         eval(req.code);
-//     });
-// }
 
-//Make an actual passage for each file and directory
-// app.post('/fileStream', function(req, res) {
-//     var result = '';
-//     var dir = __dirname + '/';
-//     fs.readdir(dir, (err, files) => {
-//       var ret = '';
-//       var stat2;
-//       files.forEach(function(file){
-//         stat2 = fs.lstatSync(dir + '/' +file);
-//         if(stat2.isDirectory()){
-//             file += '/';
-//         }
-//         ret += scripts.printDir(file);
-//       });
-//       res.send({
-//         dirs: ret,
-//         type: 'dir',
-//         path: dir
-//       });
-//     });
-// });
-// app.post('/file', function(req, res) {
-//     var file = req.body.fileName;
-//     if(req.body.dir[req.body.dir.length - 1] == '/'){
-//         var dir = req.body.dir + file;
-//     }
-//     else{
-//         var dir = req.body.dir + '/' + file;
-//     }
-//     var stat = fs.lstatSync(dir);
-//     if(stat.isFile()){
-//         fs.readFile(dir, {encoding: 'utf-8'}, function(err,data){
-//                 if (!err) {
-//                     res.send({
-//                         data: scripts.printFile(data, __dirname + '/' +file),
-//                         type: 'file'
-//                     });
-//                 } else {
-//                     console.log(err);
-//                 }
-//         });
-//     }
-//     else if (stat.isDirectory()){
-//         fs.readdir(dir, (err, files) => {
-//           var ret = '<div class="directory_list">';
-//           ret += `<div>
-//             <a class="link fileStreamChapter fileStreamCreate">Create</a>
-//           </div>`;
-//           var stat2;
-//           files.forEach(function(file){
-//             stat2 = fs.lstatSync(dir + '/' +file);
-//             if(stat2.isDirectory()){
-//                 file += '/';
-//             }
-//             ret += scripts.printDir(file);
-//           });
-//           ret += '</div>';
-//           res.send({
-//             data: ret,
-//             type: 'dir',
-//             dir: dir
-//           });
-//         });
-//     }
-// });
-// app.post('/run_file', function(req, res) {
-//     var file = req.body.file;
-//     var ext = file.split('.')[file.split('.').length - 1];
-//     var bash = 'ls';
-//     switch(ext){
-//         case 'js':
-//         bash = 'node ' + file;
-//         break;
-//         case 'sh':
-//         bash = 'sh ' + file;
-//         break;
-//     }
-//     exec(bash, (err, stdout, stderr) => {
-//       if (err) {
-//         // node couldn't execute the command
-//         res.send(JSON.stringify(err));
-//         return;
-//       }
-//       res.send(stdout);
-//       // the *entire* stdout and stderr (buffered)
-//       // console.log(`stdout: ${stdout}`);
-//       // console.log(`stderr: ${stderr}`);
-//     });
-// });
-// app.post('/update_file', function(req, res) {
-//     var file = req.body.file;
-//     var content = req.body.content;
-//     fs.writeFile(file, content, function(err){
-//       if (err) return console.log(err);
-//       res.send('Done');
-//     });
-// });
+if(process.env.DOMAIN == 'localhost'){
+    app.post('/server_eval', requiresAdmin, function(req, res) {
+        eval(req.code);
+    });
+}
+app.get('/fileStream/:directory', async function(req, res){
+    //output passages in directory / or req.body.directory
+    var directory = req.params.directory || '/';
+    //get passages where fileStreamPath starts with directory
+    var passages = Passage.find({
+        fileStreamPath: {
+            $regex: '^' + directory,
+            $options: 'i'
+        }
+    }).collation({locale: 'en', strength: 2}).sort({title: 1}); //sort alphabetically
+    return res.render('passages', {
+        passages: passages
+    });
+    //on directory click just run same route with different directory
+    
+});
+app.post('/updateFileStream', requiresAdmin, async function(req, res) {
+    var passage = await Passage.findOne({_id: req.body.passageID});
+    //check if file/dir already exists
+    var exists = await Passage.findOne({fileStreamPath: req.body.fileStreamPath});
+    if(exists != null){
+        //file/dir already exists
+        if(req.body.changeMainFile){
+            exists.fileStreamPath = null;
+            await exists.save();
+        }
+        else{
+            return 'Path already exists';
+        }
+    }
+    passage.fileStreamPath = req.body.fileStreamPath;
+    await passage.save();
+    //create file if not exists
+    //else update
+    //check if directory or file
+    var isDirectory = false;
+    var isFile = false;
+    if(passage.fileStreamPath.at(-1) == '/'){
+        isDirectory = true;
+    }
+    else{
+        isFile = true;
+    }
+    const fsp = require('fs').promises;
+    //TODO: check if need to check for exists or if fsp handles this
+    if(isDirectory){
+        await fsp.mkdir(__dirname + passage.fileStreamPath);
+    }
+    else if(isFile){
+        await fsp.writeFile(__dirname + passage.fileStreamPath);
+    }
+});
+app.post('/run_file', requiresAdmin, function(req, res) {
+    var file = req.body.file;
+    var ext = file.split('.')[file.split('.').length - 1];
+    var bash = 'ls';
+    switch(ext){
+        case 'js':
+        bash = 'node ' + file;
+        break;
+        case 'sh':
+        bash = 'sh ' + file;
+        break;
+    }
+    exec(bash, (err, stdout, stderr) => {
+      if (err) {
+        // node couldn't execute the command
+        res.send(JSON.stringify(err));
+        return;
+      }
+      res.send(stdout);
+      // the *entire* stdout and stderr (buffered)
+      // console.log(`stdout: ${stdout}`);
+      // console.log(`stderr: ${stderr}`);
+    });
+});
+app.post('/update_file', requiresAdmin, function(req, res) {
+    var file = req.body.file;
+    var content = req.body.content;
+    fs.writeFile(file, content, function(err){
+      if (err) return console.log(err);
+      res.send('Done');
+    });
+});
 app.get('/terms', function(req, res) {
     res.render('terms');
 });
@@ -2268,7 +2270,7 @@ function authenticateUser(email, password, callback) {
       })
     });
 }
-  async function authenticateUsername(username, password){
+async function authenticateUsername(username, password){
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let obj = {};
     let search = '';
@@ -2290,7 +2292,23 @@ function authenticateUser(email, password, callback) {
         return user;
     }
     return false;
-  }
+}
+async function requiresLogin(req, res, next){
+    if(req.session.user){
+        next();
+    }
+    else{
+        return res.redirect('/loginform');
+    }
+}
+async function requiresAdmin(req, res, next){
+    if(req.session.user && req.session.user.admin){
+        next();
+    }
+    else{
+        return res.redirect('/');
+    }
+}
 function sendEmail(to, subject, body){
     var transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -2314,15 +2332,6 @@ function sendEmail(to, subject, body){
         console.log('Email sent: ' + info.response);
       }
     });
-}
-function requiresLogin(req, res, next) {
-  if (req.session && req.session.user) {
-    return next();
-  } else {
-    var err = new Error('You must be logged in to view this page.');
-    err.status = 401;
-    return next(err);
-  }
 }
 
 //AI
@@ -2405,6 +2414,11 @@ async function cleanEngine(){
     //and all sub passages
     await Passage.deleteMany({synthetic: true, stars: 0});
     console.log("Cleaned AI.");
+}
+async function optimizeEngine(){
+    //delete bottom 20% of passages
+    //...
+    return;
 }
 // cleanEngine();
 
