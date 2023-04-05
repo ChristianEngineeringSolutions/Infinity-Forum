@@ -53,7 +53,7 @@ Chat Daemon w/ whisper
 Room Creation
 Keys in passage settings and metadata reader (review)
 Search in Sidebar (search all/search bookmarks); bookmarks section
-Alternate passages
+Passage alternates
 Blender crumple
 Flex program (review)
 Distraction free mode maintain border color (and thorough persistence checks/ improve algorithm)
@@ -69,3 +69,18 @@ Reorder passages from brief
 Contact Us
 Revisit Messages (As Passages)
 Bookmarks options in menu to Tools (or similar to open sidebar right)
+Roundabout Circuit
+Multiple windows (min. double page sort)
+Sasamatic language
+    Analyze passage on load, view more, and update
+
+Keys as langs (or just sasamatic)
+Return Chapter Options
+    Default distraction free
+Lang auto change
+Upload directory option
+LATEX inserts
+Mathematical optimizations (for users)
+Metadata in editor
+Metadata per client
+Share passage

@@ -3,6 +3,10 @@
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
     <div class="passage_description" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"></div>
     <input id="quill-data-<%=passage._id%>"value="<%=passage.content%>"name="content"type="hidden">
+    <!-- Upload Directory -->
+    <%/*%>
+    <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
+    <%*/%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
     <div style="display:none;"id="passage_thumbnail_<%=passage._id%>">
         <img id="thumbnail_image_<%=passage._id%>"src="" alt="">
