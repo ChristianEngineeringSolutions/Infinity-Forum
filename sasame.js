@@ -284,6 +284,7 @@ var cron = require('node-cron');
 const { exit } = require('process');
 const { response } = require('express');
 const e = require('express');
+const Message = require('./models/Message');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
@@ -356,6 +357,7 @@ async function starPassage(req, amount, passageID, userID){
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
     //add stars to passage and sources
     passage.stars += amount;
+    await starMessages(passage._id, amount);
     //you have to star someone elses passage to get stars
     if(passage.author._id.toString() != req.session.user._id.toString()){
         user.starsGiven += amount;
@@ -380,6 +382,7 @@ async function starPassage(req, amount, passageID, userID){
     await passage.save();
     //star each source
     for(const source of passage.sourceList){
+        await starMessages(source._id, amount);
         let sourceAuthor = await User.findOne({_id: source.author._id});
         //you won't get extra stars for citing your own work
         if(sourceAuthor._id.toString() != req.session.user._id.toString() && sourceAuthor._id.toString() != passage.author._id.toString()){
@@ -391,6 +394,14 @@ async function starPassage(req, amount, passageID, userID){
     }
     return passage;
 }
+async function starMessages(passage, stars=1){
+    //keep message stars aligned with passage
+    var messages = await Message.find({passage: passage});
+    for(const message of messages){
+        message.stars += stars;
+        await message.save();
+    }
+}
 async function notifyUser(userId, content, type="General"){
     let notification = await Notification.create({
         user: userId,
@@ -400,17 +411,23 @@ async function notifyUser(userId, content, type="General"){
 }
 //basically messages
 async function sharePassage(_id, userID){
-    let user = User.findOne({_id: userID});
-    user.messages.push(_id);
-    await user.messages.save();
+    var message = await Message.create({
+        from: req.session.user._id,
+        to: userID,
+        passage: _id
+    });
 }
 app.get('/messages', async(req, res) => {
     //paginate messages
     //...TODO
 
     //serve messages
+    //sort them by stars
+    var messages = await Message.find({
+        to: req.session.user._id
+    }).sort('-stars');
     res.render('passages', {
-        passages: req.session.user.messages,
+        passages: messages,
     });
 });
 //get highest rank passage with title
@@ -2036,11 +2053,16 @@ var extList = {
     'javascript' : '.js',
     'css' : '.css',
     'mixed' : '.html',
-    'bash': '.sh'
+    'bash': '.sh',
+    'ejs': '.ejs',
+    'markdown': '.md'
 };
 //GET more extensive list
 function getExt(lang){
     return extList[lang].toString();
+}
+function getLang(ext){
+    return Object.keys(extList).find(key => extList[key] === ext);
 }
 
 //For Sasame Rex - CES Connect
@@ -2156,16 +2178,96 @@ if(process.env.DOMAIN == 'localhost'){
         eval(req.code);
     });
 }
-app.get('/fileStream/:directory', async function(req, res){
-    //output passages in directory / or req.body.directory
-    var directory = req.params.directory || '/';
-    //get passages where fileStreamPath starts with directory
-    var passages = Passage.find({
-        fileStreamPath: {
-            $regex: '^' + directory,
-            $options: 'i'
+//testing
+(async function(){
+    await loadFileStream();
+})();
+//\testing
+//create FileStream passage if not exists
+async function loadFileStream(directory=__dirname){
+    console.log(directory);
+    const fsp = require('fs').promises;
+    try {
+        const files = await readdir(directory);
+        for (const file of files){
+            console.log(file);
+            if(file == '.git' || file == 'node_modules' || file == 'images'){
+                continue;
+            }
+            console.log(directory + '/' + file);
+            //create passage for file or directory
+            var stats = await fsp.stat(directory + '/' + file);
+            console.log('test1');
+            if(await stats.isDirectory()){
+                console.log('test2');
+                //recursively create passages
+                await loadFileStream(directory + '/' + file);
+            }
+            else{
+                //create passage
+                var exists = await Passage.findOne({
+                    mainFile: true,
+                    fileStreamPath: directory + '/' + file,
+                    title: file
+                });
+                if(exists == null){
+                    console.log('test');
+                    var author = await User.findOne({admin:true})._id;
+                    let passage = await Passage.create({
+                        title: file,
+                        author: author,
+                        code: await fsp.readFile(directory + '/' + file),
+                        lang: getLang(file.split('.').at('-1')),
+                        fileStreamPath: directory + '/' + file,
+                        mainFile: true,
+                        parent: null,
+                        public: true
+                    });
+                    console.log('worked');
+                }
+            }
         }
-    }).collation({locale: 'en', strength: 2}).sort({title: 1}); //sort alphabetically
+    } catch (err) {
+        console.log(err);
+    // console.error(await err);
+    }
+}
+
+app.post('/makeMainFile', requiresAdmin, async function(req, res){
+    var passage = await Passage.findOne({_id: req.body.passageID});
+    //check if file/dir already exists
+    var exists = await Passage.findOne({fileStreamPath: req.body.fileStreamPath});
+    if(exists != null){
+        exists.mainFile = false;
+        await exists.save();
+    }
+    passage.mainFile = true;
+    await passage.save();
+});
+app.get('/filestream/:directory?', async function(req, res){
+    //output passages in directory / or req.body.directory
+    var directory = req.params.directory || __dirname;
+    //get passages where fileStreamPath starts with directory
+    var viewMainFile = req.query.viewMainFile;
+    if(viewMainFile){
+        var passages = Passage.find({
+            fileStreamPath: {
+                $regex: '^' + directory,
+                $options: 'i'
+            },
+            mainFile: req.query.viewMainFile
+        }).collation({locale: 'en', strength: 2}).sort({title: 1}); //sort alphabetically
+    }
+    else{
+        //there may be duplicates so sort by stars
+        var passages = Passage.find({
+            fileStreamPath: {
+                $regex: '^' + directory,
+                $options: 'i'
+            },
+            mainFile: req.query.viewMainFile
+        }).sort({stars: '-1'});
+    }
     return res.render('passages', {
         passages: passages
     });
@@ -2174,18 +2276,6 @@ app.get('/fileStream/:directory', async function(req, res){
 });
 app.post('/updateFileStream', requiresAdmin, async function(req, res) {
     var passage = await Passage.findOne({_id: req.body.passageID});
-    //check if file/dir already exists
-    var exists = await Passage.findOne({fileStreamPath: req.body.fileStreamPath});
-    if(exists != null){
-        //file/dir already exists
-        if(req.body.changeMainFile){
-            exists.fileStreamPath = null;
-            await exists.save();
-        }
-        else{
-            return 'Path already exists';
-        }
-    }
     passage.fileStreamPath = req.body.fileStreamPath;
     await passage.save();
     //create file if not exists

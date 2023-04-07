@@ -12,6 +12,10 @@ user.messages = [{
 //get messages for user
 User.findOne({_id: user._id}).populate({path: 'messages', options: {sort: {'stars': '-1'}}});
 
+//nevermind,
+//just create model for Messages
+//then star message on StarPassage for consistency
+
 //clear out old messages for user
 //...TODO
 
