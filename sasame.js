@@ -2179,9 +2179,9 @@ if(process.env.DOMAIN == 'localhost'){
     });
 }
 //testing
-(async function(){
-    await loadFileStream();
-})();
+// (async function(){
+//     await loadFileStream();
+// })();
 //\testing
 //create FileStream passage if not exists
 async function loadFileStream(directory=__dirname){
