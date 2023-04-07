@@ -18,6 +18,10 @@
             <% if(user != null){ %>
                 <li id="profile_link"class="menu-option">Profile</li>
                 <li id="logout"class="menu-option">Log Out</li>
+                <li id="menu-advanced"class="menu-option">Advanced</li>
+                <div style="display: none;"id="advanced-menu-options">
+                    <li id="file-stream"class="menu-option">File Stream</li>
+                </div>
                 <input id="logged_in"value="true"type="hidden" name="">
             <%} else{ %>
                 <li id="login_register_link"class="menu-option">Login/Register</li>

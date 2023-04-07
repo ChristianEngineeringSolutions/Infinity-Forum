@@ -115,6 +115,25 @@ $(function(){
     $(document).on('click', '#menu-button', function(){
         $('#left-side-panel').show()
     });
+    $(document).on('click', '#file-stream', function(){
+        // load passages from filestream using ajax
+        $.ajax({
+            type: 'get',
+            url: '/filestream/',
+            data: {
+                viewMainFile: true, //allow to click to true
+            },
+            success: function(data){
+                //add view main file toggle option
+                //TODO...
+                //then...
+                $('#passage_wrapper').html(data);
+            }
+        });
+    });
+    $(document).on('click', '#menu-advanced', function(){
+        $('#advanced-menu-options').fadeToggle()
+    });
     $(document).on('click', function(e){
         var container = $("#left-side-panel");
         if(container.is(':visible') && e.target.id != 'menu-button'){

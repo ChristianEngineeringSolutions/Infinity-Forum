@@ -67,7 +67,7 @@ Express Server Production mode on Remote
 Reintroduce Brief
 Reorder passages from brief
 Contact Us
-Revisit Messages (As Passages)
+Revisit Messages (As Passages) > Share Passage
 Bookmarks options in menu to Tools (or similar to open sidebar right)
 Roundabout Circuit
 Multiple windows (min. double page sort)
@@ -84,3 +84,6 @@ Mathematical optimizations (for users)
 Metadata in editor
 Metadata per client
 Share passage
+Session tabs
+Finish new Filestream
+Bibliographies in advanced (for external source help)
