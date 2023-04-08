@@ -1677,6 +1677,7 @@ async function createPassage(user, parentPassageId){
     var isRoot = parentPassageId == 'root';
     var parent;
     var personal = false;
+    var fileStreamPath = null;
     if(user){
         users = [user];
     }
@@ -1686,6 +1687,9 @@ async function createPassage(user, parentPassageId){
     else{
         parentId = parentPassageId;
         parent = await Passage.findOne({_id: parentId});
+        if(parent.fileStreamPath != null && parent.fileStreamPath.slice(-1) == '/'){
+            fileStreamPath = parent.fileStreamPath + 'Untitled';
+        }
         personal = parent.personal;
         //by default additions should have the same userlist
         if(user){
@@ -1709,11 +1713,11 @@ async function createPassage(user, parentPassageId){
     let passage = await Passage.create({
         author: user,
         users: users,
-        parent: parentId
+        parent: parentId,
+        fileStreamPath: fileStreamPath
     });
     if(!isRoot){
         //add passage to parent sub passage list
-	   console.log('okayzz');
         parent.passages.push(passage);
         await parent.save();
     }
@@ -1969,14 +1973,15 @@ app.post('/update_passage/', async (req, res) => {
     else if(passage.public_daemon == 2 || passage.default_daemon){
         return res.send("Not allowed.");
     }
-    passage.html = formData.html;
-    passage.css = formData.css;
-    passage.javascript = formData.js;
+    passage.html = formData.html || passage.html;
+    passage.css = formData.css || passage.css;
+    passage.javascript = formData.js || passage.javascript;
     passage.title = formData.title;
-    passage.content = formData.content;
+    passage.content = formData.content || passage.content;
     passage.tags = formData.tags;
-    passage.code = formData.code;
+    passage.code = formData.code || passage.code;
     passage.lang = formData.lang;
+    passage.fileStreamPath = formData.filestreampath;
     //no longer synthetic if it has been edited
     passage.synthetic = false;
     var uploadTitle = '';
@@ -1990,6 +1995,10 @@ app.post('/update_passage/', async (req, res) => {
         await uploadFile(req, res, passage);
     }
     await passage.save();
+    if(passage.mainFile && req.session.user.admin){
+        //also update file and server
+        updateFile(passage.fileStreamPath, passage.code);
+    }
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
@@ -2055,7 +2064,9 @@ var extList = {
     'mixed' : '.html',
     'bash': '.sh',
     'ejs': '.ejs',
-    'markdown': '.md'
+    'markdown': '.md',
+    'rich': '.default',
+    'text': '.txt'
 };
 //GET more extensive list
 function getExt(lang){
@@ -2180,27 +2191,70 @@ if(process.env.DOMAIN == 'localhost'){
 }
 //testing
 // (async function(){
+//     //TEMP: Change all mixed passages to rich
+//     await Passage.updateMany({
+//         javascript: {
+//             $ne: null
+//         },
+//         html: {
+//             $ne: null
+//         },
+//     }, {
+//         lang: 'mixed'
+//     });
+//     await Passage.updateMany({
+//         lang: 'mixed',
+//         javascript: null,
+//         html: null
+//     }, {
+//         lang: 'rich'
+//     });
+// })();
+// (async function(){
+//     //clear filestream
+//     await Passage.deleteMany({mainFile: true});
+//     //create filestream
 //     await loadFileStream();
 // })();
 //\testing
 //create FileStream passage if not exists
 async function loadFileStream(directory=__dirname){
-    console.log(directory);
     const fsp = require('fs').promises;
     try {
         const files = await readdir(directory);
+        console.log(directory);
+        let parentDirectory = await Passage.findOne({
+            mainFile: true,
+            fileStreamPath: directory
+        });
         for (const file of files){
-            console.log(file);
             if(file == '.git' || file == 'node_modules' || file == 'images'){
                 continue;
             }
-            console.log(directory + '/' + file);
+            // console.log(directory + '/' + file);
             //create passage for file or directory
             var stats = await fsp.stat(directory + '/' + file);
-            console.log('test1');
+            var author = await User.findOne({admin:true});
+            var title = file;
             if(await stats.isDirectory()){
-                console.log('test2');
+                //create directory passage
+                var exists = await Passage.findOne({
+                    mainFile: true,
+                    fileStreamPath: directory + '/' + file,
+                    title: title + '/'
+                });
+                if(exists == null){
+                    let passage = await Passage.create({
+                        title: title + '/',
+                        author: author._id,
+                        fileStreamPath: directory + '/' + file,
+                        mainFile: true,
+                        public: true,
+                        parent: directory == __dirname ? null : parentDirectory._id,
+                    });
+                }
                 //recursively create passages
+                //put in parent directory
                 await loadFileStream(directory + '/' + file);
             }
             else{
@@ -2211,19 +2265,23 @@ async function loadFileStream(directory=__dirname){
                     title: file
                 });
                 if(exists == null){
-                    console.log('test');
-                    var author = await User.findOne({admin:true})._id;
                     let passage = await Passage.create({
-                        title: file,
-                        author: author,
+                        title: title,
+                        author: author._id,
                         code: await fsp.readFile(directory + '/' + file),
-                        lang: getLang(file.split('.').at('-1')),
+                        lang: getLang('.' + file.split('.').at('-1')),
                         fileStreamPath: directory + '/' + file,
                         mainFile: true,
-                        parent: null,
+                        parent: directory == __dirname ? null : parentDirectory._id,
                         public: true
                     });
-                    console.log('worked');
+                    if(parentDirectory != null){
+                        parentDirectory.passages.push(passage);
+                        await parentDirectory.save();
+                    }
+                }
+                else{
+                    // console.log(exists);
                 }
             }
         }
@@ -2243,16 +2301,19 @@ app.post('/makeMainFile', requiresAdmin, async function(req, res){
     }
     passage.mainFile = true;
     await passage.save();
+    //restart server to apply changes
+    updateFile(req.body.fileStreamPath, passage.code);
 });
 app.get('/filestream/:directory?', async function(req, res){
     //output passages in directory / or req.body.directory
     var directory = req.params.directory || __dirname;
     //get passages where fileStreamPath starts with directory
     var viewMainFile = req.query.viewMainFile;
+    var passages;
     if(viewMainFile){
-        var passages = Passage.find({
+        passages = await Passage.find({
             fileStreamPath: {
-                $regex: '^' + directory,
+                $regex: '^' + directory + '/[^/]*(/?)$',
                 $options: 'i'
             },
             mainFile: req.query.viewMainFile
@@ -2260,16 +2321,17 @@ app.get('/filestream/:directory?', async function(req, res){
     }
     else{
         //there may be duplicates so sort by stars
-        var passages = Passage.find({
+        passages = await Passage.find({
             fileStreamPath: {
-                $regex: '^' + directory,
+                $regex: '^' + directory + '/[^/]*(/[^/]*)?$',
                 $options: 'i'
             },
             mainFile: req.query.viewMainFile
-        }).sort({stars: '-1'});
+        }).sort({stars: '-1'}).limit(10);
     }
     return res.render('passages', {
-        passages: passages
+        passages: passages,
+        subPassages: false
     });
     //on directory click just run same route with different directory
     
@@ -2322,6 +2384,20 @@ app.post('/run_file', requiresAdmin, function(req, res) {
       // console.log(`stderr: ${stderr}`);
     });
 });
+function updateFile(file, content){
+    fs.writeFile(file, content, function(err){
+        if (err) return console.log(err);
+        //restart server to apply changes
+        //happens after write on dev
+        if(process.env.REMOTE){
+            var bash = 'sudo bash -c "pm2 restart sasame';
+            bash += '; systemctl restart nginx"';
+            exec(bash, (err, stdout, stderr) => {
+                res.send("Done.");
+            });
+        }
+    });
+}
 app.post('/update_file', requiresAdmin, function(req, res) {
     var file = req.body.file;
     var content = req.body.content;

@@ -1,8 +1,23 @@
 <form id="passage_form_<%=passage._id%>"class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
     <input value="<%=passage._id%>"name="_id"type="hidden">
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
-    <div class="passage_description" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"></div>
-    <input id="quill-data-<%=passage._id%>"value="<%=passage.content%>"name="content"type="hidden">
+    <%switch(passage.lang){
+        case 'rich':%>
+        <div class="passage_description" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"></div>
+        <input id="quill-data-<%=passage._id%>"value="<%=passage.content%>"name="content"type="hidden">
+        <%break;
+        case 'mixed':%>
+        <textarea style="display:none;"class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
+        <textarea style="display:none;"class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
+        <textarea style="display:none;"class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
+        <code-input template="code-input"lang="HTML"class="code_display display_html" id="display_html_<%=passage._id%>" placeholder="HTML"value="<%=passage.html || 'HTML'%>"></code-input>
+        <code-input template="code-input"lang="CSS"class="code_display display_css" id="display_css_<%=passage._id%>" placeholder="CSS"value="<%=passage.css || 'CSS'%>"></code-input>
+        <code-input template="code-input"lang="javascript"class="code_display display_js" id="display_js_<%=passage._id%>" placeholder="Javascript"value="<%=passage.javascript || 'Javascript'%>"></code-input>
+        <%break;
+        default:%>
+        <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || passage.ext%>"></code-input>
+        <textarea style="display:none;"class="passage_code" name="code" id="passage_code_<%=passage._id%>" cols="30" rows="10"><%=passage.code%></textarea>
+    <%}%>
     <!-- Upload Directory -->
     <%/*%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
@@ -13,19 +28,23 @@
         <input id="thumbnail_clip_<%=passage._id%>"type="hidden" name="thumbnail">
     </div>
     <div id="passage_advanced_<%=passage._id%>"class="passage_advanced">
+            <br>
+            <div>Programming Language:</div><br>
             <input id="passage_ext_<%=passage._id%>"class="passage_ext" value="<%=passage.lang%>" type="text"name="lang"placeholder="Programming Language">
-            <%switch(passage.lang){
-                case 'mixed':%>
-                <textarea style="display:none;"class="passage_html" name="html" id="passage_html_<%=passage._id%>" cols="30" rows="10" placeholder="HTML"><%=passage.html%></textarea>
-                <textarea style="display:none;"class="passage_css" name="css" id="passage_css_<%=passage._id%>" cols="30" rows="10" placeholder="CSS"><%=passage.css%></textarea>
-                <textarea style="display:none;"class="passage_js" name="js" id="passage_js_<%=passage._id%>" cols="30" rows="10" placeholder="Javascript"><%=passage.javascript%></textarea>
-                <code-input template="code-input"lang="HTML"class="code_display display_html" id="display_html_<%=passage._id%>" placeholder="HTML"value="<%=passage.html || 'HTML'%>"></code-input>
-                <code-input template="code-input"lang="CSS"class="code_display display_css" id="display_css_<%=passage._id%>" placeholder="CSS"value="<%=passage.css || 'CSS'%>"></code-input>
-                <code-input template="code-input"lang="javascript"class="code_display display_js" id="display_js_<%=passage._id%>" placeholder="Javascript"value="<%=passage.javascript || 'Javascript'%>"></code-input>
-                <%break;
-                default:%>
-                <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || passage.ext%>"></code-input>
-                <textarea style="display:none;"class="passage_code" name="code" id="passage_code_<%=passage._id%>" cols="30" rows="10"><%=passage.code%></textarea>
+            <br>
+            <div>File Path:</div><br>
+            <input id="passage_filestreampath_<%=passage._id%>"class="passage_ext" value="<%=passage.fileStreamPath%>" type="text"name="filestreampath"placeholder="">
+            <%if(user && user.admin){%>
+                <br>
+                <%if(passage.mainFile){%>
+                    <div style="color:red;">MAINFILE</div>
+                <%}else{%>
+                <button id="make_mainfile_<%=passage._id%>">Make Mainfile</button>
+                <%}%>
+                <%if(passage.mainFile){%>
+                    <br>
+                    <button id="make_mainfile_<%=passage._id%>">Run File</button>
+                <%}%>
             <%}%>
             <textarea style="display:none;"class="passage_license" name="license" id="passage_license_<%=passage._id%>" cols="30" rows="10" placeholder="LICENSE">All modules submitted to CES must first comply with the terms and agreements. You are allowed to utilize this work through citations on christianengineeringsolutions.com.&#13;&#10;<%=passage.license%></textarea>
     </div>

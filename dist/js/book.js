@@ -18,7 +18,15 @@ function checkIfFromOtro(){
         fromOtro = '';
     }
 }
-
+function syntaxHighlight(){
+    var codes = document.getElementsByTagName('pre');
+    for (var i=0; i < codes.length; i++) {
+        if(codes[i].parentElement.nodeName !== 'CODE-INPUT'){
+            console.log('test');
+            hljs.highlightBlock(codes[i]);
+        }
+    }
+}
 $(function(){
     checkIfFromOtro();
 });
@@ -83,6 +91,7 @@ $(function(){
                 success: function(data){
                     $('#passage_wrapper').html(data);
                     page = 1;
+                    syntaxHighlight();
                 }
             });
 
@@ -124,6 +133,7 @@ $(function(){
                 success: function(data){
                     $('#passage_wrapper').html(data);
                     page = 1;
+                    syntaxHighlight();
                 }
             });
 
@@ -163,6 +173,7 @@ $(function(){
                 success: function(data){
                     $('#passage_wrapper').html(data);
                     page = 1;
+                    syntaxHighlight();
                 }
             });
 

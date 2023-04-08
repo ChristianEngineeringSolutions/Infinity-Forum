@@ -40,7 +40,7 @@ const passageSchema = mongoose.Schema({
     code: String,
     lang: {
         type: String,
-        default: 'mixed'
+        default: 'rich'
     },
     fileStreamPath: {
         type: String,

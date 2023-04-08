@@ -128,6 +128,7 @@ $(function(){
                 //TODO...
                 //then...
                 $('#passage_wrapper').html(data);
+                syntaxHighlight();
             }
         });
     });
