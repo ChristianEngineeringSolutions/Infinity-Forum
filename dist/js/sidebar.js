@@ -87,6 +87,7 @@ $(function(){
                 else{
                     $('#passage_wrapper').append(data);
                 }
+                syntaxHighlight();
             }
         });
     });
