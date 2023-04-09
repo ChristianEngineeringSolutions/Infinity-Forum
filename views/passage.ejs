@@ -45,6 +45,10 @@
                         <!-- Install to FileSystem -->
                         <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
                     <%}%>
+                    <div id="passage-share-modal-<%=passage._id%>" class="modal">
+                        <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
+                    </div>
+                    <a class="basic_link" href="#passage-share-modal-<%=passage._id%>" rel="modal:open"><li id="passage_share_<%=passage.id%>" class="passage_option">Share</li></a>
                 <%}%>
                 <%if(fromOtro){%>
                     <!-- Displayed via CES Connect -->

@@ -231,6 +231,19 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^="passage_share_"]', function(e){
+        var _id = getPassageId(this);
+        $.ajax({
+            type: 'post',
+            url: DOMAIN + '/share_passage/' + fromOtro,
+            data: {
+                _id: _id
+            },
+            success: function(data){
+                flashIcon($('#passage_share_' + _id), 'green');
+            }
+        });
+    });
     $(document).on('click', '[id^="passage_more_"]', function(e){
         let _id = getPassageId(this);
         let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
@@ -298,6 +311,22 @@ $(function(){
                 },
                 success: function (data) {
                     window.location.reload();
+                }
+            });
+        }
+    });
+    $(document).on('keyup', '.share-passage', function(e){
+        if(e.keyCode == 13){
+            var thiz = $(this);
+            $.ajax({
+                url: DOMAIN + '/share_passage',
+                type: 'POST',
+                data: {
+                    passageId: thiz.attr('id').split('-').at(-1),
+                    username: thiz.val()
+                },
+                success: function (data) {
+                    alert(data);
                 }
             });
         }
@@ -436,6 +465,7 @@ $(function(){
             data: formData,
             success: function (data) {
                 thisPassage(thiz).replaceWith(data);
+                syntaxHighlight();
             },
             cache: false,
             contentType: false,

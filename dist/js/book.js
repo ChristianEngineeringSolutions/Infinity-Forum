@@ -139,6 +139,27 @@ $(function(){
 
         }
     });
+    $('#search_messages').on('keypress', function(e){
+        $('#search').val($(this).val());
+        //check what page we are on
+        var thiz = $(this);
+        if(e.which == 13){
+            $.ajax({
+                type: 'post',
+                url: DOMAIN + '/search_messages/' + fromOtro,
+                data: {
+                    search: thiz.val(),
+                    _id: $('#is_profile').val()
+                },
+                success: function(data){
+                    $('#passage_wrapper').html(data);
+                    page = 1;
+                    syntaxHighlight();
+                }
+            });
+
+        }
+    });
 
     $('#search_leaderboard').on('keypress', function(e){
         //check what page we are on

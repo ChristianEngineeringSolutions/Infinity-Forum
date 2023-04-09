@@ -12,7 +12,6 @@ import tempfile
 import bpy.utils.previews
 import os
 
-print("Test")
 directory   = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", "scatter_presets_custom\\")
 list_raw = []
 

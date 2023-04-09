@@ -87,3 +87,4 @@ Share passage
 Session tabs
 Finish new Filestream
 Bibliographies in advanced (for external source help)
+buttons from passages

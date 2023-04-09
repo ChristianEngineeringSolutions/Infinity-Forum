@@ -16,6 +16,7 @@ const messageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     },
+    title: String,
     stars: {
         type: Number,
         default: 0
