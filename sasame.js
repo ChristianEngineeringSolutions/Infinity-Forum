@@ -2466,10 +2466,16 @@ function updateFile(file, content){
         //restart server to apply changes
         //happens after write on dev
         if(process.env.REMOTE){
-            var bash = ' echo "'+process.env.ROOT_PASSWORD+'" | sudo -S pm2 restart sasame';
-            exec(bash, (err, stdout, stderr) => {
-                res.send("Done.");
-            });
+		var shell = require('shelljs');
+            var bash = 'sh ' + __dirname + 'restart.sh';
+		shell.exec(bash, function(code, output) {
+		  console.log('Exit code:', code);
+		  console.log('Program output:', output);
+		});
+	//restart.sh (Server file)
+	 //echo "password" | sudo pm2 restart sasame
+	// echo "password" | sudo systemctl restart nginx
+
         }
     });
 }
