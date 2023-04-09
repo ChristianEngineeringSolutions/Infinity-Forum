@@ -2269,30 +2269,28 @@ if(process.env.DOMAIN == 'localhost'){
 }
 //testing
 // (async function(){
-//     //TEMP: Change all mixed passages to rich
-//     await Passage.updateMany({
-//         javascript: {
-//             $ne: null
-//         },
-//         html: {
-//             $ne: null
-//         },
+  //   //TEMP: Change all mixed passages to rich
+ //    await Passage.updateMany({
+   //      javascript: {
+    //         $ne: null
+     //    },
+      //   html: {
+       //      $ne: null
+        // },
 //     }, {
-//         lang: 'mixed'
-//     });
+ //        lang: 'mixed'
+  //   });
 //     await Passage.updateMany({
 //         lang: 'mixed',
-//         javascript: null,
-//         html: null
-//     }, {
-//         lang: 'rich'
-//     });
+ //    }, {
+  //       lang: 'rich'
+   //  });
 // })();
 // (async function(){
-//     //clear filestream
+ //    //clear filestream
 //     await Passage.deleteMany({mainFile: true});
-//     //create filestream
-//     await loadFileStream();
+ //    //create filestream
+  //   await loadFileStream();
 // })();
 //\testing
 //create FileStream passage if not exists
