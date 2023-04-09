@@ -2468,7 +2468,7 @@ function updateFile(file, content){
         //restart server to apply changes
         //happens after write on dev
         if(process.env.REMOTE){
-            var bash = 'sudo bash -c "pm2 restart sasame';
+            var bash = 'echo "'+process.env.ROOT_PASSWORD+'" | sudo -S bash -c "pm2 restart sasame';
             bash += '; systemctl restart nginx"';
             exec(bash, (err, stdout, stderr) => {
                 res.send("Done.");
