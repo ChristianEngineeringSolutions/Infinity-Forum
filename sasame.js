@@ -410,13 +410,27 @@ async function notifyUser(userId, content, type="General"){
     });
 }
 //basically messages
-async function sharePassage(_id, userID){
-    var message = await Message.create({
-        from: req.session.user._id,
-        to: userID,
-        passage: _id
+async function sharePassage(from, _id, username){
+    var user = await User.findOne({
+        username: username
     });
+    var passage = await Passage.findOne({
+        _id: _id
+    });
+    if(user != null){
+        var message = await Message.create({
+            from: from,
+            to: user._id,
+            passage: _id,
+            title: passage.title
+        });
+        return 'Message Sent';
+    }
+    return 'User not Found.';
 }
+app.post('/share_passage', async(req, res) => {
+    res.send(await sharePassage(req.session.user._id, req.body.passageId, req.body.username));
+});
 app.get('/messages', async(req, res) => {
     //paginate messages
     //...TODO
@@ -425,9 +439,28 @@ app.get('/messages', async(req, res) => {
     //sort them by stars
     var messages = await Message.find({
         to: req.session.user._id
-    }).sort('-stars');
-    res.render('passages', {
-        passages: messages,
+    }).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+    var passages = [];
+    for(const message of messages){
+        var p = await Passage.findOne({
+            _id: message.passage._id
+        }).populate('author users sourcelist');
+        passages.push(p);
+    }
+    let bookmarks = [];
+        if(req.session.user){
+            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        }
+    res.render('messages', {
+        passages: passages,
+        subPassages: false,
+        passageTitle: false, 
+        scripts: scripts, 
+        passage: {id:'root', author: {
+            _id: 'root',
+            username: 'Sasame'
+        }},
+        bookmarks: bookmarks,
     });
 });
 //get highest rank passage with title
@@ -874,6 +907,27 @@ app.post('/search_profile/', async (req, res) => {
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     res.render("passages", {
         passages: results,
+        subPassages: false,
+        sub: true
+    });
+});
+app.post('/search_messages/', async (req, res) => {
+    var messages = await Message.find({
+        title: {
+            $regex: req.body.search,
+            $options: 'i',
+        },
+        to: req.session.user._id 
+    }).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+    var passages = [];
+    for(const message of messages){
+        var p = await Passage.findOne({
+            _id: message.passage._id
+        }).populate('author users sourcelist');
+        passages.push(p);
+    }
+    res.render("passages", {
+        passages: passages,
         subPassages: false,
         sub: true
     });
@@ -1618,7 +1672,7 @@ app.get('/logout', function(req, res) {
 });
 app.post('/paginate', async function(req, res){
     let page = req.body.page;
-    let profile = req.body.profile; //home, profile, or leaderboard
+    let profile = req.body.profile; //home, profile, or leaderboard (new: fileStream and Passages)
     let search = req.body.search;
     let parent = req.body.passage;
     if(profile != 'leaderboard'){
@@ -1650,6 +1704,29 @@ app.post('/paginate', async function(req, res){
                 thumbnails: passages.docs,
             });
         }
+    }
+    else if(profile == 'messages'){
+        let find = {
+            title: new RegExp(''+search+'', "i"),
+            to: req.session.user._id
+        };
+        var messages = await Message.paginate(find,
+        {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'}).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+        var passages = [];
+        for(const message of messages){
+            var p = await Passage.findOne({
+                _id: message.passage._id
+            }).populate('author users sourcelist');
+            passages.push(p);
+        }
+        res.render('passages', {
+            passages: passages,
+            subPassages: false,
+            sub: true,
+        });
+    }
+    else if(profile == 'filestream'){
+
     }
     else{
         let find = {
@@ -1980,6 +2057,7 @@ app.post('/update_passage/', async (req, res) => {
     passage.content = formData.content || passage.content;
     passage.tags = formData.tags;
     passage.code = formData.code || passage.code;
+    passage.bibliography = formData.bibliography;
     passage.lang = formData.lang;
     passage.fileStreamPath = formData.filestreampath;
     //no longer synthetic if it has been edited

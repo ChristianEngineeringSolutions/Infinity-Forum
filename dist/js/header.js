@@ -129,6 +129,7 @@ $(function(){
                 //then...
                 $('#passage_wrapper').html(data);
                 syntaxHighlight();
+								$('#left-side-panel').hide();
             }
         });
     });
@@ -152,6 +153,12 @@ $(function(){
     $(document).on('click', '#profile_link', function(){
         window.location.href = "/profile/";
     });
+    $(document).on('click', '#messages', function(){
+        window.location.href = "/messages";
+    });
+    // $(document).on('click', '#file-stream', function(){
+    //     window.location.href = "/fileStream/";
+    // });
     $(document).on('click', '#help_link', function(){
         
     });

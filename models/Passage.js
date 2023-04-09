@@ -38,6 +38,7 @@ const passageSchema = mongoose.Schema({
     param: String,
     //to replace html/css/javascript
     code: String,
+    bibliography: String,
     lang: {
         type: String,
         default: 'rich'

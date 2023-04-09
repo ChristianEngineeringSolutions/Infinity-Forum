@@ -1,0 +1,49 @@
+<%- include('html_head') %>
+</head>
+<%- include('header') %>
+            <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
+            <input type="hidden" value="false", id="is_profile"/>
+            <input type="hidden" id="selection">
+            <div id="page_title_container">
+                <%if(passage.parent != null){%>
+                    <div data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
+                <%}%>
+                <%if(passageTitle){%>
+                    <div id="page_title"><%= decodeURIComponent(passageTitle)%></div>
+                <%}%>
+            </div>
+            <%if(passages){%>
+                <input id="search"placeholder="Search Solutions..." type="" name="" autocomplete="off">
+            <%}else if (passage){%>
+                <input id="search"placeholder="Search Solutions..." type="hidden" name="" autocomplete="off">
+                <input id="search_passage"placeholder="Search <%=passage.title%>..." type="" name="" autocomplete="off">
+            <%} %>
+            <%if((user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
+                <%if(passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true){%>
+                    <button title="Add Passage"id="add_passage_button">+</button>
+                <%}%>
+            <%}%>
+            <br id="top_spacer">
+            <div id="passage_wrapper">
+                <!-- Show passage list or search list -->
+                <%if(passages){%>
+                    <%- include('passages') %>
+                <%}else if (passage){%>
+                <!-- Just show one passage -->
+                    <%- include('passage', {passage: passage, sub: sub, subPassages: subPassages}) %>
+                <%} %>
+            </div>
+            <div id="passage_form_wrapper"></div>
+            <%if((user && passage.id == 'root') || (user && (passage.author._id == user._id || passage.public || passageUsers.includes(user._id.toString())))){%>
+                <%if(passage.id != 'root' && passage.public_daemon != 2 && passage.default_daemon != true){%>
+                    <button title="Add Passage"id="add_passage_button">+</button>
+                <%}%>
+            <%}%>
+    <br>
+        </div>
+        <%if(passages){%>
+            <div class="passage"id="view_more">View More</div>
+        <%}else if (passage && passage.public == true){%>
+            <div class="passage"id="view_more">View More</div>
+        <%} %>
+        <%- include('footer') %>
