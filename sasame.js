@@ -1419,10 +1419,12 @@ function getAllSubPassageCodePure(passage, code=''){
 }
 function bubbleUpCode(passage){
     passage.all = passage.code;
-    for(const p of passage.passages){
-        if(p.lang == passage.lang){
-            p.all = getAllSubPassageCodePure(p);
-            passage.all += '\n' + p.all;
+    if(!passage.public){
+        for(const p of passage.passages){
+            if(p.lang == passage.lang){
+                p.all = getAllSubPassageCodePure(p);
+                passage.all += '\n' + p.all;
+            }
         }
     }
     return passage;
@@ -2407,6 +2409,7 @@ async function loadFileStream(directory=__dirname){
 
 app.post('/makeMainFile', requiresAdmin, async function(req, res){
     var passage = await Passage.findOne({_id: req.body.passageID});
+    var passage = bubbleUpCode(passage);
     //check if file/dir already exists
     var exists = await Passage.findOne({fileStreamPath: req.body.fileStreamPath});
     if(exists != null){
@@ -2416,7 +2419,7 @@ app.post('/makeMainFile', requiresAdmin, async function(req, res){
     passage.mainFile = true;
     await passage.save();
     //restart server to apply changes
-    updateFile(req.body.fileStreamPath, passage.code);
+    updateFile(req.body.fileStreamPath, passage.all);
 });
 app.get('/filestream/:directory?', async function(req, res){
     //output passages in directory / or req.body.directory
