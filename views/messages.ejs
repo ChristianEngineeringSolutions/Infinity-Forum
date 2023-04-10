@@ -19,11 +19,6 @@
                 <input id="search"placeholder="Search Solutions..." type="hidden" name="" autocomplete="off">
                 <input id="search_passage"placeholder="Search <%=passage.title%>..." type="" name="" autocomplete="off">
             <%} %>
-            <%if((user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
-                <%if(passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true){%>
-                    <button title="Add Passage"id="add_passage_button">+</button>
-                <%}%>
-            <%}%>
             <br id="top_spacer">
             <div id="passage_wrapper">
                 <!-- Show passage list or search list -->
@@ -35,11 +30,6 @@
                 <%} %>
             </div>
             <div id="passage_form_wrapper"></div>
-            <%if((user && passage.id == 'root') || (user && (passage.author._id == user._id || passage.public || passageUsers.includes(user._id.toString())))){%>
-                <%if(passage.id != 'root' && passage.public_daemon != 2 && passage.default_daemon != true){%>
-                    <button title="Add Passage"id="add_passage_button">+</button>
-                <%}%>
-            <%}%>
     <br>
         </div>
         <%if(passages){%>
