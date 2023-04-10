@@ -83,6 +83,6 @@ Mathematical optimizations (for users)
 Metadata in editor
 Metadata per client
 Session tabs
-Finish new Filestream
+Filestream mainfileonly option
 buttons from passages
-Password for server file updates
+Update passage filestream automatically after server changes

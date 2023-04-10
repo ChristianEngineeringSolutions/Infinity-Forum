@@ -39,6 +39,11 @@ const passageSchema = mongoose.Schema({
     //to replace html/css/javascript
     code: String,
     bibliography: String,
+    //can be enabled by default in passage settings
+    distractionFree: {
+        type: Boolean,
+        default: false
+    },
     lang: {
         type: String,
         default: 'rich'
