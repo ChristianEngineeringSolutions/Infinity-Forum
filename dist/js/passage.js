@@ -69,7 +69,7 @@ $(function(){
             }
             $(this).data('quill', true);
         }
-        $('.display_data').toggle();
+        $('.display_data_' + _id).toggle();
         $('#passage_form_' + _id).toggle();
     });
     $(document).on('click', '[id^="make_mainfile_"]', function(){
