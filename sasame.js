@@ -2307,30 +2307,28 @@ if(process.env.DOMAIN == 'localhost'){
 }
 //testing
 // (async function(){
-//     //TEMP: Change all mixed passages to rich
-//     await Passage.updateMany({
-//         javascript: {
-//             $ne: null
-//         },
-//         html: {
-//             $ne: null
-//         },
+  //   //TEMP: Change all mixed passages to rich
+ //    await Passage.updateMany({
+   //      javascript: {
+    //         $ne: null
+     //    },
+      //   html: {
+       //      $ne: null
+        // },
 //     }, {
-//         lang: 'mixed'
-//     });
+ //        lang: 'mixed'
+  //   });
 //     await Passage.updateMany({
 //         lang: 'mixed',
-//         javascript: null,
-//         html: null
-//     }, {
-//         lang: 'rich'
-//     });
+ //    }, {
+  //       lang: 'rich'
+   //  });
 // })();
 // (async function(){
-//     //clear filestream
+ //    //clear filestream
 //     await Passage.deleteMany({mainFile: true});
-//     //create filestream
-//     await loadFileStream();
+ //    //create filestream
+  //   await loadFileStream();
 // })();
 //\testing
 //create FileStream passage if not exists
@@ -2506,13 +2504,16 @@ function updateFile(file, content){
         //restart server to apply changes
         //happens after write on dev
         if(process.env.REMOTE){
-            var bash = ' echo "'+process.env.ROOT_PASSWORD+'" | sudo -S pm2 restart sasame';
-            exec(bash, (err, stdout, stderr) => {
-                bash = ' echo "'+process.env.ROOT_PASSWORD+'" | sudo -S systemctl restart nginx';
-                exec(bash, (err, stdout, stderr) => {
-                    res.send("Done.");
-                });
+            var shell = require('shelljs');
+                var bash = 'sh ' + __dirname + 'restart.sh';
+            shell.exec(bash, function(code, output) {
+            console.log('Exit code:', code);
+            console.log('Program output:', output);
             });
+        //restart.sh (Server file)
+        //echo "password" | sudo pm2 restart sasame
+        // echo "password" | sudo systemctl restart nginx
+
         }
     });
 }
