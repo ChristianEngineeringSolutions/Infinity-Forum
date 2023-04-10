@@ -447,6 +447,9 @@ app.get('/messages', async(req, res) => {
         }).populate('author users sourcelist');
         passages.push(p);
     }
+    for(const passage of passages){
+        passages[passage] = bubbleUpCode(passage);
+    }
     let bookmarks = [];
         if(req.session.user){
             bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
@@ -495,6 +498,9 @@ app.get('/personal/:user_id', async (req, res) => {
                 $in: [req.params.user_id]
             }
         });
+        for(const passage of passages){
+            passages[passage] = bubbleUpCode(passage);
+        }
         let bookmarks = [];
         if(req.session.user){
             bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
@@ -539,6 +545,9 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     //     find.$or = [{personal: true}, {personal: false}];
     // }
     let passages = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    for(const passage of passages){
+        passages[passage] = bubbleUpCode(passage);
+    }
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
@@ -830,6 +839,9 @@ app.get('/', async (req, res) => {
             deleted: false,
             personal: false,
         }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        for(const passage of passages){
+            passages[passage] = bubbleUpCode(passage);
+        }
         let passageUsers = [];
         let bookmarks = [];
         if(req.session.user){
@@ -1392,6 +1404,29 @@ function getAllSubPassageCode(passage, all){
     }
     return all;
 }
+function getAllSubPassageCodePure(passage, code=''){
+    console.log(passage.code);
+    passage.all = passage.code;
+    if(!passage.public && passage.passages){
+        passage.passages.forEach((p)=>{
+            if(p.lang == passage.lang){
+                // passage.code += p.code === undefined ? '' : p.code;
+                passage.all += '\n' + getAllSubPassageCodePure(p, code);
+            }
+        });
+    }
+    return passage.all;
+}
+function bubbleUpCode(passage){
+    passage.all = passage.code;
+    for(const p of passage.passages){
+        if(p.lang == passage.lang){
+            p.all = getAllSubPassageCodePure(p);
+            passage.all += '\n' + p.all;
+        }
+    }
+    return passage;
+}
 app.get('/passage/:passage_title/:passage_id', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
@@ -1450,9 +1485,11 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         var reordered = subPassages;
     }
     if(passage.passages.length < 1){
-	reordered = subPassages;
+	    reordered = subPassages;
     }
-    res.render("index", {subPassages: reordered, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
+    passage.passages = reordered;
+    passage = bubbleUpCode(passage);
+    res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){
@@ -1791,6 +1828,7 @@ async function createPassage(user, parentPassageId){
         author: user,
         users: users,
         parent: parentId,
+        lang: parent.lang,
         fileStreamPath: fileStreamPath
     });
     if(!isRoot){
@@ -2470,7 +2508,10 @@ function updateFile(file, content){
         if(process.env.REMOTE){
             var bash = ' echo "'+process.env.ROOT_PASSWORD+'" | sudo -S pm2 restart sasame';
             exec(bash, (err, stdout, stderr) => {
-                res.send("Done.");
+                bash = ' echo "'+process.env.ROOT_PASSWORD+'" | sudo -S systemctl restart nginx';
+                exec(bash, (err, stdout, stderr) => {
+                    res.send("Done.");
+                });
             });
         }
     });
