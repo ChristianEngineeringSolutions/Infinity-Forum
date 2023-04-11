@@ -91,4 +91,6 @@ Titles for ppe icons
 Script for git push (tokens)
 Server-side VMs
 Astringent lock passages
+Language auto update
+programming language auto-suggest or select
 

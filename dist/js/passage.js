@@ -12,6 +12,19 @@ $(function(){
     $('#sub_passages').sortable({
         handle: '.passage_options'
     });
+    var languages = [
+        "javascript",
+        "rich",
+        "python",
+        "mixed",
+        "daemon",
+        "html",
+        "css",
+    ];
+    $('.passage_ext').autocomplete({
+        source: languages,
+        minLength: 0
+    }).on('focus', function() { $(this).keydown(); });
     //sub passages are only hidden for index and search
     var inRoot = $('#chief_passage_id').val() === 'root';
     if($('#chief_passage_id').val() != 'root'){

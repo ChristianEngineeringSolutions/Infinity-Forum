@@ -34,8 +34,8 @@
             <br>
             <div>File Path:</div><br>
             <input id="passage_filestreampath_<%=passage._id%>"class="passage_ext" value="<%=passage.fileStreamPath%>" type="text"name="filestreampath"placeholder="">
-            <!-- <div>Bibliography:</div><br> -->
-            <input id="passage_bibliography_<%=passage._id%>"class="passage_ext" value="<%=passage.bibliography%>" type="hidden"name="bibliography"placeholder="Additional Source Info">
+            <div>Bibliography:</div><br>
+            <input id="passage_bibliography_<%=passage._id%>"class="passage_ext" value="<%=passage.bibliography%>" type="text"name="bibliography"placeholder="Additional Source Info">
             <%if(user && user.admin){%>
                 <br>
                 <%if(passage.mainFile){%>
