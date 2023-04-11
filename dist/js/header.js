@@ -168,6 +168,7 @@ $(function(){
     $(document).on('click', '#distraction_free', function(){
         $('#left-side-panel').hide();
         if(distractionFree == false){
+            $(this).css('color', 'green');
             $('.passage_options').hide();
             $('.passage_tabs').hide();
             $('.passage_author').hide();
@@ -190,6 +191,7 @@ $(function(){
             distractionFree = true;
         }
         else{
+            $(this).css('color', 'black');
             $('.passage_options').show();
             $('.passage_tabs').show();
             $('.passage_author').show();
