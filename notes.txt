@@ -87,10 +87,13 @@ Filestream mainfileonly option
 buttons from passages
 Update passage filestream automatically after server changes
     Just make filestream live view (file browser) TODO
+    **** OR at least in meantime admin update button (sync FileStream)
 Titles for ppe icons
 Script for git push (tokens)
 Server-side VMs
 Astringent lock passages
 Language auto update
 programming language auto-suggest or select
-
+Passage bubbling for content or just replace content with code
+Distraction Free Mode Indicator
+Content thumbnail vs full option (for bubbling)

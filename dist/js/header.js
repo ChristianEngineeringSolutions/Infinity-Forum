@@ -136,6 +136,9 @@ $(function(){
     $(document).on('click', '#menu-advanced', function(){
         $('#advanced-menu-options').fadeToggle()
     });
+    $(document).on('click', '#menu-help', function(){
+        window.location.href = 'https://christianengineeringsolutions.com/passage/Help/6434aad636f6480119dc46f3';
+    });
     $(document).on('click', function(e){
         var container = $("#left-side-panel");
         if(container.is(':visible') && e.target.id != 'menu-button'){
