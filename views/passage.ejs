@@ -91,7 +91,7 @@
     <%if(passage.content != null && passage.content != ''){%>
         <hr class="hr">
         <%}%>
-        <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-passage.content%></div>
+        <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-passage.allContent || passage.content%></div>
         <!-- <ul class="passage_tabs">
             <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
             <!-- Display Result -->

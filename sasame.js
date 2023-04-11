@@ -1255,6 +1255,11 @@ app.post('/passage_setting', async (req, res) => {
                 passage.distraction_free = !passage.distraction_free;
             }
             break;
+        case 'bubbling':
+            if(passage.author._id.toString() == user._id.toString()){
+                passage.bubbling = !passage.bubbling;
+            }
+            break;
     }
     await passage.save();
     res.send("Done")
@@ -1422,13 +1427,53 @@ function getAllSubPassageCodePure(passage, code=''){
     }
     return passage.all;
 }
+function getAllSubPassageContent(passage, content=''){
+    console.log(typeof passage.content == 'undefined');
+    console.log(passage.content);
+    if(typeof passage.content == 'undefined'){
+        passage.allContent = '';
+        console.log("Test 1");
+    }
+    else{
+        passage.allContent = passage.content;
+        console.log("Test 2");
+    }
+    if(!passage.public && passage.passages){
+        passage.passages.forEach((p)=>{
+            if(p.lang == passage.lang){
+                // passage.code += p.code === undefined ? '' : p.code;
+                passage.allContent += '\n' + getAllSubPassageContent(p, content);
+            }
+        });
+    }
+    return passage.allContent || passage.content;
+}
 function bubbleUpCode(passage){
+    if(!passage.bubbling){
+        return passage;
+    }
     passage.all = passage.code;
     if(!passage.public){
         for(const p of passage.passages){
             if(p.lang == passage.lang){
                 p.all = getAllSubPassageCodePure(p);
                 passage.all += '\n' + p.all;
+            }
+        }
+    }
+    return bubbleUpContent(passage);
+}
+function bubbleUpContent(passage){
+    if(passage.content){
+        passage.allContent = passage.content;
+        if(!passage.public){
+            for(const p of passage.passages){
+                if(p.lang == passage.lang){
+                    p.allContent = getAllSubPassageContent(p);
+                    if(typeof p.allContent != 'undefined'){
+                        passage.allContent += '\n' + p.allContent;
+                    }
+                }
             }
         }
     }
