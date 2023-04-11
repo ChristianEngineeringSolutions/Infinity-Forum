@@ -2,6 +2,7 @@
 </head>
 <%- include('header') %>
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
+            <input id="is_distraction_free"type="hidden" value="<%=passage.distraction_free || false%>"name="">
             <input type="hidden" value="false", id="is_profile"/>
             <input type="hidden" id="selection">
             <div id="page_title_container">

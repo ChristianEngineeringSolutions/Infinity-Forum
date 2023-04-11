@@ -1250,6 +1250,11 @@ app.post('/passage_setting', async (req, res) => {
                 passage.default_daemon = !passage.default_daemon;
             }
             break;
+        case 'distraction-free':
+            if(passage.author._id.toString() == user._id.toString()){
+                passage.distraction_free = !passage.distraction_free;
+            }
+            break;
     }
     await passage.save();
     res.send("Done")

@@ -40,7 +40,7 @@ const passageSchema = mongoose.Schema({
     code: String,
     bibliography: String,
     //can be enabled by default in passage settings
-    distractionFree: {
+    distraction_free: {
         type: Boolean,
         default: false
     },
