@@ -1826,11 +1826,15 @@ async function createPassage(user, parentPassageId){
             return res.send("Not allowed.");
         }
     }
+    var lang = 'rich';
+    if(parent && parent.lang){
+        lang = parent.lang;
+    }
     let passage = await Passage.create({
         author: user,
         users: users,
         parent: parentId,
-        lang: parent.lang,
+        lang: lang,
         fileStreamPath: fileStreamPath
     });
     if(!isRoot){
@@ -2702,6 +2706,24 @@ async function cleanEngine(){
     //and all sub passages
     await Passage.deleteMany({synthetic: true, stars: 0});
     console.log("Cleaned AI.");
+}
+//remove all passages with 0 stars, and no sub passages within a public parent or root
+async function filterPassages(){
+    await Passage.deleteMany({
+        stars: 0,
+        parent: null,
+        passages: null
+    });
+    var publics = await Passage.find({
+        public: true
+    });
+    for(const passage of publics){
+        if(passage.stars == 0){
+            await Passage.deleteOne({
+                _id: passage._id
+            });
+        }
+    }
 }
 async function optimizeEngine(){
     //delete bottom 20% of passages
