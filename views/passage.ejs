@@ -13,6 +13,11 @@
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
         <%});}%>
         <!-- List collaborators and allow them to be added (permanent) -->
+
+        <!-- Show Additional Source info -->
+        <%if(passage.bibliography != null){%>
+            <p><%=passage.bibliography%></p>
+        <%}%>
     </div>
     <ul class="passage_options">
         <% if(sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || passage.passages.length > 0 || passage.public || passage.parent == null)){%>

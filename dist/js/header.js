@@ -207,6 +207,9 @@ $(function(){
             distractionFree = false;
         }
     });
+    if($('#is_distraction_free').val() != 'false'){
+        $('#distraction_free').click();
+    }
     // $('.passage').draggable();
     $('.tab').droppable({
         drop: (event, ui) => {
