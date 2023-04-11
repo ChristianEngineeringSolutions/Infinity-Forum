@@ -93,7 +93,3 @@ Script for git push (tokens)
 Server-side VMs
 Astringent lock passages
 Language auto update
-programming language auto-suggest or select
-Passage bubbling for content or just replace content with code
-Distraction Free Mode Indicator
-Content thumbnail vs full option (for bubbling)
