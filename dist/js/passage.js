@@ -21,7 +21,7 @@ $(function(){
         "html",
         "css",
     ];
-    $('.passage_ext').autocomplete({
+    $('.passage_lang').autocomplete({
         source: languages,
         minLength: 0
     }).on('focus', function() { $(this).keydown(); });
