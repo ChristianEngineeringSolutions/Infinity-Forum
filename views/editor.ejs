@@ -31,10 +31,9 @@
             <br>
             <div>Programming Language:</div><br>
             <input id="passage_ext_<%=passage._id%>"class="passage_ext passage_lang" value="<%=passage.lang%>" type="text"name="lang"placeholder="Programming Language">
-            <br>
-            <div>File Path:</div><br>
+            <div style="margin-top: 25px;">File Path:</div><br>
             <input id="passage_filestreampath_<%=passage._id%>"class="passage_ext" value="<%=passage.fileStreamPath%>" type="text"name="filestreampath"placeholder="">
-            <div>Bibliography:</div><br>
+            <div style="margin-top: 25px;">Bibliography:</div><br>
             <input id="passage_bibliography_<%=passage._id%>"class="passage_ext" value="<%=passage.bibliography%>" type="text"name="bibliography"placeholder="Additional Source Info">
             <%if(user && user.admin){%>
                 <br>

@@ -43,8 +43,6 @@ recovery exp
 Tasks:
 Polish CES Connect (node app) (check all URLS)
 Peer to Peer w/ Encryption (polish)
-FileSystem Terminal/run files
-Passages from Filesystem
 Tests
 Insert AI passages into AI Chapter :)
 Package app
@@ -73,16 +71,13 @@ Sasamatic language
     Analyze passage on load, view more, and update
 
 Keys as langs (or just sasamatic)
-Return Chapter Options
-    Default distraction free
-Lang auto change
+Lang auto change (Might be fine...revisit)
 Upload directory option
 LATEX inserts
 Mathematical optimizations (for users)
 Metadata in editor
 Metadata per client
 Session tabs
-Filestream mainfileonly option
 buttons from passages
 Titles for ppe icons
 Script for git push (tokens)
