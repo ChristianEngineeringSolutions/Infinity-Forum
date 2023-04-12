@@ -116,23 +116,26 @@ $(function(){
         $('#left-side-panel').show()
     });
     $(document).on('click', '#file-stream', function(){
-        // load passages from filestream using ajax
-        $.ajax({
-            type: 'get',
-            url: '/filestream/',
-            data: {
-                viewMainFile: true, //allow to click to true
-            },
-            success: function(data){
-                //add view main file toggle option
-                //TODO...
-                //then...
-                $('#passage_wrapper').html(data);
-                syntaxHighlight();
-								$('#left-side-panel').hide();
-            }
-        });
+        window.location.href = "/filestream/";
     });
+    // $(document).on('click', '#file-stream', function(){
+    //     // load passages from filestream using ajax
+    //     $.ajax({
+    //         type: 'get',
+    //         url: '/filestream/',
+    //         data: {
+    //             viewMainFile: true, //allow to click to true
+    //         },
+    //         success: function(data){
+    //             //add view main file toggle option
+    //             //TODO...
+    //             //then...
+    //             $('#passage_wrapper').html(data);
+    //             syntaxHighlight();
+	// 			$('#left-side-panel').hide();
+    //         }
+    //     });
+    // });
     $(document).on('click', '#menu-advanced', function(){
         $('#advanced-menu-options').fadeToggle()
     });
@@ -159,9 +162,6 @@ $(function(){
     $(document).on('click', '#messages', function(){
         window.location.href = "/messages";
     });
-    // $(document).on('click', '#file-stream', function(){
-    //     window.location.href = "/fileStream/";
-    // });
     $(document).on('click', '#help_link', function(){
         
     });
