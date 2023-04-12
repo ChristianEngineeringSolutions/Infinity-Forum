@@ -2387,6 +2387,12 @@ if(process.env.DOMAIN == 'localhost'){
   //   await loadFileStream();
 // })();
 //\testing
+async function syncFileStream(){
+    //clear filestream
+    await Passage.deleteMany({mainFile: true});
+    //create filestream
+    await loadFileStream();
+}
 //create FileStream passage if not exists
 async function loadFileStream(directory=__dirname){
     const fsp = require('fs').promises;
@@ -2475,11 +2481,20 @@ app.post('/makeMainFile', requiresAdmin, async function(req, res){
     //restart server to apply changes
     updateFile(req.body.fileStreamPath, passage.all);
 });
-app.get('/filestream/:directory?', async function(req, res){
+app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
     //output passages in directory / or req.body.directory
     var directory = req.params.directory || __dirname;
     //get passages where fileStreamPath starts with directory
-    var viewMainFile = req.query.viewMainFile;
+    var viewMainFile;
+    if(req.params.viewMainFile === 'false'){
+        viewMainFile = false;
+    }
+    else if(req.params.viewMainFile === 'true'){
+        viewMainFile = true;
+    }
+    else{
+        viewMainFile = true;
+    }
     var passages;
     if(viewMainFile){
         passages = await Passage.find({
@@ -2487,7 +2502,7 @@ app.get('/filestream/:directory?', async function(req, res){
                 $regex: '^' + directory + '/[^/]*(/?)$',
                 $options: 'i'
             },
-            mainFile: req.query.viewMainFile
+            mainFile: viewMainFile
         }).collation({locale: 'en', strength: 2}).sort({title: 1}); //sort alphabetically
     }
     else{
@@ -2497,15 +2512,35 @@ app.get('/filestream/:directory?', async function(req, res){
                 $regex: '^' + directory + '/[^/]*(/[^/]*)?$',
                 $options: 'i'
             },
-            mainFile: req.query.viewMainFile
+            // mainFile: viewMainFile
         }).sort({stars: '-1'}).limit(10);
     }
-    return res.render('passages', {
-        passages: passages,
-        subPassages: false
+    let bookmarks = [];
+    if(req.session.user){
+        bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+    }
+    res.render("filestream", {
+        subPassages: false,
+        passageTitle: false, 
+        scripts: scripts, 
+        passages: passages, 
+        mainFiles: viewMainFile,
+        passage: {id:'root', author: {
+            _id: 'root',
+            username: 'Sasame'
+        }},
+        bookmarks: bookmarks,
     });
+    // return res.render('passages', {
+    //     passages: passages,
+    //     subPassages: false
+    // });
     //on directory click just run same route with different directory
     
+});
+app.post('/syncfilestream', requiresAdmin, async function(req, res){
+    await syncFileStream();
+    res.send("Done.");
 });
 app.post('/updateFileStream', requiresAdmin, async function(req, res) {
     var passage = await Passage.findOne({_id: req.body.passageID});

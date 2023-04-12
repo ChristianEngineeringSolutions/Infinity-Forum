@@ -318,7 +318,19 @@ $(function(){
     });
 
 
-
+    $(document).on('click', '#filestreamsync', function(){
+        $.ajax({
+            type: 'post',
+            url: DOMAIN + '/syncfilestream/' + fromOtro,
+            data: {
+                
+            },
+            success: function(data){
+                alert('FileStream Passages Up to date.');
+                window.location.reload();
+            }
+        });
+    });
     $('#right_side_select').on('change', function(){
         $('#side_panel_switcher').children().hide();
         switch($(this).val()){

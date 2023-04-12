@@ -68,7 +68,6 @@ Reintroduce Brief
 Reorder passages from brief
 Contact Us
 Bookmarks options in menu to Tools (or similar to open sidebar right)
-Roundabout Circuit
 Multiple windows (min. double page sort)
 Sasamatic language
     Analyze passage on load, view more, and update
@@ -85,11 +84,9 @@ Metadata per client
 Session tabs
 Filestream mainfileonly option
 buttons from passages
-Update passage filestream automatically after server changes
-    Just make filestream live view (file browser) TODO
-    **** OR at least in meantime admin update button (sync FileStream)
 Titles for ppe icons
 Script for git push (tokens)
 Server-side VMs
 Astringent lock passages
 Language auto update
+New Design for Chapter passage
