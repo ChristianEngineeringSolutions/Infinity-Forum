@@ -347,16 +347,24 @@ async function totalStars(){
     return stars;
 }
 
-async function starPassage(req, amount, passageID, userID){
+async function starPassage(req, amount, passageID, userID, deplete=true){
     let user = await User.findOne({_id: userID});
     //infinite stars on a local sasame
     if(user.stars < amount && process.env.REMOTE == 'true'){
         return "Not enough stars.";
     }
-    user.stars -= amount;
+    if(deplete){
+        user.stars -= amount;
+    }
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
     //add stars to passage and sources
     passage.stars += amount;
+    //star all sub passages (content is displayed in parent)
+    if(passage.bubbling && passage.passages && !passage.public){
+        for(const p of passage.passages){
+            await starPassage(req, amount, p._id, userID, false);
+        }
+    }
     await starMessages(passage._id, amount);
     //you have to star someone elses passage to get stars
     if(passage.author._id.toString() != req.session.user._id.toString()){
@@ -1417,7 +1425,7 @@ function getAllSubPassageCode(passage, all){
 function getAllSubPassageCodePure(passage, code=''){
     console.log(passage.code);
     passage.all = passage.code;
-    if(!passage.public && passage.passages){
+    if(!passage.public && passage.passages && passage.bubbling){
         passage.passages.forEach((p)=>{
             if(p.lang == passage.lang){
                 // passage.code += p.code === undefined ? '' : p.code;
@@ -1438,7 +1446,7 @@ function getAllSubPassageContent(passage, content=''){
         passage.allContent = passage.content;
         console.log("Test 2");
     }
-    if(!passage.public && passage.passages){
+    if(!passage.public && passage.passages && passage.bubbling){
         passage.passages.forEach((p)=>{
             if(p.lang == passage.lang){
                 // passage.code += p.code === undefined ? '' : p.code;
@@ -1458,20 +1466,24 @@ function bubbleUpCode(passage){
             if(p.lang == passage.lang){
                 p.all = getAllSubPassageCodePure(p);
                 passage.all += '\n' + p.all;
+                passage.sourceList = [...passage.sourceList, ...p.sourceList];
             }
         }
     }
     return bubbleUpContent(passage);
 }
 function bubbleUpContent(passage){
-    if(passage.content){
+    passage.content = passage.content || '';
+    var add = passage.content == '' ? '' : '\n';
+    if(passage.content || passage.lang == 'rich'){
         passage.allContent = passage.content;
         if(!passage.public){
             for(const p of passage.passages){
                 if(p.lang == passage.lang){
                     p.allContent = getAllSubPassageContent(p);
                     if(typeof p.allContent != 'undefined'){
-                        passage.allContent += '\n' + p.allContent;
+                        passage.allContent += add + p.allContent;
+                        passage.sourceList = [...passage.sourceList, ...p.sourceList];
                     }
                 }
             }

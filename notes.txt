@@ -85,3 +85,12 @@ Server-side VMs
 Astringent lock passages
 Language auto update
 New Design for Chapter passage
+
+
+//**DONE**
+If passage has bubbling show all sources and star sub passages + allSources when starred
+Recursive check for bubbling
+Star bubbled sources accordingly
+
+
+Bubble Up Content All langs together (true mix; allow and revise)
