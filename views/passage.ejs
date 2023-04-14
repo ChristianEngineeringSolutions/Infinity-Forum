@@ -79,7 +79,7 @@
         <%}%>
         <!-- ... -->
     </ul>
-    <div class="passage_stars"><%=passage.stars%> Stars &emsp; 
+    <div class="passage_stars"><%=passage.stars%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
         <% if(user){ %>
             <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
             <input id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> 
