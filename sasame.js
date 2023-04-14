@@ -2401,7 +2401,7 @@ if(process.env.DOMAIN == 'localhost'){
 //\testing
 async function syncFileStream(){
     //clear filestream
-    await Passage.deleteMany({mainFile: true});
+    await Passage.updateMany({mainFile:true}, {mainFile:false});
     //create filestream
     await loadFileStream();
 }
