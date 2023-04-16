@@ -62,8 +62,6 @@ Anonymous support:
     PPE
 Minifications
 Express Server Production mode on Remote
-Reintroduce Brief
-Reorder passages from brief
 Contact Us
 Bookmarks options in menu to Tools (or similar to open sidebar right)
 Multiple windows (min. double page sort)
@@ -88,10 +86,6 @@ New Design for Chapter passage
 Deleted passages remain for sources?
 
 
-//**DONE**
-If passage has bubbling show all sources and star sub passages + allSources when starred
-Recursive check for bubbling
-Star bubbled sources accordingly
 
 
-Bubble Up Content All langs together (true mix; allow and revise)
+Bubble Up Content All langs together (true mix; allow and revise) **Consider again (might already pretty much work)
