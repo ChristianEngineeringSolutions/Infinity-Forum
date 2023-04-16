@@ -30,6 +30,41 @@ $(function(){
     if($('#chief_passage_id').val() != 'root'){
         $('.sub_passages').show();
     }
+    //return brief for current passage list
+    function getBrief(){
+        $('.passage:not(.view-more)').each(function(i){
+            var title = $(this).children('.detail_title').text();
+            var _id = $(this).attr('id').split('_').at(-1);
+            if(i != 0){
+                $('#brief-passages').append('<div id="brief-passage-'+_id+'"class="brief-passage">' + title + '</div>');
+            }
+            else{
+
+            }
+        });
+        $('#brief-passages').sortable({
+            update: function(event, ui){
+                var orderList = $('#brief-passages').sortable('toArray');
+                orderList.forEach(function(p, i){
+                    orderList[i] = orderList[i].split('-').at(-1);
+                });
+                // var new_locations = $(this).find('.brief-passage').map(function(i, el) {
+                //     return $(el).attr('id').split('-').at(-1);
+                //   }).get()
+                reorder(orderList, $('#sub_passages'));
+            }
+        });
+        function reorder(orderArray, elementContainer)
+        {
+            $.each(orderArray, function(key, val){
+                elementContainer.append($("#passage_"+val));
+            });
+        }
+        //get if chapter is public or private
+        //to see if we should allow sorting
+
+    }
+    getBrief();
     $(document).on('click', '[id^="passage_executable_"]', function(e){
         let _id = $(this).attr('id').split('_').at(-1);
     });

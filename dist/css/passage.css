@@ -5,6 +5,11 @@
 .ql-tooltip{
     left: 0px !important;
 }
+.brief-passage{
+    padding: 10px;
+    margin-bottom: 6px;
+    border: 1px solid black;
+}
 .passage{
     /* border-bottom: 1px dotted grey; */
     text-align: left;
