@@ -214,23 +214,7 @@ app.use(async function(req, res, next) {
         daemon.all = all;
     }
     res.locals.DAEMONS = daemons;
-    //DEV AUTO LOGIN
-    if(!req.session.user && !process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
-        var user = await authenticateUsername("christianengineeringsolutions@gmail.com", "testing");
-        if(user){
-            req.session.user = user;
-            next();
-        }
-    }
-    else{
-        try{
-            next();
-        }
-        catch(error){
-            console.log(error);
-        }
-    }
-
+    next();
 });
 //Serving Files
 app.get('/jquery.min.js', function(req, res) {

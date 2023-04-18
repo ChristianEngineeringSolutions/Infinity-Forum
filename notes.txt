@@ -54,7 +54,7 @@ Search in Sidebar (search all/search bookmarks); bookmarks section
 Blender crumple
 Flex program (review)
 Distraction free mode maintain border color (and thorough persistence checks/ improve algorithm)
-Root passages from anywhere (button)
+Create Root passages from anywhere (button)
 Anonymous support:
     Create Passage
     Bookmarks
@@ -62,6 +62,8 @@ Anonymous support:
 Minifications
 Express Server Production mode on Remote
 Contact Us
+All Basic Pages from modules
+All Basic Features from modules
 Bookmarks options in menu to Tools (or similar to open sidebar right)
 Multiple windows (min. double page sort)
 Sasamatic language
@@ -79,11 +81,13 @@ buttons from passages
 Titles for ppe icons
 Script for git push (tokens)
 Server-side VMs
-Astringent lock passages
+Astringent lock passages (revisit...maybe accomplished via alts)
 Language auto update
 New Design for Chapter passage
 Deleted passages remain for sources?
 Flagging/SafeSearch
+Introduction Video
+Otra idiomas auto support
 
 
 
