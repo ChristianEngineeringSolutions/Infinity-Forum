@@ -51,7 +51,6 @@ Chat Daemon w/ whisper
 Room Creation
 Keys in passage settings and metadata reader (review)
 Search in Sidebar (search all/search bookmarks); bookmarks section
-Passage alternate (Get next highest rank passage of same title on click "Alt")
 Blender crumple
 Flex program (review)
 Distraction free mode maintain border color (and thorough persistence checks/ improve algorithm)
