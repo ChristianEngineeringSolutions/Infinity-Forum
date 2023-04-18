@@ -6,6 +6,8 @@ var Sasame = true;
 
 var page = 1;
 
+var altIteration = 0;
+
 var PPEPage = 1;
 
 var DOMAIN;

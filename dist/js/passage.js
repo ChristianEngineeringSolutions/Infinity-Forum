@@ -247,6 +247,10 @@ $(function(){
         //passage_id is the last part of the html id
         return $(thiz).attr('id').split('_')[$(thiz).attr('id').split('_').length - 1];
     }
+    function getDashPassageID(thiz){
+        //passage_id is the last part of the html id
+        return $(thiz).attr('id').split('-').at(-1);
+    }
     function getPassageTitle(_id){
         return encodeURIComponent($('#passage_title_'+_id).val());
     }
@@ -263,6 +267,64 @@ $(function(){
             },
             success: function(data){
                 $('#passage_'+_id).remove();
+            }
+        });
+    });
+    $(document).on('click', '[id^="passage_alternate_"]', function(e){
+        var _id = getPassageId(this);
+        var thiz = $(this);
+        $.ajax({
+            type: 'get',
+            url: DOMAIN + '/alternate/' + fromOtro,
+            data: {
+                passageID: _id,
+                iteration: altIteration++
+            },
+            success: function(data){
+                $('#save-alternate-' + $('#chief_passage_id').val()).show();
+                console.log('#passage_'+(altIteration - 1)+'_'+_id);
+                console.log($('#passage_'+(altIteration - 2)+'_'+_id).length);
+                if(data != 'restart'){
+                    if($('#passage_'+(altIteration - 2)+'_'+_id).length){
+                        $('#passage_'+(altIteration - 2)+'_'+_id).replaceWith(data);
+                    }
+                    else{
+                        $('#passage_'+_id).replaceWith(data);
+                    }
+                }
+                else{
+                    altIteration = 0;
+                    thiz.click();
+                }
+                $('#temp_alt').remove();
+            }
+        });
+    });
+    $(document).on('click', '[id^="passage-show-more-"]', function(e){
+        var _id = getDashPassageID(this);
+        $('#passage-display-more-' + _id).toggle();
+    });
+    $(document).on('click', '[id^="save-alternate-"]', function(e){
+        var _id = getDashPassageID(this);
+        var thiz = $(this);
+        var orderList = [];
+        if($('#sub_passages').length){
+            orderList = $('#sub_passages').sortable('toArray');
+            orderList.forEach(function(p, i){
+                orderList[i] = orderList[i].split('_').at(-1);
+            });
+        }
+        $.ajax({
+            type: 'post',
+            url: DOMAIN + '/save_alternate/' + fromOtro,
+            data: {
+                passageID: _id,
+                passages: JSON.stringify(orderList)
+            },
+            success: function(data){
+                flashIcon($('#save-alternate-' + _id), 'green');
+                alert(data);
+                updateBookmarks();
             }
         });
     });

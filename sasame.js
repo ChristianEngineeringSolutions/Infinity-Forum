@@ -285,6 +285,7 @@ const { exit } = require('process');
 const { response } = require('express');
 const e = require('express');
 const Message = require('./models/Message');
+const { copyPassage } = require('./controllers/passageController');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
@@ -578,6 +579,53 @@ async function getFullPassage(_id){
     //get fully populated passage as JSON
     var passage = await Passage.findOne({_id: _id});
 }
+async function alternate(passageID, iteration){
+    var passage = await Passage.findOne({_id: passageID});
+    var alternate = await Passage.find({
+        title: passage.title,
+        _id: {
+            $ne: passage._id
+        }
+    }).sort('-stars').populate('author users sourceList').skip(parseInt(iteration)).limit(1);
+
+    return alternate;
+}
+app.get('/alternate', async(req, res) => {
+    var passage = await alternate(req.query.passageID, req.query.iteration);
+    if(passage.length > 0){
+        var ret = {};
+        return res.render('passage', {
+            subPassages: false,
+            passage: passage[0],
+            sub: true,
+            altIteration: '_' + req.query.iteration
+        });
+    }
+    else{
+        return res.send('restart');
+    }
+});
+app.post('/save_alternate', async(req, res) => {
+    console.log(req.body.passageID);
+    var original = await Passage.findOne({_id: req.body.passageID});
+    var passage = await passageController.copyPassage(original, [req.session.user], null, async function(){
+
+    });
+    console.log(req.body.passages);
+    passage.passages = [];
+    for(const p of JSON.parse(req.body.passages)){
+        var full = await Passage.findOne({_id:p});
+        var newPassage = await passageController.copyPassage(full, [req.session.user], null, async function(){
+
+        });
+        newPassage.parent = passage;
+        await newPassage.save();
+        passage.passages.push(newPassage);
+    }
+    await passage.save();
+    await bookmarkPassage(passage, req.session.user._id);
+    return res.send("Bookmarked Alternate Module.");
+});
 // function getFromRemote(url){
 //     var request = https.request(remoteURL, function(response){
 //         response.setEncoding('utf8');

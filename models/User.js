@@ -5,6 +5,14 @@ const bcrypt = require('bcrypt');
 
 const userSchema = mongoose.Schema({
     joined: {type: Date, default: Date.now},
+    age: {
+      type: Number,
+      default: 0
+    },
+    safeMode: {
+      type: Boolean,
+      default: true
+    },
     email: {
         type: String,
         unique: true,

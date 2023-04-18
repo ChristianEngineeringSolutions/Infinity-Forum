@@ -1,4 +1,4 @@
-<div data-sub="<%=sub%>"id="passage_<%=passage.id%>" class="passage passage_<%=passage.public ? 'public' : 'private'%>">
+<div data-sub="<%=sub%>"id="passage<%=typeof altIteration == 'undefined' ? '' : altIteration%>_<%=passage._id%>" class="passage passage_<%=passage.public ? 'public' : 'private'%>">
     <div id="passage_settings_modal_<%=passage._id%>" class="modal">
         <%- include('passage_settings', {passage: passage}) %>
     </div>
@@ -43,6 +43,25 @@
                         <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
                         <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
                     <%}%>
+                    <div id="passage-share-modal-<%=passage._id%>" class="modal">
+                        <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
+                    </div>
+                    <a class="basic_link" href="#passage-share-modal-<%=passage._id%>" rel="modal:open"><li id="passage_share_<%=passage.id%>" class="passage_option">Share</li></a>
+                    <%/*%>
+                    <li id="passage-show-more-<%=passage._id%>" class="passage_option">More</li>
+                    <span style="display:none;"id="passage-display-more-<%=passage._id%>">
+                        <li id="passage-flag-<%=passage._id%>" class="passage_option">Flag</li>
+                        <%if(LOCAL == 'true'){%>
+                            <!-- Push passage to server -->
+                            <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
+                            <input type="hidden" id="full_push_passage_<%=passage._id%>" value="<%=JSON.stringify(passage)%>">
+                            <!-- Install to FileSystem -->
+                            <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
+                        <%}%>
+                    </span>
+                    <%*/%>
+                    <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
+                    <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
                     <%if(LOCAL == 'true'){%>
                         <!-- Push passage to server -->
                         <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
@@ -50,10 +69,6 @@
                         <!-- Install to FileSystem -->
                         <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
                     <%}%>
-                    <div id="passage-share-modal-<%=passage._id%>" class="modal">
-                        <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
-                    </div>
-                    <a class="basic_link" href="#passage-share-modal-<%=passage._id%>" rel="modal:open"><li id="passage_share_<%=passage.id%>" class="passage_option">Share</li></a>
                 <%}%>
                 <%if(fromOtro){%>
                     <!-- Displayed via CES Connect -->

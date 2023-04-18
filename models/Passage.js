@@ -44,6 +44,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    flagged: {
+        type: Boolean,
+        default: false
+    },
     //bubble up content/code? Passage setting option
     bubbling: {
         type: Boolean,
