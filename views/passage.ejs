@@ -60,8 +60,6 @@
                         <%}%>
                     </span>
                     <%*/%>
-                    <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
-                    <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
                     <%if(LOCAL == 'true'){%>
                         <!-- Push passage to server -->
                         <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
@@ -83,6 +81,10 @@
             </span>
         <%}else{%>
             <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
+        <%}%>
+        <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
+        <%if(user){%>
+        <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
         <%}%>
     </ul>
     <ul class="passage_users">
