@@ -23,10 +23,10 @@
                 <div id="brief">
                   <!-- <div id="brief_blocker"></div>
                   <div id="right_passages"></div> -->
-                  <%if(passage.parent != null){%>
+                  <%if(typeof passage != 'undefined' && passage.parent != null){%>
                     <h2 data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"><%=passage.parent.title%></h2>
                   <%}%>
-                  <%if(passageTitle){%>
+                  <%if(typeof passageTitle != 'undefined' && passageTitle){%>
                       <h2><%= decodeURIComponent(passageTitle)%></h2>
                   <%}%>
                   <!-- Button to update order if private passage and author -->
