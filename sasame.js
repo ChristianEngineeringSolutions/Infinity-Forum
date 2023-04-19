@@ -194,24 +194,8 @@ app.use(async function(req, res, next) {
     let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
     daemons = daemons.concat(defaults);
     for(const daemon of daemons){
-        //stick together code for all sub passages
-        var all = {
-            html: daemon.html,
-            css: daemon.css,
-            javascript: daemon.javascript
-        };
-        if(daemon.lang == 'javascript'){
-            all.javascript = daemon.code;
-        }
-        var userID = null;
-        if(req.session.user){
-            userID = req.session.user._id.toString();
-        }
-        all.javascript = DAEMONLIBS(daemon, userID) + all.javascript;
-        if(daemon.public == false){
-            getAllSubPassageCode(daemon, all);
-        }
-        daemon.all = all;
+        daemon.code = DAEMONLIBS(daemon, req.session.user._id) + daemon.code;
+        daemons[daemon] = bubbleUpCode(daemon);
     }
     res.locals.DAEMONS = daemons;
     next();
@@ -1422,6 +1406,7 @@ app.get('/eval/:passage_id', async function(req, res){
     }
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
+    // console.log(passage);
     //stick together code for all sub passages
     var all = {
         html: passage.html,
@@ -1436,8 +1421,14 @@ app.get('/eval/:passage_id', async function(req, res){
         userID = req.session.user._id.toString();
     }
     all.javascript = DAEMONLIBS(passage, userID) + all.javascript;
-    if(passage.public == false){
-        getAllSubPassageCode(passage, all);
+    if(!passage.public){
+        // console.log(passage);
+        passage.code = DAEMONLIBS(passage, userID) + passage.code;
+        // passage.all = 'test';
+        passage = bubbleUpCode(passage);
+        // all.javascript = passage.all;
+        console.log('1'+passage.all);
+        // getAllSubPassageCode(passage, all);
     }
     res.render("eval", {passage: passage, all: all});
 });
@@ -1453,7 +1444,6 @@ function getAllSubPassageCode(passage, all){
     return all;
 }
 function getAllSubPassageCodePure(passage, code=''){
-    console.log(passage.code);
     passage.all = passage.code;
     if(!passage.public && passage.passages && passage.bubbling){
         passage.passages.forEach((p)=>{
@@ -1466,15 +1456,11 @@ function getAllSubPassageCodePure(passage, code=''){
     return passage.all;
 }
 function getAllSubPassageContent(passage, content=''){
-    console.log(typeof passage.content == 'undefined');
-    console.log(passage.content);
     if(typeof passage.content == 'undefined'){
         passage.allContent = '';
-        console.log("Test 1");
     }
     else{
         passage.allContent = passage.content;
-        console.log("Test 2");
     }
     if(!passage.public && passage.passages && passage.bubbling){
         passage.passages.forEach((p)=>{
@@ -1487,22 +1473,30 @@ function getAllSubPassageContent(passage, content=''){
     return passage.allContent || passage.content;
 }
 function bubbleUpCode(passage){
+    passage.all = passage.code;
     if(!passage.bubbling){
         return passage;
     }
-    passage.all = passage.code;
+    console.log('twice');
+    console.log(passage.title);
     if(!passage.public){
+        console.log(passage.passages.length);
         for(const p of passage.passages){
+            console.log(p.lang == passage.lang);
             if(p.lang == passage.lang){
+                console.log('wrong');
                 p.all = getAllSubPassageCodePure(p);
                 passage.all += '\n' + p.all;
+                // console.log('2'+passage.all);
                 passage.sourceList = [...passage.sourceList, ...p.sourceList];
             }
         }
     }
+    // console.log('3' + passage.all);
     return bubbleUpContent(passage);
 }
 function bubbleUpContent(passage){
+    // console.log(passage.all);
     passage.content = passage.content || '';
     var add = passage.content == '' ? '' : '\n';
     if(passage.content || passage.lang == 'rich'){
@@ -1519,6 +1513,7 @@ function bubbleUpContent(passage){
             }
         }
     }
+    // console.log('k'+passage.all);
     return passage;
 }
 app.get('/passage/:passage_title/:passage_id', async function(req, res){
@@ -1559,8 +1554,6 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
     }
     //we have to do this because of issues with populating passage.passages foreign keys
-	console.log(passage.passages.length);
-	console.log(subPassages.length);
     if(!passage.public){
         //reorder sub passages to match order of passage.passages
         var reordered = Array(subPassages.length).fill(0);
@@ -1609,7 +1602,6 @@ app.get('/stripeAuthorize', async function(req, res){
                 catch(error){
                     console.error(error);
                 }
-                console.log(user);
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.id,
@@ -1617,7 +1609,7 @@ app.get('/stripeAuthorize', async function(req, res){
                     return_url: 'https://christianengineeringsolutions.com/stripeOnboarded',
                     type: 'account_onboarding'
                 });
-                console.log(accountLink);
+                // console.log(accountLink);
                 // Redirect to Stripe to start the Express onboarding flow
                 res.redirect(accountLink.url);
             }
