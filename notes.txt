@@ -3,16 +3,17 @@ TODO:
 Anonymous Posts
 File compression (client side)
 Minifications, optimizations
+*Production Mode on Server (express)
 SEO
 Peer to Peer
-Admin interface //in progress
+*Admin interface //in progress
     Lock site for updates
     Approve daemons (done)
 Encryption revisited
 Tests
 Show group passages on profile?
 Database merge //mostly done
-UUIDs
+UUIDs (revisit; might be done)
 Review Database Backups/Recovery
 File Browser + Submissions
 Tab sortable fix
@@ -60,7 +61,6 @@ Anonymous support:
     Bookmarks
     PPE
 Minifications
-Express Server Production mode on Remote
 Contact Us
 All Basic Pages from modules
 All Basic Features from modules
@@ -88,6 +88,9 @@ Deleted passages remain for sources?
 Flagging/SafeSearch
 Introduction Video
 Otra idiomas auto support
+Loading icon(s)
+*Show username on profile
+NOHTML
 
 
 
