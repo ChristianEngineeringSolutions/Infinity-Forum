@@ -590,12 +590,10 @@ app.get('/alternate', async(req, res) => {
     }
 });
 app.post('/save_alternate', async(req, res) => {
-    console.log(req.body.passageID);
     var original = await Passage.findOne({_id: req.body.passageID});
     var passage = await passageController.copyPassage(original, [req.session.user], null, async function(){
 
     });
-    console.log(req.body.passages);
     passage.passages = [];
     for(const p of JSON.parse(req.body.passages)){
         var full = await Passage.findOne({_id:p});
