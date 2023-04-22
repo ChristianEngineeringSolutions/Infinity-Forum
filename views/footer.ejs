@@ -22,7 +22,9 @@
         
         </script>
         <%DAEMONS.forEach(function(daemon){%>
-            <iframe class="iframe" src="/eval/<%=daemon._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+            <%if(daemon.lang == 'daemonFrame'){%>
+                <iframe class="iframe" src="/eval/<%=daemon._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+            <%}%>
         <%});%>
         
     </body>

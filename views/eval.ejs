@@ -13,7 +13,7 @@
 <body>
     <%-passage.html%>
     <script><%-passage.libs%></script>
-    <script><%-passage.lang == 'daemon' ? passage.code : ''%></script>
+    <script><%-passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? passage.code : ''%></script>
     <script><%-passage.javascript%></script>
 </body>
 </html>
