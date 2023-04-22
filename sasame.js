@@ -185,14 +185,12 @@ app.use(async function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
-    console.log(req.url.split('/')[1]);
-    if(['profile', '', 'passage'].includes(req.url.split('/')[1])){
+    if(['profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
             regenerateSession(req);
             daemons = user.daemons;
-            console.log(daemons);
         }
         let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
         if(defaults.length > 0)
@@ -201,7 +199,6 @@ app.use(async function(req, res, next) {
         for(const daemon of daemons){
             // daemon.code = DAEMONLIBS(daemon, req.session.user._id) + daemon.code;
             daemons[daemon] = bubbleUpCode(daemon);
-            console.log(daemons[daemon].javascript);
         }
         res.locals.DAEMONS = daemons;
     }
