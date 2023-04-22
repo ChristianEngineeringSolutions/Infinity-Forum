@@ -19,8 +19,8 @@ var compression = require('compression');
 function DAEMONLIBS(passage, USERID){
     return `
     
-    const THIS = `+JSON.stringify(passage)+`;
-    const USERID = "`+(USERID)+`";
+    var THIS = `+JSON.stringify(passage)+`;
+    var USERID = "`+(USERID)+`";
     // async function INTERACT(content){
     //     const result = await $.ajax({
     //         type: 'post',
@@ -1411,7 +1411,6 @@ app.get('/eval/:passage_id', async function(req, res){
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
     passage.all = '';
-    passage.libs = '';
     // console.log(passage);
     //stick together code for all sub passages
     var all = {
