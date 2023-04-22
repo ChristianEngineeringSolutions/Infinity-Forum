@@ -1406,6 +1406,8 @@ app.get('/eval/:passage_id', async function(req, res){
     }
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
+    passage.all = '';
+    passage.libs = '';
     // console.log(passage);
     //stick together code for all sub passages
     var all = {
@@ -1472,28 +1474,62 @@ function getAllSubPassageContent(passage, content=''){
     }
     return passage.allContent || passage.content;
 }
-function bubbleUpCode(passage){
-    passage.all = passage.code;
+function concatObjectProps(passage, sub){
+    if(typeof passage.content != 'undefined')
+        passage.content += (typeof sub.content == 'undefined' ? '' : '\n' + sub.content);
+    if(typeof passage.code != 'undefined')
+        passage.code += (typeof sub.code == 'undefined' ? '' : '\n' + sub.code);
+    if(typeof passage.html != 'undefined')
+        passage.html += (typeof sub.html == 'undefined' ? '' : '\n' + sub.html);
+    if(typeof passage.css != 'undefined')
+        passage.css += (typeof sub.css == 'undefined' ? '' : '\n' + sub.css);
+    if(typeof passage.javascript != 'undefined')
+        passage.javascript += (typeof sub.javascript == 'undefined' ? '' : '\n' + sub.javascript);
+    passage.sourceList = [...passage.sourceList, ...sub.sourceList];
+}
+function getAllSubData(passage){
+    if(!passage.public && passage.passages && passage.bubbling){
+        passage.passages.forEach((p)=>{
+            if(p.lang == passage.lang){
+                concatObjectProps(passage, getAllSubData(p));
+            }
+        });
+    }
+    return passage;
+}
+function bubbleUpAll(passage){
     if(!passage.bubbling){
         return passage;
     }
-    console.log('twice');
-    console.log(passage.title);
     if(!passage.public){
-        console.log(passage.passages.length);
+        return getAllSubData(passage);
         for(const p of passage.passages){
-            console.log(p.lang == passage.lang);
             if(p.lang == passage.lang){
-                console.log('wrong');
-                p.all = getAllSubPassageCodePure(p);
-                passage.all += '\n' + p.all;
-                // console.log('2'+passage.all);
-                passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                concatObjectProps(passage, getAllSubData(p));
             }
         }
     }
-    // console.log('3' + passage.all);
-    return bubbleUpContent(passage);
+    return passage;
+}
+function bubbleUpCode(passage){
+    // passage.all = passage.code;
+    // if(!passage.bubbling){
+    //     return passage;
+    // }
+    // if(!passage.public){
+    //     for(const p of passage.passages){
+    //         console.log(p.lang == passage.lang);
+    //         if(p.lang == passage.lang){
+    //             p.all = getAllSubPassageCodePure(p);
+    //             passage.all += '\n' + p.all;
+    //             // console.log('2'+passage.all);
+    //             passage.sourceList = [...passage.sourceList, ...p.sourceList];
+    //         }
+    //     }
+    // }
+    // // console.log('3' + passage.all);
+    // return bubbleUpContent(passage);
+    return bubbleUpAll(passage);
 }
 function bubbleUpContent(passage){
     // console.log(passage.all);
