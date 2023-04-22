@@ -119,7 +119,7 @@
     <%}else{%>
     <%}%>
     <!-- Hide Iframe window if there is neither html nor js, or if it is not a daemon -->
-    <%if((passage.lang != 'daemon') && (passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
+    <%if((passage.lang != 'daemon' && passage.lang != 'daemonFrame') && (passage.html == null || passage.html == '') && (passage.javascript == null || passage.javascript == '')){%>
         <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>
@@ -210,7 +210,7 @@
             <div id="passage_detail_css_<%=passage._id%>"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=passage.css || ''%></code></pre></div>
             <div id="passage_detail_js_<%=passage._id%>"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=passage.javascript || ''%></code></pre></div>
         <%}else if(passage.lang != 'rich'){%>
-            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"><%=passage.code%></code></pre></div>
+            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=passage.code%></code></pre></div>
         <%}%>
         <!-- Show .EXT -->
         <!-- Show License -->
