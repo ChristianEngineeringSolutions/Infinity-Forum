@@ -91,8 +91,7 @@ Otra idiomas auto support
 Loading icon(s)
 NOHTML
 lang divs to concat multiple language in bubbled content //reconsider
-root daemon lang for head injection else use iframe as current
-
+Review Daemon Libs
 
 //Reconsider; may not be urgent; can already mix rich w/ code
 Bubble Up Content All langs together (true mix; allow and revise) **Consider again (might already pretty much work)
