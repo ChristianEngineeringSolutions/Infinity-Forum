@@ -7,11 +7,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="http://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js"></script> 
     <title><%=passage.title%></title>
-    <style><%=all.css%></style>
+    <style><%=passage.css%></style>
     <script src="/jquery.min.js"></script>
 </head>
 <body>
-    <%-all.html%>
-    <script><%-passage.libs%><%-passage.all || passage.code%></script>
+    <%-passage.html%>
+    <script><%-passage.libs%></script>
+    <script><%-passage.lang == 'daemon' ? passage.code : ''%></script>
+    <script><%-passage.javascript%></script>
 </body>
 </html>

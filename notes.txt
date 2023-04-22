@@ -89,9 +89,9 @@ Flagging/SafeSearch
 Introduction Video
 Otra idiomas auto support
 Loading icon(s)
-*Show username on profile
 NOHTML
-Bubbled up sources in temp sourceList
+lang divs to concat multiple language in bubbled content
+root daemon lang for head injection else use iframe as current
 
 
 
