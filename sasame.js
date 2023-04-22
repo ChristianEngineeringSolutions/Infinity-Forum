@@ -185,7 +185,7 @@ app.use(async function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
-    if(['profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream'].includes(req.url.split('/')[1])){
+    if(['profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
