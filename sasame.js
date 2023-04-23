@@ -2158,13 +2158,13 @@ app.post('/update_passage/', async (req, res) => {
     else if(passage.public_daemon == 2 || passage.default_daemon){
         return res.send("Not allowed.");
     }
-    passage.html = formData.html || passage.html;
-    passage.css = formData.css || passage.css;
-    passage.javascript = formData.js || passage.javascript;
+    passage.html = formData.html;
+    passage.css = formData.css;
+    passage.javascript = formData.js;
     passage.title = formData.title;
-    passage.content = formData.content || passage.content;
+    passage.content = formData.content;
     passage.tags = formData.tags;
-    passage.code = formData.code || passage.code;
+    passage.code = formData.code;
     passage.bibliography = formData.bibliography;
     passage.lang = formData.lang;
     passage.fileStreamPath = formData.filestreampath;
