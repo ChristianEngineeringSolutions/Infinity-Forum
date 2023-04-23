@@ -27,9 +27,18 @@ const passageSchema = mongoose.Schema({
     },
     //to help user apps (store JSON)
     metadata: String,
-    html: String,
-    css: String,
-    javascript: String,
+    html: {
+        type: String,
+        default: ''
+    },
+    css: {
+        type: String,
+        default: ''
+    },
+    javascript: {
+        type: String,
+        default: ''
+    },
     libs: {
         type: String,
         default: ``
@@ -37,7 +46,10 @@ const passageSchema = mongoose.Schema({
     //for daemons:
     param: String,
     //to replace html/css/javascript
-    code: String,
+    code: {
+        type: String,
+        default: ''
+    },
     bibliography: String,
     //can be enabled by default in passage settings
     distraction_free: {
