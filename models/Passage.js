@@ -103,7 +103,10 @@ const passageSchema = mongoose.Schema({
         type: [String],
         default: []
     },
-    content: String,
+    content: {
+        type: String,
+        default: ''
+    },
     //forces content to be a unique value unless null
     // content: {
     //     type: String,

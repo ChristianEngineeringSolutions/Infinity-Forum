@@ -197,7 +197,7 @@ app.use(async function(req, res, next) {
             daemons = daemons.concat(defaults);
         for(const daemon of daemons){
             // daemon.code = DAEMONLIBS(daemon, req.session.user._id) + daemon.code;
-            daemons[daemon] = bubbleUpCode(daemon);
+            daemons[daemon] = bubbleUpAll(daemon);
         }
         res.locals.DAEMONS = daemons;
     }
@@ -428,7 +428,7 @@ app.get('/messages', async(req, res) => {
         passages.push(p);
     }
     for(const passage of passages){
-        passages[passage] = bubbleUpCode(passage);
+        passages[passage] = bubbleUpAll(passage);
     }
     let bookmarks = [];
         if(req.session.user){
@@ -479,7 +479,7 @@ app.get('/personal/:user_id', async (req, res) => {
             }
         });
         for(const passage of passages){
-            passages[passage] = bubbleUpCode(passage);
+            passages[passage] = bubbleUpAll(passage);
         }
         let bookmarks = [];
         if(req.session.user){
@@ -526,7 +526,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     // }
     let passages = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     for(const passage of passages){
-        passages[passage] = bubbleUpCode(passage);
+        passages[passage] = bubbleUpAll(passage);
     }
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
@@ -865,7 +865,7 @@ app.get('/', async (req, res) => {
             personal: false,
         }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
-            passages[passage] = bubbleUpCode(passage);
+            passages[passage] = bubbleUpAll(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -942,6 +942,9 @@ app.post('/search_profile/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    for(const result of results){
+        results[result] = bubbleUpAll(result);
+    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -963,6 +966,9 @@ app.post('/search_messages/', async (req, res) => {
         }).populate('author users sourcelist');
         passages.push(p);
     }
+    for(const passage of passage){
+        passages[passage] = bubbleUpAll(passage);
+    }
     res.render("passages", {
         passages: passages,
         subPassages: false,
@@ -980,6 +986,9 @@ app.post('/ppe_search/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    for(const result of results){
+        results[result] = bubbleUpAll(result);
+    }
     res.render("ppe_thumbnails", {
         thumbnails: results,
     });
@@ -1047,6 +1056,9 @@ app.post('/search_passage/', async (req, res) => {
             }
         }
     }
+    for(const result of results){
+        results[result] = bubbleUpAll(result);
+    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1071,6 +1083,9 @@ app.post('/search/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    for(const result of results){
+        results[result] = bubbleUpAll(result);
+    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1128,6 +1143,7 @@ app.post('/transfer_bookmark', async (req, res) => {
     let copy = await passageController.copyPassage(passage, user, parent, function(){
         
     });
+    copy = bubbleUpAll(copy);
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
@@ -1135,6 +1151,9 @@ app.get('/get_bookmarks', async (req, res) => {
     if(req.session.user){
         let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
         bookmarks = user.bookmarks;
+    }
+    for(const bookmark of bookmarks){
+        bookmarks[bookmark] = bubbleUpAll(bookmark);
     }
     res.render('bookmarks', {bookmarks: bookmarks});
 });
@@ -1427,72 +1446,32 @@ app.get('/eval/:passage_id', async function(req, res){
     }
     all.javascript = DAEMONLIBS(passage, userID) + all.javascript;
     if(!passage.public){
-        // console.log(passage);
         passage.code = DAEMONLIBS(passage, userID) + passage.code;
-        // passage.all = 'test';
-        passage = bubbleUpCode(passage);
-        // all.javascript = passage.all;
-        console.log('1'+passage.all);
-        // getAllSubPassageCode(passage, all);
+        passage = bubbleUpAll(passage);
     }
     res.render("eval", {passage: passage, all: all});
 });
-function getAllSubPassageCode(passage, all){
-    if(passage.passages){
-        passage.passages.forEach((p)=>{
-            all.html += p.html === undefined ? '' : p.html;
-            all.css += p.css === undefined ? '' : p.css;
-            all.javascript += p.javascript === undefined ? '' : p.javascript;
-            getAllSubPassageCode(p, all);
-        });
-    }
-    return all;
-}
-function getAllSubPassageCodePure(passage, code=''){
-    passage.all = passage.code;
-    if(!passage.public && passage.passages && passage.bubbling){
-        passage.passages.forEach((p)=>{
-            if(p.lang == passage.lang){
-                // passage.code += p.code === undefined ? '' : p.code;
-                passage.all += '\n' + getAllSubPassageCodePure(p, code);
-            }
-        });
-    }
-    return passage.all;
-}
-function getAllSubPassageContent(passage, content=''){
-    if(typeof passage.content == 'undefined'){
-        passage.allContent = '';
-    }
-    else{
-        passage.allContent = passage.content;
-    }
-    if(!passage.public && passage.passages && passage.bubbling){
-        passage.passages.forEach((p)=>{
-            if(p.lang == passage.lang){
-                // passage.code += p.code === undefined ? '' : p.code;
-                passage.allContent += '\n' + getAllSubPassageContent(p, content);
-            }
-        });
-    }
-    return passage.allContent || passage.content;
-}
 function concatObjectProps(passage, sub){
     if(typeof passage.content != 'undefined')
-        passage.content += (typeof sub.content == 'undefined' ? '' : '\n' + sub.content);
+        passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '' : '\n' + sub.content);
     if(typeof passage.code != 'undefined')
-        passage.code += (typeof sub.code == 'undefined' ? '' : '\n' + sub.code);
+        passage.displayCode += (typeof sub.code == 'undefined' || sub.code == '' ? '' : '\n' + sub.code);
     if(typeof passage.html != 'undefined')
-        passage.html += (typeof sub.html == 'undefined' ? '' : '\n' + sub.html);
+        passage.displayHTML += (typeof sub.html == 'undefined' || sub.html == '' ? '' : '\n' + sub.html);
     if(typeof passage.css != 'undefined')
-        passage.css += (typeof sub.css == 'undefined' ? '' : '\n' + sub.css);
+        passage.displayCSS += (typeof sub.css == 'undefined' || sub.css == '' ? '' : '\n' + sub.css);
     if(typeof passage.javascript != 'undefined')
-        passage.javascript += (typeof sub.javascript == 'undefined' ? '' : '\n' + sub.javascript);
+        passage.displayJavascript += (typeof sub.javascript == 'undefined' || sub.javascript == '' ? '' : '\n' + sub.javascript);
     passage.sourceList = [...passage.sourceList, ...sub.sourceList];
 }
 function getAllSubData(passage){
     if(!passage.public && passage.passages && passage.bubbling){
         passage.passages.forEach((p)=>{
+            p.displayContent = p.content;
+            p.displayCode = p.code;
+            p.displayHTML = p.html;
+            p.displayCSS = p.css;
+            p.displayJavascript = p.javascript;
             if(p.lang == passage.lang){
                 concatObjectProps(passage, getAllSubData(p));
             }
@@ -1501,58 +1480,17 @@ function getAllSubData(passage){
     return passage;
 }
 function bubbleUpAll(passage){
+    passage.displayContent = passage.content;
+    passage.displayCode = passage.code;
+    passage.displayHTML = passage.html;
+    passage.displayCSS = passage.css;
+    passage.displayJavascript = passage.javascript;
     if(!passage.bubbling){
         return passage;
     }
     if(!passage.public){
         return getAllSubData(passage);
-        for(const p of passage.passages){
-            if(p.lang == passage.lang){
-                concatObjectProps(passage, getAllSubData(p));
-            }
-        }
     }
-    return passage;
-}
-function bubbleUpCode(passage){
-    // passage.all = passage.code;
-    // if(!passage.bubbling){
-    //     return passage;
-    // }
-    // if(!passage.public){
-    //     for(const p of passage.passages){
-    //         console.log(p.lang == passage.lang);
-    //         if(p.lang == passage.lang){
-    //             p.all = getAllSubPassageCodePure(p);
-    //             passage.all += '\n' + p.all;
-    //             // console.log('2'+passage.all);
-    //             passage.sourceList = [...passage.sourceList, ...p.sourceList];
-    //         }
-    //     }
-    // }
-    // // console.log('3' + passage.all);
-    // return bubbleUpContent(passage);
-    return bubbleUpAll(passage);
-}
-function bubbleUpContent(passage){
-    // console.log(passage.all);
-    passage.content = passage.content || '';
-    var add = passage.content == '' ? '' : '\n';
-    if(passage.content || passage.lang == 'rich'){
-        passage.allContent = passage.content;
-        if(!passage.public){
-            for(const p of passage.passages){
-                if(p.lang == passage.lang){
-                    p.allContent = getAllSubPassageContent(p);
-                    if(typeof p.allContent != 'undefined'){
-                        passage.allContent += add + p.allContent;
-                        passage.sourceList = [...passage.sourceList, ...p.sourceList];
-                    }
-                }
-            }
-        }
-    }
-    // console.log('k'+passage.all);
     return passage;
 }
 app.get('/passage/:passage_title/:passage_id', async function(req, res){
@@ -1577,17 +1515,12 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
             passageUsers.push(u._id.toString());
         });
     }
+    passage = bubbleUpAll(passage);
     if(passage.public == true){
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     }
     else{
-        var all = {
-            html: passage.html || '',
-            css: passage.css || '',
-            javascript: passage.javascript || ''
-        };
-        getAllSubPassageCode(passage, all);
-        if(all.html.length > 0 || all.css.length > 0 || all.javascript.length > 0){
+        if(passage.displayHTML.length > 0 || passage.displayCSS.length > 0 || passage.displayJavascript.length > 0){
             passage.showIframe = true;
         }
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
@@ -1614,7 +1547,9 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
 	    reordered = subPassages;
     }
     passage.passages = reordered;
-    passage = bubbleUpCode(passage);
+    for(const p of passage.passages){
+        passage.passages[p] = bubbleUpAll(p);
+    }
     res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -1852,6 +1787,9 @@ app.post('/paginate', async function(req, res){
             find.mimeType = 'image';
         }
         let passages = await Passage.paginate(find, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
+        for(const p of passages){
+            passages[p] = bubbleUpAll(p);
+        }
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
             // console.log(test);
@@ -1880,6 +1818,9 @@ app.post('/paginate', async function(req, res){
                 _id: message.passage._id
             }).populate('author users sourcelist');
             passages.push(p);
+        }
+        for(const p of passages){
+            passages[p] = bubbleUpAll(p);
         }
         res.render('passages', {
             passages: passages,
@@ -2244,6 +2185,7 @@ app.post('/update_passage/', async (req, res) => {
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);
     }
+    passage = bubbleUpAll(passage);
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
@@ -2542,7 +2484,7 @@ async function loadFileStream(directory=__dirname){
 
 app.post('/makeMainFile', requiresAdmin, async function(req, res){
     var passage = await Passage.findOne({_id: req.body.passageID});
-    var passage = bubbleUpCode(passage);
+    var passage = bubbleUpAll(passage);
     //check if file/dir already exists
     var exists = await Passage.findOne({fileStreamPath: req.body.fileStreamPath});
     if(exists != null){

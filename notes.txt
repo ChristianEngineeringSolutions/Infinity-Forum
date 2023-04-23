@@ -98,6 +98,8 @@ Editor Extensions
 VS Code Plugin
 Sasame Pure (All programming language support)
 Browser Extensions
+Check bubbling for search and pagination
+reference subs in sources for passage bubbling?
 
 //Reconsider; may not be urgent; can already mix rich w/ code
 Bubble Up Content All langs together (true mix; allow and revise) **Consider again (might already pretty much work)
