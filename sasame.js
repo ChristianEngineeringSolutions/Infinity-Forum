@@ -550,25 +550,82 @@ async function getFullPassage(_id){
     //get fully populated passage as JSON
     var passage = await Passage.findOne({_id: _id});
 }
-async function alternate(passageID, iteration){
+async function alternate(passageID, iteration, prevs){
+    console.log(iteration);
     var passage = await Passage.findOne({_id: passageID});
-    var alternate = await Passage.find({
+    var find = {
         title: passage.title,
         _id: {
             $ne: passage._id
         }
-    }).sort('-stars').populate('author users sourceList').skip(parseInt(iteration)).limit(1);
+    };
+    var numDocuments = await Passage.countDocuments(find);
+    if(iteration >= numDocuments){
+        return false;
+    }
+    var test = await Passage.find(find);
+    var alternate = await Passage.find(find).sort('-stars').populate('author users sourceList').skip(parseInt(iteration)).limit(1);
+    alternate = alternate[0];
 
     return alternate;
 }
 app.get('/alternate', async(req, res) => {
-    var passage = await alternate(req.query.passageID, req.query.iteration);
-    if(passage.length > 0){
-        var ret = {};
+    //UPDATE TODO
+    //Okay, so, we need to get the _id of the parent passage
+    //then splice/replace in the alternate passage
+    //and then return the whole deal :)
+    //\UPDATE TODO
+    var parent = await Passage.findOne({_id: req.query.parentID});
+    var passage = await alternate(req.query.passageID, req.query.iteration, req.query.altPrevs);
+    if(!passage){
+        return res.send("restart");
+    }
+    console.log('?' + passage.content);
+    //return sub false rendered view of parent
+    //...
+    //I know and sorry this is a lot of duplicated code from passage view route
+    //but TODO will see if we can put all this into a function
+    var subPassages = await Passage.find({parent: parent._id, personal: false}).populate('author users sourceList');
+    //reorder sub passages to match order of passage.passages
+    var reordered = Array(subPassages.length).fill(0);
+    for(var i = 0; i < parent.passages.length; ++i){
+        for(var j = 0; j < subPassages.length; ++j){
+            if(subPassages[j]._id.toString() == parent.passages[i]._id.toString()){
+                reordered[i] = subPassages[j];
+            }
+        }
+    }
+    //idk why but sometimes in production there were extra 0s...
+    //need to test more and bugfix algorithm above
+    reordered = reordered.filter(x => x !== 0); //just get rid of extra 0s
+    if(parent.passages.length < 1){
+	    reordered = subPassages;
+    }
+    parent.passages = reordered;
+    // if(parent._id.toString() == req.query.passageID){
+    //     parent = passage[0];
+    // }
+    // else{
+        parent.passages.forEach(function(p, i){
+            if(i == req.query.position){
+                parent.passages[i] = passage;
+            }
+        });
+    // }
+    // if(typeof parent.passages != 'undefined' && parent.passages[0] != null){
+    //     for(const p of parent.passages){
+    //         parent.passages[p] = bubbleUpAll(p);
+    //     }
+    // }
+    parent = bubbleUpAll(parent);
+    if(parent.displayHTML.length > 0 || parent.displayCSS.length > 0 || parent.displayJavascript.length > 0){
+        parent.showIframe = true;
+    }
+    if(passage){
         return res.render('passage', {
-            subPassages: false,
-            passage: passage[0],
-            sub: true,
+            subPassages: parent.passages,
+            passage: parent,
+            sub: false,
             altIteration: '_' + req.query.iteration
         });
     }
@@ -1467,6 +1524,9 @@ function concatObjectProps(passage, sub){
 function getAllSubData(passage){
     if(!passage.public && passage.passages && passage.bubbling){
         passage.passages.forEach((p)=>{
+            if(typeof p == 'undefined'){
+                return p;
+            }
             p.displayContent = p.content;
             p.displayCode = p.code;
             p.displayHTML = p.html;
@@ -1480,6 +1540,9 @@ function getAllSubData(passage){
     return passage;
 }
 function bubbleUpAll(passage){
+    if(typeof passage == 'undefined'){
+        return passage;
+    }
     passage.displayContent = passage.content;
     passage.displayCode = passage.code;
     passage.displayHTML = passage.html;
@@ -1787,7 +1850,7 @@ app.post('/paginate', async function(req, res){
             find.mimeType = 'image';
         }
         let passages = await Passage.paginate(find, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
-        for(const p of passages){
+        for(const p of passages.docs){
             passages[p] = bubbleUpAll(p);
         }
         if(!req.body.from_ppe_queue){
@@ -1813,7 +1876,7 @@ app.post('/paginate', async function(req, res){
         var messages = await Message.paginate(find,
         {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'}).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
         var passages = [];
-        for(const message of messages){
+        for(const message of messages.docs){
             var p = await Passage.findOne({
                 _id: message.passage._id
             }).populate('author users sourcelist');
