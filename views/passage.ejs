@@ -82,7 +82,7 @@
         <%}else{%>
             <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
         <%}%>
-        <%if(!passage.public && sub == true){%>
+        <%if(!passage.public && sub == true && subPassages){%>
             <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
         <%}%>
         <%if(user){%>
@@ -93,8 +93,9 @@
         <!-- Profile Image layers -->
         <%if(passage.author){%>
             <%- include('profile_thumbnail', {profile: passage.author}) %>
+            <!-- <li class="passage_user"><a class="passage_profile_link"href="/profile/<%=passage.author.username%>/<%=passage.author._id%>"><%=passage.author.name%></a>, <span style="cursor:default;"><%=passage.date.toDateString()%></span></li> -->
         <%}else{%>
-            Anonymous
+            Anonymous,
         <%}%>
         <!-- ... -->
     </ul>
