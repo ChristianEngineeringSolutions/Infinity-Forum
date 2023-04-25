@@ -82,7 +82,9 @@
         <%}else{%>
             <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
         <%}%>
-        <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
+        <%if(!passage.public && sub == true){%>
+            <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
+        <%}%>
         <%if(user){%>
             <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
         <%}%>
@@ -108,7 +110,7 @@
     <%if(passage.displayContent != null && passage.displayContent != ''){%>
         <hr class="hr">
         <%}%>
-        <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-passage.displayContent%></div>
+        <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-passage.displayContent || passage.content%></div>
         <!-- <ul class="passage_tabs">
             <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
             <!-- Display Result -->
@@ -206,11 +208,11 @@
     <%}%>
     <!-- <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced"> -->
         <%if(passage.lang == 'mixed' && passage.lang != 'rich'){%>
-            <div id="passage_detail_html_<%=passage._id%>"class="code_display display_html display_data_<%=passage._id%>"><pre><code class="language-html"></code><%=passage.displayHTML || ''%></code></pre></div>
-            <div id="passage_detail_css_<%=passage._id%>"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=passage.displayCSS || ''%></code></pre></div>
-            <div id="passage_detail_js_<%=passage._id%>"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=passage.displayJavascript || ''%></code></pre></div>
+            <div id="passage_detail_html_<%=passage._id%>"class="code_display display_html display_data_<%=passage._id%>"><pre><code class="language-html"></code><%=passage.displayHTML || passage.html || ''%></code></pre></div>
+            <div id="passage_detail_css_<%=passage._id%>"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=passage.displayCSS || passage.css ||  ''%></code></pre></div>
+            <div id="passage_detail_js_<%=passage._id%>"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=passage.displayJavascript || passage.javascript || ''%></code></pre></div>
         <%}else if(passage.lang != 'rich'){%>
-            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=passage.displayCode%></code></pre></div>
+            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=passage.displayCode || passage.code%></code></pre></div>
         <%}%>
         <!-- Show .EXT -->
         <!-- Show License -->

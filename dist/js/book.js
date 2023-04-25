@@ -6,7 +6,9 @@ var Sasame = true;
 
 var page = 1;
 
-var altIteration = 0;
+var altIteration = 1;
+
+var altPrevs = [];
 
 var PPEPage = 1;
 

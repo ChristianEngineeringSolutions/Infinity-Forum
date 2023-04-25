@@ -272,31 +272,41 @@ $(function(){
     });
     $(document).on('click', '[id^="passage_alternate_"]', function(e){
         var _id = getPassageId(this);
+        altPrevs.push(_id);
         var thiz = $(this);
+        var pos = getAllSubPassageIDs().indexOf(_id);
         $.ajax({
             type: 'get',
             url: DOMAIN + '/alternate/' + fromOtro,
             data: {
                 passageID: _id,
-                iteration: altIteration++
+                parentID: $('#chief_passage_id').val(),
+                iteration: altIteration++,
+                position: pos,
+                altPrevs: altPrevs
             },
             success: function(data){
-                $('#save-alternate-' + $('#chief_passage_id').val()).show();
-                console.log('#passage_'+(altIteration - 1)+'_'+_id);
-                console.log($('#passage_'+(altIteration - 2)+'_'+_id).length);
+                //UPDATE TODO
+                //replace entire passage list
+                //\UPDATE TODO
                 if(data != 'restart'){
-                    if($('#passage_'+(altIteration - 2)+'_'+_id).length){
-                        $('#passage_'+(altIteration - 2)+'_'+_id).replaceWith(data);
-                    }
-                    else{
-                        $('#passage_'+_id).replaceWith(data);
-                    }
+                    // if($('#passage_'+(altIteration - 2)+'_'+_id).length){
+                    //     $('#passage_'+(altIteration - 2)+'_'+_id).replaceWith(data);
+                    // }
+                    // else{
+                    //     $('#passage_'+_id).replaceWith(data);
+                    // }
+                    $('#passage_wrapper').html(data);
+                    $('#sub_passages').sortable({
+                        handle: '.passage_options'
+                    });
                 }
+                //UNCOMMENT!!!
                 else{
                     altIteration = 0;
                     thiz.click();
                 }
-                $('#temp_alt').remove();
+                $('#save-alternate-' + $('#chief_passage_id').val()).show();
             }
         });
     });
@@ -619,6 +629,16 @@ $(function(){
             }
         });
     });
+    function getAllSubPassageIDs(){
+        var orderList = [];
+        if($('#sub_passages').length){
+            orderList = $('#sub_passages').sortable('toArray');
+            orderList.forEach(function(p, i){
+                orderList[i] = orderList[i].split('_').at(-1);
+            });
+        }
+        return orderList;
+    }
     $(document).on('click', '[id^=passage_update_]', function(){
         var _id = getPassageId(this);
         flashIcon($('#passage_update_' + _id), 'green');
@@ -638,6 +658,7 @@ $(function(){
                     orderList[i] = orderList[i].split('_')[1];
                 });
             }
+            //TODO: only do if order is different from original
             $.ajax({
                 url: DOMAIN + '/update_passage_order',
                 type: 'POST',
