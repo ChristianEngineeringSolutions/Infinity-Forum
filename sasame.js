@@ -249,6 +249,9 @@ app.get('/highlight.css', function(req, res) {
 app.get('/highlight.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/highlight.js/lib/index.js');
 });
+app.get('/quill-to-pdf.js', function(req, res) {
+    res.send(__dirname + '/node_modules/quill-to-pdf/dist/src');
+});
 
 //CRON
 var cron = require('node-cron');

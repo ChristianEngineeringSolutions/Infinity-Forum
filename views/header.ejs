@@ -5,6 +5,17 @@
         <input type="hidden" id="DOMAIN"value="<%=DOMAIN%>">
         <%-include('menu')%>
         <%-include('sidebar')%>
+        <div id="application-bar">
+            <ul id="application-bar-options">
+                <li class="application-bar-option" style="color: #353535;">Sasame v3.1</li>
+                <li class="application-bar-option">File</li>
+                <li class="application-bar-option">Edit</li>
+                <li class="application-bar-option">Selection</li>
+                <li class="application-bar-option">View</li>
+                <li class="application-bar-option">Go</li>
+                <li class="application-bar-option">Help</li>
+            </ul>
+        </div>
         <div id="control_panel">
             <div id="control_nav">
                     <div id="main_header"style="text-align:center;padding:15px;">
@@ -19,7 +30,7 @@
                             <%}%>
                             <!-- <ion-icon data-cesconnect="false"class="<%=color%>"id="remote_toggle"title="Remote"src="/images/ionicons/sync-circle.svg"></ion-icon> -->
                         <%}%>
-                        <ion-icon style="float:left;" id="menu-button"title="Menu"src="/images/ionicons/menu-outline.svg"></ion-icon>
+                        <ion-icon style="float:left;" id="menu-button"title="Menu"src="/images/ionicons/menu-sharp.svg"></ion-icon>
                         <span style="padding-left:5px;padding-right:5px;cursor:pointer;"id="home_link">Christian Engineering Solutions</span>
                     </div>
                     <div id="options">

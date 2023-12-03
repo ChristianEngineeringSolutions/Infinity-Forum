@@ -1,3 +1,6 @@
+import { pdfExporter } from "/quill-to-pdf.js";
+
+
 var ppeActive = false;
 
 var sessionStorageQueue = false;
@@ -15,6 +18,7 @@ var PPEPage = 1;
 var DOMAIN;
 
 var fromOtro;
+
 
 function checkIfFromOtro(){
     fromOtro = $('#remote_toggle').data('cesconnect') == false ? '' : '?fromOtro=true';
