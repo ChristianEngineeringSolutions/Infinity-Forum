@@ -1,6 +1,6 @@
 /* Supposed to be CSS applicable everywhere... */
 *{
-  font-family: 'Baloo Chettan 2', cursive;
+  /* font-family: 'Baloo Chettan 2', cursive; */
 }
 body {
     margin: 0;
@@ -8,5 +8,5 @@ body {
     color: #fff;
     width: 100%;
     color: #FBFBFB;
-    /*font-family: 'Baloo Chettan 2', cursive;*/
+    font-family: 'Baloo Chettan 2', cursive;
 }

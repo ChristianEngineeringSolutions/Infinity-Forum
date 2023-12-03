@@ -277,3 +277,7 @@
     cursor: pointer;
     text-align: center;
 }
+.ace-editor{
+    height: 377px;
+    font-family: default;
+}

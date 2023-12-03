@@ -15,7 +15,16 @@
         <code-input template="code-input"lang="javascript"class="code_display display_js" id="display_js_<%=passage._id%>" placeholder="Javascript"value="<%=passage.javascript || 'Javascript'%>"></code-input>
         <%break;
         default:%>
-        <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || ''%>"></code-input>
+        <div class="ace-editor"style=""id="editor-<%=passage._id%>"><%=passage.code || ''%></div>
+        <script>
+            var editor = ace.edit("editor-<%=passage._id%>");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>");
+            editor.getSession().on("change", function () {
+                $('textarea[id="passage_code_<%=passage._id%>"]').val(editor.getSession().getValue());
+            });
+        </script>
+        <!-- <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || ''%>"></code-input> -->
         <textarea style="display:none;"class="passage_code" name="code" id="passage_code_<%=passage._id%>" cols="30" rows="10"><%=passage.code%></textarea>
     <%}%>
     <!-- Upload Directory -->

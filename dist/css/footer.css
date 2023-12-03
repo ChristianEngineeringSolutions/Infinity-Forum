@@ -19,6 +19,7 @@
     background: white;
 }
 #scroll-to-bottom{
+    z-index: 5000;
     background: gold;
     color: black;
     padding: 15px;
