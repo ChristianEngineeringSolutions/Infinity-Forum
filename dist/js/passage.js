@@ -364,11 +364,10 @@ $(function(){
             }
         });
     });
-    alert(fromOtro);
     $(document).on('click', '[id^="passage_more_"]', function(e){
         let _id = getPassageId(this);
         let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
-        let href = '/passage/' + title +'/' + _id + fromOtro;
+        let href = '/passage/' + fromOtro+ title +'/' + fromOtro + _id;
         $('.active_tab').html('<span class="tab_delete">X</span>' + decodeURIComponent(title));
         let tab_id = $('.active_tab').attr('id');
         localStorage.setItem(tab_id, JSON.stringify({text: title, href: href}));
