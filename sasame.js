@@ -1,4 +1,6 @@
-'use strict';
+'use strict';//
+//testbb
+
 const express = require('express');
 const fileUpload = require('express-fileupload');
 const querystring = require('querystring');
@@ -19,8 +21,8 @@ var compression = require('compression');
 function DAEMONLIBS(passage, USERID){
     return `
     
-    var THIS = `+JSON.stringify(passage)+`;
-    var USERID = "`+(USERID)+`";
+    const THIS = `+JSON.stringify(passage)+`;
+    const USERID = "`+(USERID)+`";
     // async function INTERACT(content){
     //     const result = await $.ajax({
     //         type: 'post',
@@ -185,23 +187,52 @@ app.use(async function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
-    if(['profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal'].includes(req.url.split('/')[1])){
-        let daemons = [];
-        if(req.session.user){
-            let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
-            regenerateSession(req);
-            daemons = user.daemons;
-        }
-        let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
-        if(defaults.length > 0)
-            daemons = daemons.concat(defaults);
-        for(const daemon of daemons){
-            // daemon.code = DAEMONLIBS(daemon, req.session.user._id) + daemon.code;
-            daemons[daemon] = bubbleUpAll(daemon);
-        }
-        res.locals.DAEMONS = daemons;
+    let daemons = [];
+    if(req.session.user){
+        let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
+        regenerateSession(req);
+        daemons = user.daemons;
     }
-    next();
+    let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
+    daemons = daemons.concat(defaults);
+    for(const daemon of daemons){
+        //stick together code for all sub passages
+        var all = {
+            html: daemon.html,
+            css: daemon.css,
+            javascript: daemon.javascript
+        };
+        if(daemon.lang == 'javascript'){
+            all.javascript = daemon.code;
+        }
+        var userID = null;
+        if(req.session.user){
+            userID = req.session.user._id.toString();
+        }
+        all.javascript = DAEMONLIBS(daemon, userID) + all.javascript;
+        if(daemon.public == false){
+            getAllSubPassageCode(daemon, all);
+        }
+        daemon.all = all;
+    }
+    res.locals.DAEMONS = daemons;
+    //DEV AUTO LOGIN
+    if(!req.session.user && !process.env.AUTOLOGIN == 'true' && process.env.DEVELOPMENT == 'true'){
+        var user = await authenticateUsername("christianengineeringsolutions@gmail.com", "testing");
+        if(user){
+            req.session.user = user;
+            next();
+        }
+    }
+    else{
+        try{
+            next();
+        }
+        catch(error){
+            console.log(error);
+        }
+    }
+
 });
 //Serving Files
 app.get('/jquery.min.js', function(req, res) {
@@ -249,9 +280,6 @@ app.get('/highlight.css', function(req, res) {
 app.get('/highlight.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/highlight.js/lib/index.js');
 });
-app.get('/quill-to-pdf.js', function(req, res) {
-    res.send(__dirname + '/node_modules/quill-to-pdf/dist/src');
-});
 
 //CRON
 var cron = require('node-cron');
@@ -259,7 +287,6 @@ const { exit } = require('process');
 const { response } = require('express');
 const e = require('express');
 const Message = require('./models/Message');
-const { copyPassage } = require('./controllers/passageController');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
@@ -431,7 +458,7 @@ app.get('/messages', async(req, res) => {
         passages.push(p);
     }
     for(const passage of passages){
-        passages[passage] = bubbleUpAll(passage);
+        passages[passage] = bubbleUpCode(passage);
     }
     let bookmarks = [];
         if(req.session.user){
@@ -482,7 +509,7 @@ app.get('/personal/:user_id', async (req, res) => {
             }
         });
         for(const passage of passages){
-            passages[passage] = bubbleUpAll(passage);
+            passages[passage] = bubbleUpCode(passage);
         }
         let bookmarks = [];
         if(req.session.user){
@@ -529,7 +556,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     // }
     let passages = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     for(const passage of passages){
-        passages[passage] = bubbleUpAll(passage);
+        passages[passage] = bubbleUpCode(passage);
     }
     if(req.session.user){
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
@@ -553,108 +580,6 @@ async function getFullPassage(_id){
     //get fully populated passage as JSON
     var passage = await Passage.findOne({_id: _id});
 }
-async function alternate(passageID, iteration, prevs){
-    console.log(iteration);
-    var passage = await Passage.findOne({_id: passageID});
-    var find = {
-        title: passage.title,
-        _id: {
-            $ne: passage._id
-        }
-    };
-    var numDocuments = await Passage.countDocuments(find);
-    if(iteration >= numDocuments){
-        return false;
-    }
-    var test = await Passage.find(find);
-    var alternate = await Passage.find(find).sort('-stars').populate('author users sourceList').skip(parseInt(iteration)).limit(1);
-    alternate = alternate[0];
-
-    return alternate;
-}
-app.get('/alternate', async(req, res) => {
-    //UPDATE TODO
-    //Okay, so, we need to get the _id of the parent passage
-    //then splice/replace in the alternate passage
-    //and then return the whole deal :)
-    //\UPDATE TODO
-    var parent = await Passage.findOne({_id: req.query.parentID});
-    var passage = await alternate(req.query.passageID, req.query.iteration, req.query.altPrevs);
-    if(!passage){
-        return res.send("restart");
-    }
-    console.log('?' + passage.content);
-    //return sub false rendered view of parent
-    //...
-    //I know and sorry this is a lot of duplicated code from passage view route
-    //but TODO will see if we can put all this into a function
-    var subPassages = await Passage.find({parent: parent._id, personal: false}).populate('author users sourceList');
-    //reorder sub passages to match order of passage.passages
-    var reordered = Array(subPassages.length).fill(0);
-    for(var i = 0; i < parent.passages.length; ++i){
-        for(var j = 0; j < subPassages.length; ++j){
-            if(subPassages[j]._id.toString() == parent.passages[i]._id.toString()){
-                reordered[i] = subPassages[j];
-            }
-        }
-    }
-    //idk why but sometimes in production there were extra 0s...
-    //need to test more and bugfix algorithm above
-    reordered = reordered.filter(x => x !== 0); //just get rid of extra 0s
-    if(parent.passages.length < 1){
-	    reordered = subPassages;
-    }
-    parent.passages = reordered;
-    // if(parent._id.toString() == req.query.passageID){
-    //     parent = passage[0];
-    // }
-    // else{
-        parent.passages.forEach(function(p, i){
-            if(i == req.query.position){
-                parent.passages[i] = passage;
-            }
-        });
-    // }
-    // if(typeof parent.passages != 'undefined' && parent.passages[0] != null){
-    //     for(const p of parent.passages){
-    //         parent.passages[p] = bubbleUpAll(p);
-    //     }
-    // }
-    parent = bubbleUpAll(parent);
-    if(parent.displayHTML.length > 0 || parent.displayCSS.length > 0 || parent.displayJavascript.length > 0){
-        parent.showIframe = true;
-    }
-    if(passage){
-        return res.render('passage', {
-            subPassages: parent.passages,
-            passage: parent,
-            sub: false,
-            altIteration: '_' + req.query.iteration
-        });
-    }
-    else{
-        return res.send('restart');
-    }
-});
-app.post('/save_alternate', async(req, res) => {
-    var original = await Passage.findOne({_id: req.body.passageID});
-    var passage = await passageController.copyPassage(original, [req.session.user], null, async function(){
-
-    });
-    passage.passages = [];
-    for(const p of JSON.parse(req.body.passages)){
-        var full = await Passage.findOne({_id:p});
-        var newPassage = await passageController.copyPassage(full, [req.session.user], null, async function(){
-
-        });
-        newPassage.parent = passage;
-        await newPassage.save();
-        passage.passages.push(newPassage);
-    }
-    await passage.save();
-    await bookmarkPassage(passage, req.session.user._id);
-    return res.send("Bookmarked Alternate Module.");
-});
 // function getFromRemote(url){
 //     var request = https.request(remoteURL, function(response){
 //         response.setEncoding('utf8');
@@ -925,7 +850,7 @@ app.get('/', async (req, res) => {
             personal: false,
         }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
-            passages[passage] = bubbleUpAll(passage);
+            passages[passage] = bubbleUpCode(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1002,9 +927,6 @@ app.post('/search_profile/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    for(const result of results){
-        results[result] = bubbleUpAll(result);
-    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1026,9 +948,6 @@ app.post('/search_messages/', async (req, res) => {
         }).populate('author users sourcelist');
         passages.push(p);
     }
-    for(const passage of passage){
-        passages[passage] = bubbleUpAll(passage);
-    }
     res.render("passages", {
         passages: passages,
         subPassages: false,
@@ -1046,9 +965,6 @@ app.post('/ppe_search/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    for(const result of results){
-        results[result] = bubbleUpAll(result);
-    }
     res.render("ppe_thumbnails", {
         thumbnails: results,
     });
@@ -1116,9 +1032,6 @@ app.post('/search_passage/', async (req, res) => {
             }
         }
     }
-    for(const result of results){
-        results[result] = bubbleUpAll(result);
-    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1143,9 +1056,6 @@ app.post('/search/', async (req, res) => {
         $regex: req.body.search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-    for(const result of results){
-        results[result] = bubbleUpAll(result);
-    }
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1203,7 +1113,6 @@ app.post('/transfer_bookmark', async (req, res) => {
     let copy = await passageController.copyPassage(passage, user, parent, function(){
         
     });
-    copy = bubbleUpAll(copy);
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
@@ -1211,9 +1120,6 @@ app.get('/get_bookmarks', async (req, res) => {
     if(req.session.user){
         let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
         bookmarks = user.bookmarks;
-    }
-    for(const bookmark of bookmarks){
-        bookmarks[bookmark] = bubbleUpAll(bookmark);
     }
     res.render('bookmarks', {bookmarks: bookmarks});
 });
@@ -1250,7 +1156,6 @@ app.post('/remove_daemon', async (req, res) => {
                 user.daemons.splice(i, 1);
             }
         });
-
         await user.save();
         return res.render('daemons', {daemons: user.daemons});
     }
@@ -1489,8 +1394,6 @@ app.get('/eval/:passage_id', async function(req, res){
     }
     var passage_id = req.params.passage_id;
     var passage = await Passage.findOne({_id: passage_id});
-    passage.all = '';
-    // console.log(passage);
     //stick together code for all sub passages
     var all = {
         html: passage.html,
@@ -1505,57 +1408,88 @@ app.get('/eval/:passage_id', async function(req, res){
         userID = req.session.user._id.toString();
     }
     all.javascript = DAEMONLIBS(passage, userID) + all.javascript;
-    if(!passage.public){
-        passage.code = DAEMONLIBS(passage, userID) + passage.code;
-        passage = bubbleUpAll(passage);
+    if(passage.public == false){
+        getAllSubPassageCode(passage, all);
     }
     res.render("eval", {passage: passage, all: all});
 });
-function concatObjectProps(passage, sub){
-    if(typeof passage.content != 'undefined')
-        passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '' : '\n' + sub.content);
-    if(typeof passage.code != 'undefined')
-        passage.displayCode += (typeof sub.code == 'undefined' || sub.code == '' ? '' : '\n' + sub.code);
-    if(typeof passage.html != 'undefined')
-        passage.displayHTML += (typeof sub.html == 'undefined' || sub.html == '' ? '' : '\n' + sub.html);
-    if(typeof passage.css != 'undefined')
-        passage.displayCSS += (typeof sub.css == 'undefined' || sub.css == '' ? '' : '\n' + sub.css);
-    if(typeof passage.javascript != 'undefined')
-        passage.displayJavascript += (typeof sub.javascript == 'undefined' || sub.javascript == '' ? '' : '\n' + sub.javascript);
-    passage.sourceList = [...passage.sourceList, ...sub.sourceList];
+function getAllSubPassageCode(passage, all){
+    if(passage.passages){
+        passage.passages.forEach((p)=>{
+            all.html += p.html === undefined ? '' : p.html;
+            all.css += p.css === undefined ? '' : p.css;
+            all.javascript += p.javascript === undefined ? '' : p.javascript;
+            getAllSubPassageCode(p, all);
+        });
+    }
+    return all;
 }
-function getAllSubData(passage){
+function getAllSubPassageCodePure(passage, code=''){
+    console.log(passage.code);
+    passage.all = passage.code;
     if(!passage.public && passage.passages && passage.bubbling){
         passage.passages.forEach((p)=>{
-            if(typeof p == 'undefined'){
-                return p;
-            }
-            p.displayContent = p.content;
-            p.displayCode = p.code;
-            p.displayHTML = p.html;
-            p.displayCSS = p.css;
-            p.displayJavascript = p.javascript;
             if(p.lang == passage.lang){
-                concatObjectProps(passage, getAllSubData(p));
+                // passage.code += p.code === undefined ? '' : p.code;
+                passage.all += '\n' + getAllSubPassageCodePure(p, code);
             }
         });
     }
-    return passage;
+    return passage.all;
 }
-function bubbleUpAll(passage){
-    if(typeof passage == 'undefined'){
-        return passage;
+function getAllSubPassageContent(passage, content=''){
+    console.log(typeof passage.content == 'undefined');
+    console.log(passage.content);
+    if(typeof passage.content == 'undefined'){
+        passage.allContent = '';
+        console.log("Test 1");
     }
-    passage.displayContent = passage.content;
-    passage.displayCode = passage.code;
-    passage.displayHTML = passage.html;
-    passage.displayCSS = passage.css;
-    passage.displayJavascript = passage.javascript;
+    else{
+        passage.allContent = passage.content;
+        console.log("Test 2");
+    }
+    if(!passage.public && passage.passages && passage.bubbling){
+        passage.passages.forEach((p)=>{
+            if(p.lang == passage.lang){
+                // passage.code += p.code === undefined ? '' : p.code;
+                passage.allContent += '\n' + getAllSubPassageContent(p, content);
+            }
+        });
+    }
+    return passage.allContent || passage.content;
+}
+function bubbleUpCode(passage){
     if(!passage.bubbling){
         return passage;
     }
+    passage.all = passage.code;
     if(!passage.public){
-        return getAllSubData(passage);
+        for(const p of passage.passages){
+            if(p.lang == passage.lang){
+                p.all = getAllSubPassageCodePure(p);
+                passage.all += '\n' + p.all;
+                passage.sourceList = [...passage.sourceList, ...p.sourceList];
+            }
+        }
+    }
+    return bubbleUpContent(passage);
+}
+function bubbleUpContent(passage){
+    passage.content = passage.content || '';
+    var add = passage.content == '' ? '' : '\n';
+    if(passage.content || passage.lang == 'rich'){
+        passage.allContent = passage.content;
+        if(!passage.public){
+            for(const p of passage.passages){
+                if(p.lang == passage.lang){
+                    p.allContent = getAllSubPassageContent(p);
+                    if(typeof p.allContent != 'undefined'){
+                        passage.allContent += add + p.allContent;
+                        passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                    }
+                }
+            }
+        }
     }
     return passage;
 }
@@ -1581,17 +1515,24 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
             passageUsers.push(u._id.toString());
         });
     }
-    passage = bubbleUpAll(passage);
     if(passage.public == true){
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     }
     else{
-        if(passage.displayHTML.length > 0 || passage.displayCSS.length > 0 || passage.displayJavascript.length > 0){
+        var all = {
+            html: passage.html || '',
+            css: passage.css || '',
+            javascript: passage.javascript || ''
+        };
+        getAllSubPassageCode(passage, all);
+        if(all.html.length > 0 || all.css.length > 0 || all.javascript.length > 0){
             passage.showIframe = true;
         }
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
     }
     //we have to do this because of issues with populating passage.passages foreign keys
+	console.log(passage.passages.length);
+	console.log(subPassages.length);
     if(!passage.public){
         //reorder sub passages to match order of passage.passages
         var reordered = Array(subPassages.length).fill(0);
@@ -1613,9 +1554,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
 	    reordered = subPassages;
     }
     passage.passages = reordered;
-    for(const p of passage.passages){
-        passage.passages[p] = bubbleUpAll(p);
-    }
+    passage = bubbleUpCode(passage);
     res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -1642,6 +1581,7 @@ app.get('/stripeAuthorize', async function(req, res){
                 catch(error){
                     console.error(error);
                 }
+                console.log(user);
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.id,
@@ -1649,7 +1589,7 @@ app.get('/stripeAuthorize', async function(req, res){
                     return_url: 'https://christianengineeringsolutions.com/stripeOnboarded',
                     type: 'account_onboarding'
                 });
-                // console.log(accountLink);
+                console.log(accountLink);
                 // Redirect to Stripe to start the Express onboarding flow
                 res.redirect(accountLink.url);
             }
@@ -1853,9 +1793,6 @@ app.post('/paginate', async function(req, res){
             find.mimeType = 'image';
         }
         let passages = await Passage.paginate(find, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
-        for(const p of passages.docs){
-            passages[p] = bubbleUpAll(p);
-        }
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
             // console.log(test);
@@ -1879,14 +1816,11 @@ app.post('/paginate', async function(req, res){
         var messages = await Message.paginate(find,
         {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'}).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
         var passages = [];
-        for(const message of messages.docs){
+        for(const message of messages){
             var p = await Passage.findOne({
                 _id: message.passage._id
             }).populate('author users sourcelist');
             passages.push(p);
-        }
-        for(const p of passages){
-            passages[p] = bubbleUpAll(p);
         }
         res.render('passages', {
             passages: passages,
@@ -2224,13 +2158,13 @@ app.post('/update_passage/', async (req, res) => {
     else if(passage.public_daemon == 2 || passage.default_daemon){
         return res.send("Not allowed.");
     }
-    passage.html = formData.html;
-    passage.css = formData.css;
-    passage.javascript = formData.js;
+    passage.html = formData.html || passage.html;
+    passage.css = formData.css || passage.css;
+    passage.javascript = formData.js || passage.javascript;
     passage.title = formData.title;
-    passage.content = formData.content;
+    passage.content = formData.content || passage.content;
     passage.tags = formData.tags;
-    passage.code = formData.code;
+    passage.code = formData.code || passage.code;
     passage.bibliography = formData.bibliography;
     passage.lang = formData.lang;
     passage.fileStreamPath = formData.filestreampath;
@@ -2251,7 +2185,6 @@ app.post('/update_passage/', async (req, res) => {
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);
     }
-    passage = bubbleUpAll(passage);
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
@@ -2550,7 +2483,7 @@ async function loadFileStream(directory=__dirname){
 
 app.post('/makeMainFile', requiresAdmin, async function(req, res){
     var passage = await Passage.findOne({_id: req.body.passageID});
-    var passage = bubbleUpAll(passage);
+    var passage = bubbleUpCode(passage);
     //check if file/dir already exists
     var exists = await Passage.findOne({fileStreamPath: req.body.fileStreamPath});
     if(exists != null){
