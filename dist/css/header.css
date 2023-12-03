@@ -4,19 +4,21 @@
     background: gold;
     color: #000;
     height: 60px;
-    border-top: 2px solid #353535;
-    border-bottom: 2px solid #353535;
+    /* border-top: 2px solid #353535; */
+    /* border-bottom: 2px solid #353535; */
     font-weight: bolder;
     position: fixed;
     width: 100%;
     z-index: 200;
     padding-bottom: 20px;
+    top: 25px;
 }
 #left-side-panel{
     display: none;
 }
 #menu-button{
     font-size: 1.3em;
+    color: #353535;
 }
 #menu-options{
     list-style-type: none;
@@ -29,6 +31,36 @@
     border-bottom: 1px solid black;
     cursor: pointer;
 
+}
+#application-bar{
+    position: fixed;
+    margin-bottom: 10px;
+    width: 100%;
+    height: 25px;
+    background-color: white;
+    z-index: 9999999;
+    border-bottom: 0;
+    overflow: scroll;
+    white-space: nowrap;
+    border-bottom: 1px solid #353535;
+}
+#application-bar-options{
+    overflow: scroll;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    display: inline-block;
+    color: black;
+    border-bottom: 0;
+}
+.application-bar-option{
+    padding-right: 20px;
+    padding-left: 20px;
+    /* border-bottom: 1px solid black; */
+    cursor: pointer;
+    display: inline;
+    /* border-right: 1px solid black; */
 }
 #options{
     height: 60px;

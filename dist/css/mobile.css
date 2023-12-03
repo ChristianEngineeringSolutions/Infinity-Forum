@@ -9,6 +9,9 @@
 }
 /* Large Phones */
 @media screen and (max-width: 715px){
+    #page_title_container{
+        margin-top: 180px;
+    }
     #login_form, #register_form{
         width: 75% !important;
     }
@@ -70,6 +73,9 @@
 }
 /* Small Phones */
 @media screen and (max-width: 550px){
+    #page_title_container{
+        margin-top: 100px;
+    }
     #add_passage_button{
         width: 95%;
     }

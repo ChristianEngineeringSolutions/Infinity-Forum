@@ -109,7 +109,10 @@ backup commands from filestream
 consider admin page > filestream
 topbar tools (file edit view etc.)
 Auto alternation (recursive with passage content)
-Clean up Code/ Code Consistency
+Clean up Code/ Code Consistency / Conventions
+Semsual $ distributions
+View as PDF (quill 2 pdf) https://www.npmjs.com/package/quill-to-pdf
+Modularize filestream
 
 //Reconsider; may not be urgent; can already mix rich w/ code
 Bubble Up Content All langs together (true mix; allow and revise) **Consider again (might already pretty much work)
