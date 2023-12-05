@@ -32,6 +32,7 @@
     margin: auto;
     margin-bottom: 10px;
     z-index: 1;
+    resize: both;
 }
 .passage_public{
     border: 2px solid green;
