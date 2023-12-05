@@ -3,6 +3,7 @@
 // const { default: hljs } = require("highlight.js");
 
 $(function(){
+    // $('.passage').draggable();
     hljs.configure({   // optionally configure hljs
         languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
       });
