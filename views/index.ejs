@@ -28,7 +28,7 @@
             <div id="passage_wrapper">
                 <!-- Show passage list or search list -->
                 <%if(passages){%>
-                    <%- include('passages', {parent: passage}) %>
+                    <%- include('passages') %>
                 <%}else if (passage){%>
                 <!-- Just show one passage -->
                     <%- include('passage', {passage: passage, sub: sub, subPassages: subPassages}) %>
