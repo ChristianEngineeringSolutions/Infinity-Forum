@@ -151,11 +151,13 @@
                 <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
                 Your browser does not support the audio tag.
             </audio> 
+            <%=passage.audio%>
         <%}else if(passage.mimeType == 'video'){%>
-            <video class="passage_video"width="320" height="240" controls>
+            <!-- <video class="passage_video"width="320" height="240" controls>
                 <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
                 Your browser does not support the video tag.
-            </video> 
+            </video> -->
+            <%-passage.video%>
         <%}else if(passage.mimeType == 'model'){%>
             <%if(passage.thumbnail == null){%>
                 <img id="p_thumbnail_<%=passage._id%>" alt="">

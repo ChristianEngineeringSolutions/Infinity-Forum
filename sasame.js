@@ -1513,7 +1513,7 @@ app.get('/eval/:passage_id', async function(req, res){
 });
 function concatObjectProps(passage, sub){
     if(typeof passage.content != 'undefined')
-        passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '' : '\n' + sub.content);
+        passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '\n<b>' + sub.title + '</b><hr>' + '' : '\n<b>' + sub.title + '</b><hr>' + sub.content);
     if(typeof passage.code != 'undefined')
         passage.displayCode += (typeof sub.code == 'undefined' || sub.code == '' ? '' : '\n' + sub.code);
     if(typeof passage.html != 'undefined')
@@ -1522,6 +1522,42 @@ function concatObjectProps(passage, sub){
         passage.displayCSS += (typeof sub.css == 'undefined' || sub.css == '' ? '' : '\n' + sub.css);
     if(typeof passage.javascript != 'undefined')
         passage.displayJavascript += (typeof sub.javascript == 'undefined' || sub.javascript == '' ? '' : '\n' + sub.javascript);
+    if(passage.mimeType = 'video'){
+        var filename = sub.filename;
+        console.log((filename + '').split('.'));
+        //`+passage.filename.split('.').at(-1)+`
+        passage.video += `
+        <video style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
+            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+passage.filename.split('.').at(-1)+`">
+            Your browser does not support the video tag.
+        </video>
+        <script>
+            $('#passage_video_`+sub._id+`').on('ended', function(){
+                $(this).css('display', 'none');
+                $(this).next().next().css('display', 'block');
+                $(this).next().next().get(0).play();
+            });
+        </script>
+        `;
+    }
+    else if(passage.mimeType = 'audio'){
+        var filename = sub.filename;
+        console.log((filename + '').split('.'));
+        //`+passage.filename.split('.').at(-1)+`
+        passage.video += `
+        <audio style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
+            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+passage.filename.split('.').at(-1)+`">
+            Your browser does not support the audio tag.
+        </audio>
+        <script>
+            $('#passage_audio_`+sub._id+`').on('ended', function(){
+                $(this).css('display', 'none');
+                $(this).next().next().css('display', 'block');
+                $(this).next().next().get(0).play();
+            });
+        </script>
+        `;
+    }
     passage.sourceList = [...passage.sourceList, ...sub.sourceList];
 }
 function getAllSubData(passage){
@@ -1540,11 +1576,42 @@ function getAllSubData(passage){
             }
         });
     }
+    console.log(passage.video);
     return passage;
 }
 function bubbleUpAll(passage){
     if(typeof passage == 'undefined'){
         return passage;
+    }
+    if(passage.mimeType == 'video'){
+        passage.video = `
+        <video id="passage_video_`+passage._id+`"class="passage_video"width="320" height="240" controls>
+            <source src="/`+getUploadFolder(passage)+`/`+passage.filename+`" type="video/`+passage.filename.split('.').at(-1)+`">
+            Your browser does not support the video tag.
+        </video>
+        <script>
+            $('#passage_video_`+passage._id+`').on('ended', function(){
+                $(this).css('display', 'none');
+                $(this).next().next().css('display', 'block');
+                $(this).next().next().get(0).play();
+            });
+        </script>
+        `;
+    }
+    else if(passage.mimeType == 'audio'){
+        passage.audio = `
+        <audio id="passage_audio_`+passage._id+`"class="passage_audio"width="320" height="240" controls>
+            <source src="/`+getUploadFolder(passage)+`/`+passage.filename+`" type="audio/`+passage.filename.split('.').at(-1)+`">
+            Your browser does not support the audio tag.
+        </audio>
+        <script>
+            $('#passage_audio_`+passage._id+`').on('ended', function(){
+                $(this).css('display', 'none');
+                $(this).next().next().css('display', 'block');
+                $(this).next().next().get(0).play();
+            });
+        </script>
+        `;
     }
     passage.displayContent = passage.content;
     passage.displayCode = passage.code;
