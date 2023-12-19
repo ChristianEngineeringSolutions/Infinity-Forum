@@ -223,7 +223,7 @@
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
  </div>
  <%if(subPassages && sub === false){%>
-    <div id="sub_passages">
+    <div style="display: inline;"id="sub_passages">
         <%subPassages.forEach(function(sub_passage) { %>
             <%- include('passage', {passage: sub_passage, sub: true}) %>
         <%}); %>

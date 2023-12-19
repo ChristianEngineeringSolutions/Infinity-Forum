@@ -1522,13 +1522,13 @@ function concatObjectProps(passage, sub){
         passage.displayCSS += (typeof sub.css == 'undefined' || sub.css == '' ? '' : '\n' + sub.css);
     if(typeof passage.javascript != 'undefined')
         passage.displayJavascript += (typeof sub.javascript == 'undefined' || sub.javascript == '' ? '' : '\n' + sub.javascript);
-    if(passage.mimeType = 'video'){
+    if(passage.mimeType == 'video'){
         var filename = sub.filename;
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
         <video style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+passage.filename.split('.').at(-1)+`">
+            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename.split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
         <script>
@@ -1540,13 +1540,13 @@ function concatObjectProps(passage, sub){
         </script>
         `;
     }
-    else if(passage.mimeType = 'audio'){
+    else if(passage.mimeType == 'audio'){
         var filename = sub.filename;
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
         <audio style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+passage.filename.split('.').at(-1)+`">
+            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename.split('.').at(-1)+`">
             Your browser does not support the audio tag.
         </audio>
         <script>
