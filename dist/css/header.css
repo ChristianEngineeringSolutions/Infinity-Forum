@@ -11,7 +11,7 @@
     width: 100%;
     z-index: 200;
     padding-bottom: 20px;
-    top: 25px;
+    /* top: 25px; */
 }
 #left-side-panel{
     display: none;
@@ -141,4 +141,7 @@
     overflow-y: hidden;
     white-space: nowrap;
     overflow-x: scroll;
+}
+#application-bar{
+    display: none;
 }
