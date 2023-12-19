@@ -2629,6 +2629,9 @@ app.post('/makeMainFile', requiresAdmin, async function(req, res){
     //restart server to apply changes
     updateFile(req.body.fileStreamPath, passage.all);
 });
+app.get('/testing', async function(req, res){
+    res.render('testing');
+});
 app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
     //output passages in directory / or req.body.directory
     var directory = req.params.directory || __dirname;
