@@ -432,7 +432,9 @@ $(function(){
         function cursorSelect(){
             return $('#ppe_select').data('select');
         }
-        $('#ppe_cursor').on('mousemove touchmove', draw);
+        $('#ppe_cursor').on('mousemove touchmove', function(e){
+            draw(e);
+        });
         $('#ppe_cursor').on('mousedown touchstart', function(){
             isDrawing = true;
             isErasing = true;
@@ -585,8 +587,9 @@ $(function(){
     
         function getMousePos(canvas, evt) {
             var rect = canvas.getBoundingClientRect();
+            // alert((evt.pageX - rect.left) / (rect.right - rect.left) * canvas.width);
             //use pageX and pageY for touch events
-            if(window.matchMedia("(max-width: 550px)").matches){
+            if(window.matchMedia("(max-width: 1200px)").matches){
                 return {
                     x: (evt.pageX - rect.left) / (rect.right - rect.left) * canvas.width,
                     y: (evt.pageY - rect.top) / (rect.bottom - rect.top) * canvas.height
