@@ -12,6 +12,9 @@
 }
 /* Large Phones */
 @media screen and (max-width: 715px){
+    #ppe{
+        margin-top:80px;
+    }
     #page_title_container{
         margin-top: 180px;
     }
