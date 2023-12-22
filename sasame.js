@@ -260,6 +260,7 @@ const { response } = require('express');
 const e = require('express');
 const Message = require('./models/Message');
 const { copyPassage } = require('./controllers/passageController');
+const Bookmark = require('./models/Bookmark');
 // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
 //run monthly cron
 cron.schedule('0 12 1 * *', async () => {
@@ -1156,6 +1157,11 @@ async function bookmarkPassage(_id, _for){
     let user = await User.findOne({_id: _for});
     user.bookmarks.push(_id);
     await user.save();
+    // var passage = await Passage.findOne({_id: _id});
+    // let bookmark = await Bookmark.create({
+    //     user: user,
+    //     passage: passage
+    // });
     return "Done.";
 }
 app.post('/bookmark_passage', async (req, res) => {
@@ -1179,6 +1185,7 @@ app.post('/bookmark_passage', async (req, res) => {
 //     let passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList');
 //     res.render('passage', {subPassages: false, passage: copy, sub: true});
 // });
+//same as citing
 app.post('/transfer_bookmark', async (req, res) => {
     let _id = req.body._id;
     let parent = req.body.parent;
@@ -1216,6 +1223,7 @@ app.get('/get_bookmarks', async (req, res) => {
         bookmarks[bookmark] = bubbleUpAll(bookmark);
     }
     res.render('bookmarks', {bookmarks: bookmarks});
+    // var bookmarks = await Bookmark.find({user: req.session.user});
 });
 app.get('/get_daemons', async (req, res) => {
     let daemons = [];

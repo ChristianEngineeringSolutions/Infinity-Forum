@@ -11,7 +11,8 @@ const bookmarkSchema = mongoose.Schema({
     passage: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
-    }
+    },
+    created: {type: Date, default: Date.now},
 });
 
 bookmarkSchema.plugin(mongoosePaginate);
