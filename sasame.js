@@ -447,7 +447,7 @@ app.get('/messages', async(req, res) => {
             _id: 'root',
             username: 'Sasame'
         }},
-        bookmarks: bookmarks,
+        bookmarks: getBookmarks(req.session.user),
     });
 });
 //get highest rank passage with title
@@ -498,7 +498,7 @@ app.get('/personal/:user_id', async (req, res) => {
                 _id: 'root',
                 username: 'Sasame'
             }},
-            bookmarks: bookmarks,
+            bookmarks: getBookmarks(req.session.user),
         });
     }
 });
@@ -536,7 +536,9 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
         bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
     }
     var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
-    res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile, bookmarks: bookmarks});
+    res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
+    bookmarks: getBookmarks(req.session.user),
+    });
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
@@ -942,7 +944,7 @@ app.get('/', async (req, res) => {
                 _id: 'root',
                 username: 'Sasame'
             }},
-            bookmarks: bookmarks,
+            bookmarks: getBookmarks(req.session.user),
         });
     }
 });
@@ -1153,15 +1155,18 @@ app.post('/search/', async (req, res) => {
         sub: true
     });
 });
+async function getBookmarks(user){
+    return await Bookmark.find({user:user._id}).populate('passage');
+}
 async function bookmarkPassage(_id, _for){
     let user = await User.findOne({_id: _for});
-    user.bookmarks.push(_id);
-    await user.save();
-    // var passage = await Passage.findOne({_id: _id});
-    // let bookmark = await Bookmark.create({
-    //     user: user,
-    //     passage: passage
-    // });
+    // user.bookmarks.push(_id);
+    // await user.save();
+    var passage = await Passage.findOne({_id: _id});
+    let bookmark = await Bookmark.create({
+        user: user,
+        passage: passage
+    });
     return "Done.";
 }
 app.post('/bookmark_passage', async (req, res) => {
@@ -1214,16 +1219,19 @@ app.post('/transfer_bookmark', async (req, res) => {
     res.render('passage', {subPassages: false, passage: copy, sub: true});
 });
 app.get('/get_bookmarks', async (req, res) => {
-    let bookmarks = [];
-    if(req.session.user){
-        let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
-        bookmarks = user.bookmarks;
-    }
-    for(const bookmark of bookmarks){
-        bookmarks[bookmark] = bubbleUpAll(bookmark);
-    }
+    // let bookmarks = [];
+    // if(req.session.user){
+    //     let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
+    //     bookmarks = user.bookmarks;
+    // }
+    // for(const bookmark of bookmarks){
+    //     bookmarks[bookmark] = bubbleUpAll(bookmark);
+    // }
+    var bookmarks = await Bookmark.find({user: req.session.user}).populate('passage');
+    // for(const bookmark of bookmarks){
+    //     bookmarks[bookmark].passage = bubbleUpAll(bookmark.passage);
+    // }
     res.render('bookmarks', {bookmarks: bookmarks});
-    // var bookmarks = await Bookmark.find({user: req.session.user});
 });
 app.get('/get_daemons', async (req, res) => {
     let daemons = [];
@@ -1400,13 +1408,14 @@ async function regenerateSession(req){
 }
 app.post('/remove_bookmark', async (req, res) => {
     let _id = req.body._id;
-    let user = await User.findOne({_id: req.session.user._id});
-    user.bookmarks.forEach((bookmark, i) => {
-        if(bookmark._id.toString() == _id.toString()){
-            user.bookmarks.splice(i, 1);
-        }
-    });
-    await user.save();
+    // let user = await User.findOne({_id: req.session.user._id});
+    // user.bookmarks.forEach((bookmark, i) => {
+    //     if(bookmark._id.toString() == _id.toString()){
+    //         user.bookmarks.splice(i, 1);
+    //     }
+    // });
+    await Bookmark.deleteOne({_id:_id});
+    // await user.save();
     res.send("Done.");
 });
 app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
@@ -1830,7 +1839,7 @@ app.get('/admin', async function(req, res){
                 _id: 'root',
                 username: 'Sasame'
             }},
-            bookmarks: bookmarks,
+            bookmarks: getBookmarks(req.session.user),
         });
     }
 });
@@ -2688,7 +2697,7 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
             _id: 'root',
             username: 'Sasame'
         }},
-        bookmarks: bookmarks,
+        bookmarks: getBookmarks(req.session.user),
     });
     // return res.render('passages', {
     //     passages: passages,
