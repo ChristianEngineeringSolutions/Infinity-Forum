@@ -143,15 +143,15 @@
     <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
     <% if(passage.filename){ %>
         <%if(!passage.isSVG && passage.mimeType == 'image'){%>
-             <img src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" alt="">
+             <img id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" alt="">
         <%}else if (passage.isSVG){%>
-            <img src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" alt="">
+            <img id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" alt="">
         <%}else if(passage.mimeType == 'audio'){%>
-            <audio class="passage_audio"controls>
+            <!-- <audio class="passage_audio"controls>
                 <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
                 Your browser does not support the audio tag.
-            </audio> 
-            <%=passage.audio%>
+            </audio>  -->
+            <%-passage.audio%>
         <%}else if(passage.mimeType == 'video'){%>
             <!-- <video class="passage_video"width="320" height="240" controls>
                 <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
