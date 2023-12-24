@@ -19,6 +19,9 @@
     .profile_image{
         font-size: 3em;
     }
+    .p-thumbnail{
+        max-width: 75px;
+    }
     .passage_stars{
         float: right;
         margin-top: 23px;
@@ -31,7 +34,7 @@
         margin-top: 0 !important;
     }
     .p-image-container{
-        float:left;
+        float:left; 
     }
     /* .detail_title, .detail_description{
         margin-left: 10px;
