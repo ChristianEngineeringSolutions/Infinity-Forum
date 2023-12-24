@@ -10,7 +10,11 @@
 <input type="hidden" value="<%=profile._id%>", id="is_profile"/>
 <div id="profile_header">
   <div>
-    <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+    <%if(profile.thumbnail != ''){%>
+      <img style="max-width:140px;"id="profile_settings_image" src="/uploads/<%=profile.thumbnail%>">
+      <%}else{%>
+        <ion-icon style="font-size:5em;"id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+      <%}%>
     </div>
     <%if(profile.admin === true){%>
       <h1 style="color:red;">ADMIN</h1>

@@ -21,4 +21,7 @@ $(function(){
         });
     });
     // $('#register_username_load').text($('#register_username').val());
+    $(document).on('click', '#change-photo', function(){
+        $('#update_profile_picture').submit();
+    });
 });

@@ -89,9 +89,18 @@
             <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
         <%}%>
     </ul>
-    <div class="passage-box" style="float:left;border:2px solid brown;padding:10px;margin-right:20px;margin-bottom:20px;">
-        <div style="float:left;"class="p-image-container"><ion-icon class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
-        <ul class="passage_users" style="margin-top:140px;">
+    <div class="passage-box" style="text-align:center;float:left;border:2px solid brown;padding:10px;margin-right:20px;margin-bottom:20px;">
+        <div style=""class="p-image-container">
+            <%if(passage.author.thumbnail != ''){%>
+                <img style="max-height:160px;display: block;margin:auto;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>">
+                <%}else{%>
+                    <ion-icon style="float:none;"class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+                <%}%>
+        </div>
+        <%if(passage.author.thumbnail != ''){%>
+            <%}else{%>
+            <%}%>
+        <ul class="passage_users" style="">
             <!-- Profile Image layers -->
             <%if(passage.author){%>
                 <%- include('profile_thumbnail', {profile: passage.author}) %>
