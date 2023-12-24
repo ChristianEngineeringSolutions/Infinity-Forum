@@ -188,10 +188,12 @@ $(function(){
             $('#tab_panel').hide();
             $('#add_passage_button').hide();
             $('#top_spacer').hide();
+            $('.passage-box').hide();
             distractionFree = true;
         }
         else{
             $(this).css('color', 'black');
+            $('.passage-box').show();
             $('.passage_options').show();
             $('.passage_tabs').show();
             $('.passage_author').show();

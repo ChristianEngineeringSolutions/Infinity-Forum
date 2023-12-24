@@ -137,7 +137,7 @@
     <%}else{%>
     <%}%>
     <!-- Hide Iframe window if there is neither html nor js, or if it is not a daemon -->
-    <%if((passage.lang != 'daemon' && passage.lang != 'daemonFrame') && (passage.displayHTML == null || passage.displayHTML == '') && (passage.displayJavascript == null || passage.displayJavascript == '')){%>
+    <%if((passage.lang != 'mixed') && (passage.lang != 'daemon' && passage.lang != 'daemonFrame') && (passage.displayHTML == null || passage.displayHTML == '') && (passage.displayJavascript == null || passage.displayJavascript == '')){%>
         <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>
