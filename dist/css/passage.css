@@ -10,6 +10,9 @@
     margin-bottom: 6px;
     border: 1px solid black;
 }
+.passage-box{
+    margin-left:20px;
+}
 .passage{
     /* border-bottom: 1px dotted grey; */
     text-align: left;
@@ -19,7 +22,7 @@
     background: gold;
     color: #000;
     margin-bottom: 10px;
-    padding: 15px;
+    /* padding: 15px; */
     /*not for mobile*/
     display: block;
     /*resize: both;*/
@@ -28,7 +31,7 @@
     height: 200px;*/
     /*width: 96%;*/
     border: 2px solid brown;
-    width: 88%;
+    width: 90%;
     margin: auto;
     margin-bottom: 10px;
     z-index: 1;
@@ -78,6 +81,13 @@
     list-style-type: none;
     padding: 0px;
     /* padding-left: 0; */
+}
+.passage_options{
+    background-color: black;
+    color: white;
+    padding: 20px;
+    margin: 0;
+    margin-bottom: 20px;
 }
 .passage_option{
     display: inline;
