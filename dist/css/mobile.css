@@ -13,8 +13,15 @@
 }
 /* Large Phones */
 @media screen and (max-width: 715px){
-    .profile_image, .p-image-container{
+    /* .profile_image, .p-image-container{
         display: none;
+    } */
+    .profile_image{
+        font-size: 3em;
+    }
+    .passage_stars{
+        float: right;
+        margin-top: 23px;
     }
     .passage-box{
         border: 0 !important;
@@ -22,6 +29,9 @@
     }
     .passage_users{
         margin-top: 0 !important;
+    }
+    .p-image-container{
+        float:left;
     }
     /* .detail_title, .detail_description{
         margin-left: 10px;

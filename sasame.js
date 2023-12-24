@@ -2299,6 +2299,10 @@ async function updatePassage(_id, attributes){
     await passage.save();
     return 'Done';
 }
+app.post('/change_profile_picture/', async (req, res) => {
+    await uploadProfilePhoto(req, res);
+    res.redirect("/profile");
+});
 app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
@@ -2347,6 +2351,27 @@ app.post('/removeFile', async (req, res) => {
     await passage.save();
     res.send("Done.");
 });
+async function uploadProfilePhoto(req, res){
+    var user = await User.findOne({_id: req.session.user._id});
+    if(req.files == null){
+        user.thumbnail = '';
+        await user.save();
+    }else{
+        // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+        var fileToUpload = req.files.photo;
+        //uuid with  ext
+        var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+        var where = 'uploads';
+        // Use the mv() method to place the file somewhere on your server
+        fileToUpload.mv('./dist/'+where+'/'+uploadTitle, function(err) {
+            if (err){
+                return res.status(500).send(err);
+            }
+        });
+        user.thumbnail = uploadTitle;
+        await user.save();
+    }
+}
 async function uploadFile(req, res, passage){
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;

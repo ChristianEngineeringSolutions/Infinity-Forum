@@ -1,3 +1,15 @@
+<div>
+    <%if(profile.thumbnail != ''){%>
+    <img style="width:75px;"id="profile_settings_image" src="/uploads/<%=profile.thumbnail%>">
+    <%}else{%>
+    <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+    <%}%>
+</div>
+<form id="update_profile_picture"action="/change_profile_picture/" method="POST" enctype="multipart/form-data">
+    <input type="file" accept="image/*"id="upload_profile_photo"name="photo"autocomplete="off"/>
+    <br><br>
+    <button id="change-photo">Change</button>
+</form>
 <p><%=profile.username%></p>
     <a target="_blank"href="/stripeAuthorize">Get Paid (<%=profile.stripeOnboardingComplete == true ? "Active" : "Inactive"%>)</a>
     <br><br>
