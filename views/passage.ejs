@@ -89,22 +89,26 @@
             <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
         <%}%>
     </ul>
-    <ul class="passage_users">
-        <!-- Profile Image layers -->
-        <%if(passage.author){%>
-            <%- include('profile_thumbnail', {profile: passage.author}) %>
-            <!-- <li class="passage_user"><a class="passage_profile_link"href="/profile/<%=passage.author.username%>/<%=passage.author._id%>"><%=passage.author.name%></a>, <span style="cursor:default;"><%=passage.date.toDateString()%></span></li> -->
-        <%}else{%>
-            Anonymous,
-        <%}%>
-        <!-- ... -->
-    </ul>
-    <div class="passage_stars"><%=passage.stars%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
-        <% if(user){ %>
-            <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
-            <input id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> 
-            &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Invest</span>
-        <% } %>
+    <div class="passage-box" style="float:left;border:2px solid brown;padding:10px;margin-right:20px;margin-bottom:20px;">
+        <div style="float:left;"><ion-icon class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
+        <ul class="passage_users" style="margin-top:140px;">
+            <!-- Profile Image layers -->
+            <%if(passage.author){%>
+                <%- include('profile_thumbnail', {profile: passage.author}) %>
+                <!-- <li class="passage_user"><a class="passage_profile_link"href="/profile/<%=passage.author.username%>/<%=passage.author._id%>"><%=passage.author.name%></a>, <span style="cursor:default;"><%=passage.date.toDateString()%></span></li> -->
+            <%}else{%>
+                Anonymous,
+            <%}%>
+            <!-- ... -->
+        </ul>
+        <hr>
+        <div class="passage_stars"><%=passage.stars%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
+            <% if(user){ %>
+                <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
+                <input id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> 
+                &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Invest</span>
+            <% } %>
+        </div>
     </div>
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
