@@ -291,6 +291,8 @@
 #view_more{
     cursor: pointer;
     text-align: center;
+    padding: 15px;
+    width: 89%;
 }
 .ace-editor{
     height: 377px;
