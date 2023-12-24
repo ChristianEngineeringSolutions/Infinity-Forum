@@ -5,6 +5,10 @@
 .ql-tooltip{
     left: 0px !important;
 }
+.detail-div{
+    margin-left: 10px;
+    width: 93%;
+}
 .brief-passage{
     padding: 10px;
     margin-bottom: 6px;
@@ -12,6 +16,7 @@
 }
 .passage-box{
     margin-left:20px;
+
 }
 .passage{
     /* border-bottom: 1px dotted grey; */

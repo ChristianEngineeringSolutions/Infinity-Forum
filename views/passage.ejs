@@ -89,8 +89,8 @@
             <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
         <%}%>
     </ul>
-    <!-- <div class="passage-box" style="float:left;border:2px solid brown;padding:10px;margin-right:20px;margin-bottom:20px;"> -->
-        <div style="float:left;"><ion-icon class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
+    <div class="passage-box" style="float:left;border:2px solid brown;padding:10px;margin-right:20px;margin-bottom:20px;">
+        <div style="float:left;"class="p-image-container"><ion-icon class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon></div>
         <ul class="passage_users" style="margin-top:140px;">
             <!-- Profile Image layers -->
             <%if(passage.author){%>
@@ -101,7 +101,7 @@
             <%}%>
             <!-- ... -->
         </ul>
-        <hr>
+        <hr class="p-box-hr">
         <div class="passage_stars"><%=passage.stars%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
             <% if(user){ %>
                 <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
@@ -110,12 +110,14 @@
             <% } %>
         </div>
     </div>
+    <div class="detail-div">
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
     <%if(passage.displayContent != null && passage.displayContent != ''){%>
         <hr class="hr">
         <%}%>
         <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-passage.displayContent || passage.content%></div>
+    </div>
         <!-- <ul class="passage_tabs">
             <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
             <!-- Display Result -->

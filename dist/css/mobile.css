@@ -9,9 +9,26 @@
     #graphic_mode{
         display: none;
     }
+
 }
 /* Large Phones */
 @media screen and (max-width: 715px){
+    .profile_image, .p-image-container{
+        display: none;
+    }
+    .passage-box{
+        border: 0 !important;
+        margin: 0;
+    }
+    .passage_users{
+        margin-top: 0 !important;
+    }
+    /* .detail_title, .detail_description{
+        margin-left: 10px;
+    } */
+    .p-box-hr{
+        display: none;
+    }
     #ppe{
         margin-top:80px;
     }
