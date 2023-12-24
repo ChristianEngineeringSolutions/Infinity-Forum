@@ -2340,10 +2340,17 @@ app.post('/update_passage/', async (req, res) => {
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
+app.post('/removeFile', async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body._id});
+    passage.filename = '';
+    passage.mimeType = '';
+    await passage.save();
+    res.send("Done.");
+});
 async function uploadFile(req, res, passage){
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
-    var mimeType = req.files.file.mimetype;
+    var mimeType = req.files.file.mimetype; 
     //uuid with  ext
     var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
     var thumbnailTitle = v4() + ".jpg";

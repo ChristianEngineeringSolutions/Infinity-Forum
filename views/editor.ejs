@@ -32,6 +32,9 @@
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
     <%*/%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" />
+    <%if(passage.filename){%>
+        <span id="remove-file-<%=passage._id%>"style="cursor:pointer;">Remove File</span>
+    <%}%>
     <div style="display:none;"id="passage_thumbnail_<%=passage._id%>">
         <img id="thumbnail_image_<%=passage._id%>"src="" alt="">
         <input id="thumbnail_clip_<%=passage._id%>"type="hidden" name="thumbnail">
