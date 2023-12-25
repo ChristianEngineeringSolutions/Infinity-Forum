@@ -301,6 +301,22 @@ hr{
     /*position: fixed;
     right: 0px;*/
 }
+#page-count{
+    list-style-type: none;
+    color: white;
+    width: 90%;
+    margin: auto;
+    text-align: center;
+    margin: 30px;
+    display: block;
+}
+#page-count li{
+    display: inline;
+    background: black;
+    color: inherit;
+    text-decoration: none;
+    padding: 10px;
+}
 #left-side-panel-inner{
     position: fixed;
     left: 0px;

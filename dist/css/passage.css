@@ -47,6 +47,9 @@
 .passage_private{
     border: 2px solid red;
 }
+.passage_forum{
+    border: 2px solid brown;
+}
 #parent_title{
     /* margin-top: 320px; */
     /* margin-top: 50px; */
