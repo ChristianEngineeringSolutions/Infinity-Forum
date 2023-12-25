@@ -1346,6 +1346,11 @@ app.post('/passage_setting', async (req, res) => {
                 passage.public = !passage.public;
             }
             break;
+        case 'forum':
+            if(passage.author._id.toString() == user._id.toString()){
+                passage.forum = !passage.forum;
+            }
+            break;
         case 'personal':
             if(passage.author._id.toString() == user._id.toString()){
                 passage.personal = !passage.personal;
@@ -1643,7 +1648,7 @@ function bubbleUpAll(passage){
     }
     return passage;
 }
-app.get('/passage/:passage_title/:passage_id', async function(req, res){
+app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
     }
@@ -1651,7 +1656,13 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.params.passage_id;
+    var page = req.params.page || 1;
     var passage = await Passage.findOne({_id: passage_id}).populate('parent author users sourceList');
+    var totalDocuments = await Passage.countDocuments({
+        parent: passage._id
+    })
+    var totalPages = Math.round(totalDocuments/DOCS_PER_PAGE) + 1;
+    console.log(totalPages);
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
         return res.send("Must be on Userlist");
     }
@@ -1666,17 +1677,25 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
         });
     }
     passage = bubbleUpAll(passage);
-    if(passage.public == true){
+    if(passage.public == true && !passage.forum){
         var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        var subPassages = await Passage.paginate({parent: passage_id, personal: false}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        subPassages = subPassages.docs;
     }
     else{
         if(passage.displayHTML.length > 0 || passage.displayCSS.length > 0 || passage.displayJavascript.length > 0){
             passage.showIframe = true;
         }
-        var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');
+        if(passage.forum){
+            var subPassages = await Passage.paginate({parent: passage_id, personal: false}, {sort: '-_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            subPassages = subPassages.docs;
+        }
+        else{ 
+            var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');  
+        }
     }
     //we have to do this because of issues with populating passage.passages foreign keys
-    if(!passage.public){
+    if(!passage.public && !passage.forum){
         //reorder sub passages to match order of passage.passages
         var reordered = Array(subPassages.length).fill(0);
         for(var i = 0; i < passage.passages.length; ++i){
@@ -1700,7 +1719,7 @@ app.get('/passage/:passage_title/:passage_id', async function(req, res){
     for(const p of passage.passages){
         passage.passages[p] = bubbleUpAll(p);
     }
-    res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false});
+    res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE});
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){
@@ -2033,8 +2052,8 @@ async function createPassage(user, parentPassageId){
                 }
             }
         }
-        //can only add to private or personal if on the userlist
-        if(!scripts.isPassageUser(user, parent) && (!parent.public || parent.personal)){
+        //can only add to private or personal if on the userlist or is a forum
+        if(!parent.forum && !scripts.isPassageUser(user, parent) && (!parent.public || parent.personal)){
             return res.send("Must be on userlist.");
         }
         else if(parent.public_daemon == 2 || parent.default_daemon){
