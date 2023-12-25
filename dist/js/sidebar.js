@@ -2,7 +2,7 @@
 function updateBookmarks(){
     $.ajax({
         type: 'get',
-        url: DOMAIN + '/get_bookmarks',
+        url: /*DOMAIN + */'/get_bookmarks',
         success: function(data){
             $('#bookmarks').html(data);
         }
@@ -11,7 +11,7 @@ function updateBookmarks(){
 function updateDaemons(){
     $.ajax({
         type: 'get',
-        url: DOMAIN + '/get_daemons',
+        url: /*DOMAIN + */'/get_daemons',
         success: function(data){
             $('#daemons').html(data);
         }
