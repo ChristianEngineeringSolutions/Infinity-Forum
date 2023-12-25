@@ -13,7 +13,7 @@ function updateDaemons(){
         type: 'get',
         url: /*DOMAIN + */'/get_daemons',
         success: function(data){
-            $('#daemons').html(data);
+            $('#daemons')DOMAIN + .html(data);
         }
     });
 }
@@ -44,7 +44,8 @@ $(function(){
         var _id = $(thiz).attr('id').split('_')[2];
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/add_daemon',
+            url: '/add_daemon',
+            // url: DOMAIN + '/add_daemon',
             data: {
                 _id: _id,
             },
@@ -59,7 +60,8 @@ $(function(){
         var _id = $(thiz).attr('id').split('_')[2];
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/remove_daemon',
+            // url: DOMAIN + '/remove_daemon',
+            url: '/remove_daemon',
             data: {
                 _id: _id,
             },
@@ -74,7 +76,8 @@ $(function(){
         var _chief = $('#chief_passage_id').val();
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/transfer_bookmark',
+            url: '/transfer_bookmark',
+            // url: DOMAIN + '/transfer_bookmark',
             data: {
                 _id: _id,
                 parent: _chief
@@ -96,7 +99,8 @@ $(function(){
         var _id = $(thiz).attr('id').split('_')[2];
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/remove_bookmark',
+            url: '/remove_bookmark',
+            // url: DOMAIN + '/remove_bookmark',
             data: {
                 _id: _id,
             },

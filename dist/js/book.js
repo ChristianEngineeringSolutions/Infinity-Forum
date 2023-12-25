@@ -91,7 +91,8 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search/' + fromOtro,
+                // url: DOMAIN + '/search/' + fromOtro,
+                url: '/search/',
                 data: {
                     search: thiz.val(),
                     personal: window.location.href.split('/').at(-2) == 'personal' ? true : false
@@ -111,7 +112,8 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/ppe_search/' + fromOtro,
+                // url: DOMAIN + '/ppe_search/' + fromOtro,
+                url: '/ppe_search/',
                 data: {
                     search: thiz.val(),
                     parent: $('#chief_passage_id').val()
@@ -133,7 +135,8 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search_profile/' + fromOtro,
+                // url: DOMAIN + '/search_profile/' + fromOtro,
+                url: '/search_profile/',
                 data: {
                     search: thiz.val(),
                     _id: $('#is_profile').val()
@@ -154,7 +157,8 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search_messages/' + fromOtro,
+                // url: DOMAIN + '/search_messages/' + fromOtro,
+                url: '/search_messages/',
                 data: {
                     search: thiz.val(),
                     _id: $('#is_profile').val()
@@ -175,7 +179,8 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search_leaderboard/' + fromOtro,
+                // url: DOMAIN + '/search_leaderboard/' + fromOtro,
+                url: '/search_leaderboard/',
                 data: {
                     search: thiz.val()
                 },
@@ -194,7 +199,8 @@ $(function(){
         if(e.which == 13){
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/search_passage/' + fromOtro,
+                // url: DOMAIN + '/search_passage/' + fromOtro,
+                url: '/search_passage/',
                 data: {
                     search: thiz.val(),
                     _id: $('#chief_passage_id').val()
@@ -236,7 +242,8 @@ $(function(){
         var newCount = parseInt($('.star_count_'+_id).text(), 10) + 1;
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/star/' + fromOtro,
+            // url: DOMAIN + '/star/' + fromOtro,
+            url: '/star/',
             data: {
                 _id: _id
             },
@@ -278,7 +285,8 @@ $(function(){
     $(document).on('click', '#cancel-subscription', function(){
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/unsubscribe',
+            // url: DOMAIN + '/unsubscribe',
+            url: '/unsubscribe',
             data: {},
             success: function(){
                 window.location.reload();
@@ -291,7 +299,8 @@ $(function(){
             $(this).css('color', 'red');
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/cesconnect/' + fromOtro,
+                // url: DOMAIN + '/cesconnect/' + fromOtro,
+                url: '/cesconnect/',
                 data: {},
                 success: function(data){
                     window.location.reload();
@@ -302,7 +311,8 @@ $(function(){
             $(this).css('color', 'rgb(0, 128, 0)');
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/cesconnect/' + fromOtro,
+                url: '/cesconnect/',
+                // url: DOMAIN + '/cesconnect/' + fromOtro,
                 data: {},
                 success: function(data){
                     window.location.reload();
@@ -314,7 +324,8 @@ $(function(){
         var _id = $(this).attr('id').split('_')[1];
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/update_chapter_order/' + fromOtro,
+            // url: DOMAIN + '/update_chapter_order/' + fromOtro,
+            url: '/update_chapter_order/',
             data: {
                 passages: JSON.stringify($('#sub_passages').sortable('toArray')),
                 chapterID: $('#parent_chapter_id').val()
@@ -329,7 +340,8 @@ $(function(){
     $(document).on('click', '#filestreamsync', function(){
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/syncfilestream/' + fromOtro,
+            url: '/syncfilestream/',
+            // url: DOMAIN + '/syncfilestream/' + fromOtro,
             data: {
                 
             },

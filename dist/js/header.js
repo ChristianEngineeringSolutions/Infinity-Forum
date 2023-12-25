@@ -230,7 +230,8 @@ $(function(){
             let pdom = ui.draggable;
             $.ajax({
                 type: 'post',
-                url: DOMAIN + '/move_passage',
+                // url: DOMAIN + '/move_passage',
+                url: '/move_passage',
                 data: {
                     destination_id: destination_id,
                     passage_id: passage_id
