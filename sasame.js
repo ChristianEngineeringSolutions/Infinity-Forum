@@ -435,8 +435,11 @@ app.get('/messages', async(req, res) => {
         passages[passage] = bubbleUpAll(passage);
     }
     let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
         if(req.session.user){
-            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+            bookmarks = getBookmarks(req.session.user);
         }
     res.render('messages', {
         passages: passages,
@@ -447,7 +450,7 @@ app.get('/messages', async(req, res) => {
             _id: 'root',
             username: 'Sasame'
         }},
-        bookmarks: getBookmarks(req.session.user),
+        bookmarks: bookmarks,
     });
 });
 //get highest rank passage with title
@@ -486,8 +489,11 @@ app.get('/personal/:user_id', async (req, res) => {
             passages[passage] = bubbleUpAll(passage);
         }
         let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
         if(req.session.user){
-            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+            bookmarks = getBookmarks(req.session.user);
         }
         return res.render("index", {
             subPassages: false,
@@ -498,7 +504,7 @@ app.get('/personal/:user_id', async (req, res) => {
                 _id: 'root',
                 username: 'Sasame'
             }},
-            bookmarks: getBookmarks(req.session.user),
+            bookmarks: bookmarks,
         });
     }
 });
@@ -532,12 +538,15 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     for(const passage of passages){
         passages[passage] = bubbleUpAll(passage);
     }
+    // if(req.session.user){
+    //     bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
+    // }
     if(req.session.user){
-        bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
+        bookmarks = getBookmarks(req.session.user);
     }
     var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
-    bookmarks: getBookmarks(req.session.user),
+    bookmarks: bookmarks,
     });
 });
 app.get('/loginform', function(req, res){
@@ -932,8 +941,11 @@ app.get('/', async (req, res) => {
         }
         let passageUsers = [];
         let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
         if(req.session.user){
-            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+            bookmarks = getBookmarks(req.session.user);
         }
         res.render("index", {
             subPassages: false,
@@ -944,7 +956,7 @@ app.get('/', async (req, res) => {
                 _id: 'root',
                 username: 'Sasame'
             }},
-            bookmarks: getBookmarks(req.session.user),
+            bookmarks: bookmarks,
         });
     }
 });
@@ -1845,8 +1857,11 @@ app.get('/admin', async function(req, res){
         //view all passages requesting to be a public daemon
         var passages = await Passage.find({public_daemon:1}).sort('-stars');
         let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
         if(req.session.user){
-            bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+            bookmarks = getBookmarks(req.session.user);
         }
         return res.render("admin", {
             subPassages: false,
@@ -1858,7 +1873,7 @@ app.get('/admin', async function(req, res){
                 _id: 'root',
                 username: 'Sasame'
             }},
-            bookmarks: getBookmarks(req.session.user),
+            bookmarks: bookmarks,
 
         });
     }
@@ -2736,8 +2751,11 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
         }).sort({stars: '-1'}).limit(10);
     }
     let bookmarks = [];
+    // if(req.session.user){
+    //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+    // }
     if(req.session.user){
-        bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        bookmarks = getBookmarks(req.session.user);
     }
     res.render("filestream", {
         subPassages: false,
@@ -2749,7 +2767,7 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
             _id: 'root',
             username: 'Sasame'
         }},
-        bookmarks: getBookmarks(req.session.user),
+        bookmarks: bookmarks,
     });
     // return res.render('passages', {
     //     passages: passages,
