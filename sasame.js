@@ -97,7 +97,7 @@ const io = require('socket.io')(server);
 //       credentials: true
 //     }
 //   });
-
+app.use(express.urlencoded({ extended: false, limit: '1gb' }));
 app.use(compression());
 app.use(cors());
 app.use(helmet());
