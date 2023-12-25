@@ -228,8 +228,8 @@ $(function(){
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
         //create a passage and then show it
-        alert(DOMAIN);
-        alert(fromOtro);
+        // alert(DOMAIN);
+        // alert(fromOtro);
         $.ajax({
             type: 'post',
             // url: DOMAIN + '/create_passage/' + fromOtro,
