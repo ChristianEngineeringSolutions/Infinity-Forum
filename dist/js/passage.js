@@ -228,13 +228,15 @@ $(function(){
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
         //create a passage and then show it
+        alert(DOMAIN);
+        alert(fromOtro);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/create_passage/' + fromOtro,
+            // url: DOMAIN + '/create_passage/' + fromOtro,
+            url: '/create_passage/',
             data: {
                 passageID: chief
             },
-            enctype: 'multipart/form-data',
             success: function(data){
                 if(chief == 'root'){
                     $('#passage_wrapper').prepend(data);

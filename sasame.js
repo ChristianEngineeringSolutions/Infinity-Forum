@@ -2584,6 +2584,10 @@ app.post('/install_passage', async function(req, res){
     res.send("Done")
 });
 
+app.post('/test/', async function(req, res){
+    res.send("OK");
+});
+
 /*
     ROUTERS FOR FILESTREAM
 */
