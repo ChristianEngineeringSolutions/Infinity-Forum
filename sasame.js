@@ -1643,7 +1643,7 @@ function bubbleUpAll(passage){
     if(!passage.bubbling){
         return passage;
     }
-    if(!passage.public){
+    if(!passage.public && !passage.forum){
         return getAllSubData(passage);
     }
     return passage;
