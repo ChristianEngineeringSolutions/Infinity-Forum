@@ -234,6 +234,7 @@ $(function(){
             data: {
                 passageID: chief
             },
+            enctype: 'multipart/form-data',
             success: function(data){
                 if(chief == 'root'){
                     $('#passage_wrapper').prepend(data);
