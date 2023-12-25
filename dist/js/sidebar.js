@@ -2,7 +2,8 @@
 function updateBookmarks(){
     $.ajax({
         type: 'get',
-        url: /*DOMAIN + */'/get_bookmarks',
+        url: '/get_bookmarks',
+        // url: /*DOMAIN + */'/get_bookmarks',
         success: function(data){
             $('#bookmarks').html(data);
         }
@@ -11,9 +12,10 @@ function updateBookmarks(){
 function updateDaemons(){
     $.ajax({
         type: 'get',
-        url: /*DOMAIN + */'/get_daemons',
+        url: '/get_daemons',
+        // url: /*DOMAIN + */'/get_daemons',
         success: function(data){
-            $('#daemons')DOMAIN + .html(data);
+            $('#daemons').html(data);
         }
     });
 }
