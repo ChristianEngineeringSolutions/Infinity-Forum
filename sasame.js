@@ -2440,6 +2440,14 @@ async function uploadFile(req, res, passage){
         passage.thumbnail = null;
     }
     await passage.save();
+    //compress if image
+    if(mimeType.split('/')[0] == 'image'){
+        exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1]
+    , (err, stdout, stderr) => {
+            //done
+            console.log(err + stdout + stderr);
+        });
+    }
 }
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
