@@ -4,7 +4,8 @@ $(function(){
         $('#register_username_load').text(name);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/get_username_number',
+            // url: DOMAIN + '/get_username_number',
+            url: '/get_username_number',
             data: {
                 name: name
             },

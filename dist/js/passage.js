@@ -125,7 +125,8 @@ $(function(){
         var thiz = $(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/makeMainFile',
+            url: '/makeMainFile',
+            // url: DOMAIN + '/makeMainFile',
             data: {
                 _id: thiz.attr('id').split('_').at(-1)
             },
@@ -265,7 +266,8 @@ $(function(){
         var _id = getPassageId(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/delete_passage/' + fromOtro,
+            // url: DOMAIN + '/delete_passage/' + fromOtro,
+            url: '/delete_passage/',
             data: {
                 _id: _id
             },
@@ -281,7 +283,8 @@ $(function(){
         var pos = getAllSubPassageIDs().indexOf(_id);
         $.ajax({
             type: 'get',
-            url: DOMAIN + '/alternate/' + fromOtro,
+            url: '/alternate/',
+            // url: DOMAIN + '/alternate/' + fromOtro,
             data: {
                 passageID: _id,
                 parentID: $('#chief_passage_id').val(),
@@ -330,7 +333,8 @@ $(function(){
         }
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/save_alternate/' + fromOtro,
+            // url: DOMAIN + '/save_alternate/' + fromOtro,
+            url: '/save_alternate/',
             data: {
                 passageID: _id,
                 passages: JSON.stringify(orderList)
@@ -346,7 +350,8 @@ $(function(){
         var _id = getPassageId(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/install_passage/' + fromOtro,
+            // url: DOMAIN + '/install_passage/' + fromOtro,
+            url: '/install_passage/',
             data: {
                 _id: _id
             },
@@ -359,7 +364,8 @@ $(function(){
         var _id = getPassageId(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/share_passage/' + fromOtro,
+            // url: DOMAIN + '/share_passage/' + fromOtro,
+            url: '/share_passage/',
             data: {
                 _id: _id
             },
@@ -383,7 +389,8 @@ $(function(){
         var thiz = $(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/copy_passage',
+            // url: DOMAIN + '/copy_passage',
+            url: '/copy_passage',
             data: {
                 _id: _id,
                 parent: $('#chief_passage_id').val()
@@ -409,7 +416,8 @@ $(function(){
         var thiz = $(this);
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/removeFile',
+            // url: DOMAIN + '/removeFile',
+            url: '/removeFile',
             data: {
                 _id: thiz.attr('id').split('-').at(-1)
             },
@@ -426,7 +434,8 @@ $(function(){
         var content = $('#selection').val();
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/bookmark_passage',
+            // url: DOMAIN + '/bookmark_passage',
+            url: '/bookmark_passage',
             data: {
                 _id: _id,
                 content: content,
@@ -442,7 +451,8 @@ $(function(){
         if(e.keyCode == 13){
             var thiz = $(this);
             $.ajax({
-                url: DOMAIN + '/add_user',
+                // url: DOMAIN + '/add_user',
+                url: '/add_user',
                 type: 'POST',
                 data: {
                     passageId: thiz.attr('id').split('_').at(-1),
@@ -458,7 +468,8 @@ $(function(){
         if(e.keyCode == 13){
             var thiz = $(this);
             $.ajax({
-                url: DOMAIN + '/share_passage',
+                // url: DOMAIN + '/share_passage',
+                url: '/share_passage',
                 type: 'POST',
                 data: {
                     passageId: thiz.attr('id').split('-').at(-1),
@@ -474,7 +485,8 @@ $(function(){
         if(e.keyCode == 13){
             var thiz = $(this);
             $.ajax({
-                url: DOMAIN + '/add_collaborator',
+                // url: DOMAIN + '/add_collaborator',
+                url: '/add_collaborator',
                 type: 'POST',
                 data: {
                     passageID: thiz.attr('id').split('_').at(-1),
@@ -489,7 +501,8 @@ $(function(){
     $(document).on('click', '.passage_remove_user', function(e){
         var thiz = $(this);
         $.ajax({
-            url: DOMAIN + '/remove_user',
+            // url: DOMAIN + '/remove_user',
+            url: '/remove_user',
             type: 'POST',
             data: {
                 passageID: $(this).attr('id').split('_').at(-1),
@@ -508,7 +521,8 @@ $(function(){
         let setting = $(this).data('setting');
         var thiz = $(this);
         $.ajax({
-            url: DOMAIN + '/passage_setting',
+            // url: DOMAIN + '/passage_setting',
+            url: '/passage_setting',
             type: 'POST',
             data: {
                 _id: _id,
@@ -599,7 +613,8 @@ $(function(){
         var thiz = $(this);
         var formData = new FormData(this);
         $.ajax({
-            url: DOMAIN + '/update_passage',
+            // url: DOMAIN + '/update_passage',
+            url: '/update_passage',
             type: 'POST',
             data: formData,
             success: function (data) {
@@ -616,7 +631,8 @@ $(function(){
         var passage_id = $(this).attr('id').split('_').at(-1);
         var amount = $('#star_number_' + passage_id).val();
         $.ajax({
-            url: DOMAIN + '/star_passage/' + fromOtro,
+            url: '/star_passage/',
+            // url: DOMAIN + '/star_passage/' + fromOtro,
             type: 'POST',
             data: {
                 passage_id: passage_id,
@@ -679,7 +695,8 @@ $(function(){
             }
             //TODO: only do if order is different from original
             $.ajax({
-                url: DOMAIN + '/update_passage_order',
+                // url: DOMAIN + '/update_passage_order',
+                url: '/update_passage_order',
                 type: 'POST',
                 data: {
                     _id: _id,
@@ -699,7 +716,8 @@ $(function(){
         page += 1;
         $.ajax({
             type: 'post',
-            url: DOMAIN + '/paginate/' + fromOtro,
+            url: '/paginate/',
+            // url: DOMAIN + '/paginate/' + fromOtro,
             data: {
                 page: page,
                 passage: $('#chief_passage_id').val(),
