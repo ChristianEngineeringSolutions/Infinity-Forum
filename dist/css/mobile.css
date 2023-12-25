@@ -16,6 +16,9 @@
     /* .profile_image, .p-image-container{
         display: none;
     } */
+    .detail-div{
+        clear:both;
+    }
     .profile_image{
         font-size: 3em;
     }
