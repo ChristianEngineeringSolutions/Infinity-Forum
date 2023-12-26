@@ -161,6 +161,7 @@ app.use('/protected/:pID', async function(req, res, next){
     }
     else{
         var passage = await Passage.findOne({filename:req.params.pID});
+        if(passage != null)
         if(passage.author._id.toString() != req.session.user._id.toString() && !scripts.isPassageUser(req.session.user, passage)){
             return res.redirect('/');
         }
@@ -1239,7 +1240,7 @@ app.get('/get_bookmarks', async (req, res) => {
     // for(const bookmark of bookmarks){
     //     bookmarks[bookmark] = bubbleUpAll(bookmark);
     // }
-    var bookmarks = await Bookmark.find({user: req.session.user}).populate('passage');
+    var bookmarks = await Bookmark.find({user: req.session.user}).sort('-_id').populate('passage');
     // for(const bookmark of bookmarks){
     //     bookmarks[bookmark].passage = bubbleUpAll(bookmark.passage);
     // }

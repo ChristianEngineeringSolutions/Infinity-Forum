@@ -91,7 +91,7 @@
     </ul>
     <div class="passage-box" style="text-align:center;float:left;border:2px solid brown;padding:10px;margin-right:20px;margin-bottom:20px;">
         <div style=""class="p-image-container">
-            <%if(passage.author.thumbnail != ''){%>
+            <%if(passage.author.thumbnail != null){%>
                 <img class="p-thumbnail"style="max-height:160px;display: block;margin:auto;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>">
                 <%}else{%>
                     <ion-icon style="float:none;"class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
