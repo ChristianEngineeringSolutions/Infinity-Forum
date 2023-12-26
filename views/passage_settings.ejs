@@ -37,6 +37,9 @@ Toggle Green/Red for Active/Inactive
 <%}%>
 <div data-setting="distraction-free"class="passage_setting <%=passage.distraction_free == true ? 'green' : 'red';%>"id="passage_setting_distraction_free_<%=passage._id%>">Default Distraction Free Mode</div>
 <div data-setting="bubbling"class="passage_setting <%=passage.bubbling == true ? 'green' : 'red';%>"id="passage_setting_bubbling_<%=passage._id%>">Bubble Up Content (Private Passages)</div>
+
+<br><br>
+<button id="passage-delete-<%=passage._id%>">DELETE</button>
 <!-- <hr>
 <div id="show-keys">Keys</div>
 <br>

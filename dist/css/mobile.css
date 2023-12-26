@@ -16,6 +16,9 @@
     /* .profile_image, .p-image-container{
         display: none;
     } */
+    .passage_delete{
+        display: none;
+    }
     .detail-div{
         clear:both;
     }

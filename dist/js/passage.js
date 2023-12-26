@@ -262,6 +262,21 @@ $(function(){
     function thisPassage(thiz){
         return $('#passage_' + getPassageId(thiz));
     }
+    $(document).on('click', '[id^="passage-delete-"]', function(e){
+        var _id = $(this).attr('id').split('-').at(-1);
+        $.ajax({
+            type: 'post',
+            // url: DOMAIN + '/delete_passage/' + fromOtro,
+            url: '/delete_passage/',
+            data: {
+                _id: _id
+            },
+            success: function(data){
+                $('#passage_'+_id).remove();
+                $('.close-modal').click();
+            }
+        });
+    });
     $(document).on('click', '[id^="passage_delete_"]', function(e){
         var _id = getPassageId(this);
         $.ajax({
