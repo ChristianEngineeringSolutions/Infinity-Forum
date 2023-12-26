@@ -1700,7 +1700,7 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
             passage.showIframe = true;
         }
         if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id, personal: false}, {sort: '-_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            var subPassages = await Passage.paginate({parent: passage_id, personal: false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
             subPassages = subPassages.docs;
         }
         else{ 
