@@ -41,7 +41,7 @@
                     <%if(passage.public_daemon != 2 && passage.default_daemon != true){%>
                         <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
                         <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
-                        <li id="passage_delete_<%=passage.id%>" class="passage_option">Delete</li>
+                        <li id="passage_delete_<%=passage.id%>" class="passage_option passage_delete">Delete</li>
                     <%}%>
                     <div id="passage-share-modal-<%=passage._id%>" class="modal">
                         <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
