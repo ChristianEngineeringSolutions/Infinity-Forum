@@ -1,3 +1,5 @@
 <%bookmarks.forEach(function(bookmark){%>
+    <%if(bookmark.passage != null){%>
     <%- include('bookmark', {bookmark: bookmark})%>
+    <%}%>
   <%});%>
