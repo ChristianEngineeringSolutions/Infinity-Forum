@@ -1557,8 +1557,8 @@ function concatObjectProps(passage, sub){
         passage.displayCSS += (typeof sub.css == 'undefined' || sub.css == '' ? '' : '\n' + sub.css);
     if(typeof passage.javascript != 'undefined')
         passage.displayJavascript += (typeof sub.javascript == 'undefined' || sub.javascript == '' ? '' : '\n' + sub.javascript);
-    if(passage.mimeType == 'video'){
-        var filename = sub.filename;
+    if(passage.mimeType[0] == 'video'){
+        var filename = sub.filename[0];
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
@@ -1575,8 +1575,8 @@ function concatObjectProps(passage, sub){
         </script>
         `;
     }
-    else if(passage.mimeType == 'audio'){
-        var filename = sub.filename;
+    else if(passage.mimeType[0] == 'audio'){
+        var filename = sub.filename[0];
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
@@ -1618,7 +1618,7 @@ function bubbleUpAll(passage){
     if(typeof passage == 'undefined'){
         return passage;
     }
-    if(passage.mimeType == 'video'){
+    if(passage.mimeType[0] == 'video'){
         passage.video = `
         <video id="passage_video_`+passage._id+`"class="passage_video"width="320" height="240" controls>
             <source src="/`+getUploadFolder(passage)+`/`+passage.filename+`" type="video/`+passage.filename.split('.').at(-1)+`">
@@ -1633,7 +1633,7 @@ function bubbleUpAll(passage){
         </script>
         `;
     }
-    else if(passage.mimeType == 'audio'){
+    else if(passage.mimeType[0] == 'audio'){
         passage.audio = `
         <audio id="passage_audio_`+passage._id+`"class="passage_audio"width="320" height="240" controls>
             <source src="/`+getUploadFolder(passage)+`/`+passage.filename+`" type="audio/`+passage.filename.split('.').at(-1)+`">
@@ -2370,6 +2370,8 @@ app.post('/update_passage/', async (req, res) => {
         console.log('File uploaded');
         await uploadFile(req, res, passage);
     }
+    console.log(passage.filename + "TEST2");
+    console.log("TEST5"+passage);
     await passage.save();
     if(passage.mainFile && req.session.user.admin){
         //also update file and server
@@ -2408,47 +2410,60 @@ async function uploadProfilePhoto(req, res){
     }
 }
 async function uploadFile(req, res, passage){
+    var files = req.files;
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
-    var mimeType = req.files.file.mimetype; 
-    //uuid with  ext
-    var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
-    var thumbnailTitle = v4() + ".jpg";
-    var where = passage.personal ? 'protected' : 'uploads';
-    // Use the mv() method to place the file somewhere on your server
-    fileToUpload.mv('./dist/'+where+'/'+uploadTitle, function(err) {
-        if (err){
-            return res.status(500).send(err);
-        }
-    });
-    passage.filename = uploadTitle;
-    if(mimeType.split('/')[0] == 'image'
-    && mimeType.split('+')[0].split('/')[1] == 'svg'){
-        passage.isSVG = true;
+    //check if fileToUpload is an array
+    if(Array.isArray(fileToUpload)){
+
     }
     else{
-        passage.isSVG = false;
+        fileToUpload = [fileToUpload];
     }
-    passage.mimeType = mimeType.split('/')[0];
-    if(passage.mimeType == 'model' || passage.isSVG){
-        var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
-        var buf = Buffer.from(data, 'base64');
-        const fsp = require('fs').promises;
-        await fsp.writeFile('./dist/'+where+'/'+thumbnailTitle, buf);
-        passage.thumbnail = thumbnailTitle;
-    }
-    else{
-        passage.thumbnail = null;
-    }
-    await passage.save();
-    //compress if image
-    if(mimeType.split('/')[0] == 'image'){
-        exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1]
-    , (err, stdout, stderr) => {
-            //done
-            console.log(err + stdout + stderr);
+    passage.filename = [];
+    await fileToUpload.forEach(async (file, i)=>{
+        var mimeType = fileToUpload[i].mimetype; 
+        //uuid with  ext
+        var uploadTitle = v4() + "." + fileToUpload[i].name.split('.').at(-1);
+        var thumbnailTitle = v4() + ".jpg";
+        var where = passage.personal ? 'protected' : 'uploads';
+        // Use the mv() method to place the file somewhere on your server
+        fileToUpload[i].mv('./dist/'+where+'/'+uploadTitle, function(err) {
+            if (err){
+                return res.status(500).send(err);
+            }
         });
-    }
+        passage.filename[i] = uploadTitle;
+        console.log(passage.filename);
+        if(mimeType.split('/')[0] == 'image'
+        && mimeType.split('+')[0].split('/')[1] == 'svg'){
+            passage.isSVG = true;
+        }
+        else{
+            passage.isSVG = false;
+        }
+        passage.mimeType[i] = mimeType.split('/')[0];
+        if(passage.mimeType == 'model' || passage.isSVG){
+            var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
+            var buf = Buffer.from(data, 'base64');
+            const fsp = require('fs').promises;
+            await fsp.writeFile('./dist/'+where+'/'+thumbnailTitle, buf);
+            passage.thumbnail = thumbnailTitle;
+        }
+        else{
+            passage.thumbnail = null;
+        }
+        //compress if image
+        if(mimeType.split('/')[0] == 'image'){
+            exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1]
+        , (err, stdout, stderr) => {
+                //done
+                console.log(err + stdout + stderr);
+            });
+        }
+        await passage.save();
+    });
+    console.log(passage.filename + "TEST");
 }
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
@@ -3025,7 +3040,9 @@ async function BetaEngine(original){
     personalDaemon.param = JSON.stringify(original);
     personalDaemon.title = personalDaemon.title.split(' - Sasame AI')[0] + titleEnd;
     var paramTitle = '';
-    paramTitle += JSON.parse(personalDaemon.param).title;
+    if(JSON.parse(personalDaemon.param) != null){
+        paramTitle += JSON.parse(personalDaemon.param).title;
+    }
     //might need to stringify personalDaemon.params
     //anyway; this makes it easy for a daemon to access its parameters
     //then, might I suggest NOHTML?
