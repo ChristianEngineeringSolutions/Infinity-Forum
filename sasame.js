@@ -1562,7 +1562,7 @@ function concatObjectProps(passage, sub){
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
-        <video class="passage-file-`+sub._id+`"style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
+        <video class="passage-file-`+sub._i+`"style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename.split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
@@ -1580,7 +1580,7 @@ function concatObjectProps(passage, sub){
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.audio += `
-        <audio class="passage-file-`+sub._id+`"style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
+        <audio style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename.split('.').at(-1)+`">
             Your browser does not support the audio tag.
         </audio>
