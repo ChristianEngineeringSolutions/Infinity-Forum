@@ -156,15 +156,12 @@
         <%}%>
     </div>
     <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
-    <h1><%=JSON.stringify(passage.filename)%></h1>
     <% if(passage.filename){ %>
-        <h1><%=passage.filename%></h1>
         <%passage.filename.forEach(function(fname, i){%>
-            <h1>test</h1>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
-                <img id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
+                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}else if (passage.isSVG){%>
-               <img id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
+               <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}else if(passage.mimeType[i] == 'audio'){%>
                <!-- <audio class="passage_audio"controls>
                    <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">

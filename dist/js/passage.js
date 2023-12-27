@@ -437,9 +437,7 @@ $(function(){
                 _id: thiz.attr('id').split('-').at(-1)
             },
             success: function(){
-                $('#passage-file-' + thiz.attr('id').split('-').at(-1)).remove();
-                $('#passage_video_' + thiz.attr('id').split('_').at(-1)).remove();
-                $('#passage_audio_' + thiz.attr('id').split('_').at(-1)).remove();
+                $('.passage-file-' + thiz.attr('id').split('-').at(-1)).remove();
             }
         });
     })
