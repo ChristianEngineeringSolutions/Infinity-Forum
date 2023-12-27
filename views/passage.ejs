@@ -163,16 +163,8 @@
            <%}else if (passage.isSVG){%>
                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}else if(passage.mimeType[i] == 'audio'){%>
-               <!-- <audio class="passage_audio"controls>
-                   <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="audio/<%=passage.filename.split('.').at(-1)  %>">
-                   Your browser does not support the audio tag.
-               </audio>  -->
                <%-passage.audio%>
            <%}else if(passage.mimeType[i] == 'video'){%>
-               <!-- <video class="passage_video"width="320" height="240" controls>
-                   <source src="/<%=getUploadFolder(passage)%>/<%=passage.filename%>" type="video/<%=passage.filename.split('.').at(-1)  %>">
-                   Your browser does not support the video tag.
-               </video> -->
                <%-passage.video%>
            <%}else if(passage.mimeType[i] == 'model'){%>
                <%if(passage.thumbnail == null){%>
