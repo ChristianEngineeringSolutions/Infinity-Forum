@@ -33,7 +33,6 @@
     <%*/%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" multiple/>
     <%if(passage.filename){%>
-        <%=JSON.stringify(passage.filename)%>test
         <span id="remove-file-<%=passage._id%>"style="cursor:pointer;">Remove Files</span>
     <%}%>
     <div style="display:none;"id="passage_thumbnail_<%=passage._id%>">

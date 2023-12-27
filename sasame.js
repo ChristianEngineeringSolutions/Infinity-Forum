@@ -1562,7 +1562,7 @@ function concatObjectProps(passage, sub){
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
-        <video style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
+        <video class="passage-file-`+sub._id+`"style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename.split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
@@ -1579,8 +1579,8 @@ function concatObjectProps(passage, sub){
         var filename = sub.filename[0];
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
-        passage.video += `
-        <audio style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
+        passage.audio += `
+        <audio class="passage-file-`+sub._id+`"style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename.split('.').at(-1)+`">
             Your browser does not support the audio tag.
         </audio>
@@ -2432,6 +2432,14 @@ async function uploadFile(req, res, passage){
             if (err){
                 return res.status(500).send(err);
             }
+            //compress if image
+            if(mimeType.split('/')[0] == 'image'){
+                exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1]
+            , (err, stdout, stderr) => {
+                    //done
+                    console.log(err + stdout + stderr);
+                });
+            }
         });
         passage.filename[i] = uploadTitle;
         console.log(passage.filename);
@@ -2453,16 +2461,8 @@ async function uploadFile(req, res, passage){
         else{
             passage.thumbnail = null;
         }
-        //compress if image
-        if(mimeType.split('/')[0] == 'image'){
-            exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1]
-        , (err, stdout, stderr) => {
-                //done
-                console.log(err + stdout + stderr);
-            });
-        }
-        await passage.save();
     });
+    await passage.save();
     console.log(passage.filename + "TEST");
 }
 app.get('/verify/:user_id/:token', function (req, res) {
