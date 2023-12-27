@@ -1621,7 +1621,7 @@ function bubbleUpAll(passage){
     if(passage.mimeType[0] == 'video'){
         passage.video = `
         <video id="passage_video_`+passage._id+`"class="passage_video"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(passage)+`/`+passage.filename+`" type="video/`+passage.filename.split('.').at(-1)+`">
+            <source src="/`+getUploadFolder(passage)+`/`+passage.filename[0]+`" type="video/`+passage.filename[0].split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
         <script>
@@ -1636,7 +1636,7 @@ function bubbleUpAll(passage){
     else if(passage.mimeType[0] == 'audio'){
         passage.audio = `
         <audio id="passage_audio_`+passage._id+`"class="passage_audio"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(passage)+`/`+passage.filename+`" type="audio/`+passage.filename.split('.').at(-1)+`">
+            <source src="/`+getUploadFolder(passage)+`/`+passage.filename[0]+`" type="audio/`+passage.filename[0].split('.').at(-1)+`">
             Your browser does not support the audio tag.
         </audio>
         <script>
@@ -1732,6 +1732,7 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     for(const p of passage.passages){
         passage.passages[p] = bubbleUpAll(p);
     }
+    console.log(subPassages);
     res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -2370,14 +2371,19 @@ app.post('/update_passage/', async (req, res) => {
         console.log('File uploaded');
         await uploadFile(req, res, passage);
     }
-    console.log(passage.filename + "TEST2");
-    console.log("TEST5"+passage);
+    var test;
+    test = await Passage.findOne({title: 'Forum Test'});
+    console.log(test + '01');
     await passage.save();
+    test = await Passage.findOne({title: 'Forum Test'});
+    console.log(test + '02');
     if(passage.mainFile && req.session.user.admin){
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);
     }
     passage = bubbleUpAll(passage);
+    var test = await Passage.findOne({title: 'Forum Test'});
+    console.log(test);
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
@@ -2420,15 +2426,16 @@ async function uploadFile(req, res, passage){
     else{
         fileToUpload = [fileToUpload];
     }
-    passage.filename = [];
-    await fileToUpload.forEach(async (file, i)=>{
+    // passage.filename = [];
+    var i = 0;
+    for(const file of fileToUpload){
         var mimeType = fileToUpload[i].mimetype; 
         //uuid with  ext
         var uploadTitle = v4() + "." + fileToUpload[i].name.split('.').at(-1);
         var thumbnailTitle = v4() + ".jpg";
         var where = passage.personal ? 'protected' : 'uploads';
         // Use the mv() method to place the file somewhere on your server
-        fileToUpload[i].mv('./dist/'+where+'/'+uploadTitle, function(err) {
+        fileToUpload[i].mv('./dist/'+where+'/'+uploadTitle, async function(err) {
             if (err){
                 return res.status(500).send(err);
             }
@@ -2451,7 +2458,7 @@ async function uploadFile(req, res, passage){
             passage.isSVG = false;
         }
         passage.mimeType[i] = mimeType.split('/')[0];
-        if(passage.mimeType == 'model' || passage.isSVG){
+        if(passage.mimeType[i] == 'model' || passage.isSVG){
             var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
             var buf = Buffer.from(data, 'base64');
             const fsp = require('fs').promises;
@@ -2461,7 +2468,13 @@ async function uploadFile(req, res, passage){
         else{
             passage.thumbnail = null;
         }
-    });
+        i++;
+        passage.markModified('filename');
+        passage.markModified('mimeType');
+        console.log('filename'+passage.filename);
+        console.log('mimetype'+passage.mimeType);
+        await passage.save();
+    }
     await passage.save();
     console.log(passage.filename + "TEST");
 }
