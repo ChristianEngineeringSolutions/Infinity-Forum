@@ -1562,8 +1562,8 @@ function concatObjectProps(passage, sub){
         console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
-        <video class="passage-file-`+sub._i+`"style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename.split('.').at(-1)+`">
+        <video class="passage-file-`+sub._id+`"style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
+            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename[0].split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
         <script>
@@ -1581,7 +1581,7 @@ function concatObjectProps(passage, sub){
         //`+passage.filename.split('.').at(-1)+`
         passage.audio += `
         <audio style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename.split('.').at(-1)+`">
+            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename[0].split('.').at(-1)+`">
             Your browser does not support the audio tag.
         </audio>
         <script>
@@ -2085,6 +2085,7 @@ async function createPassage(user, parentPassageId){
         author: user,
         users: users,
         parent: parentId,
+        forum: parent.forum,
         lang: lang,
         fileStreamPath: fileStreamPath
     });
