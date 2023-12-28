@@ -1548,7 +1548,7 @@ app.get('/eval/:passage_id', async function(req, res){
 });
 function concatObjectProps(passage, sub){
     if(typeof passage.content != 'undefined')
-        passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '\n<b>' + sub.title + '</b><hr>' + '' : '\n<b>' + sub.title + '</b><hr>' + sub.content);
+        passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '' : sub.content);
     if(typeof passage.code != 'undefined')
         passage.displayCode += (typeof sub.code == 'undefined' || sub.code == '' ? '' : '\n' + sub.code);
     if(typeof passage.html != 'undefined')
