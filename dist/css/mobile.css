@@ -1,4 +1,4 @@
-/* Tablets */
+/* Tablets landscape */
 @media screen and (max-width: 1200px){
     .passage_option_expand{
         display: inline;
@@ -9,6 +9,27 @@
     #graphic_mode{
         display: none;
     }
+    .detail-div{
+        margin-left: 280px;
+        width: 70%;
+    }   
+
+}
+/* Tablets portrait*/
+@media screen and (max-width: 820px){
+    .passage_option_expand{
+        display: inline;
+    }
+    .condensed{
+        display: none;
+    }
+    #graphic_mode{
+        display: none;
+    }
+    .detail-div{
+        margin-left: 280px;
+        width: 55%;
+    }   
 
 }
 /* Large Phones */
@@ -16,6 +37,10 @@
     /* .profile_image, .p-image-container{
         display: none;
     } */
+    .detail-div{
+        margin-left: 10px;;
+        width: 93%;
+    }  
     .passage_delete{
         display: none;
     }
