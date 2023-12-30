@@ -23,6 +23,9 @@
             editor.getSession().on("change", function () {
                 $('textarea[id="passage_code_<%=passage._id%>"]').val(editor.getSession().getValue());
             });
+            editor.setOptions({
+            fontSize: "10pt"
+            });
         </script>
         <!-- <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || ''%>"></code-input> -->
         <textarea style="display:none;"class="passage_code" name="code" id="passage_code_<%=passage._id%>" cols="30" rows="10"><%=passage.code%></textarea>
