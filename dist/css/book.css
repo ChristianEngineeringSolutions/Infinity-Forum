@@ -301,16 +301,16 @@ hr{
     /*position: fixed;
     right: 0px;*/
 }
-#page-count{
+.page-count{
     list-style-type: none;
     color: white;
     width: 90%;
     margin: auto;
     text-align: center;
-    margin: 30px;
+    margin: 30px auto;
     display: block;
 }
-#page-count li{
+.page-count li{
     display: inline;
     background: black;
     color: inherit;

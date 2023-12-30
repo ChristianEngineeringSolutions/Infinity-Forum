@@ -10,7 +10,7 @@
                     <div data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
                 <%}%>
                 <%if(passageTitle){%>
-                    <div id="page_title"><%= decodeURIComponent(passageTitle)%></div>
+                    <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle)%></a></div>
                 <%}%>
             </div>
             <%if(passages){%>
