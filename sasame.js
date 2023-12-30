@@ -1002,7 +1002,7 @@ app.get('/donate', async function(req, res){
 app.post('/search_leaderboard/', async (req, res) => {
     let results = await User.find({
         username: {
-        $regex: req.body.search,
+        $regex: escapeBackSlash(req.body.search),
         $options: 'i',
     }}).sort('-stars').limit(20);
     res.render("leaders", {
@@ -1010,12 +1010,13 @@ app.post('/search_leaderboard/', async (req, res) => {
     });
 });
 app.post('/search_profile/', async (req, res) => {
+    var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     let results = await Passage.find({
         author: req.body._id,
         deleted: false,
         personal: false,
         title: {
-        $regex: req.body.search,
+        $regex: search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     for(const result of results){
@@ -1028,9 +1029,10 @@ app.post('/search_profile/', async (req, res) => {
     });
 });
 app.post('/search_messages/', async (req, res) => {
+    var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     var messages = await Message.find({
         title: {
-            $regex: req.body.search,
+            $regex: search,
             $options: 'i',
         },
         to: req.session.user._id 
@@ -1052,6 +1054,7 @@ app.post('/search_messages/', async (req, res) => {
     });
 });
 app.post('/ppe_search/', async (req, res) => {
+    var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     let parent = req.body.parent == 'root' ? null : req.body.parent;
     let results = await Passage.find({
         parent: parent,
@@ -1059,7 +1062,7 @@ app.post('/ppe_search/', async (req, res) => {
         personal: false,
         mimeType: 'image',
         title: {
-        $regex: req.body.search,
+        $regex: search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     for(const result of results){
@@ -1090,12 +1093,13 @@ app.post('/ppe_search/', async (req, res) => {
 //     await fixMissingInParent();
 // })();
 app.post('/search_passage/', async (req, res) => {
+    var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     let results = await Passage.find({
         parent: req.body._id,
         deleted: false,
         personal: false,
         title: {
-        $regex: req.body.search,
+        $regex: search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     if(results.length < 1 && req.session.user){
@@ -1141,14 +1145,21 @@ app.post('/search_passage/', async (req, res) => {
         sub: true
     });
 });
+function escapeBackSlash(str){
+    var temp = str.replace('\\', '\\\\');
+    console.log(temp);
+    return str;
+}
 app.post('/search/', async (req, res) => {
-    let exact = await Passage.findOne({personal:false,deleted:false,title:req.body.search});
+    var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    console.log(search);
+    let exact = await Passage.findOne({personal:false,deleted:false,title:search});
     if(exact == null && req.session.user){
         let passage = await Passage.create({
             author: req.session.user._id,
             users: [req.session.user._id],
             parent: null,
-            title: req.body.search,
+            title: search,
             public: true
         });
     }
@@ -1156,7 +1167,7 @@ app.post('/search/', async (req, res) => {
         deleted: false,
         personal: req.body.personal,
         title: {
-        $regex: req.body.search,
+        $regex: search,
         $options: 'i',
     }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     for(const result of results){
@@ -1547,6 +1558,7 @@ app.get('/eval/:passage_id', async function(req, res){
     res.render("eval", {passage: passage, all: all});
 });
 function concatObjectProps(passage, sub){
+    // console.log(sub.code);
     if(typeof passage.content != 'undefined')
         passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '' : sub.content);
     if(typeof passage.code != 'undefined')
@@ -1596,11 +1608,16 @@ function concatObjectProps(passage, sub){
     passage.sourceList = [...passage.sourceList, ...sub.sourceList];
 }
 function getAllSubData(passage){
+    console.log('1');
     if(!passage.public && passage.passages && passage.bubbling){
+        console.log(passage);
         passage.passages.forEach((p)=>{
+            console.log('3');
             if(typeof p == 'undefined'){
                 return p;
             }
+            console.log('3');
+            console.log(p.code);
             p.displayContent = p.content;
             p.displayCode = p.code;
             p.displayHTML = p.html;
@@ -2092,6 +2109,7 @@ async function createPassage(user, parentPassageId){
     if(!isRoot){
         //add passage to parent sub passage list
         parent.passages.push(passage);
+        parent.markModified('passages');
         await parent.save();
     }
     let find = await Passage.findOne({_id: passage._id}).populate('author sourceList');
