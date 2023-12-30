@@ -1000,9 +1000,10 @@ app.get('/donate', async function(req, res){
 });
 //Search
 app.post('/search_leaderboard/', async (req, res) => {
+    var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     let results = await User.find({
         username: {
-        $regex: escapeBackSlash(req.body.search),
+        $regex: search,
         $options: 'i',
     }}).sort('-stars').limit(20);
     res.render("leaders", {
