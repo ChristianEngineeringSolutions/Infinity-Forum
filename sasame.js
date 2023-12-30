@@ -815,10 +815,7 @@ app.post('/passage_from_json', async (req, res) => {
     var copy = passageController.copyPassage(req.params.passage, [req.session.user], null, function(){
         
     });
-    //bookmark passage
-    let user = await User.findOne({_id: req.session.user._id});
-    user.bookmarks.push(copy._id);
-    await user.save();
+    await bookmarkPassage(copy._id, req.session.user._id);
 });
 function getRemotePage(req, res){
     //get same route from server
@@ -971,6 +968,7 @@ app.post('/interact', async (req, res) => {
     });
     var passage = await Passage.findOne({_id: req.body.passageID});
     passage.interactions.push(interaction._id);
+    passage.markModified('interactions');
     await passage.save();
     res.send("Done.");
 });
@@ -1274,6 +1272,7 @@ app.post('/add_daemon', async (req, res) => {
         let daemon = await Passage.findOne({_id: passage});
         let user = await User.findOne({_id: req.session.user._id});
         user.daemons.push(daemon);
+        user.markModified('daemons');
         await user.save();
         return res.render('daemons', {daemons: user.daemons});
     }
@@ -1291,7 +1290,7 @@ app.post('/remove_daemon', async (req, res) => {
                 user.daemons.splice(i, 1);
             }
         });
-
+        user.markModified('daemons');
         await user.save();
         return res.render('daemons', {daemons: user.daemons});
     }
@@ -1307,6 +1306,7 @@ app.post('/sort_daemons', async (req, res) => {
             var daemonOrder = JSON.parse(req.body.daemonOrder);
             let trimmedDaemonOrder = daemonOrder.map(str => str.trim());
             user.daemons = trimmedDaemonOrder;
+            user.markModified('daemons');
             await user.save();
         }
         //give back updated passage
@@ -1330,6 +1330,7 @@ app.post('/add_user', async (req, res) => {
     let passage = await Passage.findOne({_id: passageId});
     if(user && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         passage.users.push(user._id);
+        passage.markModified('users');
         await passage.save();
         res.send("User Added");
     }
@@ -1342,11 +1343,13 @@ app.post('/add_collaborator', async (req, res) => {
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         if(!passage.collaborators.includes(req.body.email)){
             passage.collaborators.push(req.body.email);
+            passage.markModified('collaborators');
         }
         //if possible add user
         let collabUser = await User.findOne({email: req.body.email});
         if(collabUser != null && !isPassageUser(collabUser, passage)){
             passage.users.push(collabUser._id);
+            passage.markModified('users');
         }
         await passage.save();
         return res.send("User Added");
@@ -1426,6 +1429,7 @@ app.post('/remove_user', async (req, res) => {
                 passage.users.splice(index, 1);
             }
         });
+        passage.markModified('users');
         await passage.save();
         res.send("Done.");
     }
@@ -2152,6 +2156,7 @@ app.post('/update_passage_order/', async (req, res) => {
             var passageOrder = JSON.parse(req.body.passageOrder);
             let trimmedPassageOrder = passageOrder.map(str => str.trim());
             passage.passages = trimmedPassageOrder;
+            passage.markModified('passages');
             await passage.save();
         }
     }
@@ -2391,19 +2396,12 @@ app.post('/update_passage/', async (req, res) => {
         console.log('File uploaded');
         await uploadFile(req, res, passage);
     }
-    var test;
-    test = await Passage.findOne({title: 'Forum Test'});
-    console.log(test + '01');
     await passage.save();
-    test = await Passage.findOne({title: 'Forum Test'});
-    console.log(test + '02');
     if(passage.mainFile && req.session.user.admin){
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);
     }
     passage = bubbleUpAll(passage);
-    var test = await Passage.findOne({title: 'Forum Test'});
-    console.log(test);
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
