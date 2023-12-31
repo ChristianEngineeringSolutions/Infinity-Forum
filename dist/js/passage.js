@@ -460,6 +460,25 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^="passage_download_"]', function(e){
+        var _id = getPassageId(this);
+        var thiz = $(this);
+        var content = $('#selection').val();
+        // Default export is a4 paper, portrait, using millimeters for units
+        const doc = new jsPDF();
+        var source = $('#passage_detail_content_' + _id)[0];
+        // doc.text(text, 10, 10);
+        // doc.save("a4.pdf");
+        doc.fromHTML(
+            source,
+            15,
+            15,
+            {
+              'width': 180,
+            });
+        
+        doc.output("dataurlnewwindow");
+    });
     $(document).on('keyup', '.passage_add_user', function(e){
         if(e.keyCode == 13){
             var thiz = $(this);
