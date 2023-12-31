@@ -2695,7 +2695,7 @@ async function loadFileStream(directory=__dirname){
             fileStreamPath: directory
         });
         for (const file of files){
-            if(file == '.git' || file == 'node_modules' || file == 'images'){
+            if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images'){
                 continue;
             }
             // console.log(directory + '/' + file);
