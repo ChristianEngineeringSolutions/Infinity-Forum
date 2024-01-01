@@ -671,7 +671,12 @@ $(function(){
                 amount: amount
             },
             success: function(data){
-                thisPassage(thiz).replaceWith(data);
+                if(data[0] == 'N'){
+                    thisPassage(thiz).prepend(data);
+                }
+                else{
+                    thisPassage(thiz).replaceWith(data);
+                }
             }
         });
     });
