@@ -2138,12 +2138,12 @@ app.post('/star_passage/', async (req, res) => {
         if(sessionUser.stars > amount && process.env.REMOTE == 'true'){
             //user must trade their own stars
             sessionUser.stars -= parseInt(amount);
-            let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id);
+            let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
             await sessionUser.save();
             return res.render('passage', {subPassages: false, passage: passage, sub: true});
         }
         else if(process.env.REMOTE == 'false'){
-            let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id);
+            let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
             await sessionUser.save();
             return res.render('passage', {subPassages: false, passage: passage, sub: true});
         }
