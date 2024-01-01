@@ -54,8 +54,10 @@
         max-width: 75px;
     }
     .passage_stars{
-        float: right;
-        margin-top: 23px;
+        float: left;
+        margin-top: 25px;
+        width: 100%;
+        text-align: left;
     }
     .passage-box{
         border: 0 !important;
