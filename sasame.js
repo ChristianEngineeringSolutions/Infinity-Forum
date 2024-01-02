@@ -1563,20 +1563,21 @@ app.get('/eval/:passage_id', async function(req, res){
     res.render("eval", {passage: passage, all: all});
 });
 function concatObjectProps(passage, sub){
+    sub = bubbleUpAll(sub);
     // console.log(sub.code);
     if(typeof passage.content != 'undefined')
-        passage.displayContent += (typeof sub.content == 'undefined' || sub.content == '' ? '' : sub.content);
+        passage.displayContent += (typeof sub.displayContent == 'undefined' || sub.displayContent == '' ? '' : sub.displayContent);
     if(typeof passage.code != 'undefined')
-        passage.displayCode += (typeof sub.code == 'undefined' || sub.code == '' ? '' : '\n' + sub.code);
+        passage.displayCode += (typeof sub.displayCode == 'undefined' || sub.displayCode == '' ? '' : '\n' + sub.displayCode);
     if(typeof passage.html != 'undefined')
-        passage.displayHTML += (typeof sub.html == 'undefined' || sub.html == '' ? '' : '\n' + sub.html);
+        passage.displayHTML += (typeof sub.displayHTML == 'undefined' || sub.displayHTML == '' ? '' : '\n' + sub.displayHTML);
     if(typeof passage.css != 'undefined')
-        passage.displayCSS += (typeof sub.css == 'undefined' || sub.css == '' ? '' : '\n' + sub.css);
+        passage.displayCSS += (typeof sub.displayCSS == 'undefined' || sub.displayCSS == '' ? '' : '\n' + sub.displayCSS);
     if(typeof passage.javascript != 'undefined')
-        passage.displayJavascript += (typeof sub.javascript == 'undefined' || sub.javascript == '' ? '' : '\n' + sub.javascript);
+        passage.displayJavascript += (typeof sub.displayJavascript == 'undefined' || sub.displayJavascript == '' ? '' : '\n' + sub.displayJavascript);
     if(passage.mimeType[0] == 'video'){
         var filename = sub.filename[0];
-        console.log((filename + '').split('.'));
+        // console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.video += `
         <video class="passage-file-`+sub._id+`"style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
@@ -1594,7 +1595,7 @@ function concatObjectProps(passage, sub){
     }
     else if(passage.mimeType[0] == 'audio'){
         var filename = sub.filename[0];
-        console.log((filename + '').split('.'));
+        // console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
         passage.audio += `
         <audio style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
@@ -1613,16 +1614,11 @@ function concatObjectProps(passage, sub){
     passage.sourceList = [...passage.sourceList, ...sub.sourceList];
 }
 function getAllSubData(passage){
-    console.log('1');
     if(!passage.public && passage.passages && passage.bubbling){
-        console.log(passage);
         passage.passages.forEach((p)=>{
-            console.log('3');
             if(typeof p == 'undefined'){
                 return p;
             }
-            console.log('3');
-            console.log(p.code);
             p.displayContent = p.content;
             p.displayCode = p.code;
             p.displayHTML = p.html;
@@ -1633,7 +1629,6 @@ function getAllSubData(passage){
             }
         });
     }
-    console.log(passage.video);
     return passage;
 }
 function bubbleUpAll(passage){
@@ -1697,7 +1692,6 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         parent: passage._id
     })
     var totalPages = Math.round(totalDocuments/DOCS_PER_PAGE) + 1;
-    console.log(totalPages);
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
         return res.send("Must be on Userlist");
     }
@@ -1754,7 +1748,6 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     for(const p of passage.passages){
         passage.passages[p] = bubbleUpAll(p);
     }
-    console.log(subPassages);
     res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE});
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -2103,11 +2096,15 @@ async function createPassage(user, parentPassageId){
     if(parent && parent.lang){
         lang = parent.lang;
     }
+    var forum = false;
+    if(parent && parent.forum){
+        forum = parent.forum;
+    }
     let passage = await Passage.create({
         author: user,
         users: users,
         parent: parentId,
-        forum: parent.forum,
+        forum: forum,
         lang: lang,
         fileStreamPath: fileStreamPath
     });
