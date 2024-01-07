@@ -318,7 +318,7 @@ async function totalUSD(){
 }
 async function totalStars(){
     let users = await User.find({stripeOnboardingComplete: true});
-    if(users = null){
+    if(users == []){
         return 0;
     }
     var stars = 0;
