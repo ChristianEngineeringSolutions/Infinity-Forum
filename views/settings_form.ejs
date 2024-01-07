@@ -1,5 +1,5 @@
 <div>
-    <%if(profile.thumbnail != ''){%>
+    <%if(profile.thumbnail != '' && profile.thumbnail != null){%>
     <img style="width:75px;"id="profile_settings_image" src="/uploads/<%=profile.thumbnail%>">
     <%}else{%>
     <ion-icon id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
