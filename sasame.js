@@ -549,15 +549,10 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     if(req.session.user){
         bookmarks = getBookmarks(req.session.user);
     }
-	if(profile){
     var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
     });
-	}
-	else{
-	res.redirect('/');
-	}
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
