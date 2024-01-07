@@ -1982,7 +1982,7 @@ app.post('/update_settings/', async function(req, res) {
             user.password = await bcrypt.hash(req.body.password, 10);
             await user.save();
             req.session.user = user;
-            return res.redirect('/profile/' + user._id);
+            return res.redirect('/profile/');
         }
     }
     else{
