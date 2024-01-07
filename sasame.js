@@ -318,6 +318,9 @@ async function totalUSD(){
 }
 async function totalStars(){
     let users = await User.find({stripeOnboardingComplete: true});
+    if(users = null){
+        return 0;
+    }
     var stars = 0;
     for(const user of users){
         stars += user.starsGiven;
