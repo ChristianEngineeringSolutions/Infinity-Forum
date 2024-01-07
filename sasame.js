@@ -1955,7 +1955,7 @@ app.post('/register/', async function(req, res) {
           if(user.email && user.email.length > 1){
             sendEmail(user.email, 'Verify Email for Christian Engineering Solutions', 
                 `
-                    https://christianengineeringsolutions.com/verify/`+user._id+`/`+user.token+`
+                    https://infinity-forum.org/verify/`+user._id+`/`+user.token+`
                 `);
           }
           res.redirect('/profile/');
@@ -3027,7 +3027,7 @@ function sendEmail(to, subject, body){
     });
 
     var mailOptions = {
-      from: 'christianengineeringsolutions@gmail.com',
+      from: 'Infinity-Forum.org',
       to: to,
       subject: subject,
       text: body
