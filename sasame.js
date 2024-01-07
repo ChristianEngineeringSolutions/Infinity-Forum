@@ -318,6 +318,9 @@ async function totalUSD(){
 }
 async function totalStars(){
     let users = await User.find({stripeOnboardingComplete: true});
+    if(users = null){
+        return 0;
+    }
     var stars = 0;
     for(const user of users){
         stars += user.starsGiven;
@@ -1982,7 +1985,7 @@ app.post('/update_settings/', async function(req, res) {
             user.password = await bcrypt.hash(req.body.password, 10);
             await user.save();
             req.session.user = user;
-            return res.redirect('/profile/' + user._id);
+            return res.redirect('/profile/');
         }
     }
     else{
