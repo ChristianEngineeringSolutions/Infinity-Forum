@@ -318,7 +318,7 @@ async function totalUSD(){
 }
 async function totalStars(){
     let users = await User.find({stripeOnboardingComplete: true});
-    if(users == []){
+    if(users == false){
         return 0;
     }
     var stars = 0;
@@ -553,6 +553,10 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
         bookmarks = getBookmarks(req.session.user);
     }
     var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
+	if(isNaN(usd)){
+		usd = 0;
+	}
+
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
     });
