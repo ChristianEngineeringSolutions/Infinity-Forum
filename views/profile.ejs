@@ -10,7 +10,7 @@
 <input type="hidden" value="<%=profile._id%>", id="is_profile"/>
 <div id="profile_header">
   <div>
-    <%if(profile.thumbnail != ''){%>
+    <%if(profile.thumbnail != '' && profile.thumbnail != null){%>
       <img style="max-width:140px;"id="profile_settings_image" src="/uploads/<%=profile.thumbnail%>">
       <%}else{%>
         <ion-icon style="font-size:5em;"id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>

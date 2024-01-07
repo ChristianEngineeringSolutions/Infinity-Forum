@@ -13,6 +13,8 @@ const PORT = process.env.PORT || 3000;
 var http = require('http');
 const https = require('https');
 var compression = require('compression');
+const { promisify } = require('util');
+const request = promisify(require('request'));
 
 
 //for daemons access to help code
@@ -66,7 +68,6 @@ const passageController = require('./controllers/passageController');
 var fs = require('fs'); 
 var path = require('path');
 const { exec } = require('child_process');
-const { promisify } = require('util');
 const { v4 } = require('uuid');
 
 const FormData = require('form-data');
@@ -522,6 +523,9 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     }
     else{
         profile = await User.findOne({_id: req.params._id});
+    }
+    if(profile == null){
+        return res.redirect('/');
     }
     let find = {
         //author: profile, 
@@ -1900,15 +1904,40 @@ app.post('/register/', async function(req, res) {
       req.body.username) &&
       req.body.password &&
       req.body.passwordConf && 
-      req.body.password == req.body.passwordConf) {  
+      req.body.password == req.body.passwordConf
+      && req.body["g-recaptcha-response"]) {  
+
+        const name = req.body.name;
+        const response_key = req.body["g-recaptcha-response"];
+        const secret_key = "6Ldgf0gpAAAAALUayL5did3npJvmacmngo1bNeTU";
+        const options = {
+        url: `https://www.google.com/recaptcha/api/siteverify?secret=${secret_key}&response=${response_key}`,
+        headers: { "Content-Type": "application/x-www-form-urlencoded", 'json': true }
+        }
+        try {
+        const re = await request(options);
+        if (!JSON.parse(re.body)['success']) {
+            return res.send({ response: "Failed" });
+        }
+        else{
+            console.log("SUCCESS");
+        }
+        // return res.send({ response: "Successful" });
+        } catch (error) {
+            return res.send({ response: "Failed" });
+        }
+
         let numUsers = await User.countDocuments({username: req.body.username.trim()}) + 1;
+        
         var userData = {
-        email: req.body.email || '',
         name: req.body.username || req.body.email,
         username: req.body.username.split(' ').join('.') + '.' + numUsers || '',
         password: req.body.password,
         token: v4()
-      }  //use schema.create to insert data into the db
+        }  //use schema.create to insert data into the db
+      if(req.body.email != ''){
+        userData.email = req.body.email;
+      }
       User.create(userData, async function (err, user) {
         if (err) {
           console.log(err);
@@ -1923,15 +1952,18 @@ app.post('/register/', async function(req, res) {
             user.save();
           });
           //send verification email
-          if(user.email.length > 1){
+          if(user.email && user.email.length > 1){
             sendEmail(user.email, 'Verify Email for Christian Engineering Solutions', 
                 `
                     https://christianengineeringsolutions.com/verify/`+user._id+`/`+user.token+`
                 `);
           }
-          res.redirect('/profile/' + user._id);
+          res.redirect('/profile/');
         }
       });
+    }
+    else{
+        res.redirect('/loginform');
     }
 });
 app.post('/update_settings/', async function(req, res) {
