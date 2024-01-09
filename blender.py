@@ -22,7 +22,7 @@ dir = "/home/uriah/Desktop/"
 
 search = ''
 
-website = "https://christianengineeringsolutions.com"
+website = "https://infinity-forum.org"
 #website = "http://localhost:3000"
 
 #for alerts
@@ -209,7 +209,7 @@ def GetModel(_id):
 
 bl_info = {
     "name": "CES Connect",
-    "description": "Blender Add-On for ChristianEngineeringSolutions.com",
+    "description": "Blender Add-On for Infinity-Forum.org",
     "author": "Uriah Sanders",
     "version": (0, 0, 1),
     "blender": (3, 0, 1),
