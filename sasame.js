@@ -3050,14 +3050,14 @@ function sendEmail(to, subject, body){
 //     await PrimeEngine();
 // })();
 //run every minute
-cron.schedule('* * * * *', async () => {
-    await PrimeEngine();
-});
+// cron.schedule('* * * * *', async () => {
+//     await PrimeEngine();
+// });
 //clean engine every 10 minutes
-cron.schedule('*/10 * * * *', async () => {
-    await cleanEngine();
-    console.log('Cleaned AI.');
-});
+// cron.schedule('*/10 * * * *', async () => {
+//     await cleanEngine();
+//     console.log('Cleaned AI.');
+// });
 //return synthetically annealled random passage
 //in other words, bias towards a greater number of stars
 async function anneal(){
