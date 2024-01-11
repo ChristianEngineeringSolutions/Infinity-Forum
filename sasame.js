@@ -301,7 +301,11 @@ async function percentStars(user_stars){
 }
 //get percentage of total usd
 async function percentUSD(donationUSD){
-    let final = donationUSD / (await totalUSD());
+    var amount = await totalUSD();
+    if(amount == 0){
+        return 1;
+    }
+    let final = donationUSD / (amount);
     return final;
 }
 async function totalUSD(){
