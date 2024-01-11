@@ -235,7 +235,7 @@
     background: white;
 }
 .display_code{
-    width: 99%;
+    /* width: 99%; */
     overflow: scroll;
     resize: both;
     height: 500px;
@@ -243,6 +243,8 @@
     border: 1px solid black;
     background: white;
     margin: auto;
+    margin-bottom: 5px;
+    margin-right: 5px;
 }
 .passage_iframe{
     position: relative;
