@@ -37,6 +37,10 @@
     /* .profile_image, .p-image-container{
         display: none;
     } */
+    .display_code{
+        margin-bottom: 0px;
+        margin-right: 0px;
+    }
     .detail-div{
         margin-left: 10px;;
         width: 93%;
