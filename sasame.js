@@ -1722,8 +1722,8 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     }
     passage = bubbleUpAll(passage);
     if(passage.public == true && !passage.forum){
-        var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        var subPassages = await Passage.paginate({parent: passage_id, personal: false}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        var subPassages = await Passage.paginate({parent: passage_id}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
         subPassages = subPassages.docs;
     }
     else{
@@ -1731,11 +1731,11 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
             passage.showIframe = true;
         }
         if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id, personal: false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            var subPassages = await Passage.paginate({parent: passage_id}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
             subPassages = subPassages.docs;
         }
         else{ 
-            var subPassages = await Passage.find({parent: passage_id, personal: false}).populate('author users sourceList');  
+            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
         }
     }
     //we have to do this because of issues with populating passage.passages foreign keys
