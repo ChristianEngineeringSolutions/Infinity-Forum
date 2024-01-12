@@ -104,7 +104,8 @@
         font-size: 0.5em;
     }
     #menu-button{
-        font-size: 0.7em !important;
+        font-size: 0.9em !important;
+        margin-right: 20px;
         float: left;
     }
     #home_link{
