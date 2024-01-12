@@ -545,7 +545,7 @@ $(function(){
             }
         });
     });
-    $(document).on('click', '#parent_title', function(e){
+    $(document).on('click touch', '#parent_title', function(e){
         window.location.href = $(this).data('url');
     });
     $(document).on('click', '.passage_setting', function(){
