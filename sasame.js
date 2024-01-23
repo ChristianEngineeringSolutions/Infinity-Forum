@@ -144,11 +144,12 @@ scripts.isPassageUser = function(user, passage){
     if(user._id.toString() == passage.author._id.toString()){
         return true;
     }
-    passage.users.forEach(function(u){
+    var i = 0;
+    for(const u of passage.users){
         if(u._id.toString() == user._id.toString()){
             return true;
         }
-    });
+    }
     return false;
 };
 app.use(cookieParser());
@@ -493,7 +494,7 @@ app.get('/personal/:user_id', async (req, res) => {
             users: {
                 $in: [req.params.user_id]
             }
-        });
+        }).populate('users');
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
         }
@@ -1344,7 +1345,7 @@ app.post('/add_user', async (req, res) => {
     let user = await User.findOne({username: username});
     let passage = await Passage.findOne({_id: passageId});
     if(user && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        passage.users.push(user._id);
+        passage.users.push(user._id.toString());
         passage.markModified('users');
         await passage.save();
         res.send("User Added");
