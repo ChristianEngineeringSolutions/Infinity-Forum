@@ -140,7 +140,7 @@ $(function(){
         $('#advanced-menu-options').fadeToggle()
     });
     $(document).on('click', '#menu-help', function(){
-        window.location.href = 'https://christianengineeringsolutions.com/passage/Help/6434aad636f6480119dc46f3';
+        window.location.href = 'https://infinity-forum.org/passage/Welcome!/65a1ca52f788bd934dd36d6a';
     });
     $(document).on('click', function(e){
         var container = $("#left-side-panel");
