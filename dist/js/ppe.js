@@ -148,7 +148,7 @@ $(function(){
             POSX = posx;
             POSY = posy;
             drawCursor(posx, posy);
-            if($('#ppe_select').data('select') == 'off' && isDrawing){
+            if($('#ppe_select').data('select') == 'off' && isDrawing && $('#ppe_erase').data('on') != 'true'){
                 var image = getSelectedQueueImage();
                 // var imageContext = image.getContext('2d');
                 // fadeOut();
