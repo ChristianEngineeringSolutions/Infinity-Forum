@@ -6,9 +6,9 @@
     .condensed{
         display: none;
     }
-    #graphic_mode{
+    /* #graphic_mode{
         display: none;
-    }
+    } */
     .detail-div{
         margin-left: 280px;
         width: 70%;
@@ -23,9 +23,9 @@
     .condensed{
         display: none;
     }
-    #graphic_mode{
+    /* #graphic_mode{
         display: none;
-    }
+    } */
     .detail-div{
         margin-left: 280px;
         width: 55%;
