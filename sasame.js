@@ -638,11 +638,18 @@ app.get('/alternate', async(req, res) => {
     //     parent = passage[0];
     // }
     // else{
-        parent.passages.forEach(function(p, i){
+        // parent.passages.forEach(function(p, i){
+        //     if(i == req.query.position){
+        //         parent.passages[i] = passage;
+        //     }
+        // });
+        var i = 0;
+        for(const p of parent.passages){
             if(i == req.query.position){
                 parent.passages[i] = passage;
             }
-        });
+            ++i;
+        }
     // }
     // if(typeof parent.passages != 'undefined' && parent.passages[0] != null){
     //     for(const p of parent.passages){
@@ -1301,11 +1308,18 @@ app.post('/remove_daemon', async (req, res) => {
         let passage = req.body._id;
         let daemon = await Passage.findOne({_id: passage});
         let user = await User.findOne({_id: req.session.user._id});
-        user.daemons.forEach(function(d, i){
+        // user.daemons.forEach(function(d, i){
+        //     if(d._id.toString() == daemon._id.toString()){
+        //         user.daemons.splice(i, 1);
+        //     }
+        // });
+        var i = 0;
+        for(const d of user.daemons){
             if(d._id.toString() == daemon._id.toString()){
                 user.daemons.splice(i, 1);
             }
-        });
+            ++i;
+        }
         user.markModified('daemons');
         await user.save();
         return res.render('daemons', {daemons: user.daemons});
@@ -1439,12 +1453,20 @@ app.post('/remove_user', async (req, res) => {
     let userID = req.body.userID;
     let passage = await Passage.findOne({_id: passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        passage.users.forEach(async function(u, index){
+        // passage.users.forEach(async function(u, index){
+        //     if(u == userID){
+        //         //remove user
+        //         passage.users.splice(index, 1);
+        //     }
+        // });
+        var index = 0;
+        for(const u of passage.users){
             if(u == userID){
                 //remove user
                 passage.users.splice(index, 1);
             }
-        });
+            ++index;
+        }
         passage.markModified('users');
         await passage.save();
         res.send("Done.");
@@ -1631,7 +1653,7 @@ function concatObjectProps(passage, sub){
 }
 function getAllSubData(passage){
     if(!passage.public && passage.passages && passage.bubbling){
-        passage.passages.forEach((p)=>{
+        for(const p of passage.passages){
             if(typeof p == 'undefined'){
                 return p;
             }
@@ -1643,7 +1665,20 @@ function getAllSubData(passage){
             if(p.lang == passage.lang){
                 concatObjectProps(passage, getAllSubData(p));
             }
-        });
+        }
+        // passage.passages.forEach((p)=>{
+        //     if(typeof p == 'undefined'){
+        //         return p;
+        //     }
+        //     p.displayContent = p.content;
+        //     p.displayCode = p.code;
+        //     p.displayHTML = p.html;
+        //     p.displayCSS = p.css;
+        //     p.displayJavascript = p.javascript;
+        //     if(p.lang == passage.lang){
+        //         concatObjectProps(passage, getAllSubData(p));
+        //     }
+        // });
     }
     return passage;
 }
@@ -1717,9 +1752,12 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     }
     let passageUsers = [];
     if(passage.users != null && passage.users[0] != null){
-        passage.users.forEach(function(u){
+        // passage.users.forEach(function(u){
+        //     passageUsers.push(u._id.toString());
+        // });
+        for(const u of passage.users){
             passageUsers.push(u._id.toString());
-        });
+        }
     }
     passage = bubbleUpAll(passage);
     if(passage.public == true && !passage.forum){
@@ -2397,6 +2435,7 @@ app.post('/passage_update', async (req, res) => {
     }
 });
 //attributes is an object
+//temp for external api
 async function updatePassage(_id, attributes){
     var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
     const keys = Object.keys(attributes);
