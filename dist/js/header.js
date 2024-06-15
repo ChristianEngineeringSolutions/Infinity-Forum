@@ -103,6 +103,16 @@ $(function(){
     $(document).on('click', '#login_register_link', function(){
         window.location.href = "/loginform";
     });
+    $(document).on('click', '.menu-link', function(){
+        var id = $(this).attr('id');
+        var title = id.split('-')[0];
+        var href = '/' + title;
+        $('.active_tab').html('<span class="tab_delete">X</span>' + title[0].toUpperCase + title.slice(1));
+        let tab_id = $('.active_tab').attr('id');
+        localStorage.setItem(tab_id, JSON.stringify({text: title[0].toUpperCase + title.slice(1), href: href}));
+        localStorage.setItem('active_tab', tab_id);
+        window.location.href = href;
+    });
     $(document).on('click', '#home_link, .home-link', function(){
         var title = 'Home';
         let href = '/';
@@ -110,7 +120,7 @@ $(function(){
         let tab_id = $('.active_tab').attr('id');
         localStorage.setItem(tab_id, JSON.stringify({text: title, href: href}));
         localStorage.setItem('active_tab', tab_id);
-        window.location.href = "/";
+        window.location.href = href;
     });
     $(document).on('click', '#menu-button', function(){
         $('#left-side-panel').show()

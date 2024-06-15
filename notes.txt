@@ -117,3 +117,19 @@ Modularize filestream
 
 //Reconsider; may not be urgent; can already mix rich w/ code
 Bubble Up Content All langs together (true mix; allow and revise) **Consider again (might already pretty much work)
+
+
+Forum headers:
+General: General Discussion
+Suggestions: Suggestions for the website
+Introductions: Introducing yourself to the community.
+Science/Engineering: Posts about science and engineering.
+Spirituality/Religion
+Entertainment: Posts about TV/Games/Music/Books, etc.
+Art: Art of all types!
+Sports
+Food
+Education
+Business
+Government
+Current Events

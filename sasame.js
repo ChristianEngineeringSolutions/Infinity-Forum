@@ -188,7 +188,7 @@ app.use(async function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
-    if(['profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin'].includes(req.url.split('/')[1])){
+    if(['stream', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -938,6 +938,47 @@ function getRemotePage(req, res){
 app.post('/cesconnect', function(req, res){
     req.session.CESCONNECT = !req.session.CESCONNECT;
     res.send("Done.");
+});
+app.get('/stream', async (req, res) => {
+    //REX
+    if(req.session.CESCONNECT){
+        getRemotePage(req, res);
+    }
+    else{
+        let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+        let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+        let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+        let golden = '';
+        let addPassageAllowed = true;
+        let addChapterAllowed = true;
+        var user = req.session.user || null;
+        let passages = await Passage.find({
+            deleted: false,
+            personal: false,
+        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        for(const passage of passages){
+            passages[passage] = bubbleUpAll(passage);
+        }
+        let passageUsers = [];
+        let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
+        if(req.session.user){
+            bookmarks = getBookmarks(req.session.user);
+        }
+        res.render("stream", {
+            subPassages: false,
+            passageTitle: false, 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+        });
+    }
 });
 //index.html
 app.get('/', async (req, res) => {
@@ -3200,6 +3241,45 @@ async function optimizeEngine(){
     return;
 }
 // cleanEngine();
+
+//run on passage update if content chsnges
+async function propagatePassage(passageID){
+    var passage = Passage.findOne({_id: passsageID}).populate('input');
+    //if lang = rich then content
+    //else code
+    var output;
+    if(passage.lang == 'rich'){
+        output = passage.content;
+    }
+    else{
+        output = passage.code;
+    }
+    var input = passage.input;
+    var inputs = [];
+    //get outputs of all inputs
+    for(const i of input){
+        inputs.push(i.final);
+    }
+    var j = 1;
+    //input1-x are protected terms
+    for(const o of inputs){
+        output.replace('input' + j, o);
+        ++j;
+    }
+    passage.final = output;
+    await passage.save();
+    //propagate passage for each passage using this passage as an input
+    var passages = Passage.find({
+        //find if in array
+        input: {
+            $in: [passage]
+        }
+    });
+    for(const p of passages){
+        await propagatePassage(p._id);
+    }
+}
+
 
 //SOCKETS 
 io.on('connection', async (socket) => {
