@@ -135,6 +135,14 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],
+    // 
+    input: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    }],
+    output: String,
+    //result of evaluating the output
+    final: String,
     //date of creation
     date: {type: Date, default: Date.now},
     //date last updated

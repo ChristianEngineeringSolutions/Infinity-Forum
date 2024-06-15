@@ -47,9 +47,7 @@
             <div>Programming Language:</div><br>
             <input id="passage_ext_<%=passage._id%>"class="passage_ext passage_lang" value="<%=passage.lang%>" type="text"name="lang"placeholder="Programming Language">
             <div style="margin-top: 25px;">File Path:</div><br>
-            <input id="passage_filestreampath_<%=passage._id%>"class="passage_ext" value="<%=passage.fileStreamPath%>" type="text"name="filestreampath"placeholder="">
-            <div style="margin-top: 25px;">Bibliography:</div><br>
-            <input id="passage_bibliography_<%=passage._id%>"class="passage_ext" value="<%=passage.bibliography%>" type="text"name="bibliography"placeholder="Additional Source Info">
+            <input autocomplete="off"id="passage_filestreampath_<%=passage._id%>"class="passage_ext" value="<%=passage.fileStreamPath%>" type="text"name="filestreampath"placeholder="">
             <%if(user && user.admin){%>
                 <br>
                 <%if(passage.mainFile){%>
@@ -62,6 +60,13 @@
                     <button id="make_mainfile_<%=passage._id%>">Run File</button>
                 <%}%>
             <%}%>
+            <div style="margin-top: 25px;">Bibliography:</div><br>
+            <input id="passage_bibliography_<%=passage._id%>"class="passage_ext" value="<%=passage.bibliography%>" type="text"name="bibliography"placeholder="Additional Source Info">
+            <div style="margin-top: 25px;">Inputs:</div><br>
+            <input type="text"placeholder="input1" class="passage_input"><br>
+            <button class="passage_button">More Inputs</button><br><br>
+            <!-- <div style="margin-top: 25px;">Output:</div><br>
+            <textarea class="passage-textarea"placeholder="Output"name="" id="" cols="30" rows="10"></textarea> -->
             <textarea style="display:none;"class="passage_license" name="license" id="passage_license_<%=passage._id%>" cols="30" rows="10" placeholder="LICENSE">All modules submitted to CES must first comply with the terms and agreements. You are allowed to utilize this work through citations on christianengineeringsolutions.com.&#13;&#10;<%=passage.license%></textarea>
     </div>
     <ul class="passage_tabs">
