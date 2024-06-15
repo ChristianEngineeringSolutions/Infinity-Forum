@@ -547,7 +547,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
     //     find.$or = [{personal: true}, {personal: false}];
     // }
-    let passages = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    let passages = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const passage of passages){
         passages[passage] = bubbleUpAll(passage);
     }
@@ -997,7 +997,7 @@ app.get('/', async (req, res) => {
         let passages = await Passage.find({
             deleted: false,
             personal: false,
-        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
         }
@@ -1081,7 +1081,7 @@ app.post('/search_profile/', async (req, res) => {
         title: {
         $regex: search,
         $options: 'i',
-    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    }}).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
     }
@@ -1232,7 +1232,7 @@ app.post('/search/', async (req, res) => {
         title: {
         $regex: search,
         $options: 'i',
-    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    }}).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
     }
@@ -2111,7 +2111,7 @@ app.post('/paginate', async function(req, res){
         if(req.body.from_ppe_queue){
             find.mimeType = 'image';
         }
-        let passages = await Passage.paginate(find, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
+        let passages = await Passage.paginate(find, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
         for(const p of passages.docs){
             passages[p] = bubbleUpAll(p);
         }
