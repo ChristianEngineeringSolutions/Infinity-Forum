@@ -60,6 +60,9 @@ function DAEMONLIBS(passage, USERID){
 const User = require('./models/User');
 const Passage = require('./models/Passage');
 const Interaction = require('./models/Interaction');
+const Category = require('./models/Category');
+const Subcat = require('./models/Subcat');
+const Subforum = require('./models/Subforum');
 // Controllers
 const passageController = require('./controllers/passageController');
 // Routes
@@ -188,7 +191,7 @@ app.use(async function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
-    if(['stream', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin'].includes(req.url.split('/')[1])){
+    if(['stream', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'questions'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -557,8 +560,9 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     if(req.session.user){
         bookmarks = getBookmarks(req.session.user);
     }
-    var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
-	if(isNaN(usd)){
+    // var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
+	var usd = 0;
+    if(isNaN(usd)){
 		usd = 0;
 	}
 
@@ -1021,6 +1025,88 @@ app.get('/', async (req, res) => {
             bookmarks: bookmarks,
         });
     }
+});
+app.get('/forum', async (req, res) => {
+    let bookmarks = [];
+    if(req.session.user){
+        bookmarks = getBookmarks(req.session.user);
+    }
+    var categories = await Category.find();
+    var subcats = await Subcat.find();
+    var subforums = await Subforum.find();
+
+    res.render("forum", {
+        scripts: scripts,
+        bookmarks: bookmarks,
+        categories: categories,
+        subcats: subcats,
+        subforums: subforums
+    });
+    // await Subforum.deleteMany({});
+    // fillForum();
+});
+app.get('/cat', async (req, res) => {
+    var s = false;
+    var focus;
+    if(req.query.s_id){
+        s = true;
+    }
+    if(s == false){
+        var topics = await Passage.find({
+            parentTracker: req.query.f,
+            sub: false
+        });
+    }
+    else{
+        var topics = await Passage.find({
+            parentTracker: req.query.s,
+            sub: true
+        });
+    }
+    res.render('cat', {
+        name: req.query.s_name || req.query.name || '',
+        topics: topics,
+        postCount: topics.length
+    })
+});
+
+//fill forum with presets
+async function fillForum(){
+    const fsp = require('fs').promises;
+    var file = await fsp.readFile('./dist/json/forum.json');
+    var json = JSON.parse(file);
+    console.log(json);
+    // for(const category of json.categories){
+    //     await Category.create({
+    //         name: category.name,
+    //         tracker: category.tracker
+    //     });
+    // }
+    // for(const cat of json.subcats){
+    //     await Subcat.create({
+    //         parentTracker: cat.parentTracker,
+    //         name: cat.name,
+    //         desc: cat.desc,
+    //         tracker: cat.tracker
+    //     });
+    // }
+    for(const sub of json.subforum){
+        await Subforum.create({
+            parentTracker: sub.parentTracker,
+            tracker: sub.tracker,
+            name: sub.name,
+            desc: sub.desc
+        });
+    }
+    console.log("DONE.");
+}
+app.get('/projects', async (req, res) => {
+    
+    res.send("Done.");
+});
+app.get('/questions', async (req, res) => {
+    
+    res.send("Done.");
 });
 app.post('/interact', async (req, res) => {
     var interaction = await Interaction.create({
@@ -1788,9 +1874,9 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         return res.send("Must be on Userlist");
     }
     passage.showIframe = false;
-    if(passage == null){
-        return res.redirect('/');
-    }
+    // if(passage == null){
+    //     return res.redirect('/');
+    // }
     let passageUsers = [];
     if(passage.users != null && passage.users[0] != null){
         // passage.users.forEach(function(u){
@@ -1843,7 +1929,8 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     for(const p of passage.passages){
         passage.passages[p] = bubbleUpAll(p);
     }
-    res.render("index", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE});
+    console.log('9');
+    res.render("stream", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE});
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){

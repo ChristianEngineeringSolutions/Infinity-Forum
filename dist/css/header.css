@@ -11,6 +11,8 @@
     width: 100%;
     z-index: 200;
     padding-bottom: 20px;
+    background: url('/images/broken_noise.png');
+    color: white;
     /* top: 25px; */
 }
 #left-side-panel{
@@ -19,6 +21,7 @@
 #menu-button{
     font-size: 1.3em;
     color: #353535;
+    color: white;
 }
 #menu-options{
     list-style-type: none;

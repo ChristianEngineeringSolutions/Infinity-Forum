@@ -5,12 +5,19 @@
 body {
     margin: 0;
     background: #FFF;
+    background: url('/images/dark_stripes.png') !important;
     color: #fff;
     width: 100%;
     color: #FBFBFB;
-    font-family: 'Baloo Chettan 2', cursive;
+    font-family: 'Droid Sans', sans-serif;
 }
 
+#header{
+  display: none;
+}
+#top{
+  display: block;
+}
 /* OLD CSS */
 
 #top{
@@ -97,3 +104,6 @@ body {
   z-index:13;
 }
 #logo:hover { cursor:pointer; }
+#mobile-middle{
+  display: none;
+}

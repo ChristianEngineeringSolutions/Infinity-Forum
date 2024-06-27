@@ -6,7 +6,7 @@ body{
     /* font-size: 0.7em; */
 }
 hr{
-    color:brown;
+    color:rgba(255, 255, 255, 0.2);
 }
 .green{
     color: green;
@@ -43,6 +43,9 @@ hr{
     /* margin-top: 80px; */
     display: block;
     padding: 15px;
+    background: url('/images/gray_sand.png');
+  border: 0;
+  color: white;
 }
 #full_screen{
     position: fixed;
@@ -90,11 +93,10 @@ hr{
 /* Control Panel */
 #control_panel{
     color: #353535;
-    background: #fff;
+    /* background: #fff; */
 }
 #main_header{
     font-size: 1.5em;
-
 }
 #control_sub{
     margin-top: 10px;
@@ -203,7 +205,7 @@ hr{
     display: none;
 }
 .profile_image{
-    font-size: 7em;
+    font-size: 2em;
     float: left;
     margin-right: 10px;
     /*color: #353535;*/

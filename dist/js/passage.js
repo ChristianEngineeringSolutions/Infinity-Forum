@@ -423,6 +423,7 @@ $(function(){
             //(content, html, css, javascript, or code)
             $('#selection').data('type', $(this).attr('id').split('_')[2]);
         }
+        //strongly consider removing
         setTimeout(function(){
             $('#selection').val('');
         }, 3000);

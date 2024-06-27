@@ -1,0 +1,38 @@
+<div class="forum_box">
+    <div class="forum">
+			<div class="cat_title">
+			<span>&nbsp;</span> 
+			<%=name%>
+			</div>
+			if ($s)
+				$res2 = $forum->sql->query("SELECT * FROM `topics` WHERE `parent_ID`=? AND `sub`=1 ORDER BY `time_` DESC",$_POST['s']);
+			else
+				$res2 = $forum->sql->query("SELECT * FROM `topics` WHERE `parent_ID`=? AND `sub`=0 ORDER BY `time_` DESC",$_POST['f']);
+			$res2Fetch = $res2->fetchAll();
+			<%# if (count($res2Fetch) > 0) // if any //will think about it %>
+				<div class="subcat">
+				<table class="tbl_subcat">
+				<tr>
+				<td>Subject</td>
+				<td>Replies</td>
+				<td>Views</td>
+				<td>Last Post</td>
+				
+				<% for(topic of topics){ %>
+					<tr>
+					<td><a href="#t=$row2[ID]/".$forum->convertName($row2["title"]).""><b><%=name%></b>
+					$i = $member->getUserData($row2['by_']);
+					$u = $i["username"];
+					<br/><i><a href="/user/$u">Started by: <%=topic.author%></a></i>
+					</a></td>
+					<td>".$forum->getPostCount($row2["ID"])."</td> 
+					<td>".Views::numViews($row2['ID'], 'thread')."</td> 
+					<td>".$forum->getLastPost($row2["ID"])."</td>
+					</tr>
+				<%}%>
+				</table>
+				</div><br/>
+			</div>
+   		</div>
+		
+			<input type="hidden" value="".base64_encode($name[0]["name"])."|".$name[0]["ID"]."" class="hdn_cat" />

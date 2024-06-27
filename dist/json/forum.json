@@ -1,0 +1,290 @@
+{
+    "categories": [
+        {
+            "tracker": 0,
+            "name": "General"
+            },
+            {
+            "tracker": 1,
+            "name": "Infinity"
+            },
+        {
+            "tracker": 2,
+            "name": "World"
+            },
+        {
+            "tracker": 3,
+            "name": "Arts"
+            },
+        {
+            "tracker": 4,
+            "name": "Sciences"
+            },
+        {
+            "tracker": 5,
+            "name": "Integrated Studies"
+            },
+        {
+            "tracker": 6,
+            "name": "VIP"
+            },
+        {
+            "tracker": 7,
+            "name": "Admins"
+            }
+    ],
+    "subcats": [
+        {
+            "tracker": 0,            
+            "parentTracker": 0,
+            "name": "General Discussion",
+            "desc": "General Educated Discussions"
+            },
+            {
+            "tracker": 1,
+            "parentTracker": 0,
+            "name": "Members Introduction",
+            "desc": "New members, introduce yourself to the community so we can get to know you!"
+            },
+            {
+            "tracker": 2,
+            "parentTracker": 0,
+            "name": "Random",
+            "desc": "Frozen Bananas"
+            },
+            {
+            "tracker": 3,
+            "parentTracker": 1,
+            "name": "Announcements",
+            "desc": "Big News Concerning the website"
+            },
+            {
+            "tracker": 4,
+            "parentTracker": 1,
+            "name": "Suggestions",
+            "desc": "How can we make this website better?"
+            },
+            {
+            "tracker": 5,
+            "parentTracker": 2,
+            "name": "History",
+            "desc": "What did I eat yesterday?"
+            },
+            {
+            "tracker": 6,
+            "parentTracker": 2,
+            "name": "Athletics",
+            "desc": "* flex *"
+            },
+            {
+            "tracker": 7,
+            "parentTracker": 2,
+            "name": "Language",
+            "desc": "南無妙法蓮華経"
+            },
+            {
+            "tracker": 8,
+            "parentTracker": 2,
+            "name": "Literature",
+            "desc": ""
+            },
+            {
+            "tracker": 9,
+            "parentTracker": 2,
+            "name": "Economics",
+            "desc": ""
+            },
+            {
+            "tracker": 10,
+            "parentTracker": 2,
+            "name": "Politics",
+            "desc": ""
+            },
+            {
+            "tracker": 11,
+            "parentTracker": 2,
+            "name": "Business",
+            "desc": ""
+            },
+            {
+            "tracker": 12,
+            "parentTracker": 2,
+            "name": "Religion",
+            "desc": ""
+            },
+            {
+            "tracker": 13,
+            "parentTracker": 2,
+            "name": "Philosophy",
+            "desc": ""
+            },
+            {
+            "tracker": 14,
+            "parentTracker": 3,
+            "name": "Culinary",
+            "desc": ""
+            },
+            {
+            "tracker": 15,
+            "parentTracker": 3,
+            "name": "General Art",
+            "desc": ""
+            },
+            {
+            "tracker": 16,
+            "parentTracker": 3,
+            "name": "Athletic Art",
+            "desc": ""
+            },
+            {
+            "tracker": 17,
+            "parentTracker": 4,
+            "name": "Math",
+            "desc": ""
+            },
+            {
+            "tracker": 18,
+            "parentTracker": 4,
+            "name": "Psychology",
+            "desc": ""
+            },
+            {
+            "tracker": 19,
+            "parentTracker": 4,
+            "name": "Social Studies",
+            "desc": ""
+            },
+            {
+            "tracker": 20,
+            "parentTracker": 4,
+            "name": "History",
+            "desc": ""
+            },
+            {
+            "tracker": 21,
+            "parentTracker": 4,
+            "name": "Biological Sciences",
+            "desc": ""
+            },
+            {
+            "tracker": 22,
+            "parentTracker": 4,
+            "name": "Physical Sciences",
+            "desc": ""
+            },
+            {
+            "tracker": 23,
+            "parentTracker": 4,
+            "name": "Engineering",
+            "desc": ""
+            },
+            {
+                "tracker": 24,
+                "parentTracker": 4,
+                "name": "Computer Science",
+                "desc": ""
+                },
+            {
+                "tracker": 25,
+                "parentTracker": 4,
+                "name": "Hacking",
+                "desc": ""
+                },
+            {
+            "tracker": 26,
+            "parentTracker": 4,
+            "name": "Health",
+            "desc": ""
+            },
+            {
+                "tracker": 27,
+                "parentTracker": 4,
+                "name": "Medical",
+                "desc": ""
+                },
+            {
+            "tracker": 28,
+            "parentTracker": 5,
+            "name": "Discussion",
+            "desc": "Discussing how different fields can work together"
+            },
+            {
+            "tracker": 29,
+            "parentTracker": 5,
+            "name": "Brainstorming",
+            "desc": "Would this work?"
+            }
+    ],
+    "subforum": [
+            {
+            "parentTracker": 2,
+            "name": "Fun",
+            "tracker": 1
+            },
+            {
+            "parentTracker": 4,
+            "name": "Questions",
+            "tracker": 2
+            },
+            {
+            "parentTracker": 4,
+            "name": "Comments",
+            "tracker": 3
+            },
+            {
+            "parentTracker": 4,
+            "name": "Support",
+            "tracker": 4
+            },
+            {
+            "parentTracker": 15,
+            "name": "3D Design",
+            "tracker": 5
+            },
+            {
+            "parentTracker": 15,
+            "name": "Drawing",
+            "tracker": 6
+            },
+            {
+            "parentTracker": 15,
+            "name": "Painting",
+            "tracker": 7
+            },
+            {
+            "parentTracker": 15,
+            "name": "Other",
+            "tracker": 8
+            },
+            {
+            "parentTracker": 16,
+            "name": "Singing",
+            "tracker": 9
+            },
+            {
+            "parentTracker": 16,
+            "name": "Dancing",
+            "tracker": 10
+            },
+            {
+            "parentTracker": 16,
+            "name": "Other",
+            "tracker": 11
+            },
+            {
+            "parentTracker": 24,
+            "name": "Programming",
+            "tracker": 12
+            },
+            {
+            "parentTracker":24,
+            "name": "Security",
+            "tracker": 13
+            },
+            {
+                "parentTracker":24,
+                "name": "Other",
+                "tracker": 14
+                }
+    ]
+}

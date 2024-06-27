@@ -1,0 +1,37 @@
+$member = Members::getInstance();
+		$ranks = $member->ranks;
+		$poster = $member->getUserData($row[0]["by_"]);
+		$id = $row[0]['ID'];
+		//only show remove is no replies to topic yet
+		$remove = ($this->getPostCount($row[0]["ID"]) == 0) ? ' &emsp; <a id="forum-remove-topics-'.$id.'">Remove</a>' : '';
+		$btm = '';
+		if($_SESSION['ID'] == $row[0]['by_'] || Members::getInstance()->isPrivileged($_SESSION['ID'])){
+			$btm .= "&emsp; <span style='cursor:pointer'id='forum-modify-topics-".$id."'>Modify</span>".$remove;
+		}
+		if($_SESSION['ID'] != $row[0]['by_']){
+			$btm .= "&emsp; <a class='fa fa-plus'></a> &emsp;<a class='fa fa-minus'></a>";
+		}
+		return "<br><div class=\"thread_title\">
+		<input id='forum-data-post-".$row[0]['ID']."'type='hidden'value='$row[ID]-$poster[username]-".System::timeDiff($row[0]["time_"])."'/>
+		<span>&nbsp;</span>".
+		$row[0]["title"]." - ".System::timeDiff($row[0]["time_"]). // topic title
+		"</div>
+		<div class=\"post\">
+		<table class=\"tbl_post\"><tr><td>
+		<div class=\"post_usr\"><a href=\"/user/$poster[username]\">$poster[username]</a><br/>
+		<span class=\"status\" id=\"".$member->status2name($poster['status'])."\" title=\"".$member->status2name($poster['status'])."\">&nbsp;</span>
+		<img src=\"/images/user/$poster[image]\" alt=\"$poster[username]\" />
+		<span class=\"usr_rank\">".($poster['special'] !== 'Member' && $poster['special'] !== '' ? $poster['special'] : $ranks[$poster["rank"]])."</span><br><br>
+		<table class=\"usr_info\">
+		<tr><td width=10>Posts:</td><td>". $this->getPostCountByUser($poster["ID"])."</td></tr>
+		<tr><td>Prestige:</td><td>". $poster["prestige"]."</td></tr>
+		</table>
+		</div>
+		</td><td><input type='hidden'id='threadID'value='".$id."'/>
+		<div class=\"post_msg\"><div style='width:100%;height:100%'id='epicedit-".$id."'><textarea id='epic-".$id."'class='epic-text'>".$row[0]['msg']."</textarea></div></div>
+		<div class=\"post_msg_btm\">
+			<span style='cursor:pointer'id='forum-quote-".$id."'>Quote</span> ".$btm.
+		</div>
+		</td></tr></table>
+		</div>
+		</div>

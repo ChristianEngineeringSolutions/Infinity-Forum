@@ -103,44 +103,35 @@
             <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
         <%}%>
     </ul>
-    <div class="passage-box" style="text-align:center;float:left;border:2px solid brown;padding:10px;margin-right:20px;margin-bottom:20px;">
+    <!-- <div class="passage-box" style="text-align:center;padding:10px;margin-bottom:20px;">
         <div style=""class="p-image-container">
             <%if(passage.author.thumbnail != null){%>
-                <img class="p-thumbnail"style="max-height:160px;display: block;margin:auto;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>">
+                <div class="p-thumbnail"style="display:block;background:url('/uploads/<%=passage.author.thumbnail%>');background-size:cover;background-position: center center;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>"></div>
                 <%}else{%>
                     <ion-icon style="float:none;"class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
                 <%}%>
         </div>
-        <%if(passage.author.thumbnail != ''){%>
-            <%}else{%>
-            <%}%>
-        <ul class="passage_users" style="">
-            <!-- Profile Image layers -->
-            <%if(passage.author){%>
-                <%- include('profile_thumbnail', {profile: passage.author}) %>
-                <!-- <li class="passage_user"><a class="passage_profile_link"href="/profile/<%=passage.author.username%>/<%=passage.author._id%>"><%=passage.author.name%></a>, <span style="cursor:default;"><%=passage.date.toDateString()%></span></li> -->
-            <%}else{%>
-                Anonymous,
-            <%}%>
-            <!-- ... -->
-        </ul>
-        <hr class="p-box-hr">
-        <div class="passage_stars"><%=passage.stars%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
-            <% if(user){ %>
-                <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
-                <input autocomplete="off" id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> 
-                &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Invest</span>
-            <% } %>
-        </div>
-    </div>
+        <div class="p-u-stars">
+            70 stars given
+        </div> -->
+        <!-- <hr class="p-box-hr"> -->
+    <!-- </div> --> 
     <div class="detail-div">
+        <div class="p-padding-box">
+            <div class="toppings">
+            <div style=""class="p-image-container">
+            <%if(passage.author.thumbnail != null){%>
+                <div class="p-thumbnail"style="display:block;background:url('/uploads/<%=passage.author.thumbnail%>');background-size:cover;background-position: center center;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>"></div>
+                <%}else{%>
+                    <ion-icon style=""class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+                <%}%>
+        </div><div class="p-date"><%- include('profile_thumbnail', {profile: passage.author}) %>, <%=passage.date.toLocaleDateString()%></div></div>
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
     <%if(passage.displayContent != null && passage.displayContent != ''){%>
         <hr class="hr">
         <%}%>
         <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-passage.displayContent || passage.content%></div>
-    </div>
         <!-- <ul class="passage_tabs">
             <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
             <!-- Display Result -->
@@ -245,7 +236,18 @@
         <!-- Show License -->
     <!-- </div> -->
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
- </div>
+</div>
+    <div class="bottom-bar">
+        <div class="passage_stars"><%=passage.stars%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
+            <% if(user){ %>
+                <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
+                <input autocomplete="off" id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" /> 
+                &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Invest</span>
+            <% } %>
+        </div>
+    </div>
+</div>
+</div>
  <%if(subPassages && sub === false){%>
     <div style="display: inline;"id="sub_passages">
         <%subPassages.forEach(function(sub_passage) { %>
