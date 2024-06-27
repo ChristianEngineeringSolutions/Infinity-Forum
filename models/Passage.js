@@ -145,6 +145,8 @@ const passageSchema = mongoose.Schema({
     final: String,
     //date of creation
     date: {type: Date, default: Date.now},
+    parentTracker: Number, //For Forum
+    sub: Boolean, //subforum or not
     //date last updated
     updated: {type: Date, default: Date.now},
     stars: {

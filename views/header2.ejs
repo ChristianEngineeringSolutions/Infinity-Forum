@@ -1,0 +1,35 @@
+<div id="top">
+        <span id="logo" onclick="window.location = '/';">&nbsp;</span><span id="extra"></span><span id="extra2"></span><!--
+        --><span id="menu">
+        <!-- <?php
+            //absolute top links as list
+            System::listLinks(PAGE);
+        ?> -->
+        <a href="/" active="">Start</a>
+        <a href="/">About</a>
+        <a href="/">Contact</a>
+        <a href="/">Blog</a>
+        <a href="/">Help</a>
+        </span>
+        
+        <div class="extra-btn1">
+            <div class="extra_icon1"></div>
+        </div>
+        <div class="extra-btn2">
+            <div class="extra_icon2"></div>
+        </div>
+            <% if(user != null){ %>
+                    <div class="member_bar">
+                    <div id="member_bar_body">Welcome <b><a href="/user/"><%=user.username%></a></b>!
+                    <div id="member_bar_links">
+                    <a class='member_link'href="/lounge/">Lounge</a>&nbsp;
+                    <a class='member_link'href="/forum/#">Forum</a>&nbsp;
+                    <a class='member_link'href="/projects/#discover">Projects</a>&nbsp;
+                    <a class='member_link'href="/lounge/groups">Groups</a>&nbsp;
+                    </div> 
+                    </div>
+                    </div>
+                    <div id="member_bar_icons">
+                        </div>
+            <%}%>
+    </div>
