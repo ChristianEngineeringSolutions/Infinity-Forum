@@ -5,12 +5,19 @@
             //absolute top links as list
             System::listLinks(PAGE);
         ?> -->
-        <a href="/" active="">Start</a>
-        <a href="/">About</a>
-        <a href="/">Contact</a>
-        <a href="/">Blog</a>
-        <a href="/">Help</a>
+        <a id="link-start"class="header2-link"href="/" active="">Start</a>
+        <a id="link-stream"class="header2-link"href="/stream">Stream</a>
+        <a id="link-forum"class="header2-link"href="/forum">Forum</a>
+        <a id="link-projects"class="header2-link"href="/projects">Projects</a>
+        <a id="link-more"class="header2-link">More</a>
         </span>
+        <script>
+            $(function(){
+                $('.header2-link').removeAttr('active', '');
+                $('#link-<%=page%>').attr('active', 'true');
+            });
+
+        </script>
         
         <div class="extra-btn1">
             <div class="extra_icon1"></div>

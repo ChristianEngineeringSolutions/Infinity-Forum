@@ -85,7 +85,7 @@
 					} // set data to show the subforum
 				else
 					data = {
-						"f": cat
+						"f": cat,
 					} //only forum
 			} else if (thread !== undefined) //else its a thread view
 			{
@@ -120,7 +120,6 @@
 				data: data, //data depending on previus code
 
 				success: function(res) { //when done
-                    alert(2);
 					$("#main").prepend("<div class=\"forum_2\">" + res + "</div>"); //add the feteched data to a div
 					//run epic-edit function for each post
 											// $('div[id^="epicedit-"]').each(function() {

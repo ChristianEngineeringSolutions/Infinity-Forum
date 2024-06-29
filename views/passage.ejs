@@ -141,25 +141,6 @@
         <%- include('editor') %>
     <%}else{%>
     <%}%>
-    <!-- Hide Iframe window if there is neither html nor js, or if it is not a daemon -->
-    <%if((passage.lang != 'mixed') && (passage.lang != 'daemon' && passage.lang != 'daemonFrame') && (passage.displayHTML == null || passage.displayHTML == '') && (passage.displayJavascript == null || passage.displayJavascript == '')){%>
-        <% hide = ' hide'; %>
-    <%}else{%>
-        <% hide = ''; %>
-        <a target="_blank"href="/eval/<%=passage._id%>"><ion-icon title="Full Screen"src="/images/ionicons/expand-outline.svg"></ion-icon></a>
-    <%}%>
-    <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
-        <%if((user && passage.personal_cross_origin && user._id == passage.author._id) || (passage.public_daemon == 2)){%>
-            <!-- Only allow daemon in scope -->
-            <%if(sub === false || subPassages){%>
-                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
-            <%}else{%>
-                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
-            <%}%>
-        <%}else{%>
-            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
-        <%}%>
-    </div>
     <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
     <% if(passage.filename){ %>
         <%passage.filename.forEach(function(fname, i){%>
@@ -236,6 +217,25 @@
         <!-- Show License -->
     <!-- </div> -->
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
+    <!-- Hide Iframe window if there is neither html nor js, or if it is not a daemon -->
+    <%if((passage.lang != 'mixed') && (passage.lang != 'daemon' && passage.lang != 'daemonFrame') && (passage.displayHTML == null || passage.displayHTML == '') && (passage.displayJavascript == null || passage.displayJavascript == '')){%>
+        <% hide = ' hide'; %>
+    <%}else{%>
+        <% hide = ''; %>
+        <a target="_blank"href="/eval/<%=passage._id%>"><ion-icon title="Full Screen"src="/images/ionicons/expand-outline.svg"></ion-icon></a>
+    <%}%>
+    <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
+        <%if((user && passage.personal_cross_origin && user._id == passage.author._id) || (passage.public_daemon == 2)){%>
+            <!-- Only allow daemon in scope -->
+            <%if(sub === false || subPassages){%>
+                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+            <%}else{%>
+                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+            <%}%>
+        <%}else{%>
+            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+        <%}%>
+    </div>
 </div>
     <div class="bottom-bar">
         <div class="passage_stars"><%=passage.stars%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
