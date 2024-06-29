@@ -1,6 +1,12 @@
 <%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
 </head>
 <%- include('header') %>
+<%- include('header2', {
+  page: 'profile'
+}) %>
+<%- include('member_box') %>
 <br><br><br><br>
 <input id="chief_passage_id"type="hidden" value="root"name="">
 <input id="is_distraction_free"type="hidden" value="false"name="">

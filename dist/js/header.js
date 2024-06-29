@@ -311,3 +311,15 @@ $(function(){
     }
 
 });
+$(document).ready(function(e) 
+{
+	setTimeout(function()
+	{
+    	$(".member_bar").slideDown(500);
+		setTimeout(function()
+		{
+			$("#member_bar_body").fadeIn(200);
+			$("#member_bar_icons").fadeIn(200);	
+		},800);
+	},800);
+});
