@@ -11,6 +11,9 @@ body {
     color: #FBFBFB;
     font-family: 'Droid Sans', sans-serif;
 }
+.hide2{
+  display:none;
+}
 
 #header{
   display: none;

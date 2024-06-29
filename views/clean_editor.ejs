@@ -1,14 +1,11 @@
 <form id="passage_form"class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
     <input id="passage_title"class="passage_title" value="" type="text"name="title"placeholder="Title">
-    <%switch(passage.lang){
-        case 'rich':%>
+
         <div class="rich_input input-field">
             <div class="passage_description" id="passage_content" cols="30" rows="10" placeholder="Content"></div>
             <input id="quill-data"value=""name="content"type="hidden">
         </div>
-        <%break;
-        case 'mixed':%>
-        <div class="mixed_input input-field">
+        <div class="mixed_input input-field hide2">
             <textarea style="display:none;"class="passage_html" name="html" id="passage_html" cols="30" rows="10" placeholder="HTML"></textarea>
             <textarea style="display:none;"class="passage_css" name="css" id="passage_css" cols="30" rows="10" placeholder="CSS"></textarea>
             <textarea style="display:none;"class="passage_js" name="js" id="passage_js" cols="30" rows="10" placeholder="Javascript"></textarea>
@@ -16,9 +13,7 @@
             <code-input template="code-input"lang="CSS"class="code_display display_css" id="display_css" placeholder="CSS"value=""></code-input>
             <code-input template="code-input"lang="javascript"class="code_display display_js" id="display_js" placeholder="Javascript"value=""></code-input>
         </div>
-        <%break;
-        default:%>
-        <div class="d-code-input input-field">
+        <div class="d-code-input input-field hide2">
             <div class="ace-editor"style=""id="editor"></div>
             <script>
                 var editor = ace.edit("editor");
@@ -35,7 +30,6 @@
             <!-- <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || ''%>"></code-input> -->
             <textarea style="display:none;"class="passage_code" name="code" id="passage_code" cols="30" rows="10" autocomplete="off"></textarea>
         </div>
-    <%}%>
     <!-- Upload Directory -->
     <%/*%>
     <input id="passage_file"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
@@ -51,7 +45,7 @@
     <div id="passage_advanced"class="passage_advanced">
             <br>
             <div>Programming Language:</div><br>
-            <input id="passage_ext"class="passage_ext passage_lang" value="rich" type="text"name="lang"placeholder="Programming Language">
+            <input autocomplete="off" id="passage_ext"class="passage_ext passage_lang" value="rich" type="text"name="lang"placeholder="Programming Language">
             <script>
                 $(function(){
                     $(document).on('keyup', '#passage_ext', function(){
