@@ -15,6 +15,7 @@ const https = require('https');
 var compression = require('compression');
 const { promisify } = require('util');
 const request = promisify(require('request'));
+const browser = require('browser-detect');
 
 
 //for daemons access to help code
@@ -191,7 +192,7 @@ app.use(async function(req, res, next) {
     }
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
-    if(['stream', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'questions'].includes(req.url.split('/')[1])){
+    if(['stream', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'questions', 'recover'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -944,6 +945,7 @@ app.post('/cesconnect', function(req, res){
     res.send("Done.");
 });
 app.get('/stream', async (req, res) => {
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //REX
     if(req.session.CESCONNECT){
         getRemotePage(req, res);
@@ -981,6 +983,7 @@ app.get('/stream', async (req, res) => {
                 username: 'Sasame'
             }},
             bookmarks: bookmarks,
+            ISMOBILE: ISMOBILE
         });
     }
 });
@@ -991,6 +994,7 @@ app.get('/', async (req, res) => {
         getRemotePage(req, res);
     }
     else{
+        const isMobile = browser(req.headers['user-agent']).mobile;
         let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
         let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
         let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
@@ -1047,9 +1051,11 @@ app.get('/forum', async (req, res) => {
 });
 app.get('/cat', async (req, res) => {
     var s = false;
+    var category = await Subcat.findOne({tracker: req.query.f});
     var focus;
-    if(req.query.s_id){
+    if(req.query.s){
         s = true;
+        var subForum = await Subforum.findOne({tracker: req.query.s});
     }
     if(s == false){
         var topics = await Passage.find({
@@ -1064,7 +1070,7 @@ app.get('/cat', async (req, res) => {
         });
     }
     res.render('cat', {
-        name: req.query.s_name || req.query.name || '',
+        name: subForum ? subForum.name : false || category.name || '',
         topics: topics,
         postCount: topics.length
     })
@@ -1860,6 +1866,7 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
     }
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
@@ -1930,7 +1937,9 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         passage.passages[p] = bubbleUpAll(p);
     }
     console.log('9');
-    res.render("stream", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE});
+    res.render("stream", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE,
+        ISMOBILE: ISMOBILE
+    });
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){

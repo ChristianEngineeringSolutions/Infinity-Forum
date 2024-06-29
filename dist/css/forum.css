@@ -9,7 +9,7 @@
 	position:relative;
 	margin:auto;
 	width:80%;
-	min-width:800px;
+	/* min-width:800px; */
 }
 .forum .cat_title span,  .tbl_subcat tr{
 	-webkit-transition:all .8s;
@@ -152,10 +152,15 @@
 .usr_info td:first-child {
 	width:50px;
 }
+.subcat{
+	overflow-x: auto;
+}
 .tbl_subcat {
     border-spacing:0;
     border-collapse:collapse;
 	width: 100%;
+	/* table-layout: fixed; */
+
 }
 .tbl_subcat td {
 	padding: 8px;
