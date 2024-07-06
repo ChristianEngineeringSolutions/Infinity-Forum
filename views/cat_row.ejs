@@ -1,0 +1,14 @@
+<tr>
+	<td><a href="#thread/<%=topic.title.replace(' ', '_')%>/<%=topic._id%>"><b>
+		<%if(topic.title == ''){%>
+			Untitled
+		<%}else{%>
+		<%=topic.title%>
+		<%}%>
+		</b>
+	<br/><i><a href="/user/$u">Started by: <%=topic.author.name%></a></i>
+	</a></td>
+	<td><%=topic.passages.length%></td> 
+	<td><%=topic.numViews%></td> 
+	<td><%-topic.lastPost%></td>
+</tr>

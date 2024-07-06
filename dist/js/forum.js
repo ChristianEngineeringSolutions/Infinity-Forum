@@ -3,6 +3,9 @@
 		old_data = [],
 		DIR = 'l',
 		MODIFY = null;
+	var chief = 'root';
+	var which = 'forum';
+	var moving = false;
 	$(document).ready(function(e) {
 		// window.onhashchange = hash_ajax;
 		$(document).on("click", ".cat_title", function() { //if you click on a forum 
@@ -12,7 +15,7 @@
 			else
 				ele.slideUp(500); //else hide
 		});
-		$(document).on("click", "a", function() {
+		$(document).on("click", "a:not(#link-more)", function(e) {
 			setTimeout(function() {
 				hash_ajax();
 			}, 200)
@@ -53,63 +56,40 @@
 		}
 
 		function hash_ajax() {
-            // alert('1');
 			// if (block)
 			// 	return;
-            // alert(6);
 			var pages = ["forum", "cat", "thread"];
 			var pg = 1;
 			var hash = window.location.hash.substring(1); //get the hashtag
-			if (hash.indexOf("f=") != -1)
-				var cat = hash.substr(hash.indexOf("f=") + 2, hash.indexOf("/") - 2); //get the ID of the category
-			if (hash.indexOf("s=") != -1)
-				var subcat = hash.substr(hash.indexOf("s=") + 2, hash.indexOf("/") - 2); //get the ID of the subcat
-			if (hash.indexOf("t=") != -1) {
-				var thread = hash.substr(hash.indexOf("t=") + 2, hash.indexOf("/") - 2); //get the ID of the thread
-				pg = hash.split('/')[hash.split('/').length - 1]; //get last part of url for page number
-				if (pg == false || isNaN(pg)) pg = 1; //fail safe
+			// alert(hash);
+			var _id = hash.split('/')[2];
+			var page = hash.split('/')[0];
+			var id = 'l';
+			var data = {};
+			data = {
+				_id: _id
+			};
+			if(page == '' || page == 'forum'){
+				page = 'forum';
+				data._id = true;
+				id = 'r';
+				chief = 'root';
+				which = 'forum';
 			}
-			if (hash.indexOf("p=") != -1)
-				var post = hash.substr(hash.indexOf("p=") + 2); //get the ID of the post
-			if (hash.length <= 0)
-				var forum = true;
-            console.log(hash);
-			var page, data, id = "l";
-			if (cat !== undefined) //check if cat is set
-			{
-				page = pages[1]; //then its to forum or subforum
-				if (subcat !== undefined) //is a subforum set?
-					data = {
-						"f": cat,
-						"s": subcat
-					} // set data to show the subforum
-				else
-					data = {
-						"f": cat,
-					} //only forum
-			} else if (thread !== undefined) //else its a thread view
-			{
-				page = pages[2]; //thread view
-				if (post !== undefined) //specific post
-					data = {
-						"t": thread,
-						"p": post,
-						"pg": pg
-					} //^^
-				else //seriusly...
-					data = {
-						"t": thread,
-						"pg": pg
-					} //yeah okay...
-			} else {
-				page = pages[0];
-				old = [];
-				data = {
-					"f": "infinity"
-				};
-				id = "r";
+			else if(page == 'cat'){
+				chief = data._id;
+				which = 'cat';
+
 			}
+			else if(page == 'thread'){
+				chief = data._id;
+				data.page = pg;
+				which = 'thread';
+			}
+			// var data, id = "l";
+			// id = DIR;
 			id = DIR;
+
 			var time = first === true ? 0 : 1000;
 			$.ajax({ // send it with ajax
 				url: '/' + page, //to the right file depending on the previus code
@@ -121,12 +101,6 @@
 
 				success: function(res) { //when done
 					$("#main").prepend("<div class=\"forum_2\">" + res + "</div>"); //add the feteched data to a div
-					//run epic-edit function for each post
-											// $('div[id^="epicedit-"]').each(function() {
-											// 	var id = $(this).attr('id').substring(9);
-											// 	epicDisplay('epicedit-' + id, 'epic-' + id);
-											// 	$(this).hide().fadeIn();
-											// });
 					$(".forum_1").hide("slide", {
 							direction: ((id === "l") ? "left" : "right")
 						}, time, //slide the old one away 
@@ -140,24 +114,8 @@
 							//console.log("length: " +old.length + "\nCurrent: " + current + "\nData: " + old);
 							block = false;
 							nav();
-							if (cat !== undefined || thread !== undefined) {
-								if (cat !== undefined) $('#forum-pages').html('<button id="forum-post">New Post</button>');
-								else if (thread !== undefined) {
-									$.ajax({
-										url: '/forum/handle.php',
-										type: 'GET',
-										data: data,
-										success: function(res2) {
-											$('#forum-pages').html('<button id="forum-post">New Post</button>' + res2);
-											//run epic-edit function for each post
-											$('div[id^="epicedit-"]').each(function() {
-												var id = $(this).attr('id').substring(9);
-												epicDisplay('epicedit-' + id, 'epic-' + id);
-												$(this).hide().fadeIn();
-											});
-										}
-									});
-								}
+							if (page == 'cat' || page == 'thread') {
+								$('#forum-pages').html('<button id="forum-post">New Post</button>');
 							} else {
 								$('#forum-pages').html('');
 							}
@@ -167,6 +125,12 @@
 					}, time); //slide the new one in
 
 					first = false;
+					setTimeout(function(){
+						if($('.forum_1').length > 1){
+							$('#main .forum_1').not(':first-child').remove();
+						}
+						// alert(1);
+					}, 2000);
 				}
 			});
 		}
@@ -203,6 +167,11 @@
 			}
 		}
 
+		// $(document).on('click', '#forum_nav_1', function(){
+		// 	window.location.href = '#';
+		// 	hash_ajax();
+		// 	alert(1);
+		// });
 		function nav() {
 			$("div[id^='forum_nav_']:not('#forum_nav_1')").hide();
 			$("#forum_nav i").hide();
@@ -210,13 +179,18 @@
 			var arr = ["hdn_cat", "hdn_thr"]; //the different classes
 			var arr2 = []; //checked array
 			arr.forEach(function(entry) {
-				if ($("." + entry).length > 0) //check if exists
+				if ($("." + entry).length > 0){ //check if exists
 					arr2.push(entry); //then add if it does
+				}
 			});
 			arr2.forEach(function(entry, index) {
 				var nav = $("#forum_nav_" + (index + 2)); //easier to write
 				var txt = $("." + entry).val(); // the text
 				var name = window.atob(txt.substring(0, txt.indexOf("|"))); //decoded name
+				if(name == ''){
+					name = 'Untitled';
+				}
+				console.log(name);
 				var id = txt.substr(txt.indexOf("|") + 1); //the ID
 				nav.children("span:first-child").html(((index + 1 == arr2.length) ? name : "<a href=\"#f=" + id + "/" + name.replace(/ /g, '_') + "\">" + name + "</a>") + ((index == 0) ? " <b>&#171;</b>" : "")); //set the html with the decoded name
 				$("div[id^='forum_nav_']").removeClass("forum_nav_active"); //remove active from all of them
@@ -246,8 +220,18 @@
 			if (id === 'r' && window.location.hash.indexOf("t=") != -1 && numPages() > 1 && pg !== $('#last-page').val()) {
 				var nxt = parseInt(pg, 10) + 1;
 				$('#change-pg-' + nxt).click();
-			} else if (id === 'l') window.history.back();
-			else window.history.forward();
+			} else if (id === 'l'){
+				window.history.back();
+				setTimeout(function() {
+					hash_ajax();
+				}, 200);
+			}
+			else{
+				window.history.forward();
+				setTimeout(function() {
+					hash_ajax();
+				}, 200);
+			}
 		});
 		$(document).on('click', '.forum', function() {
 			DIR = 'l';
@@ -298,11 +282,18 @@
 				var cat = hash.substr(hash.indexOf("f=") + 2, hash.indexOf("/") - 2); //get the ID of the category
 			if (hash.indexOf("t=") != -1)
 				var thread = hash.substr(hash.indexOf("t=") + 2, hash.indexOf("/") - 2); //get the ID of the thread
-			popup("New Post", '<form id="new-forum-post"><input type="hidden"name="signal"value="post"/><input type="hidden"name="' +
-				(thread ? 't' : 'f') + '"value="' + (thread || cat) + '"/><br>' +
-				(cat ? '<input style="padding:10px;width:75%"name="subject"placeholder="Subject"/>' : '') +
-				'<br><br><div id="epicedit-body"><textarea id="epic-body"name="body"class="epic-text form-control"></textarea></div><br><button class="pr-btn">Post</button></form>');
-			epicEdit('epicedit-body', 'epic-body');
+			popup("New Post", $('#clean_editor').val());
+			$('#chief_passage_id').val(chief);
+			$('#forum-which').val(which);
+
+			$('#passage_form').show();
+				// hljs.configure({   // optionally configure hljs
+				//     languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
+				// });
+				summonQuill();
+			$('.display_data').toggle();
+			// $('#passage_form').toggle();
+			// epicEdit('epicedit-body', 'epic-body');
 		});
 		//deleting
 		$(document).on('click', '[id^="forum-remove-"]', function() {

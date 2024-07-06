@@ -30,8 +30,32 @@
     }   
 
 }
+#lead1{
+    display: none;
+}
 /* Tablets portrait*/
 @media screen and (max-width: 820px){
+    #main2{
+        padding-top: 0px;
+    }
+    #lead1{
+        background: url(/images/gray_sand.png);
+        padding: 10px;
+        width: 100% !important;
+        display: block;
+        color: white;
+        padding: 30px;
+        margin-bottom: 0px;
+        text-align: center;
+        margin-top: 24px;
+        font-weight: bold;
+    }
+    .lead1{
+        display: none;
+    }
+    .bar{
+        display: none;
+    }
     #top{
         display: none;
     }
@@ -62,6 +86,33 @@
 }
 /* Large Phones */
 @media screen and (max-width: 715px){
+    .arrow_l{
+        left: -30px;
+    }
+    .arrow_r{
+        right: -30px;
+    }
+    #lead1{
+        display: none;
+    }
+    .lead1{
+        display: block;
+    }
+    .lead1{
+        /* font-weight: bold; */
+    }
+    .popup{
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0px;
+        left: 0px;
+        margin: auto;
+        padding: 0px;
+    }
+    .bar{
+        display: none;
+    }
     .tbl_subcat td:nth-child(2){
         display: none;
     }
@@ -372,7 +423,7 @@
         width: 100%;
     } 
     .bottom-bar{
-        padding-bottom:20px;
+        padding-bottom:31px;
         padding-top:0px;
     }
     .profile_image{

@@ -17,6 +17,7 @@
 }
 #left-side-panel{
     display: none;
+    position:fixed;
 }
 #menu-button{
     font-size: 1.3em;

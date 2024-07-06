@@ -4,8 +4,8 @@
     margin-top: 100px;
     padding-top: 50px;
     padding-bottom: 75px;
-    color: black;
-    background: gold;
+    color: white;
+    background: url('/images/gray_sand.png');
     font-size: 1.5em;
     font-weight: bold;
     border-top: 1px solid black;
@@ -20,8 +20,8 @@
 }
 #scroll-to-bottom{
     z-index: 5000;
-    background: gold;
-    color: black;
+    background: url('/images/gray_sand.png');
+    color: white;
     padding: 15px;
     border-top: 1px solid black;
     width: 100%;

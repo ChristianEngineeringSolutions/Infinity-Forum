@@ -23,7 +23,11 @@ const passageSchema = mongoose.Schema({
     },
     title: {
         type: String,
-        default: 'Untitled'
+        default: ''
+    },
+    forumSpecial: {
+        type: Boolean,
+        default: false
     },
     //to help user apps (store JSON)
     metadata: String,
@@ -145,8 +149,13 @@ const passageSchema = mongoose.Schema({
     final: String,
     //date of creation
     date: {type: Date, default: Date.now},
-    parentTracker: Number, //For Forum
-    sub: Boolean, //subforum or not
+    parentTracker: Number, //For Forum,
+    tracker: Number,
+    forumType: String, //category, subcat, subforum
+    sub: {
+        type: Boolean,
+        default: false
+    }, //subforum or not
     //date last updated
     updated: {type: Date, default: Date.now},
     stars: {
@@ -216,6 +225,7 @@ const passageSchema = mongoose.Schema({
 });
 var autoPopulateChildren = function(next) {
     this.populate('passages');
+    this.populate('author');
     next();
 };
 
