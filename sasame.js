@@ -1103,9 +1103,7 @@ app.get('/forum', async (req, res) => {
     // fillForum();
 });
 async function clearForum(){
-    await Passage.deleteMany({forumType: 'category'});
-    await Passage.deleteMany({forumType: 'subcat'});
-    await Passage.deleteMany({forumType: 'subforum'});
+    await Passage.deleteMany({forumSpecial: true});
 }
 async function getBigPassage(passage, req, res){
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
@@ -1285,12 +1283,19 @@ app.get('/thread', async (req, res) => {
 
     res.render("thread", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: ISMOBILE,
+        thread: true
     });
 });
 app.get('/cat', async (req, res) => {
+    var pNumber = req.query.pNumber;
     var parent = await Passage.findOne({_id: req.query._id});
-    var topics = await Passage.find({parent: req.query._id.toString()}).populate('passages.author');
-    for (const topic of topics){
+    var topics = await Passage.find({parent: req.query._id.toString()}).sort('-date').populate('passages.author');
+    var topics = await Passage.paginate({parent: req.query._id.toString()}, {sort: '-date', page: pNumber, limit: 20, populate: 'passages.author'});
+    var totalDocuments = await Passage.countDocuments({
+        parent: req.query._id.toString()
+    })
+    var totalPages = Math.round(totalDocuments/20) + 1;
+    for (const topic of topics.docs){
         topic.numViews = await scripts.getNumViews(topic._id);
         if(topic.passages && topic.passages.length > 0){
             topic.lastPost = 'by ' + topic.passages.at(-1).author.name + '<br>' + topic.passages.at(-1).date.toLocaleDateString();
@@ -1298,11 +1303,13 @@ app.get('/cat', async (req, res) => {
             topic.lastPost = 'No Posts Yet.';
         }
     }
+    topics = topics.docs;
     return res.render('cat', {
         _id: parent._id,
         name: parent.title,
         topics: topics,
-        postCount: topics.length
+        postCount: topics.length,
+        totalPages: totalPages
     });
     // var s = false;
     // var categories = await Passage.find({forumType: 'category'});
@@ -1347,12 +1354,23 @@ async function fillForum(req){
     const fsp = require('fs').promises;
     var file = await fsp.readFile('./dist/json/forum.json');
     var json = JSON.parse(file);
+    //create over directory passage
+    var infinity = await Passage.create({
+        author: req.session.user,
+        users: [req.session.user],
+        parent: null,
+        forum: true,
+        title: "Infinity Forum",
+        forumSpecial: true,
+        tracker: 0,
+        forumType: 'header'
+    });
     console.log(json);
     for(const category of json.categories){
         var passage = await Passage.create({
             author: req.session.user,
             users: [req.session.user],
-            parent: null,
+            parent: infinity._id.toString(),
             forum: true,
             title: category.name,
             forumSpecial: true,

@@ -5,7 +5,11 @@
         <%}else{%>
             <%for(var i = 1; i < totalPages + 1; i += 1){%>
                 <%if(totalPages > 1){%>
-                    <a style="color:inherit;text-decoration:none;"href="/passage/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%if(!thread){%>
+                        <a style="color:inherit;text-decoration:none;"href="/passage/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%}else{%>
+                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%}%>
                 <%}%>
             <%}%>
         <%}%>
@@ -260,7 +264,11 @@
         <%}else{%>
             <%for(var i = 1; i < totalPages + 1; i += 1){%>
                 <%if(totalPages > 1){%>
-                <a style="color:inherit;text-decoration:none;"href="/passage/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%if(!thread){%>
+                        <a style="color:inherit;text-decoration:none;"href="/passage/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%}else{%>
+                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%}%>
                 <%}%>
             <%}%>
         <%}%>

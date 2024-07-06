@@ -64,10 +64,12 @@
 			// alert(hash);
 			var _id = hash.split('/')[2];
 			var page = hash.split('/')[0];
+			var pNumber = hash.split('/')[3];
 			var id = 'l';
 			var data = {};
 			data = {
-				_id: _id
+				_id: _id,
+				pNumber: pNumber
 			};
 			if(page == '' || page == 'forum'){
 				page = 'forum';
@@ -192,7 +194,7 @@
 				}
 				console.log(name);
 				var id = txt.substr(txt.indexOf("|") + 1); //the ID
-				nav.children("span:first-child").html(((index + 1 == arr2.length) ? name : "<a href=\"#f=" + id + "/" + name.replace(/ /g, '_') + "\">" + name + "</a>") + ((index == 0) ? " <b>&#171;</b>" : "")); //set the html with the decoded name
+				nav.children("span:first-child").html(((index + 1 == arr2.length) ? name : "<a href=\"#cat/" + name.replace(/ /g, '_') + "/" + id + "\">" + name + "</a>") + ((index == 0) ? " <b>&#171;</b>" : "")); //set the html with the decoded name
 				$("div[id^='forum_nav_']").removeClass("forum_nav_active"); //remove active from all of them
 				if (index + 1 == arr2.length) //if the last
 					nav.addClass("forum_nav_active"); //active
