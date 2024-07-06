@@ -123,7 +123,10 @@ $(function(){
         window.location.href = href;
     });
     $(document).on('click', '#menu-button', function(){
-        $('#left-side-panel').show()
+        $('#left-side-panel').show();
+    });
+    $(document).on('click', '#link-more', function(){
+        $('#left-side-panel').toggle();
     });
     $(document).on('click', '#file-stream', function(){
         window.location.href = "/filestream/";
@@ -157,7 +160,7 @@ $(function(){
     });
     $(document).on('click', function(e){
         var container = $("#left-side-panel");
-        if(container.is(':visible') && e.target.id != 'menu-button'){
+        if(container.is(':visible') && e.target.id != 'menu-button' && e.target.id != 'link-more'){
             // if the target of the click isn't the container nor a descendant of the container
             if (!container.is(e.target) && container.has(e.target).length === 0) 
             {

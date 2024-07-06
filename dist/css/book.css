@@ -236,6 +236,7 @@ hr{
     /*display: none;*/
     font-size: 2em;
     float: left;
+    color: #fff;
 }
 #right_passages, #cats{
     background: #fff;
@@ -325,8 +326,9 @@ hr{
     top: 0px;
     overflow-y: scroll;
     padding-top: 30px;
-    border: 2px solid brown;
-    border-left: 5px solid brown;
+    border: 2px solid black;
+    background:url('/images/gray_sand.png');
+    color: white;
 }
 .category{
     /* border-bottom: 1px dotted grey; */
@@ -1003,4 +1005,12 @@ ion-icon{
 }
 .special_icon{
     cursor: default;
+}
+#post-passage{
+    background: rgba(255, 255, 255, 0.2);
+	border: 1px solid rgba(255, 255, 255, 0.23);
+	padding: 8px 12px;
+	font-size: 60%;
+	color: #fff;
+	cursor: pointer;
 }

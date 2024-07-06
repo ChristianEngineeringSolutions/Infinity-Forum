@@ -1,0 +1,12 @@
+General:
+	General Discussion
+	Members Introduction
+	Random
+		Fun
+Infinity:
+	Announcements
+		*Big News Concerning the Website
+	Suggestions
+		*How can we make this website better?
+		Questions, Comments, Support
+World

@@ -228,25 +228,28 @@ $(function(){
     });
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
+        popup("New Post", $('#clean_editor').val());
+        $('#passage_form').show();
+        summonQuill();
         //create a passage and then show it
         // alert(DOMAIN);
         // alert(fromOtro);
-        $.ajax({
-            type: 'post',
-            // url: DOMAIN + '/create_passage/' + fromOtro,
-            url: '/create_passage/',
-            data: {
-                passageID: chief
-            },
-            success: function(data){
-                if(chief == 'root'){
-                    $('#passage_wrapper').prepend(data);
-                }
-                else{
-                    $('#passage_wrapper').append(data);
-                }
-            }
-        });
+        // $.ajax({
+        //     type: 'post',
+        //     // url: DOMAIN + '/create_passage/' + fromOtro,
+        //     url: '/create_passage/',
+        //     data: {
+        //         passageID: chief
+        //     },
+        //     success: function(data){
+        //         if(chief == 'root'){
+        //             $('#passage_wrapper').prepend(data);
+        //         }
+        //         else{
+        //             $('#passage_wrapper').append(data);
+        //         }
+        //     }
+        // });
     });
     function getPassageId(thiz){
         //passage_id is the last part of the html id
@@ -792,4 +795,56 @@ $(function(){
     //     var code = $('#display_code_'+_id).val();
     //     $('#display_code_'+_id).replaceWith('<code-input value="'+code+'"lang="'+$(this).val()+'"class="code_display display_code" id="display_ext_'+_id+'>"></code-input>');
     // });
+
+    // 
+    // NEW FORM SUBMITTING FOR INITIAL PASSAGE CREATION
+    // 
+
+    $(document).on('click', '#post-passage', function(){
+        // $('#passage_form').submit();
+        //okay so for forum we add a row to the table
+        //for stream/projects/questions we add the passage
+    });
+    $(document).on('submit', '#passage_form', function(e){
+        e.preventDefault();
+        var thiz = $(this);
+        var formData = new FormData(this);
+        $.ajax({
+            // url: DOMAIN + '/update_passage',
+            url: '/create_initial_passage/',
+            type: 'POST',
+            data: formData,
+            success: function (data) {
+                var which = $('#forum-which').val();
+                var chief = $('#chief_passage_id').val();
+                $('#dim').click();
+                //okay so for forum we add a row to the table
+                //for stream/projects/questions we add the passage
+                if($('#forum-post').length == 0){ //stream
+                    if(chief == 'root'){
+                        $('#passage_wrapper').prepend(data);
+                    }
+                    else{
+                        $('#passage_wrapper').append(data);
+                        //go to last passage
+                        $('.passage').last()[0].scrollIntoView();
+                    }
+                }
+                else if(which == 'thread'){
+                    $('#thread-passages').append(data);
+                }
+                else{
+                    $('#no-posts').hide();
+                    $('#cat-tbl').prepend(data);
+                }
+                thisPassage(thiz).replaceWith(data);
+
+                syntaxHighlight();
+            },
+            cache: false,
+            contentType: false,
+            processData: false
+
+        });
+    });
 });

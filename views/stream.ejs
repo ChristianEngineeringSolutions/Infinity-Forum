@@ -6,10 +6,11 @@
 <%- include('header2', {
     page: 'stream'
 }) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
 <%if(!ISMOBILE){%>
 <%- include('member_box') %>
 <%}%>
-            <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
             <input id="is_distraction_free"type="hidden" value="<%=passage.distraction_free || false%>"name="">
             <input type="hidden" value="false", id="is_profile"/>
             <input type="hidden" id="selection">
@@ -30,6 +31,7 @@
             <%if((user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if(passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true){%>
                     <button title="Add Passage"id="add_passage_button">+</button>
+                    <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
                 <%}%>
             <%}%>
             <br id="top_spacer">

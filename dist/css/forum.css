@@ -249,6 +249,7 @@
 	top: -30px;
 	left: -29px;
 }
+
 .arrow_r {
 	width: 0px;
 	height: 0px;
@@ -282,7 +283,7 @@
 	top: 60px;
 	left: 0;
 	margin: auto;
-	z-index: 4;
+	z-index: 49999999;
 }
 #forum_nav a:not(.pg-link){
 	color: white;
@@ -293,6 +294,9 @@ div[id^='forum_nav_'] {
 	border: 1px solid rgba(255, 255, 255, 0.23);
 	padding: 10px 12px;
 	font-size: 60%;
+}
+div[id^='forum_nav_']:not(:first-child) {
+	margin-top: 10px;
 }
 #forum-post{
 	display: inline-block;
@@ -315,6 +319,9 @@ div[id^='forum_nav_'] span:first-child b:hover{
 div[id^='forum_nav_']:not(:first-child),#forum_nav i {
 	display:none;
 	position:relative;
+}
+div[id^='forum_nav_']{
+	z-index: 100000;
 }
 .forum_nav_active {
 	background: rgba(255, 255, 255, 0.5) !important;

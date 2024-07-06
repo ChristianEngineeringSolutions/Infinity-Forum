@@ -11,6 +11,9 @@
 .p-u-stars{
     color: gold;
 }
+#thread-passages .passage{
+    width: 80%;
+}
 .p-date{
     padding-top: 20px;
     /* font-style: italic; */
@@ -47,6 +50,7 @@
 .p-padding-box{
     padding-left: 20px;
     padding: 20px;
+    padding-top: 0px;
 }
 .bottom-bar{
     height: 50px;
@@ -122,6 +126,9 @@
 .passage_description, .ql-container, .ql-editor{
     background: white;
     border: 0;
+}
+.ql-editor{
+    color: black;
 }
 .passage_form{
     display: none;

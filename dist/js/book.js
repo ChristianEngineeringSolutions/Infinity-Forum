@@ -1,6 +1,5 @@
 // import { pdfExporter } from "/quill-to-pdf.js";
 
-
 var ppeActive = false;
 
 var sessionStorageQueue = false;
@@ -19,6 +18,55 @@ var DOMAIN;
 
 var fromOtro;
 
+$(function(){
+    $(document).on('click', '.open_advanced', function(){
+        $('#passage_advanced').slideToggle();
+    });
+});
+
+function summonQuill(){
+            var toolbarOptions = [
+                    ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+                    ['blockquote', 'code-block'],
+                    ['link', 'image'],
+                
+                    [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+                    [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+                    [{ 'direction': 'rtl' }],                         // text direction
+                
+                    [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                
+                    [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+                    [{ 'font': [] }],
+                    [{ 'align': [] }],
+                
+                    ['clean']                                         // remove formatting button
+                ];
+                // Only do if quill container exists (rtf)
+                try{
+                    var quill = new Quill('#passage_content', {
+                    modules: {
+                        syntax: true,              // Include syntax module
+                        toolbar: toolbarOptions,  // Include button in toolbar
+                    },
+                    theme: 'snow'
+                    });
+                    quill.root.innerHTML = document.getElementById('quill-data').value;
+                    quill.on('text-change', function(delta, source) {
+                        var justHtml = quill.root.innerHTML;
+                        document.getElementById('quill-data').value = justHtml;
+                    });
+                }
+                catch(error){
+                    console.log(error);
+                }
+                finally{
+    
+                }
+        }
 
 function checkIfFromOtro(){
     fromOtro = $('#remote_toggle').data('cesconnect') == false ? '' : '?fromOtro=true';

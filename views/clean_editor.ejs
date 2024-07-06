@@ -1,5 +1,5 @@
-<form id="passage_form"class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
-    <input id="passage_title"class="passage_title" value="" type="text"name="title"placeholder="Title">
+<form style="display:none;"id="passage_form"class="passage_form"action="/create_initial_passage/" type="post"enctype="multipart/form-data">
+    <input id="passage_title"class="passage_title" value="" type="text"name="title"placeholder="Title (Optional)">
 
         <div class="rich_input input-field">
             <div class="passage_description" id="passage_content" cols="30" rows="10" placeholder="Content"></div>
@@ -21,13 +21,12 @@
                 // change this based on lang input
                 editor.session.setMode("ace/mode/javascript");
                 editor.getSession().on("change", function () {
-                    $('textarea[id="passage_code"]').val(editor.getSession().getValue());
+                    $("textarea[id=\"passage_code\"]").val(editor.getSession().getValue());
                 });
                 editor.setOptions({
                 fontSize: "10pt"
                 });
             </script>
-            <!-- <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || ''%>"></code-input> -->
             <textarea style="display:none;"class="passage_code" name="code" id="passage_code" cols="30" rows="10" autocomplete="off"></textarea>
         </div>
     <!-- Upload Directory -->
@@ -35,9 +34,6 @@
     <input id="passage_file"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
     <%*/%>
     <input id="passage_file"class="passage_file" name="file" type="file" autocomplete="off" multiple/>
-    <%if(passage.filename){%>
-        <span id="remove-file-<%=passage._id%>"style="cursor:pointer;">Remove Files</span>
-    <%}%>
     <div style="display:none;"id="passage_thumbnail">
         <img id="thumbnail_image"src="" alt="">
         <input id="thumbnail_clip"type="hidden" name="thumbnail">
@@ -48,19 +44,19 @@
             <input autocomplete="off" id="passage_ext"class="passage_ext passage_lang" value="rich" type="text"name="lang"placeholder="Programming Language">
             <script>
                 $(function(){
-                    $(document).on('keyup', '#passage_ext', function(){
+                    $(document).on("keyup", "#passage_ext", function(){
                         switch($(this).val()){
-                            case 'rich':
-                                $('.input-field').hide();
-                                $('.rich_input').show();
+                            case "rich":
+                                $(".input-field").hide();
+                                $(".rich_input").show();
                             break;
-                            case 'mixed':
-                                $('.input-field').hide();
-                                $('.mixed_input').show();
+                            case "mixed":
+                                $(".input-field").hide();
+                                $(".mixed_input").show();
                             break;
                             default:
-                            $('.input-field').hide();
-                            $('.d-code-input').show();
+                            $(".input-field").hide();
+                            $(".d-code-input").show();
                             editor.session.setMode("ace/mode/" + $(this).val());
                         }
                     });
@@ -69,28 +65,23 @@
             <div style="margin-top: 25px;">File Path:</div><br>
             <input autocomplete="off"id="passage_filestreampath"class="passage_ext" value="" type="text"name="filestreampath"placeholder="">
             <%if(user && user.admin){%>
-                <br>
-                <%if(passage.mainFile){%>
-                    <div style="color:red;">MAINFILE</div>
-                <%}else{%>
-                <button id="make_mainfile">Make Mainfile</button>
-                <%}%>
-                <%if(passage.mainFile){%>
-                    <br>
-                    <button id="make_mainfile">Run File</button>
-                <%}%>
+                <!-- add radio buttons for making mainfile -->
+                <button id="make_mainfile">Make Mainfile (obsolete)</button>
             <%}%>
             <div style="margin-top: 25px;">Bibliography:</div><br>
-            <input id="passage_bibliography"class="passage_ext" value="<%=passage.bibliography%>" type="text"name="bibliography"placeholder="Additional Source Info">
+            <input id="passage_bibliography"class="passage_ext" value="" type="text"name="bibliography"placeholder="Additional Source Info">
             <!-- <div style="margin-top: 25px;">Inputs:</div><br>
             <input type="text"placeholder="input1" class="passage_input"><br>
             <button class="passage_button">More Inputs</button><br><br> -->
             <!-- <div style="margin-top: 25px;">Output:</div><br>
             <textarea class="passage-textarea"placeholder="Output"name="" id="" cols="30" rows="10"></textarea> -->
             <textarea style="display:none;"class="passage_license" name="license" id="passage_license" cols="30" rows="10" placeholder="LICENSE"></textarea>
+            <input id="chief_passage_id"type="hidden" value="<%=passage.id || 'root'%>"name="chief">
+            <input id="post-pg"type="hidden" value="<%=page%>"name="page">
+            <input id="forum-which"type="hidden" value=""name="which">
     </div>
-    <ul class="passage_tabs">
-        <li id="passage_executable"class="passage_tab passage_tab_open_advanced view_code">Advanced</li>
+    <ul class="passage_tabs"style="margin-top:20px;text-align:left;">
+        <li id="passage_executable"class="passage_tab passage_tab_open_advanced open_advanced view_code">Advanced</li>
     </ul>
-    <br>
+    <button id="post-passage"style="margin:auto;text-align:center;font-size:1.3em;">Post</button>
 </form>
