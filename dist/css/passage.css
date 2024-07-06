@@ -98,15 +98,16 @@
     margin: auto;
     margin-bottom: 10px;
     z-index: 1;
+/*    border: 1px solid rgba(255, 255, 255, 0.23);*/
 }
 .passage_public{
-    border: 2px solid green;
+/*    border: 2px solid green;*/
 }
 .passage_private{
     /* border: 2px solid red; */
 }
 .passage_forum{
-    border: 2px solid brown;
+/*    border: 2px solid brown;*/
 }
 #parent_title{
     /* margin-top: 320px; */

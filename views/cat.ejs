@@ -14,7 +14,7 @@
 				<td>Last Post</td>
 				<%var numPosts = 0; %>
 				<%if(topics.length > 0){%>
-				<% for(topic of topics.reverse()){ %>
+				<% for(topic of topics){ %>
 					<%if(topic.forumType != 'subforum'){%>
 						<%++numPosts;%>
 						<%- include('cat_row', {topic: topic}) %>
@@ -30,6 +30,13 @@
 				<%}%>
 				</table>
 				</div><br/>
+				<ul class="page-count">
+					<%for(var i = 1; i < totalPages + 1; i += 1){%>
+		                <%if(totalPages > 1){%>
+		                    <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+		                <%}%>
+		            <%}%>
+	        	</ul>
 			</div>
    		</div>
 		
