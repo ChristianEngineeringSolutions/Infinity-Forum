@@ -603,8 +603,8 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     if(req.session.user){
         bookmarks = getBookmarks(req.session.user);
     }
-    // var usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
-	var usd = 0;
+    var usd = 0;
+    // usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
     if(isNaN(usd)){
 		usd = 0;
 	}
@@ -1025,7 +1025,8 @@ app.get('/stream', async (req, res) => {
                 username: 'Sasame'
             }},
             bookmarks: bookmarks,
-            ISMOBILE: ISMOBILE
+            ISMOBILE: ISMOBILE,
+            page: 'stream'
         });
     }
 });
@@ -1072,17 +1073,50 @@ app.get('/', async (req, res) => {
         });
     }
 });
+function sortArray(arr, to){
+    var reordered = Array(arr.length).fill(0);
+    for(var i = 0; i < to.length; ++i){
+        for(var j = 0; j < arr.length; ++j){
+            if(arr[j]._id.toString() == to[i]._id.toString()){
+                reordered[i] = arr[j];
+            }
+        }
+    }
+    reordered = reordered.filter(x => x !== 0);
+    return reordered;
+}
 app.get('/forum', async (req, res) => {
+    // await clearForum();
+    // await fillForum(req);
     let bookmarks = [];
     if(req.session.user){
         bookmarks = getBookmarks(req.session.user);
     }
+    var infinity = await Passage.findOne({forumType: 'header'});
     var categories = await Passage.find({forumType: 'category'});
     var subcats = await Passage.find({forumType: 'subcat'}).populate('passages.author');
     var subforums = await Passage.find({forumType: 'subforum'});
-    // await clearForum();
-    // await fillForum(req);
-
+    //get categories and subofrums in order as sorted
+    var header = await Passage.findOne({forumType: 'header'});
+    categories = sortArray(categories, infinity.passages);
+    var sortedSubcats = [];
+    //sort subcats
+    //get list of all subcats in order from category passages
+    for(const cat of categories){
+        for(const c of cat.passages){
+            sortedSubcats.push(c);
+        }
+    }
+    subcats = sortArray(subcats, sortedSubcats);
+    var sortedSubforums = [];
+    //sort subforums
+    //get list of all subforums in order from subcat passages
+    for(const sub of subcats){
+        for(const s of sub.subforums){
+            sortedSubforums.push(s);
+        }
+    }
+    subforums = sortArray(subforums, sortedSubforums);
     if(req.query._id){
         return res.render("forum_body", {
             scripts: scripts,
@@ -1102,15 +1136,15 @@ app.get('/forum', async (req, res) => {
     // await Subforum.deleteMany({});
     // fillForum();
 });
-async function clearForum(){
-    await Passage.deleteMany({forumSpecial: true});
-}
-async function getBigPassage(passage, req, res){
+async function getBigPassage(req, res, params=false){
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
     let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
     var passage_id = req.query._id;
+    if(params){
+        passage_id = req.params.passage_id;
+    }
     var page = req.query.page || 1;
     var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList');
     var totalDocuments = await Passage.countDocuments({
@@ -1175,115 +1209,54 @@ async function getBigPassage(passage, req, res){
     passage.passages = reordered;
     for(const p of passage.passages){
         passage.passages[p] = bubbleUpAll(p);
+    }
+    if(passage.parent != null){
+        var parentID = passage.parent._id;
+    }
+    else{
+        var parentID = 'root';
     }
     return {
         subPassages: passage.passages,
         passageTitle: passage.title,
         passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: ISMOBILE
+        ISMOBILE: ISMOBILE,
+        parentID: parentID
 
     };
 }
-app.get('/thread', async (req, res) => {
-    const ISMOBILE = browser(req.headers['user-agent']).mobile;
-    let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-    let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-    let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
-    var passage_id = req.query._id;
-    var page = req.query.page || 1;
-    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList');
-    var totalDocuments = await Passage.countDocuments({
-        parent: passage._id
-    })
-    var totalPages = Math.round(totalDocuments/DOCS_PER_PAGE) + 1;
-    if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
-        return res.send("Must be on Userlist");
-    }
-    passage.showIframe = false;
-    // if(passage == null){
-    //     return res.redirect('/');
-    // }
-    let passageUsers = [];
-    if(passage.users != null && passage.users[0] != null){
-        // passage.users.forEach(function(u){
-        //     passageUsers.push(u._id.toString());
-        // });
-        for(const u of passage.users){
-            passageUsers.push(u._id.toString());
-        }
-    }
-    passage = bubbleUpAll(passage);
-    if(passage.public == true && !passage.forum){
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        var subPassages = await Passage.paginate({parent: passage_id}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
-        subPassages = subPassages.docs;
-    }
-    else{
-        if(passage.displayHTML.length > 0 || passage.displayCSS.length > 0 || passage.displayJavascript.length > 0){
-            passage.showIframe = true;
-        }
-        if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
-            subPassages = subPassages.docs;
-        }
-        else{ 
-            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
-        }
-    }
-    //we have to do this because of issues with populating passage.passages foreign keys
-    if(!passage.public && !passage.forum){
-        //reorder sub passages to match order of passage.passages
-        var reordered = Array(subPassages.length).fill(0);
-        for(var i = 0; i < passage.passages.length; ++i){
-            for(var j = 0; j < subPassages.length; ++j){
-                if(subPassages[j]._id.toString() == passage.passages[i]._id.toString()){
-                    reordered[i] = subPassages[j];
-                }
-            }
-        }
-        //idk why but sometimes in production there were extra 0s...
-        //need to test more and bugfix algorithm above
-        reordered = reordered.filter(x => x !== 0); //just get rid of extra 0s
-    }
-    else{
-        var reordered = subPassages;
-    }
-    if(passage.passages.length < 1){
-        reordered = subPassages;
-    }
-    passage.passages = reordered;
-    for(const p of passage.passages){
-        passage.passages[p] = bubbleUpAll(p);
-    }
-    console.log('9');
-
+async function logVisit(req){
     let ipAddress = req.ip; // Default to req.ip
 
-
-      // Check Cloudflare headers for real client IP address
-      if (req.headers['cf-connecting-ip']) {
-        ipAddress = req.headers['cf-connecting-ip'];
-      } else if (req.headers['x-forwarded-for']) {
-        // Use X-Forwarded-For header if available
-        ipAddress = req.headers['x-forwarded-for'].split(',')[0];
-      }
-
-
-      // Check other custom headers if needed
+    // Check Cloudflare headers for real client IP address
+    if (req.headers['cf-connecting-ip']) {
+    ipAddress = req.headers['cf-connecting-ip'];
+    } else if (req.headers['x-forwarded-for']) {
+    // Use X-Forwarded-For header if available
+    ipAddress = req.headers['x-forwarded-for'].split(',')[0];
+    }
 
 
-      const existingVisitor = await Visitor.findOne({ ipAddress });
+    // Check other custom headers if needed
 
 
-      if (!existingVisitor) {
-        // Create a new visitor entry
-        const newVisitor = new Visitor({ ipAddress: ipAddress, user: req.session.user || null, visited: passage._id });
-        await newVisitor.save();
-      }
+    const existingVisitor = await Visitor.findOne({ ipAddress });
 
-    res.render("thread", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: ISMOBILE,
-        thread: true
+
+    if (!existingVisitor) {
+    // Create a new visitor entry
+    const newVisitor = new Visitor({ ipAddress: ipAddress, user: req.session.user || null, visited: passage._id });
+    await newVisitor.save();
+    }
+}
+app.get('/thread', async (req, res) => {
+    // ALT
+    var bigRes = await getBigPassage(req, res);
+    await logVisit(req);
+    res.render("thread", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+        ISMOBILE: bigRes.ISMOBILE,
+        thread: true,
+        parentID: bigRes.parentID
     });
 });
 app.get('/cat', async (req, res) => {
@@ -1348,7 +1321,9 @@ app.get('/cat', async (req, res) => {
     //     postCount: topics.length
     // })
 });
-
+async function clearForum(){
+    await Passage.deleteMany({forumSpecial: true});
+}
 //fill forum with presets
 async function fillForum(req){
     const fsp = require('fs').promises;
@@ -1359,24 +1334,25 @@ async function fillForum(req){
         author: req.session.user,
         users: [req.session.user],
         parent: null,
-        forum: true,
         title: "Infinity Forum",
         forumSpecial: true,
         tracker: 0,
         forumType: 'header'
     });
-    console.log(json);
+    infinity = await Passage.findOne({forumType: 'header'});
     for(const category of json.categories){
         var passage = await Passage.create({
             author: req.session.user,
             users: [req.session.user],
             parent: infinity._id.toString(),
-            forum: true,
             title: category.name,
             forumSpecial: true,
             tracker: category.tracker,
             forumType: 'category'
         });
+        infinity.passages.push(passage);
+        infinity.markModified('passages');
+        await infinity.save();
         for(const cat of json.subcats){
             if(cat.parentTracker == category.tracker){
                 var passage2 = await Passage.create({
@@ -1408,8 +1384,8 @@ async function fillForum(req){
                             forumType: 'subforum',
                             sub: true
                         });
-                        passage2.passages.push(passage3);
-                        passage2.markModified('passages');
+                        passage2.subforums.push(passage3);
+                        passage2.markModified('subforums');
                         await passage2.save();
                     }
                 }
@@ -1440,13 +1416,99 @@ async function fillForum(req){
     // }
     console.log("DONE.");
 }
-app.get('/projects', async (req, res) => {
+// app.get('/projects', async (req, res) => {
     
-    res.send("Done.");
+//     res.render("projects");
+// });
+app.get('/projects', async (req, res) => {
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    //REX
+    if(req.session.CESCONNECT){
+        getRemotePage(req, res);
+    }
+    else{
+        let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+        let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+        let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+        let golden = '';
+        let addPassageAllowed = true;
+        let addChapterAllowed = true;
+        var user = req.session.user || null;
+        let passages = await Passage.find({
+            deleted: false,
+            personal: false,
+            public: false,
+        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        for(const passage of passages){
+            passages[passage] = bubbleUpAll(passage);
+        }
+        let passageUsers = [];
+        let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
+        if(req.session.user){
+            bookmarks = getBookmarks(req.session.user);
+        }
+        res.render("stream", {
+            subPassages: false,
+            passageTitle: false, 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+            ISMOBILE: ISMOBILE,
+            page: 'projects'
+        });
+    }
 });
 app.get('/questions', async (req, res) => {
-    
-    res.send("Done.");
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    //REX
+    if(req.session.CESCONNECT){
+        getRemotePage(req, res);
+    }
+    else{
+        let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+        let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+        let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+        let golden = '';
+        let addPassageAllowed = true;
+        let addChapterAllowed = true;
+        var user = req.session.user || null;
+        let passages = await Passage.find({
+            deleted: false,
+            personal: false,
+            public: true,
+        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        for(const passage of passages){
+            passages[passage] = bubbleUpAll(passage);
+        }
+        let passageUsers = [];
+        let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
+        if(req.session.user){
+            bookmarks = getBookmarks(req.session.user);
+        }
+        res.render("stream", {
+            subPassages: false,
+            passageTitle: false, 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+            ISMOBILE: ISMOBILE,
+            page: 'more'
+        });
+    }
 });
 app.post('/interact', async (req, res) => {
     var interaction = await Interaction.create({
@@ -2200,79 +2262,11 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
     }
-    const ISMOBILE = browser(req.headers['user-agent']).mobile;
-    let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-    let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-    let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
-    var passage_id = req.params.passage_id;
-    var page = req.params.page || 1;
-    var passage = await Passage.findOne({_id: passage_id}).populate('parent author users sourceList');
-    var totalDocuments = await Passage.countDocuments({
-        parent: passage._id
-    })
-    var totalPages = Math.round(totalDocuments/DOCS_PER_PAGE) + 1;
-    if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
-        return res.send("Must be on Userlist");
-    }
-    passage.showIframe = false;
-    // if(passage == null){
-    //     return res.redirect('/');
-    // }
-    let passageUsers = [];
-    if(passage.users != null && passage.users[0] != null){
-        // passage.users.forEach(function(u){
-        //     passageUsers.push(u._id.toString());
-        // });
-        for(const u of passage.users){
-            passageUsers.push(u._id.toString());
-        }
-    }
-    passage = bubbleUpAll(passage);
-    if(passage.public == true && !passage.forum){
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        var subPassages = await Passage.paginate({parent: passage_id}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
-        subPassages = subPassages.docs;
-    }
-    else{
-        if(passage.displayHTML.length > 0 || passage.displayCSS.length > 0 || passage.displayJavascript.length > 0){
-            passage.showIframe = true;
-        }
-        if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
-            subPassages = subPassages.docs;
-        }
-        else{ 
-            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
-        }
-    }
-    //we have to do this because of issues with populating passage.passages foreign keys
-    if(!passage.public && !passage.forum){
-        //reorder sub passages to match order of passage.passages
-        var reordered = Array(subPassages.length).fill(0);
-        for(var i = 0; i < passage.passages.length; ++i){
-            for(var j = 0; j < subPassages.length; ++j){
-                if(subPassages[j]._id.toString() == passage.passages[i]._id.toString()){
-                    reordered[i] = subPassages[j];
-                }
-            }
-        }
-        //idk why but sometimes in production there were extra 0s...
-        //need to test more and bugfix algorithm above
-        reordered = reordered.filter(x => x !== 0); //just get rid of extra 0s
-    }
-    else{
-        var reordered = subPassages;
-    }
-    if(passage.passages.length < 1){
-	    reordered = subPassages;
-    }
-    passage.passages = reordered;
-    for(const p of passage.passages){
-        passage.passages[p] = bubbleUpAll(p);
-    }
-    console.log('9');
-    res.render("stream", {subPassages: passage.passages, passageTitle: passage.title, passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: ISMOBILE
+    var bigRes = await getBigPassage(req, res, true);
+    res.render("stream", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+        ISMOBILE: bigRes.ISMOBILE,
+        thread: true,
+        page: 'more'
     });
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -2329,11 +2323,16 @@ app.get('/recover', async(req, res) => {
 });
 app.post('/recover', async(req, res) => {
     let user = await User.findOne({email: req.body.email});
-    user.recoveryToken = v4();
-    await user.save();
-    sendEmail(req.body.email, 'Recover Password: christianengineeringsolutions.com', 
-    'https://christianengineeringsolutions.com/recoverpassword/'+user._id+'/'+user.recoveryToken);
-    res.render('recover_password', {token: null});
+    if(user != null){
+        user.recoveryToken = v4();
+        await user.save();
+        sendEmail(req.body.email, 'Recover Password: christianengineeringsolutions.com', 
+        'https://christianengineeringsolutions.com/recoverpassword/'+user._id+'/'+user.recoveryToken);
+        return res.render('recover_password', {token: null});
+    }
+    else{
+        return res.send("No Such User Found.");
+    }
 });
 app.get('/recoverpassword/:user_id/:token', async(req, res) => {
     let user = await User.findOne({_id: req.params.user_id});
@@ -2358,6 +2357,10 @@ app.post('/recover_password', async(req, res) => {
           });
     }
 });
+//populate an array of objectIDs
+async function populateArray(arr, which){
+
+}
 app.get('/stripeOnboarded', async (req, res, next) => {
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     try {
@@ -2420,13 +2423,21 @@ app.get('/admin', async function(req, res){
         });
     }
 });
+async function userExists(email){
+    var member = await User.findOne({email: email});
+    if(member == null){
+        return false;
+    }
+    return true;
+}
 app.post('/register/', async function(req, res) {
     if ((req.body.email ||
       req.body.username) &&
       req.body.password &&
       req.body.passwordConf && 
       req.body.password == req.body.passwordConf
-      && req.body["g-recaptcha-response"]) {  
+      && req.body["g-recaptcha-response"]
+      && !(await userExists(req.body.email))) {  
 
         const name = req.body.name;
         const response_key = req.body["g-recaptcha-response"];
@@ -2729,6 +2740,12 @@ app.post('/create_initial_passage/', async (req, res) => {
     }
     else if(formData.page == 'forum' && formData.which != 'thread'){
         console.log(req.body.chief);
+        passage.numViews = await scripts.getNumViews(passage._id);
+        if(passage.passages && passage.passages.length > 0){
+            passage.lastPost = 'by ' + passage.passages.at(-1).author.name + '<br>' + passage.passages.at(-1).date.toLocaleDateString();
+        }else{
+            passage.lastPost = 'No Posts Yet.';
+        }
         return res.render('cat_row', {subPassages: false, topic: passage, sub: true});
     }
     else{
@@ -2761,16 +2778,22 @@ app.post('/star_passage/', async (req, res) => {
 });
 app.post('/update_passage_order/', async (req, res) => {
     let passage = await Passage.findOne({_id: req.body._id});
+    console.log(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString());
     //Only for private passages
-    if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author.toString()){
+    if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        console.log("TESTING2");
         var passageOrder = [];
         if(typeof req.body.passageOrder != 'undefined'){
             var passageOrder = JSON.parse(req.body.passageOrder);
             let trimmedPassageOrder = passageOrder.map(str => str.trim());
+            console.log(trimmedPassageOrder);
+            console.log(passage.passages[0]._id+'  '+ passage.passages[1]._id+ '  '+passage.passages[2]._id);
             passage.passages = trimmedPassageOrder;
             passage.markModified('passages');
             await passage.save();
         }
+        console.log("TESTING2");
+        console.log(passageOrder);
     }
     //give back updated passage
     res.send('Done');
@@ -3389,6 +3412,7 @@ app.get('/testing', async function(req, res){
     res.render('testing');
 });
 app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //output passages in directory / or req.body.directory
     var directory = req.params.directory || __dirname;
     //get passages where fileStreamPath starts with directory
@@ -3440,6 +3464,7 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
             username: 'Sasame'
         }},
         bookmarks: bookmarks,
+        ISMOBILE: ISMOBILE
     });
     // return res.render('passages', {
     //     passages: passages,

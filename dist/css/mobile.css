@@ -84,8 +84,14 @@
     }   
 
 }
+.mobile-show{
+    display: none;
+}
 /* Large Phones */
 @media screen and (max-width: 715px){
+    .mobile-show{
+        display: block;
+    }
     .arrow_l{
         left: -30px;
     }

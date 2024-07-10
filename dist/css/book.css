@@ -271,7 +271,7 @@ hr{
 #right_passages .passage > .passage_image{
     max-height: 100px;
 }
-#side_panel, #side_panel_inner{
+#side_panel{
     float: right;
     padding: 10px;
     z-index: 9999999999;
@@ -283,7 +283,7 @@ hr{
     /*position: fixed;
     right: 0px;*/
 }
-#side_panel_inner{
+#side_panel{
     position: fixed;
     right: 0px;
     top: 0px;

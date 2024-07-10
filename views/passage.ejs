@@ -51,7 +51,7 @@
                 <%}%>
                 <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
                 <!-- Shift passage location -->
-                <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li>
+                <!-- <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li> -->
                 <%if(user){%>
                 <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
                 <%}%>
@@ -129,7 +129,7 @@
                 <%}else{%>
                     <ion-icon style=""class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
                 <%}%>
-        </div><div class="p-date"><%- include('profile_thumbnail', {profile: passage.author}) %>, <%=passage.date.toLocaleDateString()%></div></div>
+        </div><div class="p-date"><%- include('profile_thumbnail', {profile: passage.author}) %>, <%=passage.date.toLocaleDateString()%><br class="mobile-show"><span class="mobile-hide">&emsp;&emsp;</span><%if(passage.forum){%><ion-icon style="color:brown;"src="/images/ionicons/ellipse.svg"></ion-icon> Forum<%}else if(passage.public){%><ion-icon style="color:green;"src="/images/ionicons/ellipse.svg"></ion-icon> Question<%}else if(!passage.public){%><ion-icon style="color:red;"src="/images/ionicons/ellipse.svg"></ion-icon> Project<%}%></div></div>
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><%=passage.title%></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
     <%if(passage.displayContent != null && passage.displayContent != ''){%>

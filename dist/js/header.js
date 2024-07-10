@@ -190,8 +190,8 @@ $(function(){
             $('.passage_author').hide();
             $('.passage_users').hide();
             $('.passage_stars').hide();
-            $('.passage').css('background', 'white'); 
-            $('.passage').css('border', '0'); 
+            // $('.passage').css('background', 'white'); 
+            // $('.passage').css('border', '0'); 
             $('.passage').css('margin-bottom', '0'); 
             $('.passage').css('padding-top', '0'); 
             $('.passage').css('padding-bottom', '0'); 
@@ -205,18 +205,22 @@ $(function(){
             $('#add_passage_button').hide();
             $('#top_spacer').hide();
             $('.passage-box').hide();
+            $('.toppings').hide();
+            $('.bottom-bar').hide();
             distractionFree = true;
         }
         else{
-            $(this).css('color', 'black');
+            $('.toppings').show();
+            $('.bottom-bar').show();
+            $(this).css('color', 'white');
             $('.passage-box').show();
             $('.passage_options').show();
             $('.passage_tabs').show();
             $('.passage_author').show();
             $('.passage_users').show();
             $('.passage_stars').show();
-            $('.passage').css('background', 'gold'); 
-            $('.passage').css('border', '2px solid #353535'); 
+            // $('.passage').css('background', 'gold'); 
+            // $('.passage').css('border', '2px solid #353535'); 
             $('.passage').css('margin-bottom', '10px'); 
             // $('.detail_title').show();
             $('.detail_description').css('margin-bottom', '50px'); 
@@ -304,7 +308,7 @@ $(function(){
         else if(window.location.pathname == '/loginform'
         || window.location.pathname == '/leaderboard'){
             title = 'Home';
-            $('.tab').css('background', 'gold');
+            // $('.tab').css('background', 'gold');
         }
         else{
             title = window.location.href.split('/')[window.location.href.split('/').length - 2];

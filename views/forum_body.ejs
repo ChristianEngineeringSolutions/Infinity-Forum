@@ -21,7 +21,7 @@
                         <i>
                             <%for(const subforum of subforums){%>
                                 <%if(subforum.parent._id.toString() == cat._id.toString()){%>
-                            &nbsp;<a href="#f=<%=cat._id%>/<%=cat.title.replace(' ', '_')%>&s=<%=subforum._id%>/<%=subforum.title.replace(' ', '_')%>"><%=subforum.title%></a> 
+                            &nbsp;<a href="#cat/<%=subforum.title.replace(' ', '_')%>/<%=subforum._id%>"><%=subforum.title%></a> 
                                     <%}%>
                             <%}%>
                             </a></td>

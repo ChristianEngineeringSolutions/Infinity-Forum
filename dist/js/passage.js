@@ -744,7 +744,7 @@ $(function(){
                     passageOrder: JSON.stringify(orderList)
                 },
                 success: function (data) {
-                    //alert(data);
+                    // alert(data);
                 }
             });
         }
@@ -807,6 +807,7 @@ $(function(){
     });
     $(document).on('submit', '#passage_form', function(e){
         e.preventDefault();
+        $('.editor-chief').val($('#chief_passage_id').val());
         var thiz = $(this);
         var formData = new FormData(this);
         $.ajax({
@@ -827,7 +828,7 @@ $(function(){
                     else{
                         $('#passage_wrapper').append(data);
                         //go to last passage
-                        $('.passage').last()[0].scrollIntoView();
+                        // $('.passage').last()[0].scrollIntoView();
                     }
                 }
                 else if(which == 'thread'){
@@ -835,7 +836,8 @@ $(function(){
                 }
                 else{
                     $('#no-posts').hide();
-                    $('#cat-tbl').prepend(data);
+                    // $('#cat-tbl').prepend(data);
+                    $(data).insertAfter('#first-cat');
                 }
                 thisPassage(thiz).replaceWith(data);
 
