@@ -3,7 +3,7 @@
     margin: auto;
     margin-top: 60px;
     width: 88%;
-    background: gold;
+    background: url('/images/gray_sand.png');
     padding: 25px;
 }
 #login_username, #login_email, #login_password, #login_button,
@@ -19,8 +19,8 @@
     margin-top: 10px;
 }
 .leader{
-    background: black;
-    color: gold;
+    background: url(/images/gray_sand.png);
+    color: white;
     margin: auto;
     border: 1px solid black;
     text-align: center;
@@ -28,4 +28,23 @@
     width: 89%;
     margin-top: 10px;
     margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.23);
+    padding: 10px 12px;
+    color: white;
+}
+.terms-link, .rec-pwd-link{
+    text-decoration: none;
+    color: lightgrey;
+}
+.rec-pwd-link{
+    margin-top: 20px;
+    display: block;
+}
+.log-btn{
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.23);
+    padding: 8px 12px;
+    color: #fff;
+    cursor: pointer;
 }

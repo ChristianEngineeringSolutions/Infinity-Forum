@@ -134,6 +134,10 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],
+    subforums: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    }],
     // daemons to be used as functions in passage
     daemons: [{
         type: mongoose.Schema.Types.ObjectId,

@@ -1,6 +1,13 @@
 <%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
 </head>
 <%- include('header') %>
+<%- include('header2', {
+    page: 'loginform'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
 <br><br><br><br><br><br>
 <input id="chief_passage_id"type="hidden" value="root"name="">
 <h1 style="text-align: center;margin-bottom: 10px;">Recover Password</h1>
@@ -10,7 +17,7 @@
         <input id="login_username"class=""type="email" name="email"autocomplete="off" required/>
     </div>
     <div>
-        <input id="login_button"type="submit" value="Send Recovery Link"autocomplete="off"/>
+        <input class="log-btn"id="login_button"type="submit" value="Send Recovery Link"autocomplete="off"/>
     </div>
   </form>
   <script src="/js/login_register_form.js"></script>

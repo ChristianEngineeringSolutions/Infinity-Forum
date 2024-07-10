@@ -1,3 +1,148 @@
+<div class="extra">
+        <div id="donate">Some text here.<br>
+        <div id="slider-result">15$</div>  
+        <div class="Dslider"></div>
+        <input type="hidden" id="hidden"/>
+        <div id="donate_btn">Donate</div>
+        
+        </div>
+        <div id="feedback">
+            <form action="/feedback/send" method="post" id="send_feedback">
+            <div id="feed_box">
+                <div id="feed_box_1">
+                    <table id="feed_box_1_tbl">
+                        <tr>
+                            <th>Leave feedback 1/4<hr /></th>
+                        </tr>
+                        <tr>
+                            <td>Please leave feedback here to help us make this site better; you can choose to be anonymous.<br/>
+        We look over the feedback to know how we can improve the site and get what users want.</td>
+                        </tr>
+                        <tr><td>&nbsp;</td></tr>
+                        <?php
+                            if ($logged)
+                            {
+                                echo '<tr><td>Do you want to be anonymous when leaving feedback?</td></tr>';
+                                echo '<tr><td><input type="checkbox" name="anon" id="fee_anon" /> Check for Yes</td></tr>';    
+                            }
+                        ?>
+                        
+                    </table>
+                    <div class="btn" id="feed_next_1">Next</div>
+                </div>
+                
+                
+                <div id="feed_box_2">
+                    <table id="feed_box_2_tbl">
+                        <tr>
+                            <th colspan="13">Leave feedback 2/4<hr /></th>
+                        </tr>
+                        <tr>
+                            <td colspan="13">What is your overall impression of the layout?</td>
+                        </tr>   
+                        <tr>
+                            <td align="right">Terrible</td>
+                            <td width="35px" align="right"><input type="radio" name="fee_l" value="0" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="1" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="2" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="3" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="4" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="5" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="6" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="7" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="8" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_l" value="9" class="fee_l" /></td>
+                            <td width="35px" align="left"><input type="radio" name="fee_l" value="10" class="fee_l" /></td> 
+                            <td align="left">AWESOME!!!</td>
+                        </tr>                     
+                        <tr><td>&nbsp;</td></tr>
+                        <tr>
+                            <td colspan="13">How easy is it to navigate the site?</td>
+                        </tr>
+                        <tr>
+                            <td align="right">Extremely easy</td>
+                            <td width="35px" align="right"><input type="radio" name="fee_n" value="0" class="fee_l" /></td>
+                            <td><input type="radio" name="fee_n" value="1" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="2" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="3" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="4" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="5" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="6" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="7" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="8" class="fee_n" /></td>
+                            <td><input type="radio" name="fee_n" value="9" class="fee_n" /></td>
+                            <td width="35px" align="left"><input type="radio" name="fee_n" value="10" class="fee_n" /></td>
+                            <td align="left">How do I get out of here?</td>
+                        </tr>
+                    </table>
+                    <div class="btn" id="feed_next_2">Next</div>
+                </div>
+            
+            
+            <div id="feed_box_3">
+                    <table id="feed_box_3_tbl">
+                        <tr>
+                            <th colspan="13">Leave feedback 3/4<hr /></th>
+                        </tr>
+                        <tr>
+                            <td colspan="13">What is your overall impression of the functionality?</td>
+                        </tr>
+                        <tr>
+                            <td align="right">You call that functionality? </td>
+                            <td width="35px" align="right"><input type="radio" name="fee_f" value="0" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="1" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="2" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="3" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="4" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="5" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="6" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="7" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="8" class="fee_f" /></td>
+                            <td><input type="radio" name="fee_f" value="9" class="fee_f" /></td>
+                            <td width="35px" align="left"><input type="radio" name="fee_f" value="10" class="fee_f" /></td>
+                            <td align="left">Excellent!</td>
+                        </tr>
+                        <tr><td>&nbsp;</td></tr>
+                        <tr>
+                            <td colspan="13">How easy was it to understand what the site is about?</td>
+                        </tr>
+                        <tr>
+                            <td align="right">I still have no clue. </td>
+                            <td width="35px" align="right"><input type="radio" name="fee_a" value="0" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="1" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="2" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="3" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="4" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="5" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="6" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="7" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="8" class="fee_a" /></td>
+                            <td><input type="radio" name="fee_a" value="9" class="fee_a" /></td>
+                            <td width="35px" align="left"><input type="radio" name="fee_a" value="10" class="fee_a" /></td>
+                            <td align="left">I knew it before I came here!</td>
+                        </tr>
+                    </table>
+                    <div class="btn" id="feed_next_3">Next</div>
+                </div>
+            
+            
+                   <div id="feed_box_4">
+                    <table id="feed_box_4_tbl">
+                        <tr>
+                            <th colspan="13">Leave feedback 4/4</th>
+                        </tr>
+                        <tr>
+                            <td colspan="13">Leave comments or suggestions here.</td>
+                        </tr>
+                    </table>
+                    <textarea id="feed_com" name="comments"></textarea>
+                    <div class="btn" id="feed_next_4">Send</div>
+                </div>
+            </div>
+            <div id="fee_err">Something went wrong; please check that you have marked all questions.</div>
+            </form>
+        </div>
+    </div>
 <div id="top">
         <span id="logo" onclick="window.location = '/';">&nbsp;</span><span id="extra"></span><span id="extra2"></span><!--
         --><span id="menu">
@@ -19,20 +164,20 @@
 
         </script>
         
-        <div class="extra-btn1">
+        <!-- <div class="extra-btn1">
             <div class="extra_icon1"></div>
         </div>
         <div class="extra-btn2">
             <div class="extra_icon2"></div>
-        </div>
+        </div> -->
             <% if(user != null){ %>
                     <div class="member_bar">
-                    <div id="member_bar_body">Welcome <b><a href="/user/"><%=user.name%></a></b>!
+                    <div id="member_bar_body">Welcome <b><a href="/profile"><%=user.name%></a></b>!
                     <div id="member_bar_links">
-                    <a class='member_link'href="/lounge">Lounge</a>&nbsp;
+                    <a class='member_link'href="/stream">Stream</a>&nbsp;
                     <a class='member_link'href="/forum">Forum</a>&nbsp;
                     <a class='member_link'href="/projects">Projects</a>&nbsp;
-                    <a class='member_link'href="/lounge/groups">Groups</a>&nbsp;
+                    <a class='member_link'href="/questions">Questions</a>&nbsp;
                     </div> 
                     </div>
                     </div>
@@ -42,9 +187,11 @@
                         <label><i class='fa fa-user user-$id' alt="$id" title="$name"></i>&nbsp;$name</label>
                         </span>
                         </div>
-                         &nbsp;&nbsp;<a class="fa fa-magic fa-lg"title="Admin"href="/admin/"></a>';
-                        &nbsp;&nbsp;<a href="/lounge/"class='fa fa-lg fa-exclamation'></a>&nbsp;&nbsp;<a id='pm-top'class='fa fa-envelope fa-lg'style='color:grey'><a>&nbsp;&nbsp;<a alt="settings" title="settings"href="/lounge/#!/settings"class='fa fa-cog fa-lg'style='color:grey'></a>&nbsp;&nbsp;
-                        <a class='fa fa-sign-out fa-lg'href="/lounge/logout"alt="logout" title="logout"style='color:grey'></a>&nbsp;&nbsp;
+                        <%if(user.admin){%>
+                         &nbsp;&nbsp;<a class="fa fa-magic fa-lg"title="Admin"href="/admin"></a>
+                         <%}%>
+                        <!--&nbsp;&nbsp;<a href="/lounge/"class='fa fa-lg fa-exclamation'></a>-->&nbsp;&nbsp;<a title="Messages"href="/messages"class='fa fa-envelope fa-lg'style='color:grey'></a>&nbsp;&nbsp;<a alt="settings" title="settings"href="/profile"class='fa fa-cog fa-lg'style='color:grey'></a>&nbsp;&nbsp;
+                        <a class='fa fa-sign-out fa-lg'href="/logout"alt="logout" title="logout"style='color:grey'></a>&nbsp;&nbsp;
                             </div>
                             </div>
             <%}%>

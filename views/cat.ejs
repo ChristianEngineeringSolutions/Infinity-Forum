@@ -7,11 +7,12 @@
 			<%# if (count($res2Fetch) > 0) // if any //will think about it %>
 				<div class="subcat">
 				<table id="cat-tbl"class="tbl_subcat">
-				<tr>
+				<tr id="first-cat">
 				<td>Subject</td>
 				<td>Replies</td>
 				<td>Views</td>
 				<td>Last Post</td>
+				</tr>
 				<%var numPosts = 0; %>
 				<%if(topics.length > 0){%>
 				<% for(topic of topics){ %>
@@ -41,3 +42,4 @@
    		</div>
 		
 			<input type="hidden" value="<%=btoa(name)%>|<%=_id%>" class="hdn_cat" />
+			<input id="chief_passage_id"type="hidden" value="<%=_id || 'root'%>"name="chief">

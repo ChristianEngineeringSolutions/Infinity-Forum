@@ -388,6 +388,8 @@
     text-align: center;
     padding: 15px;
     width: 89%;
+    background: url(/images/gray_sand.png);
+    color: #fff;
 }
 .ace-editor{
     height: 377px;

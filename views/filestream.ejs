@@ -3,8 +3,18 @@
     Add Mainfile only Toggle Button
 -->
 <%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
 </head>
 <%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%if(!ISMOBILE){%>
+<%- include('member_box') %>
+<%}%>
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
             <input type="hidden" value="false", id="is_profile"/>
             <input type="hidden" id="selection">
