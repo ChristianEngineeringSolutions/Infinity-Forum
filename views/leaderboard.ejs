@@ -8,11 +8,17 @@
 }) %>
 <%-include('menu')%>
 <%-include('sidebar')%>
+<%if(!ISMOBILE){%>
 <%- include('member_box') %>
+<%}%>
 <input id="chief_passage_id"type="hidden" value="root"name="">
 
 <input type="hidden" value="leaderboard", id="is_profile"/>
+<%if(!ISMOBILE){%>
 <br><br><br><br><br>
+<%}else{%>
+<br><br>
+<%}%>
 <br>
 <h1 style="text-align:center;">Leaderboard</h1>
 <input id="search_leaderboard"placeholder="Search Leaders..." type="" name="" autocomplete="off">
