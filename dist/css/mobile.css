@@ -89,6 +89,9 @@
 }
 /* Large Phones */
 @media screen and (max-width: 715px){
+    .p-date{
+        padding-top: 6px;
+    }
     .mobile-show{
         display: block;
     }
