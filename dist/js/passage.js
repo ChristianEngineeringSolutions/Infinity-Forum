@@ -750,7 +750,7 @@ $(function(){
         }
     });
     //For Home, Search, and Profile
-    $(document).on('click', '#view_more', function(){
+    $(document).on('click', '#view_more, #view-more-leaders', function(){
         checkIfFromOtro();
         //check if home, search, or profile
         var isProfile = $('#is_profile').val();
@@ -766,8 +766,12 @@ $(function(){
                 search: $('#search').val()
             },
             success: function(data){
-                $('#passage_wrapper').append(data);
-                syntaxHighlight();
+                if($('#is_profile').val() == 'leaderboard'){
+                    $('#leaders').append(data);
+                }else{
+                    $('#passage_wrapper').append(data);
+                    syntaxHighlight();
+                }
             }
         });
     });
