@@ -33,6 +33,16 @@
 #lead1{
     display: none;
 }
+/*MID*/
+
+@media screen and (max-width: 1000px){
+    #top{
+        display: none;
+    }
+    #header{
+        display: block;
+    }
+}
 /* Tablets portrait*/
 @media screen and (max-width: 820px){
     #main2{
@@ -41,7 +51,7 @@
     #lead1{
         background: url(/images/gray_sand.png);
         padding: 10px;
-        width: 100% !important;
+/*        width: 100% !important;*/
         display: block;
         color: white;
         padding: 30px;

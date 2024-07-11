@@ -1808,7 +1808,7 @@ background-color: rgba(255, 255, 255, .7);
     display:none;
 }
 .bar, .member_bar, #top {
-    min-width: 1130px;
+/*    min-width: 1130px;*/
 }
 
 #member_bar_body b a {

@@ -330,3 +330,17 @@ $(document).ready(function(e)
 		},800);
 	},800);
 });
+$(function(){
+    window.onscroll = function (e) {
+        if(window.scrollY > 50){
+            $('#top').hide();
+            $('#header').show();
+        }
+        if(window.scrollY < 50){
+            if(screen.width > 1000){
+                $('#header').hide();
+                $('#top').show();
+            }
+        }
+    };
+});
