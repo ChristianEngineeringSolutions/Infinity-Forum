@@ -2622,7 +2622,7 @@ app.post('/paginate', async function(req, res){
         let find = {
             username: new RegExp(''+search+'', "i")
         };
-        let users = await User.paginate(find, {sort: "-stars", page: page, limit: DOCS_PER_PAGE});
+        let users = await User.paginate(find, {sort: "-starsGiven", page: page, limit: DOCS_PER_PAGE});
         res.render('leaders', {users: users.docs, page: page});
     }
 });
