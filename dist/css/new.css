@@ -1770,7 +1770,8 @@ background-color: rgba(255, 255, 255, .7);
 	font-size: 1.1em;
 }
 .panel-body{
-	background:url('/images/gray_sand.png');
+/*	background:url('/images/gray_sand.png');*/
+    background: rgba(204,204,204,.2);
 	padding: 10px;
 	border: 1px solid #000;
 }

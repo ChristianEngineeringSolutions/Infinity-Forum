@@ -44,6 +44,7 @@ hr{
     display: block;
     padding: 15px;
     background: url('/images/gray_sand.png');
+    background: rgba(204,204,204,.2);
   border: 0;
   color: white;
 }

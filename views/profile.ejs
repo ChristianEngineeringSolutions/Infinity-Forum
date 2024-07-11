@@ -46,6 +46,7 @@
 <input id="search_profile"placeholder="Search Profile..." type="" name="" autocomplete="off">
   <%if(user && profile._id == user._id){%>
     <button id="add_passage_button">+</button>
+    <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
   <%}%>
   <br>
   <div id="passage_wrapper">
