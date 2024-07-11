@@ -611,6 +611,10 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
 
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
+    passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }}
     });
 });
 app.get('/loginform', function(req, res){

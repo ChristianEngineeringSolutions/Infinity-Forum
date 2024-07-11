@@ -20,6 +20,7 @@
 }
 .leader{
     background: url(/images/gray_sand.png);
+    background: rgba(204,204,204,.2);
     color: white;
     margin: auto;
     border: 1px solid black;
