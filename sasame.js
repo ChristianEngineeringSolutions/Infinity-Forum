@@ -1876,11 +1876,13 @@ app.post('/sort_daemons', async (req, res) => {
     }
 });
 app.get('/leaderboard', async (req, res) => {
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
     }
     let users = await User.find().sort('-starsGiven');
-    res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts});
+    res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts,
+    ISMOBILE: ISMOBILE});
 });
 app.post('/add_user', async (req, res) => {
     let passageId = req.body.passageId;
