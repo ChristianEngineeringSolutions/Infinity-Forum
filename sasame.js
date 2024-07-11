@@ -1560,9 +1560,10 @@ app.post('/search_leaderboard/', async (req, res) => {
         username: {
         $regex: search,
         $options: 'i',
-    }}).sort('-stars').limit(20);
+    }}).sort('-starsGiven').limit(20);
     res.render("leaders", {
         users: results,
+        page: 1
     });
 });
 app.post('/search_profile/', async (req, res) => {
