@@ -1260,7 +1260,8 @@ app.get('/thread', async (req, res) => {
     res.render("thread", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
         thread: true,
-        parentID: bigRes.parentID
+        parentID: bigRes.parentID,
+        topicID: bigRes.passage._id
     });
 });
 app.get('/cat', async (req, res) => {
@@ -1271,7 +1272,7 @@ app.get('/cat', async (req, res) => {
     var totalDocuments = await Passage.countDocuments({
         parent: req.query._id.toString()
     })
-    var totalPages = Math.round(totalDocuments/20) + 1;
+    var totalPages = Math.floor(totalDocuments/20) + 1;
     for (const topic of topics.docs){
         topic.numViews = await scripts.getNumViews(topic._id);
         if(topic.passages && topic.passages.length > 0){
@@ -1795,7 +1796,12 @@ app.post('/transfer_bookmark', async (req, res) => {
         
     });
     copy = bubbleUpAll(copy);
-    res.render('passage', {subPassages: false, passage: copy, sub: true});
+    if(req.body.which && req.body.which == 'cat'){
+        return res.render('cat_row', {subPassages: false, topic: copy, sub: true});
+    }
+    else{
+        return res.render('passage', {subPassages: false, passage: copy, sub: true});
+    }
 });
 app.get('/get_bookmarks', async (req, res) => {
     // let bookmarks = [];

@@ -82,15 +82,25 @@ $(function(){
             // url: DOMAIN + '/transfer_bookmark',
             data: {
                 _id: _id,
-                parent: _chief
+                parent: _chief,
+                which: $('#which-page').val() || 's'
             },
             success: function(data){
+                // alert(data);
                 flashIcon($('#transfer_bookmark_' + _id), 'green');
-                if(_chief == 'root'){
-                    $('#passage_wrapper').prepend(data);
+                if($('#which-page').length > 0){
+                    if($('#which-page').val() == 'thread')
+                    $('#thread-passages').append(data);
+                    else if($('#which-page').val() == 'cat')
+                        $(data).insertAfter('#first-cat');
                 }
                 else{
-                    $('#passage_wrapper').append(data);
+                    if(_chief == 'root'){
+                        $('#passage_wrapper').prepend(data);
+                    }
+                    else{
+                        $('#passage_wrapper').append(data);
+                    }
                 }
                 syntaxHighlight();
             }
