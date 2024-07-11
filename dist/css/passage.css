@@ -37,6 +37,7 @@
     /* margin-left: 280px; */
     width: 100%;
     background: url('/images/gray_sand.png');
+    background: rgba(204,204,204,.2);
     /* min-height: 500px; */
     /* padding: 20px; */
     color: white;
