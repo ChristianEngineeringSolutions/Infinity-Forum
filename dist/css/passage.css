@@ -383,7 +383,7 @@
 .change_passage_file{
     cursor: pointer;
 }
-#view_more{
+#view_more, #view-more-leaders{
     cursor: pointer;
     text-align: center;
     padding: 15px;
