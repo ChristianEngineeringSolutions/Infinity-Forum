@@ -1880,9 +1880,17 @@ app.get('/leaderboard', async (req, res) => {
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
     }
-    let users = await User.find().sort('-starsGiven');
-    res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts,
-    ISMOBILE: ISMOBILE});
+    var page = req.query.page || 1;
+    // let users = await User.find().sort('-starsGiven');
+    let users = await User.paginate({}, {sort: '-starsGiven', page: page, limit: 20});
+    users = users.docs;
+    if(page == 1){
+        return res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts,
+    ISMOBILE: ISMOBILE, page: page});
+    }
+    else{
+        return res.render('leaders', {users: users, page: page});
+    }
 });
 app.post('/add_user', async (req, res) => {
     let passageId = req.body.passageId;

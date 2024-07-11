@@ -1,3 +1,5 @@
+<%var i = 1; %>
 <%users.forEach(function(user) { %>
-    <%- include('leader', {user: user}) %>
+    <%- include('leader', {user: user, page: page, i: i}) %>
+    <%++i;%>
 <%});%>
