@@ -990,6 +990,34 @@ app.post('/cesconnect', function(req, res){
     req.session.CESCONNECT = !req.session.CESCONNECT;
     res.send("Done.");
 });
+async function fillUsedInListSingle(passage){
+        passage.usedIn = [];
+        var ps = await Passage.find({
+            sourceList: {
+                $in: [passage._id]
+            }
+        });
+        for(const p of ps){
+            var record = await Passage.findOne({_id: p._id});
+            passage.usedIn.push('<a href="/passage/'+record.title+'/'+record._id+'">'+record.title+'</a>');
+        }
+    return passage;
+}
+async function fillUsedInList(passages){
+    for(const passage of passages){
+        passage.usedIn = [];
+        var ps = await Passage.find({
+            sourceList: {
+                $in: [passage._id]
+            }
+        });
+        for(const p of ps){
+            var record = await Passage.findOne({_id: p._id});
+            passage.usedIn.push('<a href="/passage/'+record.title+'/'+record._id+'">'+record.title+'</a>');
+        }
+    }
+    return passages;
+}
 app.get('/stream', async (req, res) => {
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //REX
@@ -1019,6 +1047,7 @@ app.get('/stream', async (req, res) => {
         if(req.session.user){
             bookmarks = getBookmarks(req.session.user);
         }
+        passages = await fillUsedInList(passages);
         res.render("stream", {
             subPassages: false,
             passageTitle: false, 
@@ -1222,6 +1251,7 @@ async function getBigPassage(req, res, params=false){
     }
     return {
         subPassages: passage.passages,
+        passage: passage,
         passageTitle: passage.title,
         passageUsers: passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: passage, passages: false, totalPages: totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: ISMOBILE,
@@ -1730,6 +1760,7 @@ app.post('/search/', async (req, res) => {
     for(const result of results){
         results[result] = bubbleUpAll(result);
     }
+    results = await fillUsedInList(results);
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -2284,7 +2315,11 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         return getRemotePage(req, res);
     }
     var bigRes = await getBigPassage(req, res, true);
-    res.render("stream", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+    console.log('TEST'+bigRes.passage.title);
+    bigRes.passage = await fillUsedInListSingle(bigRes.passage);
+    console.log('TEST'+bigRes.passage);
+    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+    res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
         thread: true,
         page: 'more'
@@ -2756,6 +2791,7 @@ app.post('/create_initial_passage/', async (req, res) => {
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);
     }
+    passage = await fillUsedInListSingle(passage);
     if(formData.page == 'stream'){
         return res.render('passage', {subPassages: false, passage: passage, sub: true});
     }

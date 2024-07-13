@@ -39,7 +39,7 @@ backup({
 							//now delete unzipped folder
 							exec('rm -rf ' + folderLocation);
 							//now email the zipped file
-							sendEmail('christianengineeringsolutions@gmail.com', 'Sasame Backup', 'Attached.', __dirname + '/' + zipLocation);
+							sendEmail('uriahsanders99@gmail.com', 'Sasame Backup', 'Attached.', __dirname + '/' + zipLocation);
 							console.log('Backup Complete.');
 						});
 					}

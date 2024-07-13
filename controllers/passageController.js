@@ -9,7 +9,7 @@ module.exports = {
         let passageID = req.body._id;
         let passage = await Passage.findOne({_id: passageID});
         if(passage.author.toString() != req.session.user._id.toString()){
-            res.send("Only passage author can delete.");
+            return res.send("Only passage author can delete.");
         }
         await Passage.deleteOne({_id: passageID.trim()});
         callback();

@@ -29,6 +29,14 @@
         <%passage.sourceList.forEach(function(source) { %>
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
         <%});}%>
+        <br>
+        Used In:
+        <%if(passage.usedIn.length == 0){ %>
+            No Passages
+        <%}%>
+        <%passage.usedIn.forEach(function(passage) { %>
+            <%-passage%>,
+        <%});%>
         <!-- List collaborators and allow them to be added (permanent) -->
 
         <!-- Show Additional Source info -->
