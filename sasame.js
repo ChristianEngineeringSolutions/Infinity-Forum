@@ -550,6 +550,7 @@ app.get('/messages', async(req, res) => {
         if(req.session.user){
             bookmarks = getBookmarks(req.session.user);
         }
+    passages = await fillUsedInList(passages);
     res.render('messages', {
         passages: passages,
         subPassages: false,
@@ -661,7 +662,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     if(isNaN(usd)){
 		usd = 0;
 	}
-
+    passages = await fillUsedInList(passages);
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
     passage: {id:'root', author: {
