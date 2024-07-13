@@ -51,6 +51,8 @@
     "sharp": "^0.33.1",
     "shelljs": "^0.8.5",
     "socket.io": "^4.6.1",
+    "string-similarity": "^4.0.4",
+    "string-similarity-js": "^2.1.4",
     "stripe": "^11.5.0",
     "uuid": "^7.0.1"
   },

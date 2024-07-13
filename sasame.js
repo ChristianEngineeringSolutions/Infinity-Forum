@@ -378,7 +378,50 @@ async function totalStars(){
     }
     return stars;
 }
-
+//function from string-similarity-js
+//since i was having import issues
+var stringSimilarity = function (str1, str2, substringLength, caseSensitive) {
+    if (substringLength === void 0) { substringLength = 2; }
+    if (caseSensitive === void 0) { caseSensitive = false; }
+    if (!caseSensitive) {
+        str1 = str1.toLowerCase();
+        str2 = str2.toLowerCase();
+    }
+    if (str1.length < substringLength || str2.length < substringLength)
+        return 0;
+    var map = new Map();
+    for (var i = 0; i < str1.length - (substringLength - 1); i++) {
+        var substr1 = str1.substr(i, substringLength);
+        map.set(substr1, map.has(substr1) ? map.get(substr1) + 1 : 1);
+    }
+    var match = 0;
+    for (var j = 0; j < str2.length - (substringLength - 1); j++) {
+        var substr2 = str2.substr(j, substringLength);
+        var count = map.has(substr2) ? map.get(substr2) : 0;
+        if (count > 0) {
+            map.set(substr2, count - 1);
+            match++;
+        }
+    }
+    return (match * 2) / (str1.length + str2.length - ((substringLength - 1) * 2));
+};
+function passageSimilarity(passage, source){
+    if(passage.lang == source.lang){
+        if(passage.lang == 'rich'){
+            return stringSimilarity(passage.content, source.content);
+        }
+        else if(passage.lang == 'mixed'){
+            return stringSimilarity(passage.html + passage.css + passage.javascript, source.html + source.css + source.javascript);
+        }
+        else{
+            return stringSimilarity(passage.code, source.code);
+        }
+    }
+}
+async function getLastSource(passage){
+    var source = await Passage.findOne({_id:passage.sourceList.at(-1)});
+    return source;
+}
 async function starPassage(req, amount, passageID, userID, deplete=true){
     let user = await User.findOne({_id: userID});
     //infinite stars on a local sasame
@@ -389,8 +432,9 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
         user.stars -= amount;
     }
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
+    var bonus = passageSimilarity(passage, await getLastSource(passage));
     //add stars to passage and sources
-    passage.stars += amount;
+    passage.stars += amount + bonus;
     //star all sub passages (content is displayed in parent)
     if(passage.bubbling && passage.passages && !passage.public){
         for(const p of passage.passages){
@@ -401,8 +445,14 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     //you have to star someone elses passage to get stars
     if(passage.author._id.toString() != req.session.user._id.toString()){
         user.starsGiven += amount;
-        passage.author.stars += amount;
+        if(passage.collaborators.length > 0){
+            passage.author.stars += (amount + bonus)/passage.collaborators.length;
+        }
+        else{
+            passage.author.stars += amount + bonus;
+        }
         //give stars to collaborators if applicable
+        //split stars with collaborators
         if(passage.collaborators.length > 0){
             for(const collaborator in passage.collaborators){
                 if(collaborator == passage.author.email){
@@ -411,7 +461,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
                 }
                 let collaber = await User.findOne({email:collaborator});
                 if(collaber != null){
-                    collaber.stars += amount;
+                    collaber.stars += (amount + bonus)/passage.collaborators.length;
                     await collaber.save();
                 }
             }
@@ -421,18 +471,21 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     await user.save();
     await passage.save();
     //star each source
+    var i = 0;
     for(const source of passage.sourceList){
+        var bonus1 = i == 0 ? bonus : 0;
         await starMessages(source._id, amount);
         let sourceAuthor = await User.findOne({_id: source.author._id});
         //you won't get extra stars for citing your own work
         if(sourceAuthor._id.toString() != req.session.user._id.toString() && sourceAuthor._id.toString() != passage.author._id.toString()){
-            source.stars += amount;
-            sourceAuthor.stars += amount;
+            source.stars += amount + bonus1;
+            sourceAuthor.stars += amount + bonus1;
             await sourceAuthor.save();
             await source.save();
         }
+        ++i;
     }
-    return passage;
+    return await fillUsedInListSingle(passage);
 }
 async function starMessages(passage, stars=1){
     //keep message stars aligned with passage
@@ -1004,6 +1057,7 @@ async function fillUsedInListSingle(passage){
     return passage;
 }
 async function fillUsedInList(passages){
+    if(passages.length > 0)
     for(const passage of passages){
         passage.usedIn = [];
         var ps = await Passage.find({
@@ -1249,6 +1303,8 @@ async function getBigPassage(req, res, params=false){
     else{
         var parentID = 'root';
     }
+    passage = await fillUsedInListSingle(passage);
+    passage.passages = await fillUsedInList(passage.passages);
     return {
         subPassages: passage.passages,
         passage: passage,
@@ -1485,6 +1541,7 @@ app.get('/projects', async (req, res) => {
         if(req.session.user){
             bookmarks = getBookmarks(req.session.user);
         }
+        passages = await fillUsedInList(passages);
         res.render("stream", {
             subPassages: false,
             passageTitle: false, 
@@ -1530,6 +1587,7 @@ app.get('/questions', async (req, res) => {
         if(req.session.user){
             bookmarks = getBookmarks(req.session.user);
         }
+        passages = await fillUsedInList(passages);
         res.render("stream", {
             subPassages: false,
             passageTitle: false, 
@@ -1739,17 +1797,16 @@ function escapeBackSlash(str){
 }
 app.post('/search/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    console.log(search);
     let exact = await Passage.findOne({personal:false,deleted:false,title:search});
-    if(exact == null && req.session.user){
-        let passage = await Passage.create({
-            author: req.session.user._id,
-            users: [req.session.user._id],
-            parent: null,
-            title: search,
-            public: true
-        });
-    }
+    // if(exact == null && req.session.user){
+    //     let passage = await Passage.create({
+    //         author: req.session.user._id,
+    //         users: [req.session.user._id],
+    //         parent: null,
+    //         title: search,
+    //         public: true
+    //     });
+    // }
     let results = await Passage.find({
         deleted: false,
         personal: req.body.personal,
@@ -1828,10 +1885,12 @@ app.post('/transfer_bookmark', async (req, res) => {
         
     });
     copy = bubbleUpAll(copy);
+    copy = await fillUsedInListSingle(copy);
     if(req.body.which && req.body.which == 'cat'){
         return res.render('cat_row', {subPassages: false, topic: copy, sub: true});
     }
     else{
+        console.log('SWEAT');
         return res.render('passage', {subPassages: false, passage: copy, sub: true});
     }
 });
@@ -2316,8 +2375,8 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     }
     var bigRes = await getBigPassage(req, res, true);
     console.log('TEST'+bigRes.passage.title);
-    bigRes.passage = await fillUsedInListSingle(bigRes.passage);
-    console.log('TEST'+bigRes.passage);
+    // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
+    console.log('TEST'+bigRes.passage.usedIn);
     bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
@@ -2810,6 +2869,7 @@ app.post('/create_initial_passage/', async (req, res) => {
     }
 });
 app.post('/star_passage/', async (req, res) => {
+    console.log('star_passage');
     var passage_id = req.body.passage_id;
     var user = req.session.user;
     var amount = parseInt(req.body.amount);
@@ -2835,22 +2895,20 @@ app.post('/star_passage/', async (req, res) => {
 });
 app.post('/update_passage_order/', async (req, res) => {
     let passage = await Passage.findOne({_id: req.body._id});
-    console.log(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString());
+    // console.log(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString());
     //Only for private passages
     if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        console.log("TESTING2");
         var passageOrder = [];
         if(typeof req.body.passageOrder != 'undefined'){
             var passageOrder = JSON.parse(req.body.passageOrder);
             let trimmedPassageOrder = passageOrder.map(str => str.trim());
             console.log(trimmedPassageOrder);
-            console.log(passage.passages[0]._id+'  '+ passage.passages[1]._id+ '  '+passage.passages[2]._id);
+            // console.log(passage.passages[0]._id+'  '+ passage.passages[1]._id+ '  '+passage.passages[2]._id);
             passage.passages = trimmedPassageOrder;
             passage.markModified('passages');
             await passage.save();
         }
-        console.log("TESTING2");
-        console.log(passageOrder);
+        // console.log(passageOrder);
     }
     //give back updated passage
     res.send('Done');
@@ -3095,6 +3153,7 @@ app.post('/update_passage/', async (req, res) => {
         updateFile(passage.fileStreamPath, passage.code);
     }
     passage = bubbleUpAll(passage);
+    passage = await fillUsedInListSingle(passage);
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });

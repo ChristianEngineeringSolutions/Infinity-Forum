@@ -86,7 +86,6 @@ $(function(){
                 which: $('#which-page').val() || 's'
             },
             success: function(data){
-                // alert(data);
                 flashIcon($('#transfer_bookmark_' + _id), 'green');
                 if($('#which-page').length > 0){
                     if($('#which-page').val() == 'thread')
