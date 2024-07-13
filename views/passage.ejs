@@ -26,6 +26,7 @@
         <%if((!passage.sourceList || passage.sourceList.length < 1) && (passage.sourceLink == null || passage.sourceLink.length < 1)){%>
             <div>No Sources</div>
         <%}else{%>
+        Sources:
         <%passage.sourceList.forEach(function(source) { %>
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
         <%});}%>
