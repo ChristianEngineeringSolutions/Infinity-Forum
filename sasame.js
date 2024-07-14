@@ -1073,6 +1073,9 @@ async function fillUsedInList(passages){
     }
     return passages;
 }
+function returnPassageLocation(passage){
+    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + passage.parent.title + '/' + passage.parent._id) : '/stream') +'">' + (passage.parent ? (passage.parent.title ? passage.parent.title : 'Untitled') : 'Infinity') + '</a>';
+}
 app.get('/stream', async (req, res) => {
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //REX
@@ -1090,9 +1093,10 @@ app.get('/stream', async (req, res) => {
         let passages = await Passage.find({
             deleted: false,
             personal: false,
-        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
+            passage.location = returnPassageLocation(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1530,9 +1534,10 @@ app.get('/projects', async (req, res) => {
             deleted: false,
             personal: false,
             public: false,
-        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
+            passage.location = returnPassageLocation(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1576,9 +1581,10 @@ app.get('/questions', async (req, res) => {
             deleted: false,
             personal: false,
             public: true,
-        }).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
+            passage.location = returnPassageLocation(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1646,6 +1652,7 @@ app.get('/donate', async function(req, res){
 app.post('/search_leaderboard/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     let results = await User.find({
+
         username: {
         $regex: search,
         $options: 'i',
@@ -1814,9 +1821,19 @@ app.post('/search/', async (req, res) => {
         title: {
         $regex: search,
         $options: 'i',
-    }}).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    }}).populate('author users sourceList parent').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    results = await Passage.find({
+        deleted: false,
+        personal: req.body.personal,
+        $or: [
+            {title: {$regex:search,$options:'i'}},
+            {content: {$regex:search,$options:'i'}},
+            {code: {$regex:search,$options:'i'}},
+        ],
+    }).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
+        result.location = returnPassageLocation(result);
     }
     results = await fillUsedInList(results);
     res.render("passages", {
@@ -2656,8 +2673,12 @@ app.post('/paginate', async function(req, res){
     let parent = req.body.passage;
     if(profile != 'leaderboard'){
         let find = {
-            title: new RegExp(''+search+'', "i"),
-            personal: false
+            personal: false,
+            $or: [
+                {title: new RegExp(''+search+'', "i")},
+                {content: new RegExp(''+search+'', "i")},
+                {code: new RegExp(''+search+'', "i")},
+            ]
         };
         if(parent != 'root'){
             find.parent = parent;
@@ -2668,9 +2689,11 @@ app.post('/paginate', async function(req, res){
         if(req.body.from_ppe_queue){
             find.mimeType = 'image';
         }
-        let passages = await Passage.paginate(find, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users'});
+        let passages = await Passage.paginate(find, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users parent sourceList'});
+        passages.docs = await fillUsedInList(passages.docs);
         for(const p of passages.docs){
-            passages[p] = bubbleUpAll(p);
+            passages.docs[p] = bubbleUpAll(p);
+            passages.docs[p].location = returnPassageLocation(p);
         }
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
