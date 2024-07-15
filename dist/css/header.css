@@ -20,17 +20,21 @@
     margin: auto;
     text-align: center;
     flex-grow:1;
+    font-size:1.4em;cursor:pointer;
 }
 #left-side-panel{
     display: none;
     position:fixed;
 }
 #menu-button{
+    padding-top:3px;
     font-size: 1.3em;
     color: #353535;
     color: white;
     z-index:9999999999999999;
 /*    position: relative;*/
+position: absolute;
+left: 10px;
 }
 #menu-options{
     list-style-type: none;
