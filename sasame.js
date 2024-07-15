@@ -2864,6 +2864,11 @@ app.post('/create_initial_passage/', async (req, res) => {
     else if(passage.public_daemon == 2 || passage.default_daemon){
         return res.send("Not allowed.");
     }
+    switch(req.body.whichPage){
+        case 'questions':
+            passage.public = true;
+            break;
+    }
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
