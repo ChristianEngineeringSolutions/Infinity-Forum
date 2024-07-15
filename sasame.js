@@ -1535,6 +1535,7 @@ app.get('/projects', async (req, res) => {
             deleted: false,
             personal: false,
             public: false,
+            forum: false
         }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
@@ -1583,6 +1584,7 @@ app.get('/questions', async (req, res) => {
             deleted: false,
             personal: false,
             public: true,
+            forum: false
         }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
@@ -1830,9 +1832,11 @@ app.post('/search/', async (req, res) => {
     switch(req.body.whichPage){
         case 'questions':
             find.public = true;
+            find.forum = false;
             break;
         case 'projects':
             find.public = false;
+            find.forum = false;
     }
     let results = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
@@ -2687,9 +2691,11 @@ app.post('/paginate', async function(req, res){
         switch(req.body.whichPage){
             case 'questions':
                 find.public = true;
+                find.forum = false;
                 break;
             case 'projects':
                 find.public = false;
+                find.forum = false;
         }
         if(parent != 'root'){
             find.parent = parent;
