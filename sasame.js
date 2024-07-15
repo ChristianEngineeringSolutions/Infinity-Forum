@@ -1118,7 +1118,8 @@ app.get('/stream', async (req, res) => {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            page: 'stream'
+            page: 'stream',
+            whichPage: 'stream'
         });
     }
 });
@@ -1559,7 +1560,8 @@ app.get('/projects', async (req, res) => {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            page: 'projects'
+            page: 'projects',
+            whichPage: 'projects'
         });
     }
 });
@@ -1606,7 +1608,8 @@ app.get('/questions', async (req, res) => {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            page: 'more'
+            page: 'more',
+            whichPage: 'questions'
         });
     }
 });
@@ -1815,14 +1818,7 @@ app.post('/search/', async (req, res) => {
     //         public: true
     //     });
     // }
-    let results = await Passage.find({
-        deleted: false,
-        personal: req.body.personal,
-        title: {
-        $regex: search,
-        $options: 'i',
-    }}).populate('author users sourceList parent').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
-    results = await Passage.find({
+    var find = {
         deleted: false,
         personal: req.body.personal,
         $or: [
@@ -1830,7 +1826,15 @@ app.post('/search/', async (req, res) => {
             {content: {$regex:search,$options:'i'}},
             {code: {$regex:search,$options:'i'}},
         ],
-    }).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    };
+    switch(req.body.whichPage){
+        case 'questions':
+            find.public = true;
+            break;
+        case 'projects':
+            find.public = false;
+    }
+    let results = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
         result.location = returnPassageLocation(result);
@@ -2680,6 +2684,13 @@ app.post('/paginate', async function(req, res){
                 {code: new RegExp(''+search+'', "i")},
             ]
         };
+        switch(req.body.whichPage){
+            case 'questions':
+                find.public = true;
+                break;
+            case 'projects':
+                find.public = false;
+        }
         if(parent != 'root'){
             find.parent = parent;
         }
