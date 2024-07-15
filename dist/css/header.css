@@ -29,6 +29,7 @@
     color: #353535;
     color: white;
     z-index:9999999999999999;
+/*    position: relative;*/
 }
 #menu-options{
     list-style-type: none;
