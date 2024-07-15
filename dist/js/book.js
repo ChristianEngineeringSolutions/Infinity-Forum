@@ -143,7 +143,8 @@ $(function(){
                 url: '/search/',
                 data: {
                     search: thiz.val(),
-                    personal: window.location.href.split('/').at(-2) == 'personal' ? true : false
+                    personal: window.location.href.split('/').at(-2) == 'personal' ? true : false,
+                    whichPage: $('#which-page').val()
                 },
                 success: function(data){
                     $('#passage_wrapper').html(data);
