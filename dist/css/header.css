@@ -19,6 +19,7 @@
 /*    width: fit-content;*/
     margin: auto;
     text-align: center;
+    flex-grow:1;
 }
 #left-side-panel{
     display: none;
