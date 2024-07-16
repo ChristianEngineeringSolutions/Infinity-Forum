@@ -2541,8 +2541,46 @@ app.post('/login', async function(req, res) {
         return res.redirect('/loginform');
     }
 });
+app.get('/dbbackup', async (req, res) => {
+    if(!req.session.user || !req.session.user.admin){
+        return res.redirect('/');
+    }
+    var directory1 = __dirname + '/dump';
+    var directory2 = __dirname + '/dist/images';
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var zip1 = new AdmZip();
+    var zip2 = new AdmZip();
+    //compress /dump and /dist/uploads then send
+    const files = await readdir(directory1);
+    for(const file of files){
+        console.log(file);
+        zip1.addLocalFolder(__dirname + '/dump/' + file);
+    }
+    return res.send(zip1.toBuffer());
+});
+app.get('/uploadsbackup', async (req, res) => {
+    if(!req.session.user || !req.session.user.admin){
+        return res.redirect('/');
+    }
+    var directory1 = __dirname + '/dist/images';
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var zip1 = new AdmZip();
+    //compress /dump and /dist/uploads then send
+    const files = await readdir(directory1);
+    for(const file of files){
+        if(file == 'ionicons'){
+            continue;
+        }
+        console.log(file);
+        zip1.addLocalFile(__dirname + '/dist/images/' + file);
+    }
+    return res.send(zip1.toBuffer());
+});
 //test
 app.get('/admin', async function(req, res){
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
@@ -2556,10 +2594,12 @@ app.get('/admin', async function(req, res){
         if(req.session.user){
             bookmarks = getBookmarks(req.session.user);
         }
+        passages = await fillUsedInList(passages);
         return res.render("admin", {
             subPassages: false,
+            ISMOBILE: ISMOBILE,
             test: 'test',
-            passageTitle: 'Christian Engineering Solutions', 
+            passageTitle: 'Infinity Forum', 
             scripts: scripts, 
             passages: passages, 
             passage: {id:'root', author: {

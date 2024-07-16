@@ -4,17 +4,33 @@
     Approving Daemons
     Budget Page
     Scheduled Maintenance
+    Downloading Backups
  -->
- <%- include('html_head') %>
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
 </head>
 <%- include('header') %>
-<%=test%>
+<%- include('header2', {
+    page: 'admin'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%if(!ISMOBILE){%>
+<%- include('member_box') %>
+<%}%>
             <input type="hidden" value="false", id="is_profile"/>
             <div id="page_title_container">
                 <%if(passage.parent != null){%>
                     <div data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
                 <%}%>
                  <div id="page_title"><%= "Admin Panel: " + decodeURIComponent(passageTitle)   || "Admin Panel"%></div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <a href="/dbbackup">Download Database Backup</a>
+                 </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <a href="/uploadsbackup">Download Uploads Backup</a>
+                 </div>
             </div>
             <%if(passages){%>
                 <input id="search"placeholder="Search Solutions..." type="" name="" autocomplete="off">
