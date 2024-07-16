@@ -1,4 +1,5 @@
 node_modules
+dump
 dist/recordings/*
 dist/uploads/*
 dist/protected/*

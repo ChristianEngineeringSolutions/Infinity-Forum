@@ -1240,6 +1240,9 @@ async function getBigPassage(req, res, params=false){
     }
     var page = req.query.page || 1;
     var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList');
+    if(passage == null){
+        return false;
+    }
     var totalDocuments = await Passage.countDocuments({
         parent: passage._id
     })
@@ -2400,6 +2403,9 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         return getRemotePage(req, res);
     }
     var bigRes = await getBigPassage(req, res, true);
+    if(!bigRes){
+        return res.redirect('/');
+    }
     console.log('TEST'+bigRes.passage.title);
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     console.log('TEST'+bigRes.passage.usedIn);
@@ -2407,7 +2413,8 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
         thread: true,
-        page: 'more'
+        page: 'more',
+        whichPage: 'sub'
     });
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -2765,7 +2772,8 @@ app.post('/paginate', async function(req, res){
 app.post(/\/delete_passage\/?/, (req, res) => {
     var backURL=req.header('Referer') || '/';
     passageController.deletePassage(req, res, function(){
-        res.send(backURL);
+        console.log('DELETED');
+        res.send('Deleted');
     });
 });
 
@@ -3615,6 +3623,7 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
     if(req.session.user){
         bookmarks = getBookmarks(req.session.user);
     }
+    passages = await fillUsedInList(passages);
     res.render("filestream", {
         subPassages: false,
         passageTitle: false, 

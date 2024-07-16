@@ -763,7 +763,8 @@ $(function(){
                 page: page,
                 passage: $('#chief_passage_id').val(),
                 profile: isProfile,
-                search: $('#search').val()
+                search: $('#search').val(),
+                whichPage: $('#which-page').val()
             },
             success: function(data){
                 if($('#is_profile').val() == 'leaderboard'){
