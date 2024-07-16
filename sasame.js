@@ -665,6 +665,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     passages = await fillUsedInList(passages);
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
+    whichPage: 'profile',
     passage: {id:'root', author: {
                 _id: 'root',
                 username: 'Sasame'
