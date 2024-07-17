@@ -821,6 +821,10 @@ $(function(){
             type: 'POST',
             data: formData,
             success: function (data) {
+                if(data == 'You must log in to create a passage.'){
+                    alert(data);
+                    return;
+                }
                 var which = $('#forum-which').val();
                 var chief = $('#chief_passage_id').val();
                 $('#dim').click();
