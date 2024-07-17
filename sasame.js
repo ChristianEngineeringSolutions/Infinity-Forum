@@ -1874,9 +1874,6 @@ app.post('/bookmark_passage', async (req, res) => {
     }
     else{
         let passage = await Passage.findOne({_id: req.body._id});
-        if(passage.public || passage.forum){
-            return res.send("You can only bookmark projects.");
-        }
         let copy = await passageController.copyPassage(passage, [req.session.user], null, function(){});
         copy[req.body.which] = req.body.content;
         await copy.save();
