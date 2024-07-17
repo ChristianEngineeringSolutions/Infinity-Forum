@@ -61,7 +61,7 @@
                 <a class="basic_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
                 <!-- Shift passage location -->
                 <!-- <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li> -->
-                <%if(user && !passage.public && !passage.forum){%>
+                <%if(user){%>
                 <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
                 <%}%>
                 <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
