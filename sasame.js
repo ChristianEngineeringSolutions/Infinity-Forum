@@ -230,7 +230,7 @@ app.use(async function(req, res, next) {
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
     //daemoncheck
-    if(['stream', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'questions', 'recover'].includes(req.url.split('/')[1])){
+    if(['stream', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -1570,7 +1570,7 @@ app.get('/projects', async (req, res) => {
         });
     }
 });
-app.get('/questions', async (req, res) => {
+app.get('/tasks', async (req, res) => {
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //REX
     if(req.session.CESCONNECT){
@@ -1615,7 +1615,7 @@ app.get('/questions', async (req, res) => {
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
             page: 'more',
-            whichPage: 'questions'
+            whichPage: 'tasks'
         });
     }
 });
@@ -1834,7 +1834,7 @@ app.post('/search/', async (req, res) => {
         ],
     };
     switch(req.body.whichPage){
-        case 'questions':
+        case 'tasks':
             find.public = true;
             find.forum = false;
             break;
@@ -2737,7 +2737,7 @@ app.post('/paginate', async function(req, res){
             ]
         };
         switch(req.body.whichPage){
-            case 'questions':
+            case 'tasks':
                 find.public = true;
                 find.forum = false;
                 break;
@@ -2914,7 +2914,7 @@ app.post('/create_initial_passage/', async (req, res) => {
         return res.send("Not allowed.");
     }
     switch(req.body.whichPage){
-        case 'questions':
+        case 'tasks':
             passage.public = true;
             break;
     }
