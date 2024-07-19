@@ -432,7 +432,16 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
         user.stars -= amount;
     }
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
-    var bonus = passageSimilarity(passage, await getLastSource(passage));
+    var lastSource = await getLastSource(passage);
+    var bonus;
+    if(lastSource != null){
+        bonus = passageSimilarity(passage, lastSource);
+    }else{
+        bonus = 0;
+    }
+    if(lastSource && lastSource.author._id.toString() == req.session.user._id.toString()){
+        bonus = 0;
+    }
     //add stars to passage and sources
     passage.stars += amount + bonus;
     //star all sub passages (content is displayed in parent)
