@@ -230,6 +230,7 @@ const passageSchema = mongoose.Schema({
 var autoPopulateChildren = function(next) {
     this.populate('passages');
     this.populate('author');
+    // this.populate('parent');
     next();
 };
 

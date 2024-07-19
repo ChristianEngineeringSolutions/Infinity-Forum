@@ -1083,8 +1083,22 @@ async function fillUsedInList(passages){
     }
     return passages;
 }
-function returnPassageLocation(passage){
-    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + passage.parent.title + '/' + passage.parent._id) : '/stream') +'">' + (passage.parent ? (passage.parent.title ? passage.parent.title : 'Untitled') : 'Infinity') + '</a>';
+async function getPassageLocation(passage, train){
+    train = train || [];
+    if(passage.parent == null){
+        train.push('Infinity');
+        return train.reverse();
+    }
+    else{
+        passage.parent = await Passage.findOne({_id:passage.parent._id});
+        train.push(passage.parent.title == '' ? 'Untitled' : passage.parent.title);
+        return await getPassageLocation(passage.parent, train);
+    }
+}
+async function returnPassageLocation(passage){
+    var location = (await getPassageLocation(passage)).join('/');
+    // return passage.parent ? passage.parent.title + passage.parent.parent.title : '';
+    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + passage.parent.title + '/' + passage.parent._id) : '/stream') +'">' + location + '</a>';
 }
 app.get('/stream', async (req, res) => {
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
@@ -1106,7 +1120,7 @@ app.get('/stream', async (req, res) => {
         }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
-            passage.location = returnPassageLocation(passage);
+            passage.location = await returnPassageLocation(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1552,7 +1566,7 @@ app.get('/projects', async (req, res) => {
         }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
-            passage.location = returnPassageLocation(passage);
+            passage.location = await returnPassageLocation(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1601,7 +1615,7 @@ app.get('/tasks', async (req, res) => {
         }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
-            passage.location = returnPassageLocation(passage);
+            passage.location = await returnPassageLocation(passage);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1851,10 +1865,10 @@ app.post('/search/', async (req, res) => {
             find.public = false;
             find.forum = false;
     }
-    let results = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    let results = await Passage.find(find).populate('author users sourceList parent').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
-        result.location = returnPassageLocation(result);
+        result.location = await returnPassageLocation(result);
     }
     results = await fillUsedInList(results);
     res.render("passages", {
@@ -2420,11 +2434,13 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     console.log('TEST'+bigRes.passage.usedIn);
     bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+    var location = await getPassageLocation(bigRes.passage);
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
         thread: true,
         page: 'more',
-        whichPage: 'sub'
+        whichPage: 'sub',
+        location: location
     });
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -2767,7 +2783,7 @@ app.post('/paginate', async function(req, res){
         passages.docs = await fillUsedInList(passages.docs);
         for(const p of passages.docs){
             passages.docs[p] = bubbleUpAll(p);
-            passages.docs[p].location = returnPassageLocation(p);
+            passages.docs[p].location = await returnPassageLocation(p);
         }
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
