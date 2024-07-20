@@ -296,7 +296,7 @@ hr{
 #left-side-panel, #left-side-panel-inner{
     float: left;
     padding: 10px;
-    z-index: 9999999999;
+    z-index: 99999999999999999;
     width: 50%;
 /*    background: gold;*/
     color: #000;
