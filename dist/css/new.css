@@ -692,11 +692,10 @@ display: inline-block;
     position:absolute;
     font-weight:normal;
     font-family: 'Droid Sans', sans-serif; 
-    z-index:10;
     font-size:70%;
     left:0px;
     top:125px;
-    z-index:50;
+    z-index:9999;
 }
 @media screen and (max-width: 715px){
     .member_box{
