@@ -289,6 +289,9 @@
 }
 /* Small Phones */
 @media screen and (max-width: 550px){
+    #parent_title{
+        text-align: center;
+    }
     .p-thumbnail{
         height: 40px;
         width: 40px;

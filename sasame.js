@@ -1262,7 +1262,8 @@ async function getBigPassage(req, res, params=false){
     if(params){
         passage_id = req.params.passage_id;
     }
-    var page = req.query.page || 1;
+    var page = req.query.page || req.params.page || 1;
+    console.log(page);
     var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList');
     if(passage == null){
         return false;
@@ -1270,7 +1271,7 @@ async function getBigPassage(req, res, params=false){
     var totalDocuments = await Passage.countDocuments({
         parent: passage._id
     })
-    var totalPages = Math.round(totalDocuments/DOCS_PER_PAGE) + 1;
+    var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
         return res.send("Must be on Userlist");
     }
@@ -2430,14 +2431,14 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     if(!bigRes){
         return res.redirect('/');
     }
-    console.log('TEST'+bigRes.passage.title);
+    // console.log('TEST'+bigRes.passage.title);
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
-    console.log('TEST'+bigRes.passage.usedIn);
+    // console.log('TEST'+bigRes.passage.usedIn);
     bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
     var location = await getPassageLocation(bigRes.passage);
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
-        thread: true,
+        thread: false,
         page: 'more',
         whichPage: 'sub',
         location: location

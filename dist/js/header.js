@@ -7,6 +7,13 @@ $(function(){
         $('.blocker').click();
         $('#side_panel').scrollTop(0);
     });
+    $(document).on('click', '#show_brief', function(){
+        $('#right_side_select').val('brief').change();
+        $('#side_panel').toggle();
+        // $('.blocker').click();
+        // $('#side_panel').scrollTop(0);
+    });
+
     $(document).on('click', '#nav_donate', function(){
         window.location.href = '/donate';
     });
@@ -161,6 +168,15 @@ $(function(){
     $(document).on('click', function(e){
         var container = $("#left-side-panel");
         if(container.is(':visible') && e.target.id != 'menu-button' && e.target.id != 'link-more'){
+            // if the target of the click isn't the container nor a descendant of the container
+            if (!container.is(e.target) && container.has(e.target).length === 0) 
+            {
+                container.hide();
+            }
+            e.stopPropagation();
+        }
+        var container = $("#side_panel");
+        if(container.is(':visible') && e.target.id != 'show_brief'){
             // if the target of the click isn't the container nor a descendant of the container
             if (!container.is(e.target) && container.has(e.target).length === 0) 
             {
