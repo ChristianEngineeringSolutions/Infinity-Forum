@@ -114,9 +114,9 @@ function flashIcon(thiz, color='gold'){
         thiz.css('color', 'inherit');
     }, 250);
 }
-function updateBrief(){
-    $('#right_passages').html($('#passages').html());
-}
+// function updateBrief(){
+//     $('#right_passages').html($('#passages').html());
+// }
 
 $(function(){
     // if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
@@ -411,7 +411,7 @@ $(function(){
                 break;
             case 'brief':
                 $('#brief').show();
-                updateBrief();
+                // updateBrief();
                 break;
             case 'bookmarks':
                 // updateQueue();
