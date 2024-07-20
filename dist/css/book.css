@@ -277,8 +277,8 @@ hr{
     padding: 10px;
     z-index: 9999999999;
     width: 50%;
-    background: gold;
-    color: #000;
+    background: url(/images/gray_sand.png);
+    color: #fff;
     /*border: 1px solid #ccc;*/
     height: 100%;
     /*position: fixed;
