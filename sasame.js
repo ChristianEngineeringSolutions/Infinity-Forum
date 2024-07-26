@@ -16,7 +16,7 @@ var compression = require('compression');
 const { promisify } = require('util');
 const request = promisify(require('request'));
 const browser = require('browser-detect');
-
+var ffmpeg = require('fluent-ffmpeg');
 
 //for daemons access to help code
 function DAEMONLIBS(passage, USERID){
@@ -341,6 +341,7 @@ async function rewardUsers(){
     }
     console.log("Users paid");
 }
+
 //get percentage of total stars
 async function percentStars(user_stars){
     let final = user_stars / (await totalStars());
@@ -675,6 +676,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
     whichPage: 'profile',
+    thread: false,
     passage: {id:'root', author: {
                 _id: 'root',
                 username: 'Sasame'
@@ -1590,7 +1592,8 @@ app.get('/projects', async (req, res) => {
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
             page: 'projects',
-            whichPage: 'projects'
+            whichPage: 'projects',
+            thread: false
         });
     }
 });
@@ -1639,7 +1642,8 @@ app.get('/tasks', async (req, res) => {
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
             page: 'more',
-            whichPage: 'tasks'
+            whichPage: 'tasks',
+            thread: false
         });
     }
 });
@@ -2471,8 +2475,8 @@ app.get('/stripeAuthorize', async function(req, res){
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.id,
-                    refresh_url: 'https://christianengineeringsolutions.com/stripeAuthorize',
-                    return_url: 'https://christianengineeringsolutions.com/stripeOnboarded',
+                    refresh_url: 'https://infinity-forum.org/stripeAuthorize',
+                    return_url: 'https://infinity-forum.org/stripeOnboarded',
                     type: 'account_onboarding'
                 });
                 // console.log(accountLink);
@@ -3306,7 +3310,31 @@ async function uploadProfilePhoto(req, res){
         await user.save();
     }
 }
+async function deleteOldUploads(passage){
+    var where = passage.personal ? 'protected' : 'uploads';
+    for(const filename of passage.filename){
+        var passages = await Passage.find({
+            filename: {
+                $in: [filename]
+            }
+        });
+        if(passages.length == 1){
+            fs.unlink('dist/'+where+'/'+filename, function(err){
+                if (err && err.code == 'ENOENT') {
+                    // file doens't exist
+                    console.info("File doesn't exist, won't remove it.");
+                } else if (err) {
+                    // other errors, e.g. maybe we don't have enough permission
+                    console.error("Error occurred while trying to remove file");
+                } else {
+                    console.info(`removed`);
+                }
+            });
+        }
+    }
+}
 async function uploadFile(req, res, passage){
+    deleteOldUploads(passage);
     var files = req.files;
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
@@ -3319,12 +3347,14 @@ async function uploadFile(req, res, passage){
     }
     // passage.filename = [];
     var i = 0;
+    var j = 0;
     for(const file of fileToUpload){
         var mimeType = fileToUpload[i].mimetype; 
         //uuid with  ext
         var uploadTitle = v4() + "." + fileToUpload[i].name.split('.').at(-1);
         var thumbnailTitle = v4() + ".jpg";
         var where = passage.personal ? 'protected' : 'uploads';
+        passage.filename[i] = uploadTitle;
         // Use the mv() method to place the file somewhere on your server
         fileToUpload[i].mv('./dist/'+where+'/'+uploadTitle, async function(err) {
             if (err){
@@ -3332,15 +3362,80 @@ async function uploadFile(req, res, passage){
             }
             //compress if image
             if(mimeType.split('/')[0] == 'image'){
-                exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1]
+                exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1] + ' ' + passage._id
             , (err, stdout, stderr) => {
-                    //done
+                    exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
+                    , (err, stdout, stderr) => {
+                            //done
+                            console.log(err + stdout + stderr);
+                        });
                     console.log(err + stdout + stderr);
                 });
             }
+            var newfilename = uploadTitle.split('.')[0]+'_c.'+uploadTitle.split('.')[1];
+            if(mimeType.split('/')[0] == 'video'){
+                exec('ffmpeg -i dist/'+where+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy dist/'+where+'/'+newfilename
+                , async (err, stdout, stderr) => {
+                        console.log('Video compressed.' + newfilename);
+                        // UNCOMMENT TO VIEW OUTPUT
+                        console.log(err + stdout + stderr);
+
+                        passage.filename[j++] = newfilename;
+                        // update filename to compressed video
+                        await Passage.findOneAndUpdate({_id: passage._id}, 
+                            {$set: {
+                                filename: passage.filename
+                            }
+                        });
+                        //delete uncompressed video
+                        fs.unlink('dist/'+where+'/'+uploadTitle, function(err){
+                            if (err && err.code == 'ENOENT') {
+                                // file doens't exist
+                                console.info("File doesn't exist, won't remove it.");
+                            } else if (err) {
+                                // other errors, e.g. maybe we don't have enough permission
+                                console.error("Error occurred while trying to remove file");
+                            } else {
+                                console.info(`removed`);
+                            }
+                        });
+                        var screenshotName = v4();
+                        ffmpeg('./dist/'+where+'/'+newfilename)
+                          .on('filenames', function(filenames) {
+                            console.log('Will generate ' + filenames.join(', '))
+                          })
+                          .on('end', async function() {
+                            console.log('Screenshots taken');
+                            var t = 0;
+                            exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
+                                , (err, stdout, stderr) => {
+                                //done
+                                //delete each screenshot
+                                for(var t = 1; t <= 3; ++t){
+                                  fs.unlink('dist/' + where + '/' + screenshotName+'_'+t + '.png', function(err2){
+                                    if (err2 && err2.code == 'ENOENT') {
+                                        // file doens't exist
+                                        console.info("File doesn't exist, won't remove it.");
+                                    } else if (err2) {
+                                        // other errors, e.g. maybe we don't have enough permission
+                                        console.error("Error occurred while trying to remove file");
+                                    } else {
+                                        console.info(`removed screenshot.`);
+                                    }
+                                  });
+                                }
+                                console.log(err + stdout + stderr);
+                            });
+                          })
+                          .screenshots({
+                            // Will take screens at 25%, 50%, 75%
+                            count: 3,
+                            filename: screenshotName +'_%i.png',
+                            folder: 'dist/' + where
+                          });
+                    });
+            }
         });
-        passage.filename[i] = uploadTitle;
-        console.log(passage.filename);
         if(mimeType.split('/')[0] == 'image'
         && mimeType.split('+')[0].split('/')[1] == 'svg'){
             passage.isSVG = true;
@@ -3362,6 +3457,8 @@ async function uploadFile(req, res, passage){
         i++;
         passage.markModified('filename');
         passage.markModified('mimeType');
+        // passage.markModified('isHentai');
+        // passage.markModified('isPorn');
         console.log('filename'+passage.filename);
         console.log('mimetype'+passage.mimeType);
         await passage.save();
@@ -4064,9 +4161,9 @@ server.listen(PORT, () => {
     io.sockets.emit("serverRestart", "Test");
 });
 process.on('uncaughtException', function(err){
-    console.log('uncaughtExceptionError');
+    console.log('uncaughtExceptionError ' + err);
     console.log(err);
-    server.close();
+    // server.close();
 });
 process.on('SIGTERM', function(err){
     console.log('SIGTERM');
