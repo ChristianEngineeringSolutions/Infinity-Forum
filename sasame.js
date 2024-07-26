@@ -17,6 +17,10 @@ const { promisify } = require('util');
 const request = promisify(require('request'));
 const browser = require('browser-detect');
 var ffmpeg = require('fluent-ffmpeg');
+const axios = require("axios"); //you can use any http client
+const tf = require("@tensorflow/tfjs-node");
+const nsfw = require("nsfwjs");
+var fs = require('fs'); 
 
 //for daemons access to help code
 function DAEMONLIBS(passage, USERID){
@@ -3363,7 +3367,22 @@ async function uploadFile(req, res, passage){
             //compress if image
             if(mimeType.split('/')[0] == 'image'){
                 exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1] + ' ' + passage._id
-            , (err, stdout, stderr) => {
+            , async (err, stdout, stderr) => {
+                    console.log("Ok actually finished compressing img");
+
+                    // TEMP
+                    // const pic = await axios.get('http://localhost:3000/'+where+'/'+uploadTitle, {
+                    //   responseType: "arraybuffer",
+                    // });
+                    // const model = await nsfw.load(); // To load a local model, nsfw.load('file://./path/to/model/')
+                    // // Image must be in tf.tensor3d format
+                    // // you can convert image to tf.tensor3d with tf.node.decodeImage(Uint8Array,channels)
+                    // const image = await tf.node.decodeImage(pic.data, 3);
+                    // const predictions = await model.classify(image);
+                    // image.dispose(); // Tensor memory must be managed explicitly (it is not sufficient to let a tf.Tensor go out of scope for its memory to be released).
+                    // console.log(predictions);
+                    // TEMP
+
                     exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
                     , (err, stdout, stderr) => {
                             //done
@@ -3406,12 +3425,12 @@ async function uploadFile(req, res, passage){
                           })
                           .on('end', async function() {
                             console.log('Screenshots taken');
-                            var t = 0;
                             exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
                                 , (err, stdout, stderr) => {
+                                console.log("Finished Processing Media.");
                                 //done
                                 //delete each screenshot
-                                for(var t = 1; t <= 3; ++t){
+                                for(var t = 1; t < 4; ++t){
                                   fs.unlink('dist/' + where + '/' + screenshotName+'_'+t + '.png', function(err2){
                                     if (err2 && err2.code == 'ENOENT') {
                                         // file doens't exist
