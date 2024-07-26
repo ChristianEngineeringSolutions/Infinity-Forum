@@ -98,7 +98,21 @@
     display: none;
 }
 /* Large Phones */
+@media screen and (max-width: 1045px){
+    #top{
+        display: none;
+    }
+    #header{
+        display: block;
+    }
+}
 @media screen and (max-width: 715px){
+    /*#top{
+        display: none;
+    }
+    #header{
+        display: block;
+    }*/
     .p-date{
         padding-top: 6px;
     }

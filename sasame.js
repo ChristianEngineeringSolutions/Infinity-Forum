@@ -21,7 +21,7 @@ const axios = require("axios"); //you can use any http client
 const tf = require("@tensorflow/tfjs-node");
 const nsfw = require("nsfwjs");
 var fs = require('fs'); 
-
+express.static.mime.define({'video/mp4': ['mp4']})
 //for daemons access to help code
 function DAEMONLIBS(passage, USERID){
     return `
