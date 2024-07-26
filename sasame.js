@@ -3245,6 +3245,7 @@ app.post('/change_profile_picture/', async (req, res) => {
     res.redirect("/profile");
 });
 app.post('/update_passage/', async (req, res) => {
+    console.log("TEST UPDATE");
     var _id = req.body._id;
     var formData = req.body;
     var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
@@ -3338,7 +3339,8 @@ async function deleteOldUploads(passage){
     }
 }
 async function uploadFile(req, res, passage){
-    deleteOldUploads(passage);
+    console.log("Upload Test");
+    await deleteOldUploads(passage);
     var files = req.files;
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
