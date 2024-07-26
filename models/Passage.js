@@ -225,6 +225,18 @@ const passageSchema = mongoose.Schema({
         default: false
     },
     license: String,
+    isPorn: {
+        type: [Number],
+        default: [0]
+    },
+    isHentai: {
+        type: [Number],
+        default: [0]
+    },
+    toggle: {
+        type: Boolean,
+        default: false
+    }
 
 });
 var autoPopulateChildren = function(next) {
