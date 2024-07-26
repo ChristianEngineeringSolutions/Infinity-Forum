@@ -656,6 +656,7 @@ $(function(){
             success: function (data) {
                 thisPassage(thiz).replaceWith(data);
                 syntaxHighlight();
+                $('#loading').hide();
             },
             cache: false,
             contentType: false,
