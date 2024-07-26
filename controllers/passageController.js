@@ -11,6 +11,29 @@ module.exports = {
         if(passage.author._id.toString() != req.session.user._id.toString()){
             return res.send("Only passage author can delete.");
         }
+        //delete uploads too
+        for(const filename of passage.filename){
+            //make sure no other passages are using the file
+            var passages = await Passage.find({
+                filename: {
+                    $in: [filename]
+                }
+            });
+            if(passages.length == 1){
+                var where = passage.personal ? 'protected': 'uploads';
+                fs.unlink('dist/'+where+'/'+filename, function(err){
+                    if (err && err.code == 'ENOENT') {
+                        // file doens't exist
+                        console.info("File doesn't exist, won't remove it.");
+                    } else if (err) {
+                        // other errors, e.g. maybe we don't have enough permission
+                        console.error("Error occurred while trying to remove file");
+                    } else {
+                        console.info(`removed upload for deleted passage`);
+                    }
+                });
+            }
+        }
         await Passage.deleteOne({_id: passageID.trim()});
         callback();
     },
