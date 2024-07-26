@@ -2978,6 +2978,7 @@ app.post('/create_initial_passage/', async (req, res) => {
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);
     }
+    passage = bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
     if(formData.page == 'stream'){
         return res.render('passage', {subPassages: false, passage: passage, sub: true});
@@ -3398,9 +3399,9 @@ async function uploadFile(req, res, passage){
                 case 'webm':
                     cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy dist/'+where+'/'+newfilename;
                     break;
-                case 'mp4':
-                    cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
-                    break;
+                // case 'mp4':
+                //     cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
+                //     break;
                 default:
                     cmd = 'echo "Hello, World"';
                     newfilename = uploadTitle;
@@ -3419,7 +3420,7 @@ async function uploadFile(req, res, passage){
                             }
                         });
                         //delete uncompressed video
-                        if(filename != uploadTitle){
+                        if(newfilename != uploadTitle){
                             fs.unlink('dist/'+where+'/'+uploadTitle, function(err){
                                 if (err && err.code == 'ENOENT') {
                                     // file doens't exist
