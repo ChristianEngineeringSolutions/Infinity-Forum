@@ -3393,7 +3393,19 @@ async function uploadFile(req, res, passage){
             }
             var newfilename = uploadTitle.split('.')[0]+'_c.'+uploadTitle.split('.')[1];
             if(mimeType.split('/')[0] == 'video'){
-                exec('ffmpeg -i dist/'+where+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy dist/'+where+'/'+newfilename
+                var ext = newfilename.split('.').at(-1);
+                var cmd = '';
+                switch(ext){
+                case 'webm':
+                    cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy dist/'+where+'/'+newfilename;
+                    break;
+                case 'mp4':
+                    cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
+                    break;
+                default:
+                    cmd = 'echo "Hello, World"';
+                }
+                exec(cmd
                 , async (err, stdout, stderr) => {
                         console.log('Video compressed.' + newfilename);
                         // UNCOMMENT TO VIEW OUTPUT
