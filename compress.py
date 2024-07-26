@@ -11,3 +11,4 @@ if sys.argv[2] == 'png':
 else:
     rgb_img = image.convert('RGB')
     rgb_img.save(filepath)
+print("Finished compressing image.")
