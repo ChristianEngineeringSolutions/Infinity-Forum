@@ -353,10 +353,21 @@ $(function(){
             $('#header').show();
         }
         if(window.scrollY < 50){
-            if(screen.width > 1000){
+            if(window.innerWidth > 1045){
+                // alert(screen.width);
                 $('#header').hide();
                 $('#top').show();
             }
+        }
+    };
+    window.onresize = function (e) {
+        if(window.innerWidth < 1045){
+            $('#top').hide();
+            $('#header').show();
+        }
+        else if(window.innerWidth > 1045){
+            $('#header').hide();
+            $('#top').show();
         }
     };
 });

@@ -21,7 +21,6 @@ const axios = require("axios"); //you can use any http client
 const tf = require("@tensorflow/tfjs-node");
 const nsfw = require("nsfwjs");
 var fs = require('fs'); 
-express.static.mime.define({'video/mp4': ['mp4']})
 //for daemons access to help code
 function DAEMONLIBS(passage, USERID){
     return `
@@ -3404,6 +3403,7 @@ async function uploadFile(req, res, passage){
                     break;
                 default:
                     cmd = 'echo "Hello, World"';
+                    newfilename = uploadTitle;
                 }
                 exec(cmd
                 , async (err, stdout, stderr) => {
@@ -3419,17 +3419,19 @@ async function uploadFile(req, res, passage){
                             }
                         });
                         //delete uncompressed video
-                        fs.unlink('dist/'+where+'/'+uploadTitle, function(err){
-                            if (err && err.code == 'ENOENT') {
-                                // file doens't exist
-                                console.info("File doesn't exist, won't remove it.");
-                            } else if (err) {
-                                // other errors, e.g. maybe we don't have enough permission
-                                console.error("Error occurred while trying to remove file");
-                            } else {
-                                console.info(`removed`);
-                            }
-                        });
+                        if(filename != uploadTitle){
+                            fs.unlink('dist/'+where+'/'+uploadTitle, function(err){
+                                if (err && err.code == 'ENOENT') {
+                                    // file doens't exist
+                                    console.info("File doesn't exist, won't remove it.");
+                                } else if (err) {
+                                    // other errors, e.g. maybe we don't have enough permission
+                                    console.error("Error occurred while trying to remove file");
+                                } else {
+                                    console.info(`removed`);
+                                }
+                            });
+                        }
                         var screenshotName = v4();
                         ffmpeg('./dist/'+where+'/'+newfilename)
                           .on('filenames', function(filenames) {
