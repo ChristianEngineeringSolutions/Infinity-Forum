@@ -3394,31 +3394,23 @@ async function uploadFile(req, res, passage){
             if(mimeType.split('/')[0] == 'image'){
                 exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1] + ' ' + passage._id
             , async (err, stdout, stderr) => {
-                    console.log("Ok actually finished compressing img");
-
-                    // TEMP
-                    // const pic = await axios.get('http://localhost:3000/'+where+'/'+uploadTitle, {
-                    //   responseType: "arraybuffer",
-                    // });
-                    // const model = await nsfw.load(); // To load a local model, nsfw.load('file://./path/to/model/')
-                    // // Image must be in tf.tensor3d format
-                    // // you can convert image to tf.tensor3d with tf.node.decodeImage(Uint8Array,channels)
-                    // const image = await tf.node.decodeImage(pic.data, 3);
-                    // const predictions = await model.classify(image);
-                    // image.dispose(); // Tensor memory must be managed explicitly (it is not sufficient to let a tf.Tensor go out of scope for its memory to be released).
-                    // console.log(predictions);
-                    // TEMP
-
-                    exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
-                    , (err, stdout, stderr) => {
-                            //done
-                            console.log(err + stdout + stderr);
-                        });
                     console.log(err + stdout + stderr);
+                    console.log("=Ok actually finished compressing img");
+
+                    //not enough memory on server
+                    //local for now
+                    if(process.env.LOCAL == 'true'){
+                        exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
+                        , (err, stdout, stderr) => {
+                                //done
+                                console.log(err + stdout + stderr);
+                            });
+                    }
                 });
             }
             var newfilename = uploadTitle.split('.')[0]+'_c.'+uploadTitle.split('.')[1];
             if(mimeType.split('/')[0] == 'video'){
+                console.log("Beginning video processing");
                 var ext = newfilename.split('.').at(-1);
                 var cmd = '';
                 switch(ext){
@@ -3459,40 +3451,43 @@ async function uploadFile(req, res, passage){
                                 }
                             });
                         }
-                        var screenshotName = v4();
-                        ffmpeg('./dist/'+where+'/'+newfilename)
-                          .on('filenames', function(filenames) {
-                            console.log('Will generate ' + filenames.join(', '))
-                          })
-                          .on('end', async function() {
-                            console.log('Screenshots taken');
-                            exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
-                                , (err, stdout, stderr) => {
-                                console.log("Finished Processing Media.");
-                                //done
-                                //delete each screenshot
-                                for(var t = 1; t < 4; ++t){
-                                  fs.unlink('dist/' + where + '/' + screenshotName+'_'+t + '.png', function(err2){
-                                    if (err2 && err2.code == 'ENOENT') {
-                                        // file doens't exist
-                                        console.info("File doesn't exist, won't remove it.");
-                                    } else if (err2) {
-                                        // other errors, e.g. maybe we don't have enough permission
-                                        console.error("Error occurred while trying to remove file");
-                                    } else {
-                                        console.info(`removed screenshot.`);
+                        //not enough memory on server. local for now.
+                        if(process.env.LOCAL == 'true'){
+                            var screenshotName = v4();
+                            ffmpeg('./dist/'+where+'/'+newfilename)
+                              .on('filenames', function(filenames) {
+                                console.log('Will generate ' + filenames.join(', '))
+                              })
+                              .on('end', async function() {
+                                console.log('Screenshots taken');
+                                exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
+                                    , (err, stdout, stderr) => {
+                                    console.log(err + stdout + stderr);
+                                    console.log("Finished Processing Media.");
+                                    //done
+                                    //delete each screenshot
+                                    for(var t = 1; t < 4; ++t){
+                                      fs.unlink('dist/' + where + '/' + screenshotName+'_'+t + '.png', function(err2){
+                                        if (err2 && err2.code == 'ENOENT') {
+                                            // file doens't exist
+                                            console.info("File doesn't exist, won't remove it.");
+                                        } else if (err2) {
+                                            // other errors, e.g. maybe we don't have enough permission
+                                            console.error("Error occurred while trying to remove file");
+                                        } else {
+                                            console.info(`removed screenshot.`);
+                                        }
+                                      });
                                     }
-                                  });
-                                }
-                                console.log(err + stdout + stderr);
-                            });
-                          })
-                          .screenshots({
-                            // Will take screens at 25%, 50%, 75%
-                            count: 3,
-                            filename: screenshotName +'_%i.png',
-                            folder: 'dist/' + where
-                          });
+                                });
+                              })
+                              .screenshots({
+                                // Will take screens at 25%, 50%, 75%
+                                count: 3,
+                                filename: screenshotName +'_%i.png',
+                                folder: 'dist/' + where
+                              });
+                      }
                     });
             }
         });
