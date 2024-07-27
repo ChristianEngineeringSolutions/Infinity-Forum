@@ -721,7 +721,6 @@ $(function(){
         flashIcon($('#passage_update_' + _id), 'green');
         // var content = $('#passage_content_' + _id).html();
         // $('#quill-data-' + _id).val(content);
-        $('#passage_form_' + _id).submit();
         syntaxHighlight();
         //if chapter passage in view,
         //update passage order according to sortable
@@ -735,20 +734,23 @@ $(function(){
                     orderList[i] = orderList[i].split('_')[1];
                 });
             }
+            $('#orderList_' + _id).val(JSON.stringify(orderList));
+            $('#isChief_' + _id).val(true);
             //TODO: only do if order is different from original
-            $.ajax({
-                // url: DOMAIN + '/update_passage_order',
-                url: '/update_passage_order',
-                type: 'POST',
-                data: {
-                    _id: _id,
-                    passageOrder: JSON.stringify(orderList)
-                },
-                success: function (data) {
-                    // alert(data);
-                }
-            });
+            // $.ajax({
+            //     // url: DOMAIN + '/update_passage_order',
+            //     url: '/update_passage_order',
+            //     type: 'POST',
+            //     data: {
+            //         _id: _id,
+            //         passageOrder: JSON.stringify(orderList)
+            //     },
+            //     success: function (data) {
+            //         // alert(data);
+            //     }
+            // });
         }
+        $('#passage_form_' + _id).submit();
     });
     //For Home, Search, and Profile
     $(document).on('click', '#view_more, #view-more-leaders', function(){

@@ -21,6 +21,7 @@ const axios = require("axios"); //you can use any http client
 const tf = require("@tensorflow/tfjs-node");
 const nsfw = require("nsfwjs");
 var fs = require('fs'); 
+const fsp = require('fs').promises;
 //for daemons access to help code
 function DAEMONLIBS(passage, USERID){
     return `
@@ -3245,7 +3246,6 @@ app.post('/change_profile_picture/', async (req, res) => {
     res.redirect("/profile");
 });
 app.post('/update_passage/', async (req, res) => {
-    console.log("TEST UPDATE");
     var _id = req.body._id;
     var formData = req.body;
     var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
@@ -3276,6 +3276,20 @@ app.post('/update_passage/', async (req, res) => {
     else{
         console.log('File uploaded');
         await uploadFile(req, res, passage);
+    }
+
+    //Only for private passages
+    if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        var passageOrder = [];
+        if(req.body.passageOrder != 'false' && req.body.isChief != 'false'){
+            var passageOrder = JSON.parse(req.body.passageOrder);
+            let trimmedPassageOrder = passageOrder.map(str => str.trim());
+            console.log(trimmedPassageOrder);
+            // console.log(passage.passages[0]._id+'  '+ passage.passages[1]._id+ '  '+passage.passages[2]._id);
+            passage.passages = trimmedPassageOrder;
+            passage.markModified('passages');
+        }
+        // console.log(passageOrder);
     }
     await passage.save();
     if(passage.mainFile && req.session.user.admin){
@@ -3316,31 +3330,40 @@ async function uploadProfilePhoto(req, res){
     }
 }
 async function deleteOldUploads(passage){
+    const Passage = require('./models/Passage');
     var where = passage.personal ? 'protected' : 'uploads';
-    for(const filename of passage.filename){
+    for(const f of passage.filename){
+        console.log(f);
         var passages = await Passage.find({
             filename: {
-                $in: [filename]
+                $in: [f]
             }
         });
         if(passages.length == 1){
-            fs.unlink('dist/'+where+'/'+filename, function(err){
-                if (err && err.code == 'ENOENT') {
-                    // file doens't exist
-                    console.info("File doesn't exist, won't remove it.");
-                } else if (err) {
-                    // other errors, e.g. maybe we don't have enough permission
-                    console.error("Error occurred while trying to remove file");
-                } else {
-                    console.info(`removed`);
+            var path = './dist/'+where+'/'+f;
+            console.log("FILEPATH TO UNLINK:" + passage.filename);
+            try{
+                if(passage.filename.length > 0){
+                    await fsp.unlink(path);
+                    console.info(`removed old upload`);
+                    var filteredArray = passage.filename.filter(e => e !== f)
+                    passage.filename = filteredArray;
                 }
-            });
+            }
+            catch(e){
+                console.log(passage.filename);
+                console.log(passage.filename.length);
+                console.log("No file to unlink.");
+                passage.filename = [];
+            }
         }
     }
+    await passage.save();
 }
 async function uploadFile(req, res, passage){
     console.log("Upload Test");
-    await deleteOldUploads(passage);
+    // await deleteOldUploads(passage);
+    var passages = await Passage.find({}).limit(20);
     var files = req.files;
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
@@ -3361,7 +3384,7 @@ async function uploadFile(req, res, passage){
         var thumbnailTitle = v4() + ".jpg";
         var where = passage.personal ? 'protected' : 'uploads';
         passage.filename[i] = uploadTitle;
-        // Use the mv() method to place the file somewhere on your server
+        // Use the mv() method to place the file somewhere on the server
         fileToUpload[i].mv('./dist/'+where+'/'+uploadTitle, async function(err) {
             if (err){
                 return res.status(500).send(err);
@@ -3493,10 +3516,6 @@ async function uploadFile(req, res, passage){
         i++;
         passage.markModified('filename');
         passage.markModified('mimeType');
-        // passage.markModified('isHentai');
-        // passage.markModified('isPorn');
-        console.log('filename'+passage.filename);
-        console.log('mimetype'+passage.mimeType);
         await passage.save();
     }
     await passage.save();
