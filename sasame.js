@@ -3339,7 +3339,7 @@ async function deleteOldUploads(passage){
     }
 }
 async function uploadFile(req, res, passage){
-    console.log("Upload Test");
+    console.log("Upload Test 2");
     await deleteOldUploads(passage);
     var files = req.files;
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
