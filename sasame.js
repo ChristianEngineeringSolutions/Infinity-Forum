@@ -3361,7 +3361,6 @@ async function deleteOldUploads(passage){
     await passage.save();
 }
 async function uploadFile(req, res, passage){
-    await deleteOldUploads(passage);
     var files = req.files;
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
@@ -3374,125 +3373,28 @@ async function uploadFile(req, res, passage){
     }
     // passage.filename = [];
     var i = 0;
-    var j = 0;
     for(const file of fileToUpload){
         var mimeType = fileToUpload[i].mimetype; 
         //uuid with  ext
         var uploadTitle = v4() + "." + fileToUpload[i].name.split('.').at(-1);
         var thumbnailTitle = v4() + ".jpg";
         var where = passage.personal ? 'protected' : 'uploads';
-        passage.filename[i] = uploadTitle;
-        // Use the mv() method to place the file somewhere on the server
+        // Use the mv() method to place the file somewhere on your server
         fileToUpload[i].mv('./dist/'+where+'/'+uploadTitle, async function(err) {
             if (err){
                 return res.status(500).send(err);
             }
             //compress if image
             if(mimeType.split('/')[0] == 'image'){
-                exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1] + ' ' + passage._id
-            , async (err, stdout, stderr) => {
-                    console.log("Ok actually finished compressing img");
-
-                    // TEMP
-                    // const pic = await axios.get('http://localhost:3000/'+where+'/'+uploadTitle, {
-                    //   responseType: "arraybuffer",
-                    // });
-                    // const model = await nsfw.load(); // To load a local model, nsfw.load('file://./path/to/model/')
-                    // // Image must be in tf.tensor3d format
-                    // // you can convert image to tf.tensor3d with tf.node.decodeImage(Uint8Array,channels)
-                    // const image = await tf.node.decodeImage(pic.data, 3);
-                    // const predictions = await model.classify(image);
-                    // image.dispose(); // Tensor memory must be managed explicitly (it is not sufficient to let a tf.Tensor go out of scope for its memory to be released).
-                    // console.log(predictions);
-                    // TEMP
-
-                    exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
-                    , (err, stdout, stderr) => {
-                            //done
-                            console.log(err + stdout + stderr);
-                        });
+                exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1]
+            , (err, stdout, stderr) => {
+                    //done
                     console.log(err + stdout + stderr);
                 });
             }
-            var newfilename = uploadTitle.split('.')[0]+'_c.'+uploadTitle.split('.')[1];
-            if(mimeType.split('/')[0] == 'video'){
-                var ext = newfilename.split('.').at(-1);
-                var cmd = '';
-                switch(ext){
-                case 'webm':
-                    cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy dist/'+where+'/'+newfilename;
-                    break;
-                // case 'mp4':
-                //     cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
-                //     break;
-                default:
-                    cmd = 'echo "Hello, World"';
-                    newfilename = uploadTitle;
-                }
-                exec(cmd
-                , async (err, stdout, stderr) => {
-                        console.log('Video compressed.' + newfilename);
-                        // UNCOMMENT TO VIEW OUTPUT
-                        console.log(err + stdout + stderr);
-
-                        passage.filename[j++] = newfilename;
-                        // update filename to compressed video
-                        await Passage.findOneAndUpdate({_id: passage._id}, 
-                            {$set: {
-                                filename: passage.filename
-                            }
-                        });
-                        //delete uncompressed video
-                        if(newfilename != uploadTitle){
-                            fs.unlink('dist/'+where+'/'+uploadTitle, function(err){
-                                if (err && err.code == 'ENOENT') {
-                                    // file doens't exist
-                                    console.info("File doesn't exist, won't remove it.");
-                                } else if (err) {
-                                    // other errors, e.g. maybe we don't have enough permission
-                                    console.error("Error occurred while trying to remove file");
-                                } else {
-                                    console.info(`removed`);
-                                }
-                            });
-                        }
-                        var screenshotName = v4();
-                        ffmpeg('./dist/'+where+'/'+newfilename)
-                          .on('filenames', function(filenames) {
-                            console.log('Will generate ' + filenames.join(', '))
-                          })
-                          .on('end', async function() {
-                            console.log('Screenshots taken');
-                            exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
-                                , (err, stdout, stderr) => {
-                                console.log("Finished Processing Media.");
-                                //done
-                                //delete each screenshot
-                                for(var t = 1; t < 4; ++t){
-                                  fs.unlink('dist/' + where + '/' + screenshotName+'_'+t + '.png', function(err2){
-                                    if (err2 && err2.code == 'ENOENT') {
-                                        // file doens't exist
-                                        console.info("File doesn't exist, won't remove it.");
-                                    } else if (err2) {
-                                        // other errors, e.g. maybe we don't have enough permission
-                                        console.error("Error occurred while trying to remove file");
-                                    } else {
-                                        console.info(`removed screenshot.`);
-                                    }
-                                  });
-                                }
-                                console.log(err + stdout + stderr);
-                            });
-                          })
-                          .screenshots({
-                            // Will take screens at 25%, 50%, 75%
-                            count: 3,
-                            filename: screenshotName +'_%i.png',
-                            folder: 'dist/' + where
-                          });
-                    });
-            }
         });
+        passage.filename[i] = uploadTitle;
+        console.log(passage.filename);
         if(mimeType.split('/')[0] == 'image'
         && mimeType.split('+')[0].split('/')[1] == 'svg'){
             passage.isSVG = true;
@@ -3514,6 +3416,8 @@ async function uploadFile(req, res, passage){
         i++;
         passage.markModified('filename');
         passage.markModified('mimeType');
+        console.log('filename'+passage.filename);
+        console.log('mimetype'+passage.mimeType);
         await passage.save();
     }
     await passage.save();
