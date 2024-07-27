@@ -648,6 +648,7 @@ $(function(){
         e.preventDefault();
         var thiz = $(this);
         var formData = new FormData(this);
+        $('#loading').show();
         $.ajax({
             // url: DOMAIN + '/update_passage',
             url: '/update_passage',
@@ -657,6 +658,9 @@ $(function(){
                 thisPassage(thiz).replaceWith(data);
                 syntaxHighlight();
                 $('#loading').hide();
+            },
+            error: function(a, b, c){
+                alert(JSON.stringify(a) + b + c);
             },
             cache: false,
             contentType: false,
@@ -818,12 +822,14 @@ $(function(){
         $('.editor-chief').val($('#chief_passage_id').val());
         var thiz = $(this);
         var formData = new FormData(this);
+        $('#loading').show();
         $.ajax({
             // url: DOMAIN + '/update_passage',
             url: '/create_initial_passage/',
             type: 'POST',
             data: formData,
             success: function (data) {
+                $('#loading').hide();
                 if(data == 'You must log in to create a passage.'){
                     alert(data);
                     return;
