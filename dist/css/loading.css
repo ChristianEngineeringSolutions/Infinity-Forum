@@ -60,5 +60,5 @@ div.loading-visible{
     background-color: rgba(0,0,0,.8);
     vertical-align: middle;
     text-align:center;
-    z-index:1000;
+    z-index:10000000000;
   }

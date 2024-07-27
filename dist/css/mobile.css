@@ -35,7 +35,7 @@
 }
 /*MID*/
 
-@media screen and (max-width: 1000px){
+@media screen and (max-width: 1500px){
     #top{
         display: none;
     }
