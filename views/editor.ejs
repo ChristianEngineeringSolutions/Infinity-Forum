@@ -1,5 +1,7 @@
 <form id="passage_form_<%=passage._id%>"class="passage_form"action="/update_passage/" type="post"enctype="multipart/form-data">
     <input value="<%=passage._id%>"name="_id"type="hidden">
+    <input id="orderList_<%=passage._id%>"value="false"name="passageOrder"type="hidden">
+    <input id="isChief_<%=passage._id%>"value="false"name="isChief"type="hidden">
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
     <%var hide = '';%>    
     <%if(passage.lang == 'rich'){%>
