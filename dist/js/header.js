@@ -361,11 +361,11 @@ $(function(){
         }
     };
     window.onresize = function (e) {
-        if(window.innerWidth < 1045){
+        if(window.innerWidth < 1500){
             $('#top').hide();
             $('#header').show();
         }
-        else if(window.innerWidth > 1045){
+        else if(window.innerWidth > 1500){
             $('#header').hide();
             $('#top').show();
         }

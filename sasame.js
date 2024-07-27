@@ -3298,6 +3298,7 @@ app.post('/update_passage/', async (req, res) => {
     }
     passage = bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
+    console.log("Almost.");
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
@@ -3362,7 +3363,7 @@ async function deleteOldUploads(passage){
 }
 async function uploadFile(req, res, passage){
     console.log("Upload Test");
-    // await deleteOldUploads(passage);
+    await deleteOldUploads(passage);
     var passages = await Passage.find({}).limit(20);
     var files = req.files;
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
