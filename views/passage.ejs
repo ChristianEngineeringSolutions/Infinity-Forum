@@ -16,6 +16,12 @@
     </ul>
 <%}%>
 <div data-sub="<%=sub%>"id="passage<%=typeof altIteration == 'undefined' ? '' : altIteration%>_<%=passage._id%>" class="passage passage_<%=passage.public ? 'public' : 'private'%> <%=passage.forum ? 'passage_forum' : ''%>">
+    <%if(passage.mirror != null){%>
+        <input id="p_mirror_<%=passage._id%>"type="hidden"value="<%=passage.mirror._id%>" name="">
+    <%}%>
+    <%if(passage.bestOf != null){%>
+        <input id="p_bestOf_<%=passage._id%>"type="hidden"value="<%=passage.bestOf._id%>" name="">
+    <%}%>
     <div id="passage_settings_modal_<%=passage._id%>" class="modal">
         <%- include('passage_settings', {passage: passage}) %>
     </div>
