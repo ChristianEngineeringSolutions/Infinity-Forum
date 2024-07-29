@@ -149,6 +149,9 @@ const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
 const scripts = {};
 scripts.isPassageUser = function(user, passage){
+    if(typeof user == 'undefined'){
+        return false;
+    }
     var ret;
     if(user._id.toString() == passage.author._id.toString()){
         return true;
@@ -2620,6 +2623,7 @@ app.get('/stripeAuthorize', async function(req, res){
             const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
             // Create a Stripe account for this user if one does not exist already
             if (accountId === null) {
+                console.log("No Account yet.");
                 const account = await stripe.accounts.create({
                     type: 'express',
                     capabilities: {
@@ -3475,7 +3479,6 @@ app.post('/update_passage/', async (req, res) => {
     }
     passage = bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
-    console.log("Almost.");
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true});
 });
