@@ -2015,6 +2015,22 @@ app.get('/get_bookmarks', async (req, res) => {
     // for(const bookmark of bookmarks){
     //     bookmarks[bookmark].passage = bubbleUpAll(bookmark.passage);
     // }
+    for(const bookmark of bookmarks){
+        if(bookmark.passage != null){
+            if(bookmark.passage.mirror != null){
+                if(bookmark.passage.mirrorEntire){
+                    var mirror = await Passage.findOne({_id:bookmark.passage.mirror._id});
+                    bookmark.passage.title = mirror.title;
+                }
+            }
+            if(bookmark.passage.bestOf != null){
+                if(bookmark.passage.bestOfEntire){
+                    var mirror = await Passage.findOne({parent:bookmark.passage.bestOf._id}).sort('-stars');
+                    bookmark.passage.title = mirror.title;
+                }
+            }
+        }
+    }
     res.render('bookmarks', {bookmarks: bookmarks});
 });
 app.get('/get_daemons', async (req, res) => {
