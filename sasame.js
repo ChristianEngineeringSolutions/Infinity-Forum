@@ -1271,6 +1271,26 @@ async function getBigPassage(req, res, params=false){
     var page = req.query.page || req.params.page || 1;
     console.log(page);
     var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList');
+    try{
+        var mirror = await Passage.findOne({_id:passage.mirror._id});
+        passage.sourceList.push(mirror);
+    }
+    catch(e){
+        var mirror = null;
+    }
+    try{
+        var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars');
+        passage.sourceList.push(bestOf);
+    }
+    catch(e){
+        var bestOf = null;
+    }
+    var replacement = mirror == null ? bestOf : mirror;
+    var replacing = false;
+    replacement = bestOf == null ? mirror : bestOf;
+    if(replacement != null){
+        replacing = true;
+    }
     if(passage == null){
         return false;
     }
@@ -1294,10 +1314,30 @@ async function getBigPassage(req, res, params=false){
             passageUsers.push(u._id.toString());
         }
     }
+    if(replacing){
+        passage.passages = replacement.passages;
+    }
+    if(replacing && passage.mirrorEntire){
+        passage.lang = replacement.lang;
+        passage.title = replacement.title;
+        passage.content = replacement.content;
+        passage.code = replacement.code;
+        passage.html = replacement.html;
+        passage.css = replacement.css;
+        passage.javascript = replacement.javascript;
+    }
     passage = bubbleUpAll(passage);
+    if(replacing){
+    replacement = bubbleUpAll(replacement);
+    }
+    console.log(passage.code);
+    console.log(passage.displayCode);
     if(passage.public == true && !passage.forum){
-        var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
         var subPassages = await Passage.paginate({parent: passage_id}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        if(replacing){
+            var subPassages = await Passage.paginate({parent: replacement._id}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        }
         subPassages = subPassages.docs;
     }
     else{
@@ -1306,10 +1346,16 @@ async function getBigPassage(req, res, params=false){
         }
         if(passage.forum){
             var subPassages = await Passage.paginate({parent: passage_id}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            if(replacing){
+                var subPassages = await Passage.paginate({parent: replacement._id}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            }
             subPassages = subPassages.docs;
         }
         else{ 
             var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
+            if(replacing){
+                var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList');
+            }
         }
     }
     //we have to do this because of issues with populating passage.passages foreign keys
@@ -2150,6 +2196,46 @@ app.post('/passage_setting', async (req, res) => {
     await passage.save();
     res.send("Done")
 });
+app.post('/update_mirroring', async (req, res) => {
+    let passage = await Passage.findOne({_id: req.body._id});
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        try{
+            var mirror = await Passage.findOne({_id:req.body.mirror.trim()});
+        }
+        catch(e){
+            console.log("Null value");
+            var mirror = null;
+        }
+        try{
+            var bestOf = await Passage.findOne({_id:req.body.bestOf.trim()});
+        }
+        catch(e){
+            console.log("Null value");
+            var bestOf = null;
+        }
+        if(mirror != null){
+            passage.mirror = mirror._id;
+        }
+        else{
+            passage.mirror = null;
+        }
+        if(bestOf != null){
+            passage.bestOf = bestOf._id;
+        }
+        else{
+            passage.bestOf = null;
+        }
+        passage.mirrorContent = req.body.mirrorContent;
+        passage.mirrorEntire = req.body.mirrorEntire;
+        passage.bestOfContent = req.body.bestOfContent;
+        passage.bestOfEntire = req.body.bestOfEntire;
+        await passage.save();
+        return res.send("Done.");
+    }
+    else{
+        return res.send("Not your passage.");
+    }
+});
 app.post('/remove_user', async (req, res) => {
     let passageID = req.body.passageID;
     let userID = req.body.userID;
@@ -2447,6 +2533,26 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
         thread: false,
+        page: 'more',
+        whichPage: 'sub',
+        location: location
+    });
+});
+app.get('/get_big_passage', async function(req, res){
+    console.log(req.query._id);
+    var bigRes = await getBigPassage(req, res);
+    if(!bigRes){
+        return res.redirect('/');
+    }
+    // console.log('TEST'+bigRes.passage.title);
+    // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
+    // console.log('TEST'+bigRes.passage.usedIn);
+    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+    var location = await getPassageLocation(bigRes.passage);
+    res.render("passage", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+        ISMOBILE: bigRes.ISMOBILE,
+        thread: false,
+        sub: true,
         page: 'more',
         whichPage: 'sub',
         location: location

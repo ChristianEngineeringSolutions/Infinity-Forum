@@ -640,6 +640,25 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^=update_mirroring_]', function(e){
+        var _id = getPassageId(this);
+        $.ajax({
+            url: '/update_mirroring',
+            type: 'POST',
+            data: {
+                _id: _id,
+                mirror: $('#passage_mirror_' + _id).val(),
+                mirrorEntire: $('#passage_mirrorEntire_' + _id).is(':checked'),
+                mirrorContent: $('#passage_mirrorContent_' + _id).is(':checked'),
+                bestOf: $('#passage_bestOf_' + _id).val(),
+                bestOfEntire: $('#passage_bestOfEntire_' + _id).is(':checked'),
+                bestOfContent: $('#passage_bestOfContent_' + _id).is(':checked')
+            },
+            success: function(data){
+                window.location.reload();
+            }
+        });
+    });
     $(document).on('click', '[id^=passage_expand]', function(e){
         var _id = getPassageId(this);
         $('#passage_condensed_' + _id).fadeToggle();
@@ -779,6 +798,7 @@ $(function(){
                 }else{
                     $('#passage_wrapper').append(data);
                     syntaxHighlight();
+                    replacePassages();
                 }
             }
         });
@@ -867,4 +887,22 @@ $(function(){
 
         });
     });
+    replacePassages();
 });
+function replacePassages(){
+        $('[id^=p_mirror_], [id^=p_bestOf_]').each(function(){
+            var parentID = $(this).parent().attr('id');
+            $(this).parent().html($('#small-loading').html());
+            $.ajax({
+                url: '/get_big_passage',
+                type: 'get',
+                data: {
+                    _id: $(this).attr('id').split('_').at(-1)
+                },
+                success: function(data){
+                    $('#' + parentID).replaceWith(data);
+                }
+            });
+        });
+        syntaxHighlight();
+    }
