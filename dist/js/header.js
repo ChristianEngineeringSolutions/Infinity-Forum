@@ -176,7 +176,7 @@ $(function(){
             e.stopPropagation();
         }
         var container = $("#side_panel");
-        if(container.is(':visible') && e.target.id != 'show_brief'){
+        if(container.is(':visible') && e.target.id != 'show_brief' && e.target.id != 'bookmarks_icon'){
             // if the target of the click isn't the container nor a descendant of the container
             if (!container.is(e.target) && container.has(e.target).length === 0) 
             {

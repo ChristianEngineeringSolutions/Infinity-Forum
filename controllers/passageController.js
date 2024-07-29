@@ -62,7 +62,13 @@ module.exports = {
             metadata: passage.metadata,
             sourceLink: passage.sourceLink,
             personal: passage.personal,
-            synthetic: synthetic
+            synthetic: synthetic,
+            mirror: passage.mirror,
+            bestOf: passage.bestOf,
+            mirrorEntire: passage.mirrorEntire,
+            mirrorContent: passage.mirrorContent,
+            bestOfEntire: passage.bestOfEntire,
+            bestOfContent: passage.bestOfContent
         });
         //Add copy to passage it was duplicated into
         if(parent != "root" && parent != null){
