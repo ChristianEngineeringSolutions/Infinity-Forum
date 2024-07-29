@@ -1317,7 +1317,16 @@ async function getBigPassage(req, res, params=false){
     if(replacing){
         passage.passages = replacement.passages;
     }
-    if(replacing && passage.mirrorEntire){
+    if(replacing && passage.mirrorEntire && passage.mirror != null){
+        passage.lang = replacement.lang;
+        passage.title = replacement.title;
+        passage.content = replacement.content;
+        passage.code = replacement.code;
+        passage.html = replacement.html;
+        passage.css = replacement.css;
+        passage.javascript = replacement.javascript;
+    }
+    if(replacing && passage.bestOfEntire && passage.bestOf != null){
         passage.lang = replacement.lang;
         passage.title = replacement.title;
         passage.content = replacement.content;
