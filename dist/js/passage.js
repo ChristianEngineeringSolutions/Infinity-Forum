@@ -759,6 +759,8 @@ $(function(){
             }
             $('#orderList_' + _id).val(JSON.stringify(orderList));
             $('#isChief_' + _id).val(true);
+
+            $('#yes-subforums-' + _id).val($('#yes-subforums').val());
             //TODO: only do if order is different from original
             // $.ajax({
             //     // url: DOMAIN + '/update_passage_order',
@@ -840,6 +842,7 @@ $(function(){
     $(document).on('submit', '#passage_form', function(e){
         e.preventDefault();
         $('.editor-chief').val($('#chief_passage_id').val());
+        $('#which-subforums').val($('#yes-subforums').val());
         var thiz = $(this);
         var formData = new FormData(this);
         $('#loading').show();

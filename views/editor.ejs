@@ -3,6 +3,7 @@
     <input id="orderList_<%=passage._id%>"value="false"name="passageOrder"type="hidden">
     <input id="isChief_<%=passage._id%>"value="false"name="isChief"type="hidden">
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="text"name="title"placeholder="Title">
+    <input id="yes-subforums-<%=passage._id%>"value=""type="hidden" name="subforums">
     <%var hide = '';%>    
     <%if(passage.lang == 'rich'){%>
         <%hide = '';%>

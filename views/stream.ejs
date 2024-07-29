@@ -64,6 +64,11 @@
             <div class="passage view-more"id="view_more">View More</div>
         <%} %>
         <input id="which-page"type="hidden" value="<%=whichPage%>">
+        <%if(typeof subforums != 'undefined'){%>
+            <input id="yes-subforums"value="true"type="hidden" name="">
+        <%}else{%>
+            <input id="yes-subforums"value="false"type="hidden" name="">
+        <%}%>
         <div style="display:none;"id="small-loading">
             <div style="text-align: center;background:black;padding:20px;border:1px solid white;">
              <div class="circle"></div>

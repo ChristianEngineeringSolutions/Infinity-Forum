@@ -15,6 +15,17 @@
         <%}%>
     </ul>
 <%}%>
+<%if(sub == false && passage.subforums != null && passage.subforums.length > 0){%>
+    <%if(typeof subforums == 'undefined'){%>
+        <div id="subforums-list">
+            <a href="/subforums/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>">View Subforums</a>
+        </div>
+    <%}else{%>
+        <div id="subforums-list">
+            <a href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>">View Sub Passages</a>
+        </div>
+    <%}%>
+<%}%>
 <div data-sub="<%=sub%>"id="passage<%=typeof altIteration == 'undefined' ? '' : altIteration%>_<%=passage._id%>" class="passage passage_<%=passage.public ? 'public' : 'private'%> <%=passage.forum ? 'passage_forum' : ''%>">
     <%if(passage.mirror != null){%>
         <input id="p_mirror_<%=passage._id%>"type="hidden"value="<%=passage.mirror._id%>" name="">
