@@ -1,3 +1,5 @@
+Passage ID: <%=passage._id%>
+<br><br>
 Users:
 <%if(passage.users){passage.users.forEach(function(user, i) { %>
     <%=user.username%>
@@ -38,8 +40,28 @@ Toggle Green/Red for Active/Inactive
 <div data-setting="distraction-free"class="passage_setting <%=passage.distraction_free == true ? 'green' : 'red';%>"id="passage_setting_distraction_free_<%=passage._id%>">Default Distraction Free Mode</div>
 <div data-setting="bubbling"class="passage_setting <%=passage.bubbling == true ? 'green' : 'red';%>"id="passage_setting_bubbling_<%=passage._id%>">Bubble Up Content (Private Passages)</div>
 
+<br>
+<div style="border: 1px solid black;padding:10px;">
+    Choose One.
+    <br><br>
+<div>
+    Mirror Passage: <input placeholder="Passage ID" autocomplete="off"id="passage_mirror_<%=passage._id%>"value="<%=passage.mirror ? passage.mirror._id : ''%>"type="text" name="mirror">
+    <br>
+    <input id="passage_mirrorEntire_<%=passage._id%>"<%=passage.mirrorEntire ? ' checked ' : ''%>type="checkbox" name="mirrorEntire"> Entire
+    <input id="passage_mirrorContent_<%=passage._id%>"<%=passage.mirrorContent ? ' checked ' : ''%>type="checkbox" name="mirrorContent"> Only Content
+</div>
+<br>
+<div>
+    Best Of: <input placeholder="Passage ID" autocomplete="off"id="passage_bestOf_<%=passage._id%>"type="text" value="<%=passage.bestOf ? passage.bestOf._id : ''%>"name="bestOf">
+    <br>
+    <input id="passage_bestOfEntire_<%=passage._id%>"type="checkbox" <%=passage.bestOfEntire ? ' checked ' : ''%>name="bestOfEntire"> Entire
+    <input id="passage_bestOfContent_<%=passage._id%>" <%=passage.bestOfContent ? ' checked ' : ''%>type="checkbox" name="bestOfContent"> Only Content
+</div>
+<br>
+<button id="update_mirroring_<%=passage._id%>">Update</button>
+</div>
 <br><br>
-<button id="passage-delete-<%=passage._id%>">DELETE</button>
+<button id="passage-delete-<%=passage._id%>" style="border: 1px solid red;cursor:pointer;">DELETE PASSAGE</button>
 <!-- <hr>
 <div id="show-keys">Keys</div>
 <br>

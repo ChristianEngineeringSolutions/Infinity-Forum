@@ -236,6 +236,30 @@ const passageSchema = mongoose.Schema({
     toggle: {
         type: Boolean,
         default: false
+    },
+    mirror: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    },
+    bestOf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    },
+    mirrorContent: {
+        type: Boolean,
+        default: false
+    },
+    bestOfContent: {
+        type: Boolean,
+        default: false
+    },
+    mirrorEntire: {
+        type: Boolean,
+        default: false
+    },
+    bestOfEntire: {
+        type: Boolean,
+        default: false
     }
 
 });

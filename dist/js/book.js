@@ -150,6 +150,7 @@ $(function(){
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
+                    replacePassages();
                 }
             });
 
@@ -194,6 +195,7 @@ $(function(){
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
+                    replacePassages();
                 }
             });
 
@@ -258,6 +260,7 @@ $(function(){
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
+                    replacePassages();
                 }
             });
 
