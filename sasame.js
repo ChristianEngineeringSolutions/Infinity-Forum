@@ -622,16 +622,21 @@ app.get('/personal/:user_id', async (req, res) => {
         if(req.session.user){
             bookmarks = getBookmarks(req.session.user);
         }
-        return res.render("index", {
+        passages = await fillUsedInList(passages);
+        const ISMOBILE = browser(req.headers['user-agent']).mobile;
+        return res.render("stream", {
             subPassages: false,
             passageTitle: 'Christian Engineering Solutions', 
             scripts: scripts, 
             passages: passages, 
+            page: 'personal',
             passage: {id:'root', author: {
                 _id: 'root',
                 username: 'Sasame'
             }},
             bookmarks: bookmarks,
+            ISMOBILE: ISMOBILE,
+            whichPage: 'personal'
         });
     }
 });
@@ -2765,18 +2770,15 @@ app.get('/uploadsbackup', async (req, res) => {
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
-    var directory1 = __dirname + '/dist/images';
+    var directory1 = __dirname + '/dist/uploads';
     var AdmZip = require("adm-zip");
     const fsp = require('fs').promises;
     var zip1 = new AdmZip();
     //compress /dump and /dist/uploads then send
     const files = await readdir(directory1);
     for(const file of files){
-        if(file == 'ionicons'){
-            continue;
-        }
         console.log(file);
-        zip1.addLocalFile(__dirname + '/dist/images/' + file);
+        zip1.addLocalFile(__dirname + '/dist/uploads/' + file);
     }
     return res.send(zip1.toBuffer());
 });
