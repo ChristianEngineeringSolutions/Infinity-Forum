@@ -19,6 +19,7 @@
     /* font-style: italic; */
     font-size: 0.5em;
     font-weight: lighter;
+    padding-bottom: 6px;
 }
 .p-thumbnail{
     margin:auto;
@@ -26,6 +27,7 @@
     height: 40px;
     border-radius: 50%;
     float:left;
+    margin-top: 8px;
 }
 .toppings{
     margin-top: 10px;
