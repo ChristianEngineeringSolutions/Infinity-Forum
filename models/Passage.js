@@ -24,6 +24,7 @@ const passageSchema = mongoose.Schema({
     title: {
         type: String,
         default: ''
+        // index: true
     },
     forumSpecial: {
         type: Boolean,
@@ -53,6 +54,7 @@ const passageSchema = mongoose.Schema({
     code: {
         type: String,
         default: ''
+        // index: true
     },
     bibliography: String,
     //can be enabled by default in passage settings
@@ -110,6 +112,7 @@ const passageSchema = mongoose.Schema({
     content: {
         type: String,
         default: ''
+        // index: true
     },
     //forces content to be a unique value unless null
     // content: {
@@ -269,7 +272,11 @@ var autoPopulateChildren = function(next) {
     // this.populate('parent');
     next();
 };
-
+// passageSchema.index({
+//     title: "text",
+//     content: "text",
+//     code: "text"
+// });
 passageSchema
 .pre('findOne', autoPopulateChildren)
 .pre('find', autoPopulateChildren)
