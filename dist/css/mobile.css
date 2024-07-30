@@ -209,6 +209,7 @@
     }
     .p-thumbnail{
         max-width: 75px;
+        margin-top: 1px;
     }
     .passage_stars{
         float: left;
