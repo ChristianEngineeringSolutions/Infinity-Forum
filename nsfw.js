@@ -12,8 +12,9 @@
   const Passage = require('./models/Passage');
   const axios = require("axios");
   const https = require('https');
+   const http = require('http');
   axios.create({
-            httpsAgent: new https.Agent({keepAlive: true}),
+            httpAgent: new http.Agent({keepAlive: true}),
         });
   const tf = require("@tensorflow/tfjs-node");
   const nsfw = require("nsfwjs");
@@ -43,14 +44,15 @@
     console.log("ISVIDEO");
     //process each screenshot
     for(var i = 1; i < 4; ++i){
-      console.log("Processing Screenshot " + i);
-      var pic = await axios.get('http://localhost:3000/'+ process.argv[3] + '/' + process.argv[6] + '_' + i + '.png', {
+      const pic = await axios.get('http://localhost:3000/'+ process.argv[3] + '/' + process.argv[6] + '_' + i + '.png', {
         responseType: "arraybuffer",
       });
-      const model = await nsfw.load(); // To load a local model, nsfw.load('file://./path/to/model/')
+      const model = await nsfw.load();
+      const image = await tf.node.decodeImage(pic.data, 3);
+      console.log("Processing Screenshot " + i);
       // Image must be in tf.tensor3d format
       // you can convert image to tf.tensor3d with tf.node.decodeImage(Uint8Array,channels)
-      const image = await tf.node.decodeImage(pic.data, 3);
+      // const image = await tf.node.decodeImage(pic2.data, 3);
       const predictions = await model.classify(image);
       image.dispose(); // Tensor memory must be managed explicitly (it is not sufficient to let a tf.Tensor go out of scope for its memory to be released).
       console.log(predictions);
