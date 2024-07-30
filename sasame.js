@@ -1453,12 +1453,19 @@ app.get('/thread', async (req, res) => {
 });
 app.get('/cat', async (req, res) => {
     var pNumber = req.query.pNumber;
+    var search = req.query.search || '';
+    var find = {
+        parent: req.query._id.toString(),
+        $or: [
+            {title: {$regex:search,$options:'i'}},
+            {content: {$regex:search,$options:'i'}},
+            {code: {$regex:search,$options:'i'}},
+        ],
+    };
     var parent = await Passage.findOne({_id: req.query._id});
-    var topics = await Passage.find({parent: req.query._id.toString()}).sort('-date').populate('passages.author');
-    var topics = await Passage.paginate({parent: req.query._id.toString()}, {sort: '-date', page: pNumber, limit: 20, populate: 'passages.author'});
-    var totalDocuments = await Passage.countDocuments({
-        parent: req.query._id.toString()
-    })
+    console.log('search:'+search);
+    var topics = await Passage.paginate(find, {sort: '-date', page: pNumber, limit: 20, populate: 'passages.author'});
+    var totalDocuments = await Passage.countDocuments(find);
     var totalPages = Math.floor(totalDocuments/20) + 1;
     for (const topic of topics.docs){
         topic.numViews = await scripts.getNumViews(topic._id);

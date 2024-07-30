@@ -55,6 +55,28 @@
 			window.location = "#";
 		}
 
+		$(document).on('keypress', '#cat_search', function(e){
+			var hash = window.location.hash.substring(1); //get the hashtag
+			var _id = hash.split('/')[2];
+			var thiz = $(this);
+	        if(e.which == 13){
+	        	$('#last_search').val(thiz.val());
+	            $.ajax({
+	                type: 'get',
+	                // url: DOMAIN + '/search/' + fromOtro,
+	                url: '/cat/',
+	                data: {
+	                    search: thiz.val(),
+	                    pNumber: 1,
+	                    _id: _id
+	                },
+	                success: function(data){
+	                    $('.forum_box').replaceWith(data);
+	                    $('#cat_search').val($('#last_search').val());
+	                }
+	            });
+	        }
+		});
 		function hash_ajax() {
 			// if (block)
 			// 	return;
@@ -91,7 +113,7 @@
 			// var data, id = "l";
 			// id = DIR;
 			id = DIR;
-
+			data.search = $('#last_search').val();
 			var time = first === true ? 0 : 1000;
 			$.ajax({ // send it with ajax
 				url: '/' + page, //to the right file depending on the previus code
