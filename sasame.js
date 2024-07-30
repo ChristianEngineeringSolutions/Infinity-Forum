@@ -106,7 +106,7 @@ const io = require('socket.io')(server);
 //       allowedHeaders: ["my-custom-header"],
 //       credentials: true
 //     }
-//   });
+  // });
 app.use(express.urlencoded({ extended: false, limit: '1gb' }));
 app.use(compression());
 app.use(cors());
@@ -205,19 +205,19 @@ app.use(session);
 io.use(sharedsession(session, {
     autoSave: true
 }));
-app.use('/protected/:pID', async function(req, res, next){
-    if(!req.session.user){
-        return res.redirect('/');
-    }
-    else{
-        var passage = await Passage.findOne({filename:req.params.pID});
-        if(passage != null)
-        if(passage.author._id.toString() != req.session.user._id.toString() && !scripts.isPassageUser(req.session.user, passage)){
-            return res.redirect('/');
-        }
-    }
-    next();
-});
+// app.use('/protected/:pID', async function(req, res, next){
+//     if(!req.session.user){
+//         return res.redirect('/');
+//     }
+//     else{
+//         var passage = await Passage.findOne({filename:req.params.pID});
+//         if(passage != null)
+//         if(passage.author._id.toString() != req.session.user._id.toString() && !scripts.isPassageUser(req.session.user, passage)){
+//             return res.redirect('/');
+//         }
+//     }
+//     next();
+// });
 app.use(express.static('./dist'));
 app.set('view engine', 'ejs');
 app.set('views', './views');
@@ -3530,7 +3530,12 @@ async function deleteOldUploads(passage){
             }
         });
         if(passages.length == 1){
-            var path = './dist/'+where+'/'+f;
+            if(where == 'uploads'){
+                var path = './dist/'+where+'/'+f;
+            }
+            else{
+                var path = './protected/'+f;
+            }
             console.log("FILEPATH TO UNLINK:" + passage.filename);
             try{
                 if(passage.filename.length > 0){
@@ -3573,15 +3578,28 @@ async function uploadFile(req, res, passage){
         var uploadTitle = v4() + "." + fileToUpload[i].name.split('.').at(-1);
         var thumbnailTitle = v4() + ".jpg";
         var where = passage.personal ? 'protected' : 'uploads';
+        if(where == 'protected'){
+            var fullpath = './' + where
+            var partialpath = where;
+            var simplepath = where
+        }
+        else{
+            var fullpath = './dist/' + where;
+            var partialpath = 'dist/' + where;
+            var simplepath = where
+        }
         passage.filename[i] = uploadTitle;
+        console.log("PATH:"+fullpath+'/'+uploadTitle)
         // Use the mv() method to place the file somewhere on the server
-        fileToUpload[i].mv('./dist/'+where+'/'+uploadTitle, async function(err) {
+        fileToUpload[i].mv(fullpath+'/'+uploadTitle, async function(err) {
             if (err){
+                console.log("DID NOT MOVE FILE");
                 return res.status(500).send(err);
             }
+            console.log("MOVED FILE");
             //compress if image
             if(mimeType.split('/')[0] == 'image'){
-                exec('python3 compress.py dist/'+where+'/'+uploadTitle + ' ' + mimeType.split('/')[1] + ' ' + passage._id
+                exec('python3 compress.py '+partialpath+'/'+uploadTitle + ' ' + mimeType.split('/')[1] + ' ' + passage._id
             , async (err, stdout, stderr) => {
                     console.log(err + stdout + stderr);
                     console.log("=Ok actually finished compressing img");
@@ -3604,7 +3622,7 @@ async function uploadFile(req, res, passage){
                 var cmd = '';
                 switch(ext){
                 case 'webm':
-                    cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy dist/'+where+'/'+newfilename;
+                    cmd = 'ffmpeg -i '+partialpath+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy '+partialpath+'/'+newfilename;
                     break;
                 // case 'mp4':
                 //     cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
@@ -3620,6 +3638,7 @@ async function uploadFile(req, res, passage){
                         console.log(err + stdout + stderr);
 
                         passage.filename[j++] = newfilename;
+                        console.log("FILENAMES:" + passage.filename);
                         // update filename to compressed video
                         await Passage.findOneAndUpdate({_id: passage._id}, 
                             {$set: {
@@ -3628,7 +3647,7 @@ async function uploadFile(req, res, passage){
                         });
                         //delete uncompressed video
                         if(newfilename != uploadTitle){
-                            fs.unlink('dist/'+where+'/'+uploadTitle, function(err){
+                            fs.unlink(partialpath+'/'+uploadTitle, function(err){
                                 if (err && err.code == 'ENOENT') {
                                     // file doens't exist
                                     console.info("File doesn't exist, won't remove it.");
@@ -3643,7 +3662,7 @@ async function uploadFile(req, res, passage){
                         //not enough memory on server. local for now.
                         if(process.env.LOCAL == 'true'){
                             var screenshotName = v4();
-                            ffmpeg('./dist/'+where+'/'+newfilename)
+                            ffmpeg(fullpath+'/'+newfilename)
                               .on('filenames', function(filenames) {
                                 console.log('Will generate ' + filenames.join(', '))
                               })
@@ -3656,7 +3675,7 @@ async function uploadFile(req, res, passage){
                                     //done
                                     //delete each screenshot
                                     for(var t = 1; t < 4; ++t){
-                                      fs.unlink('dist/' + where + '/' + screenshotName+'_'+t + '.png', function(err2){
+                                      fs.unlink(partialpath + '/' + screenshotName+'_'+t + '.png', function(err2){
                                         if (err2 && err2.code == 'ENOENT') {
                                             // file doens't exist
                                             console.info("File doesn't exist, won't remove it.");
@@ -3674,7 +3693,7 @@ async function uploadFile(req, res, passage){
                                 // Will take screens at 25%, 50%, 75%
                                 count: 3,
                                 filename: screenshotName +'_%i.png',
-                                folder: 'dist/' + where
+                                folder: partialpath
                               });
                       }
                     });
@@ -3692,7 +3711,7 @@ async function uploadFile(req, res, passage){
             var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
             var buf = Buffer.from(data, 'base64');
             const fsp = require('fs').promises;
-            await fsp.writeFile('./dist/'+where+'/'+thumbnailTitle, buf);
+            await fsp.writeFile(fullpath+'/'+thumbnailTitle, buf);
             passage.thumbnail = thumbnailTitle;
         }
         else{
@@ -4129,6 +4148,38 @@ app.post('/update_file', requiresAdmin, function(req, res) {
 });
 app.get('/terms', function(req, res) {
     res.render('terms');
+});
+app.get('/protected/:filename', async function(req, res) {
+    if(!req.session.user){
+        return res.redirect('/');
+    }
+    var passages = await Passage.find({
+        filename: {
+            $in: [req.params.filename]
+        }
+    });
+    var clear = false;
+    for(const p of passages){
+        if(p.author._id.toString() == req.session.user._id.toString()
+            || p.users.includes(req.session.user._id)){
+            clear = true;
+            break;
+        }
+    }
+    if(clear){
+        switch(req.params.filename.split('.').at(-1)){
+            case 'png':
+                res.type('image/png');
+                break;
+            case 'webm':
+                res.type('video/webm');
+                break;
+        }
+        return res.sendFile('protected/'+req.params.filename, {root: __dirname});
+    }
+    else{
+        return res.redirect('/');
+    }
 });
 //API Funcs for returning objects directly
 //TODO: Just check for api parameter in original routes
