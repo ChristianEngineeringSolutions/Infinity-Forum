@@ -4,6 +4,7 @@ dist/recordings/*
 dist/uploads/*
 dist/protected/*
 dist/filesystem/*
+protected/*
 *.swp
 *.log
 .env
