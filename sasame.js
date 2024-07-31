@@ -1948,6 +1948,11 @@ app.post('/search/', async (req, res) => {
             {code: {$regex:search,$options:'i'}},
         ],
     };
+    if(req.body.personal){
+        find.users = {
+            $in: [req.session.user._id]
+        }
+    }
     switch(req.body.whichPage){
         case 'tasks':
             find.public = true;
