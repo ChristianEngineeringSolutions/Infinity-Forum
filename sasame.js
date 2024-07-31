@@ -272,6 +272,9 @@ app.get('/jquery-ui.css', function(req, res) {
 app.get('/jquery.modal.min.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/jquery-modal/jquery.modal.min.js');
 });
+app.get('/jquery.modal.js', function(req, res) {
+    res.sendFile(__dirname + '/node_modules/jquery-modal/jquery.modal.js');
+});
 app.get('/jquery.modal.min.css', function(req, res) {
     res.sendFile(__dirname + '/node_modules/jquery-modal/jquery.modal.min.css');
 });
@@ -2942,7 +2945,8 @@ app.post('/paginate', async function(req, res){
     let profile = req.body.profile; //home, profile, or leaderboard (new: fileStream and Passages)
     let search = req.body.search;
     let parent = req.body.passage;
-    if(profile == 'true'){
+    console.log(profile);
+    if(profile == 'false'){
         let find = {
             personal: false,
             $or: [
@@ -2959,6 +2963,13 @@ app.post('/paginate', async function(req, res){
             case 'projects':
                 find.public = false;
                 find.forum = false;
+                break;
+            case 'personal':
+                find.personal = true;
+                find.users = {
+                $in: [req.session.user._id]
+                }
+                break;
         }
         if(parent != 'root'){
             find.parent = parent;
@@ -2998,7 +3009,7 @@ app.post('/paginate', async function(req, res){
             to: req.session.user._id
         };
         var messages = await Message.paginate(find,
-        {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users'}).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+        {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users passage'});
         var passages = [];
         for(const message of messages.docs){
             var p = await Passage.findOne({
@@ -3019,6 +3030,7 @@ app.post('/paginate', async function(req, res){
 
     }
     else if(profile == 'leaderboard'){
+        console.log("leaderboard!");
         let find = {
             username: new RegExp(''+search+'', "i")
         };
