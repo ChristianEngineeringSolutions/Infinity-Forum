@@ -1,6 +1,9 @@
 body{
     /*background: #000;*/
 }
+html, body {
+    overflow: scroll;
+}
 #remote_toggle{
     float: left;
     /* font-size: 0.7em; */

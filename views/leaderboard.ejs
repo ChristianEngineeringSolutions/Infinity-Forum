@@ -26,19 +26,5 @@
 <%- include('leaders', {users: users}) %>
 </div>
 <div class="passage"id="view-more-leaders">View More</div>
-<script type="text/javascript">
-	var page = 1;
-	$(function(){
-		$(document).on('click', '#view-more-leaders', function(){
-			$.ajax({
-				type: 'get',
-				url: '/leaderboard',
-				data: {page: ++page},
-				success: function(data){
-					$('#leaders').append(data);
-				}
-			});
-		});
-	});
-</script>
+<script type="text/javascript" src="/js/leaderboard.js"></script>
 <%- include('footer') %>

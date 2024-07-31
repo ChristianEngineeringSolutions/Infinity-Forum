@@ -611,7 +611,7 @@ app.get('/personal/:user_id', async (req, res) => {
             users: {
                 $in: [req.params.user_id]
             }
-        }).populate('users');
+        }).populate('users').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
         }
@@ -1771,9 +1771,16 @@ app.post('/search_leaderboard/', async (req, res) => {
         $regex: search,
         $options: 'i',
     }}).sort('-starsGiven').limit(20);
+    if(search == ''){
+        var rank = true;
+    }
+    else{
+        var rank = false;
+    }
     res.render("leaders", {
         users: results,
-        page: 1
+        page: 1,
+        rank: rank
     });
 });
 app.post('/search_profile/', async (req, res) => {
@@ -2136,12 +2143,17 @@ app.get('/leaderboard', async (req, res) => {
     // let users = await User.find().sort('-starsGiven');
     let users = await User.paginate({}, {sort: '-starsGiven', page: page, limit: 20});
     users = users.docs;
+    var i = 1;
+    for(const user of users){
+        user.rank = i + ((page-1)*20);
+        ++i;
+    }
     if(page == 1){
         return res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts,
-    ISMOBILE: ISMOBILE, page: page});
+    ISMOBILE: ISMOBILE, page: page, rank: true});
     }
     else{
-        return res.render('leaders', {users: users, page: page});
+        return res.render('leaders', {users: users, page: page, rank: false});
     }
 });
 app.post('/add_user', async (req, res) => {
@@ -2930,7 +2942,7 @@ app.post('/paginate', async function(req, res){
     let profile = req.body.profile; //home, profile, or leaderboard (new: fileStream and Passages)
     let search = req.body.search;
     let parent = req.body.passage;
-    if(profile != 'leaderboard'){
+    if(profile == 'true'){
         let find = {
             personal: false,
             $or: [
@@ -2954,6 +2966,7 @@ app.post('/paginate', async function(req, res){
         if(profile != 'false'){
             find.author = profile;
         }
+
         if(req.body.from_ppe_queue){
             find.mimeType = 'image';
         }
@@ -2979,6 +2992,7 @@ app.post('/paginate', async function(req, res){
         }
     }
     else if(profile == 'messages'){
+        console.log('messages');
         let find = {
             title: new RegExp(''+search+'', "i"),
             to: req.session.user._id
@@ -3004,12 +3018,18 @@ app.post('/paginate', async function(req, res){
     else if(profile == 'filestream'){
 
     }
-    else{
+    else if(profile == 'leaderboard'){
         let find = {
             username: new RegExp(''+search+'', "i")
         };
+        if(search == ''){
+            var rank = true;
+        }
+        else{
+            var rank = false;
+        }
         let users = await User.paginate(find, {sort: "-starsGiven", page: page, limit: DOCS_PER_PAGE});
-        res.render('leaders', {users: users.docs, page: page});
+        res.render('leaders', {users: users.docs, page: page, rank: rank});
     }
 });
 
