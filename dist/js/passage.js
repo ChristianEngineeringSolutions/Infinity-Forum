@@ -667,7 +667,9 @@ $(function(){
         e.preventDefault();
         var thiz = $(this);
         var formData = new FormData(this);
-        $('#loading').show();
+        if($('#passage_file_'+$(this).attr('id').split('_').at(-1)).val() != ''){
+            $('#loading').show();
+        }
         $.ajax({
             // url: DOMAIN + '/update_passage',
             url: '/update_passage',
@@ -845,7 +847,9 @@ $(function(){
         $('#which-subforums').val($('#yes-subforums').val());
         var thiz = $(this);
         var formData = new FormData(this);
-        $('#loading').show();
+        if($('#passage_file').val() != ''){
+            $('#loading').show();
+        }
         $.ajax({
             // url: DOMAIN + '/update_passage',
             url: '/create_initial_passage/',
