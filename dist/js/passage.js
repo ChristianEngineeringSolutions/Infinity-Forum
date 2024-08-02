@@ -32,29 +32,36 @@ $(function(){
         $('.sub_passages').show();
     }
     //return brief for current passage list
-    function getBrief(){
+    function getBrief(clip=false){
+        $('#brief-passages').html('');
         $('.passage:not(.view-more)').each(function(i){
-            var title = $(this).children('.detail_title').text();
+            var title = $(this).children('.detail-div').children('.p-padding-box').children('.detail_title').text();
+            title = title == '' ? 'Untitled' : title;
             var _id = $(this).attr('id').split('_').at(-1);
             if(i != 0){
-                $('#brief-passages').append('<div id="brief-passage-'+_id+'"class="brief-passage">' + title + '</div>');
+                $('#brief-passages').append('<h2 id="brief-passage-'+_id+'"class="brief-passage"><a href="/passage/'+title+'/'+_id+'">' + title + '</a></h2>');
             }
             else{
 
             }
         });
-        $('#brief-passages').sortable({
-            update: function(event, ui){
-                var orderList = $('#brief-passages').sortable('toArray');
-                orderList.forEach(function(p, i){
-                    orderList[i] = orderList[i].split('-').at(-1);
-                });
-                // var new_locations = $(this).find('.brief-passage').map(function(i, el) {
-                //     return $(el).attr('id').split('-').at(-1);
-                //   }).get()
-                reorder(orderList, $('#sub_passages'));
-            }
-        });
+        if(clip){
+            $('#brief-passages').children().last().remove();
+        }
+        if(!$('brief-passages').hasClass('ui-sortable')){
+            $('#brief-passages').sortable({
+                update: function(event, ui){
+                    var orderList = $('#brief-passages').sortable('toArray');
+                    orderList.forEach(function(p, i){
+                        orderList[i] = orderList[i].split('-').at(-1);
+                    });
+                    // var new_locations = $(this).find('.brief-passage').map(function(i, el) {
+                    //     return $(el).attr('id').split('-').at(-1);
+                    //   }).get()
+                    reorder(orderList, $('#sub_passages'));
+                }
+            });
+        }
         function reorder(orderArray, elementContainer)
         {
             $.each(orderArray, function(key, val){
@@ -885,7 +892,7 @@ $(function(){
                     $(data).insertAfter('#first-cat');
                 }
                 thisPassage(thiz).replaceWith(data);
-
+                getBrief(true);                
                 syntaxHighlight();
             },
             cache: false,
