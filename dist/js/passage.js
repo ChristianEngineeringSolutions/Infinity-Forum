@@ -39,7 +39,7 @@ $(function(){
             title = title == '' ? 'Untitled' : title;
             var _id = $(this).attr('id').split('_').at(-1);
             if(i != 0){
-                $('#brief-passages').append('<h2 id="brief-passage-'+_id+'"class="brief-passage"><a href="/passage/'+title+'/'+_id+'">' + title + '</a></h2>');
+                $('#brief-passages').append('<h2 id="brief-passage-'+_id+'"class="brief-passage"><a href="#passage_'+_id+'">' + title + '</a></h2>');
             }
             else{
 
