@@ -17,7 +17,7 @@
                                 <%if(cat.parent._id.toString() == category._id.toString()){%>
                             <tr>
                             <td><a href="#cat/<%=cat.title.replace(' ', '_')%>/<%=cat._id%>"><b><%=cat.title%></b>
-                                <br/><i><%=cat.content%></i>
+                                <br/><i><%=cat.content.replace(/<[^>]*>?/gm, '');%></i>
                         <i>
                             <%for(const subforum of subforums){%>
                                 <%if(subforum.parent._id.toString() == cat._id.toString()){%>
