@@ -165,6 +165,7 @@ $(function(){
     $(document).on('click', '#menu-contact', function(){
         alert("Email CEO at: uriahsanders99@gmail.com");
     });
+    //click blocking for panels
     $(document).on('click', function(e){
         var container = $("#left-side-panel");
         if(container.is(':visible') && e.target.id != 'menu-button' && e.target.id != 'link-more'){
@@ -176,7 +177,8 @@ $(function(){
             e.stopPropagation();
         }
         var container = $("#side_panel");
-        if(container.is(':visible') && e.target.id != 'show_brief' && e.target.id != 'bookmarks_icon'){
+        console.log(e.target.id);
+        if(container.is(':visible') && e.target.id != 'show_brief' && e.target.id != 'bookmarks_icon' && (e.target.id.length > 0 && !$('#' + e.target.id).hasClass('b-bar'))){
             // if the target of the click isn't the container nor a descendant of the container
             if (!container.is(e.target) && container.has(e.target).length === 0) 
             {

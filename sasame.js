@@ -2017,7 +2017,7 @@ app.post('/transfer_bookmark', async (req, res) => {
     if(parent !== 'root'){
         let parentPassage = await Passage.findOne({_id: parent});
         if(parentPassage.public === false && parentPassage.author.toString() != req.session.user._id.toString() && !scripts.isPassageUser(req.session.user, parentPassage)){
-            return res.send("<h2 style='text-align:center;color:red;'>Passage is private. Ask to be on the Userlist, or consider Bookmarking it, and copying it over to your own passage.</h2>");
+            return res.send("<h2 style='text-align:center;color:red;'>Passage is private. Ask to be on the Userlist, or consider Bookmarking it, and copying it over to your own passage (press \"cite\").</h2>");
         }
     }
     //get passage to copy
@@ -2031,17 +2031,26 @@ app.post('/transfer_bookmark', async (req, res) => {
         user = [req.session.user];
     }
     parent = req.body.parent == 'root' ? null : req.body.parent;
-    let copy = await passageController.copyPassage(passage, user, parent, function(){
-        
-    });
-    copy = bubbleUpAll(copy);
-    copy = await fillUsedInListSingle(copy);
-    if(req.body.which && req.body.which == 'cat'){
-        return res.render('cat_row', {subPassages: false, topic: copy, sub: true});
-    }
-    else{
-        console.log('SWEAT');
-        return res.render('passage', {subPassages: false, passage: copy, sub: true});
+    if(req.body.focus == 'false'){
+        let copy = await passageController.copyPassage(passage, user, parent, function(){
+            
+        });
+        copy = bubbleUpAll(copy);
+        copy = await fillUsedInListSingle(copy);
+        if(req.body.which && req.body.which == 'cat'){
+            return res.render('cat_row', {subPassages: false, topic: copy, sub: true});
+        }
+        else{
+            return res.render('passage', {subPassages: false, passage: copy, sub: true});
+        }
+    }else{
+        //add passage to sourcelist
+        parent = await Passage.findOne({_id: req.body.parent});
+        parent.sourceList.push(passage._id);
+        parent.markModified('sourcelist');
+        await parent.save();
+        var title = passage.title == '' ? 'Untitled' : passage.title;
+        return res.send('<div data-token="'+passage._id+'"data-title="'+title+'"class="new-source">"'+title+'" Added to Sourcelist.</div>');
     }
 });
 app.get('/get_bookmarks', async (req, res) => {

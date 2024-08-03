@@ -76,6 +76,12 @@ $(function(){
         var thiz = this;
         var _id = $(thiz).attr('id').split('_')[2];
         var _chief = $('#chief_passage_id').val();
+        var focus = false;
+        if($('.new-sources:visible').length > 0){
+            //they're adding to a passage
+            focus = true;
+            _chief = $('.new-sources:visible').attr('id').split('-').at(-1);
+        }
         $.ajax({
             type: 'post',
             url: '/transfer_bookmark',
@@ -83,25 +89,36 @@ $(function(){
             data: {
                 _id: _id,
                 parent: _chief,
-                which: $('#which-page').val() || 's'
+                which: $('#which-page').val() || 's',
+                focus: focus
             },
             success: function(data){
                 flashIcon($('#transfer_bookmark_' + _id), 'green');
-                if($('#which-page').length > 0){
-                    if($('#which-page').val() == 'thread')
-                    $('#thread-passages').append(data);
-                    else if($('#which-page').val() == 'cat')
-                        $(data).insertAfter('#first-cat');
-                }
-                else{
-                    if(_chief == 'root'){
-                        $('#passage_wrapper').prepend(data);
+                if(!focus){
+                    if($('#which-page').val() == 'thread' || $('#which-page').val() == 'cat'){
+                        if($('#which-page').val() == 'thread')
+                        $('#thread-passages').append(data);
+                        else if($('#which-page').val() == 'cat')
+                            $(data).insertAfter('#first-cat');
                     }
                     else{
-                        $('#passage_wrapper').append(data);
+                        if(_chief == 'root'){
+                            $('#passage_wrapper').prepend(data);
+                        }
+                        else{
+                            $('#passage_wrapper').append(data);
+                        }
                     }
+                    syntaxHighlight();
                 }
-                syntaxHighlight();
+                else{
+                    $('.new-sources:visible').append(data);
+                    var token = $('.new-sources:visible').children().last().data('token');
+                    var title = $('.new-sources:visible').children().last().data('title');
+                    //add source to sourcelist client side
+                    var ID = $('.new-sources:visible').attr('id').split('-').at(-1);
+                    $('#sourcelist_'+ID).append('<div class="passage_source_'+ID+'"><a target="_blank"href="/passage/'+title+'/'+token+'">'+title+'</a></div>');
+                }
             }
         });
     });

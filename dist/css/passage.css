@@ -406,3 +406,20 @@
     height: 377px;
     font-family: default;
 }
+.add-source{
+    color: blue;
+    cursor: pointer;
+}
+.new-source{
+    border: 1px solid white;
+    padding: 10px;
+}
+.new-sources{
+    border: 1px solid blue;
+    padding: 20px;
+    min-height: 200px;
+    display: none;
+}
+.b-bar{
+    cursor: pointer;
+}
