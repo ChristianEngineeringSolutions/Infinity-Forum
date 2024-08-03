@@ -44,9 +44,12 @@
             <div>No Sources</div>
         <%}else{%>
         Sources:
-        <%passage.sourceList.forEach(function(source) { %>
-            <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
-        <%});}%>
+        <div id="sourcelist_<%=passage._id%>">
+            <%passage.sourceList.forEach(function(source) { %>
+                <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title%></a></div>
+            <%});%>
+        </div>
+        <%}%>
         <br>
         Used In:
         <%if(passage.usedIn.length == 0){ %>

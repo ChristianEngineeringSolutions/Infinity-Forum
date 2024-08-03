@@ -833,6 +833,17 @@ $(function(){
     $(document).on('click', '.view_code', function(){
         syntaxHighlight();
     });
+    $(document).on('click', '.b-bar', function(){
+        $('#right_side_select').val('bookmarks').change();
+        $('#side_panel').toggle();
+        // $('.blocker').click();
+        // $('#side_panel').scrollTop(0);
+    });
+    $(document).on('click', '.add-source', function(){
+        var _id = $(this).attr('id').split('-').at(-1);
+        $('.new-sources:not(#new-sources-'+_id+')').hide();
+        $('#new-sources-' + _id).slideToggle();
+    });
     // $(document).on('keyup', '.passage_ext', function(){
     //     var _id = $(this).attr('id').split('_').at(-1);
     //     var code = $('#display_code_'+_id).val();
