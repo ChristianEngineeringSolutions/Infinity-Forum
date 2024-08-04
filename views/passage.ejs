@@ -42,6 +42,7 @@
         <%}%>
         <%if((!passage.sourceList || passage.sourceList.length < 1) && (passage.sourceLink == null || passage.sourceLink.length < 1)){%>
             <div>No Sources</div>
+            <div id="sourcelist_<%=passage._id%>"></div>
         <%}else{%>
         Sources:
         <div id="sourcelist_<%=passage._id%>">
