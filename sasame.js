@@ -2047,6 +2047,10 @@ app.post('/transfer_bookmark', async (req, res) => {
         //add passage to sourcelist
         parent = await Passage.findOne({_id: req.body.parent});
         parent.sourceList.push(passage._id);
+        console.log(parent.sourceList);
+        //remove duplicates
+        parent.sourceList = Object.values(parent.sourceList.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
+        console.log(parent.sourceList);
         parent.markModified('sourcelist');
         await parent.save();
         var title = passage.title == '' ? 'Untitled' : passage.title;

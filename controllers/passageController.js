@@ -36,6 +36,11 @@ module.exports = {
         }
         await Passage.deleteOne({_id: passageID.trim()});
         callback();
+        // async function deleteRecursively(passage){
+        //     for(const p of passage.passages){
+                
+        //     }
+        // }
     },
     copyPassage: async function(passage, user, parent, callback, synthetic=false){
         //add source
