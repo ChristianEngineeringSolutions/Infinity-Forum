@@ -36,10 +36,39 @@ module.exports = {
         }
         await Passage.deleteOne({_id: passageID.trim()});
         callback();
-        // async function deleteRecursively(passage){
-        //     for(const p of passage.passages){
-                
+        // async function deleteRecursively(passage, arrToDelete){
+        //     var arrToDelete = [];
+        //     //delete uploads too
+        //     for(const filename of passage.filename){
+        //         //make sure no other passages are using the file
+        //         var passages = await Passage.find({
+        //             filename: {
+        //                 $in: [filename]
+        //             }
+        //         });
+        //         if(passages.length == 1){
+        //             var where = passage.personal ? 'protected': 'uploads';
+        //             fs.unlink('dist/'+where+'/'+filename, function(err){
+        //                 if (err && err.code == 'ENOENT') {
+        //                     // file doens't exist
+        //                     console.info("File doesn't exist, won't remove it.");
+        //                 } else if (err) {
+        //                     // other errors, e.g. maybe we don't have enough permission
+        //                     console.error("Error occurred while trying to remove file");
+        //                 } else {
+        //                     console.info(`removed upload for deleted passage`);
+        //                 }
+        //             });
+        //         }
         //     }
+        //     for(const p of passage.passages){
+        //         arrToDelete.push(p._id);
+        //         deleteRecursively(p, arrToDelete);
+        //     }
+        //     for(const p of arrToDelete){
+        //         await Passage.deleteOne({_id: p._id()});
+        //     }
+        //     await Passage.deleteOne({_id: passage._id()});
         // }
     },
     copyPassage: async function(passage, user, parent, callback, synthetic=false){
