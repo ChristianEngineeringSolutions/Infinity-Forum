@@ -3971,7 +3971,6 @@ if(process.env.DOMAIN == 'localhost'){
 async function syncFileStream(){
     //clear filestream
     await Passage.updateMany({mainFile:true}, {mainFile:false});
-    await Passage.deleteMany({fileStreamPath: {$ne:null}});
     var author = await User.findOne({admin:true});
     let top = await Passage.create({
         title: 'Infinity Forum Source Code',
