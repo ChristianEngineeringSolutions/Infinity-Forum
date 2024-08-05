@@ -137,6 +137,7 @@ $(function(){
         //check what page we are on
         var thiz = $(this);
         if(e.which == 13){
+            $('#passage_wrapper').html($('#small-loading').html());
             $.ajax({
                 type: 'post',
                 // url: DOMAIN + '/search/' + fromOtro,
@@ -183,6 +184,7 @@ $(function(){
         //check what page we are on
         var thiz = $(this);
         if(e.which == 13){
+            $('#passage_wrapper').html($('#small-loading').html());
             $.ajax({
                 type: 'post',
                 // url: DOMAIN + '/search_profile/' + fromOtro,
@@ -206,6 +208,7 @@ $(function(){
         //check what page we are on
         var thiz = $(this);
         if(e.which == 13){
+            $('#passage_wrapper').html($('#small-loading').html());
             $.ajax({
                 type: 'post',
                 // url: DOMAIN + '/search_messages/' + fromOtro,
@@ -228,6 +231,7 @@ $(function(){
         //check what page we are on
         var thiz = $(this);
         if(e.which == 13){
+            $('#passage_wrapper').html($('#small-loading').html());
             $.ajax({
                 type: 'post',
                 // url: DOMAIN + '/search_leaderboard/' + fromOtro,
@@ -248,6 +252,7 @@ $(function(){
         //check what page we are on
         var thiz = $(this);
         if(e.which == 13){
+            $('#passage_wrapper').html($('#small-loading').html());
             $.ajax({
                 type: 'post',
                 // url: DOMAIN + '/search_passage/' + fromOtro,

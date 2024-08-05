@@ -1788,17 +1788,21 @@ app.post('/search_leaderboard/', async (req, res) => {
 });
 app.post('/search_profile/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    let results = await Passage.find({
+    var find = {
         author: req.body._id,
         deleted: false,
         personal: false,
-        title: {
-        $regex: search,
-        $options: 'i',
-    }}).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+        $or: [
+            {title: {$regex:search,$options:'i'}},
+            {content: {$regex:search,$options:'i'}},
+            {code: {$regex:search,$options:'i'}},
+        ],
+    };
+    let results = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
     }
+    results = await fillUsedInList(results);
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1807,13 +1811,15 @@ app.post('/search_profile/', async (req, res) => {
 });
 app.post('/search_messages/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    var messages = await Message.find({
-        title: {
-            $regex: search,
-            $options: 'i',
-        },
-        to: req.session.user._id 
-    }).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+    var find = {
+        to: req.session.user._id,
+        $or: [
+            {title: {$regex:search,$options:'i'}},
+            {content: {$regex:search,$options:'i'}},
+            {code: {$regex:search,$options:'i'}},
+        ],
+    };
+    var messages = await Message.find(find).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
     var passages = [];
     for(const message of messages){
         var p = await Passage.findOne({
@@ -1824,6 +1830,7 @@ app.post('/search_messages/', async (req, res) => {
     for(const passage of passage){
         passages[passage] = bubbleUpAll(passage);
     }
+    passages = await fillUsedInList(passages);
     res.render("passages", {
         passages: passages,
         subPassages: false,
@@ -1871,14 +1878,17 @@ app.post('/ppe_search/', async (req, res) => {
 // })();
 app.post('/search_passage/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    let results = await Passage.find({
-        parent: req.body._id,
+    var find = {
         deleted: false,
         personal: false,
-        title: {
-        $regex: search,
-        $options: 'i',
-    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+        parent: req.body._id,
+        $or: [
+            {title: {$regex:search,$options:'i'}},
+            {content: {$regex:search,$options:'i'}},
+            {code: {$regex:search,$options:'i'}},
+        ],
+    };
+    let results = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     if(results.length < 1 && req.session.user){
         var parent = await Passage.findOne({_id: req.body._id});
         let users = [req.session.user._id];
@@ -1916,6 +1926,7 @@ app.post('/search_passage/', async (req, res) => {
     for(const result of results){
         results[result] = bubbleUpAll(result);
     }
+    results = await fillUsedInList(results);
     res.render("passages", {
         passages: results,
         subPassages: false,
@@ -1929,7 +1940,7 @@ function escapeBackSlash(str){
 }
 app.post('/search/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    let exact = await Passage.findOne({personal:false,deleted:false,title:search});
+    // let exact = await Passage.findOne({personal:false,deleted:false,title:search});
     // if(exact == null && req.session.user){
     //     let passage = await Passage.create({
     //         author: req.session.user._id,
@@ -3534,7 +3545,7 @@ app.post('/update_passage/', async (req, res) => {
     await passage.save();
     if(passage.mainFile && req.session.user.admin){
         //also update file and server
-        updateFile(passage.fileStreamPath, passage.code);
+        // updateFile(passage.fileStreamPath, passage.code);
     }
     passage = bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
@@ -3960,12 +3971,23 @@ if(process.env.DOMAIN == 'localhost'){
 async function syncFileStream(){
     //clear filestream
     await Passage.updateMany({mainFile:true}, {mainFile:false});
+    await Passage.deleteMany({fileStreamPath: {$ne:null}});
+    var author = await User.findOne({admin:true});
+    let top = await Passage.create({
+        title: 'Infinity Forum Source Code',
+        author: author._id,
+        fileStreamPath: __dirname + '/',
+        mainFile: true,
+        public: false,
+        parent: null,
+    });
     //create filestream
-    await loadFileStream();
+    await loadFileStream(top);
 }
 //create FileStream passage if not exists
-async function loadFileStream(directory=__dirname){
+async function loadFileStream(top, directory=__dirname){
     const fsp = require('fs').promises;
+    var author = await User.findOne({admin:true});
     try {
         const files = await readdir(directory);
         console.log(directory);
@@ -3980,7 +4002,6 @@ async function loadFileStream(directory=__dirname){
             // console.log(directory + '/' + file);
             //create passage for file or directory
             var stats = await fsp.stat(directory + '/' + file);
-            var author = await User.findOne({admin:true});
             var title = file;
             if(await stats.isDirectory()){
                 //create directory passage
@@ -3995,13 +4016,13 @@ async function loadFileStream(directory=__dirname){
                         author: author._id,
                         fileStreamPath: directory + '/' + file,
                         mainFile: true,
-                        public: true,
-                        parent: directory == __dirname ? null : parentDirectory._id,
+                        public: false,
+                        parent: directory == __dirname ? top._id : parentDirectory._id,
                     });
                 }
                 //recursively create passages
                 //put in parent directory
-                await loadFileStream(directory + '/' + file);
+                await loadFileStream(top, directory + '/' + file);
             }
             else{
                 //create passage
@@ -4018,8 +4039,8 @@ async function loadFileStream(directory=__dirname){
                         lang: getLang('.' + file.split('.').at('-1')),
                         fileStreamPath: directory + '/' + file,
                         mainFile: true,
-                        parent: directory == __dirname ? null : parentDirectory._id,
-                        public: true
+                        parent: directory == __dirname ? top._id : parentDirectory._id,
+                        public: false
                     });
                     if(parentDirectory != null){
                         parentDirectory.passages.push(passage);
@@ -4095,6 +4116,10 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
     // }
     if(req.session.user){
         bookmarks = getBookmarks(req.session.user);
+    }
+    for(const passage of passages){
+        passages[passage] = bubbleUpAll(passage);
+        passage.location = await returnPassageLocation(passage);
     }
     passages = await fillUsedInList(passages);
     res.render("filestream", {
