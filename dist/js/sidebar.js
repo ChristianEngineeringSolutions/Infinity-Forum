@@ -107,6 +107,7 @@ $(function(){
                         }
                         else{
                             $('#passage_wrapper').append(data);
+                            getBrief();
                         }
                     }
                     syntaxHighlight();
