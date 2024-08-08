@@ -444,15 +444,22 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     }
     let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
     var lastSource = await getLastSource(passage);
-    var bonus;
-    if(lastSource != null){
-        bonus = passageSimilarity(passage, lastSource);
-    }else{
-        bonus = 0;
+    var bonus = 0;
+    //calculate bonus
+    for(const source of passage.sourceList){
+        if(passage.author._id.toString() != source.author._id.toString()){
+            var similarity = passageSimilarity(passage, source);
+            bonus += similarity > 0.1 ? similarity : 0;
+        }
     }
-    if(lastSource && lastSource.author._id.toString() == req.session.user._id.toString()){
-        bonus = 0;
-    }
+    // if(lastSource != null){
+    //     bonus = passageSimilarity(passage, lastSource);
+    // }else{
+    //     bonus = 0;
+    // }
+    // if(lastSource && lastSource.author._id.toString() == req.session.user._id.toString()){
+    //     bonus = 0;
+    // }
     //add stars to passage and sources
     passage.stars += amount + bonus;
     //star all sub passages (content is displayed in parent)
@@ -3971,6 +3978,7 @@ if(process.env.DOMAIN == 'localhost'){
 async function syncFileStream(){
     //clear filestream
     await Passage.updateMany({mainFile:true}, {mainFile:false});
+    // await Passage.deleteMany({fileStreamPath: {$ne:null}});
     var author = await User.findOne({admin:true});
     let top = await Passage.create({
         title: 'Infinity Forum Source Code',

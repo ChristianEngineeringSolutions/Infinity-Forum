@@ -1,37 +1,7 @@
 "use strict";
 
 // const { default: hljs } = require("highlight.js");
-
-$(function(){
-    // $('.passage').draggable();
-    hljs.configure({   // optionally configure hljs
-        languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
-      });
-      window.onload = function() {
-        syntaxHighlight();
-    };
-    $('#sub_passages').sortable({
-        handle: '.passage_options'
-    });
-    var languages = [
-        "javascript",
-        "rich",
-        "python",
-        "mixed",
-        "daemon",
-        "html",
-        "css",
-    ];
-    $('.passage_lang').autocomplete({
-        source: languages,
-        minLength: 0
-    }).on('focus', function() { $(this).keydown(); });
-    //sub passages are only hidden for index and search
-    var inRoot = $('#chief_passage_id').val() === 'root';
-    if($('#chief_passage_id').val() != 'root'){
-        $('.sub_passages').show();
-    }
-    //return brief for current passage list
+//return brief for current passage list
     function getBrief(clip=false){
         $('#brief-passages').html('');
         $('.passage:not(.view-more)').each(function(i){
@@ -71,6 +41,35 @@ $(function(){
         //get if chapter is public or private
         //to see if we should allow sorting
 
+    }
+$(function(){
+    // $('.passage').draggable();
+    hljs.configure({   // optionally configure hljs
+        languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
+      });
+      window.onload = function() {
+        syntaxHighlight();
+    };
+    $('#sub_passages').sortable({
+        handle: '.passage_options'
+    });
+    var languages = [
+        "javascript",
+        "rich",
+        "python",
+        "mixed",
+        "daemon",
+        "html",
+        "css",
+    ];
+    $('.passage_lang').autocomplete({
+        source: languages,
+        minLength: 0
+    }).on('focus', function() { $(this).keydown(); });
+    //sub passages are only hidden for index and search
+    var inRoot = $('#chief_passage_id').val() === 'root';
+    if($('#chief_passage_id').val() != 'root'){
+        $('.sub_passages').show();
     }
     getBrief();
     $(document).on('click', '[id^="passage_executable_"]', function(e){
