@@ -3978,7 +3978,7 @@ if(process.env.DOMAIN == 'localhost'){
 async function syncFileStream(){
     //clear filestream
     await Passage.updateMany({mainFile:true}, {mainFile:false});
-    await Passage.deleteMany({fileStreamPath: {$ne:null}});
+    //await Passage.deleteMany({fileStreamPath: {$ne:null}});
     var author = await User.findOne({admin:true});
     let top = await Passage.create({
         title: 'Infinity Forum Source Code',
@@ -4003,7 +4003,6 @@ async function loadFileStream(top, directory=__dirname){
             fileStreamPath: directory
         });
         for (const file of files){
-		console.log("Public = False");
             if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images'){
                 continue;
             }
