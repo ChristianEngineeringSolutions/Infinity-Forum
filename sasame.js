@@ -1420,6 +1420,11 @@ async function getBigPassage(req, res, params=false, subforums=false){
     passage.passages = await fillUsedInList(passage.passages);
     if(subforums){
         passage.passages = passage.subforums;
+    }else{
+        //remove subforums from passages
+        passage.passages = passage.passages.filter(function(value, index, array){
+            return value.sub == false;
+        });
     }
     return {
         subPassages: passage.passages,
