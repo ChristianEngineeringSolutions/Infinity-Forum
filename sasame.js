@@ -2990,7 +2990,7 @@ app.post('/paginate', async function(req, res){
     let search = req.body.search;
     let parent = req.body.passage;
     console.log(profile);
-    if(profile == 'false'){
+    if(profile != 'filestream' && profile != 'messages' && profile != 'leaderboard'){
         let find = {
             personal: false,
             $or: [
