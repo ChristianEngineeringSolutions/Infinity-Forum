@@ -791,6 +791,9 @@ $(function(){
         //check if home, search, or profile
         var isProfile = $('#is_profile').val();
         page += 1;
+        if(!$('#page-loader').length){
+            $('#passage_wrapper').append('<div id="page-loader">'+$('#small-loading').html()+'</div>');
+        }
         $.ajax({
             type: 'post',
             url: '/paginate/',
@@ -803,6 +806,7 @@ $(function(){
                 whichPage: $('#which-page').val()
             },
             success: function(data){
+                $('#page-loader').remove();
                 if($('#is_profile').val() == 'leaderboard'){
                     $('#leaders').append(data);
                 }else{
