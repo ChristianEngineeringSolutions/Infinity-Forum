@@ -1166,7 +1166,7 @@ app.get('/stream', async (req, res) => {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            page: 'stream',
+            page: 'more',
             whichPage: 'stream'
         });
     }
@@ -1240,6 +1240,9 @@ app.get('/forum', async (req, res) => {
     //get categories and subofrums in order as sorted
     var header = await Passage.findOne({forumType: 'header'});
     categories = sortArray(categories, infinity.passages);
+    categories = categories.filter(function(value, index, array){
+        return (value.title == 'VIP' || value.title == 'Admins') ? false : true;
+    });
     var sortedSubcats = [];
     //sort subcats
     //get list of all subcats in order from category passages
@@ -1733,7 +1736,7 @@ app.get('/tasks', async (req, res) => {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            page: 'more',
+            page: 'tasks',
             whichPage: 'tasks',
             thread: false
         });
