@@ -1141,7 +1141,7 @@ app.get('/stream', async (req, res) => {
         let passages = await Passage.find({
             deleted: false,
             personal: false,
-        }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
@@ -1661,7 +1661,7 @@ app.get('/projects', async (req, res) => {
             personal: false,
             public: false,
             forum: false
-        }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
@@ -1711,7 +1711,7 @@ app.get('/tasks', async (req, res) => {
             personal: false,
             public: true,
             forum: false
-        }).populate('author users sourceList parent').sort('-stars').limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
