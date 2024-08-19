@@ -558,8 +558,14 @@ app.get('/messages', async(req, res) => {
     //serve messages
     //sort them by stars
     var messages = await Message.find({
-        to: req.session.user._id
+        to: req.session.user._id,
+        passage: {
+            $ne: null
+        }
     }).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+    messages = messages.filter(function(x){
+        return x.passage != null;
+    });
     var passages = [];
     for(const message of messages){
         var p = await Passage.findOne({
