@@ -1974,7 +1974,7 @@ app.post('/search/', async (req, res) => {
             {code: {$regex:search,$options:'i'}},
         ],
     };
-    if(req.body.personal){
+    if(req.body.personal == 'true'){
         find.users = {
             $in: [req.session.user._id]
         }
