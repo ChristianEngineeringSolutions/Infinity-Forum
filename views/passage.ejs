@@ -26,6 +26,11 @@
         </div>
     <%}%>
 <%}%>
+<%if(sub){%>
+    
+<%}else{%>
+    <%var short = 'max-height:none;';%>
+<%}%>
 <div data-sub="<%=sub%>"id="passage<%=typeof altIteration == 'undefined' ? '' : altIteration%>_<%=passage._id%>" class="passage passage_<%=passage.public ? 'public' : 'private'%> <%=passage.forum ? 'passage_forum' : ''%>">
     <%if(passage.mirror != null){%>
         <input id="p_mirror_<%=passage._id%>"type="hidden"value="<%=passage.mirror._id%>" name="">
@@ -151,7 +156,7 @@
         <!-- <hr class="p-box-hr"> -->
     <!-- </div> --> 
     <div class="detail-div">
-        <div class="p-padding-box">
+        <div style="<%=short%>"class="p-padding-box">
             <div class="toppings">
             <div style=""class="p-image-container">
             <%if(passage.author.thumbnail != null){%>

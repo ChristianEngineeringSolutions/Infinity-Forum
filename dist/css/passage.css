@@ -54,6 +54,7 @@
     padding-left: 20px;
     padding: 20px;
     padding-top: 0px;
+    overflow: scroll;
 }
 .bottom-bar{
     height: 50px;
@@ -154,6 +155,12 @@
 }
 .hide{
     display: none !important;
+}
+#passage_wrapper .passage .p-padding-box{
+    max-height: 500px;
+}
+#sub_passages .passage .p-padding-box{
+    max-height: none;
 }
 .sub_passages .passage{
     width: 100%;
