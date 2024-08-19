@@ -54,7 +54,7 @@
     padding-left: 20px;
     padding: 20px;
     padding-top: 0px;
-    overflow: scroll;
+    overflow-y: scroll;
 }
 .bottom-bar{
     height: 50px;
