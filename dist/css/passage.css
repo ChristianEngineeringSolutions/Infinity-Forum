@@ -343,7 +343,7 @@
 }
 .display_code{
     /* width: 99%; */
-    overflow: scroll;
+    overflow: auto;
     resize: both;
 /*    max-height: 500px;*/
     padding: 5px;
