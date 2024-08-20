@@ -1827,7 +1827,8 @@ app.post('/search_profile/', async (req, res) => {
     res.render("passages", {
         passages: results,
         subPassages: false,
-        sub: true
+        sub: true,
+        subPassage: false
     });
 });
 app.post('/search_messages/', async (req, res) => {
@@ -1855,7 +1856,8 @@ app.post('/search_messages/', async (req, res) => {
     res.render("passages", {
         passages: passages,
         subPassages: false,
-        sub: true
+        sub: true,
+        subPassage:false
     });
 });
 app.post('/ppe_search/', async (req, res) => {
@@ -1951,7 +1953,8 @@ app.post('/search_passage/', async (req, res) => {
     res.render("passages", {
         passages: results,
         subPassages: false,
-        sub: true
+        sub: true,
+        subPassage:true
     });
 });
 function escapeBackSlash(str){
@@ -2003,7 +2006,8 @@ app.post('/search/', async (req, res) => {
     res.render("passages", {
         passages: results,
         subPassages: false,
-        sub: true
+        sub: true,
+        subPassage: false
     });
 });
 async function getBookmarks(user){
@@ -3043,7 +3047,8 @@ app.post('/paginate', async function(req, res){
             return res.render('passages', {
                 subPassages: false,
                 passages: passages.docs,
-                sub: true
+                sub: true,
+                subPassage: false
             });
         }
         else{
@@ -3243,7 +3248,7 @@ app.post('/create_initial_passage/', async (req, res) => {
     passage = bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
     if(formData.page == 'stream'){
-        return res.render('passage', {subPassages: false, passage: passage, sub: true});
+        return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage:true});
     }
     else if(formData.page == 'forum' && formData.which != 'thread'){
         console.log(req.body.chief);
@@ -3570,8 +3575,9 @@ app.post('/update_passage/', async (req, res) => {
     }
     passage = bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
+    var subPassage = formData.parent == 'root' ? false : true;
     //give back updated passage
-    return res.render('passage', {subPassages: false, passage: passage, sub: true});
+    return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
 });
 app.post('/removeFile', async (req, res) => {
     var passage = await Passage.findOne({_id: req.body._id});
