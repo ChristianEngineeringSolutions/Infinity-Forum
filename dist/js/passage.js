@@ -673,6 +673,7 @@ $(function(){
         e.preventDefault();
         var thiz = $(this);
         var formData = new FormData(this);
+        formData.append("parent", $('#chief_passage_id').val());
         if($('#passage_file_'+$(this).attr('id').split('_').at(-1)).val() != ''){
             $('#loading').show();
         }

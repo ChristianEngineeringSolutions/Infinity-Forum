@@ -157,7 +157,7 @@
     display: none !important;
 }
 #passage_wrapper .passage .p-padding-box{
-    max-height: 700px;
+/*    max-height: 700px;*/
 }
 #sub_passages .passage .p-padding-box{
     max-height: none;
@@ -345,7 +345,7 @@
     /* width: 99%; */
     overflow: scroll;
     resize: both;
-    max-height: 500px;
+/*    max-height: 500px;*/
     padding: 5px;
     border: 1px solid black;
     background: white;

@@ -47,7 +47,7 @@
                     <%- include('passages') %>
                 <%}else if (passage){%>
                 <!-- Just show one passage -->
-                    <%- include('passage', {passage: passage, sub: sub, subPassages: subPassages}) %>
+                    <%- include('passage', {passage: passage, sub: sub, subPassages: subPassages, subPassage: false}) %>
                 <%} %>
             </div>
             <div id="passage_form_wrapper"></div>

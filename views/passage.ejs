@@ -167,10 +167,18 @@
         </div><div class="p-date"><%- include('profile_thumbnail', {profile: passage.author}) %>, <%=passage.date.toLocaleDateString()%><br class="mobile-show"><span class="mobile-hide">&emsp;&emsp;</span><%if(passage.forum){%><ion-icon style="color:brown;"src="/images/ionicons/ellipse.svg"></ion-icon> Forum<%}else if(passage.public){%><ion-icon style="color:green;"src="/images/ionicons/ellipse.svg"></ion-icon> Task<%}else if(!passage.public){%><ion-icon style="color:red;"src="/images/ionicons/ellipse.svg"></ion-icon> Project<%}%><%if(passage.location){%> in <%-passage.location%><%}%></div></div>
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><a style="color:white;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%=passage.title%></a></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
+    <%var showMore = '';%>
     <%if(passage.displayContent != null && passage.displayContent != ''){%>
         <hr class="hr">
         <%}%>
-        <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-passage.displayContent || passage.content%></div>
+        <%var content = passage.displayContent || passage.content;%>
+        <%if(!subPassage && sub){%>
+            <%showMore = content.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%content = content.length < 800 ? content : content.substring(0,800).trim()%>
+        <%}else{%>
+            <%showMore = '';%>
+        <%}%>
+        <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-content + showMore%></div>
         <!-- <ul class="passage_tabs">
             <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
             <!-- Display Result -->
@@ -246,11 +254,42 @@
     <%}%>
     <!-- <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced"> -->
         <%if(passage.lang == 'mixed' && passage.lang != 'rich'){%>
-            <div id="passage_detail_html_<%=passage._id%>"class="code_display display_html display_data_<%=passage._id%>"><pre><code class="language-html"></code><%=passage.displayHTML || passage.html || ''%></code></pre></div>
-            <div id="passage_detail_css_<%=passage._id%>"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=passage.displayCSS || passage.css ||  ''%></code></pre></div>
-            <div id="passage_detail_js_<%=passage._id%>"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=passage.displayJavascript || passage.javascript || ''%></code></pre></div>
+            <%var html = passage.displayHTML || passage.html || '';%>
+            <%if(!subPassage && sub){%>
+                <%var showMoreHTML = html.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%html = html.length < 800 ? html : html.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%var showMoreHTML = '';%>
+            <%}%>
+            <div id="passage_detail_html_<%=passage._id%>"class="code_display display_html display_data_<%=passage._id%>"><pre><code class="language-html"></code><%=html%></code></pre></div>
+            <%var css = passage.displayCSS || passage.css || '';%>
+            <%if(!subPassage && sub){%>
+                <%var showMoreCSS = css.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%css = css.length < 800 ? css : css.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%var showMoreCSS = '';%>
+            <%}%>
+            <div id="passage_detail_css_<%=passage._id%>"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=css%></code></pre></div>
+            <%var js = passage.displayJavascript || passage.javascript || '';%>
+            <%if(!subPassage && sub){%>
+                <%var showMoreJS = js.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%js = js.length < 800 ? js : js.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%var showMoreJS = '';%>
+            <%}%>
+            <div id="passage_detail_js_<%=passage._id%>"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=js%></code></pre></div>
+            <%if(showMoreHTML.length > 0 || showMoreJS.length > 0 || showMoreCSS.length > 0){%>
+                <br><%-showMoreHTML%><br>
+            <%}%>
         <%}else if(passage.lang != 'rich'){%>
-            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=passage.displayCode || passage.code%></code></pre></div>
+            <%var code = passage.displayCode || passage.code;%>
+            <%if(!subPassage && sub){%>
+                <%showMore = code.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%code = code.length < 800 ? code : code.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%showMore = '';%>
+            <%}%>
+            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=code%></code></pre></div><%-showMore%>
         <%}%>
         <!-- Show .EXT -->
         <!-- Show License -->
@@ -290,7 +329,7 @@
  <%if(subPassages && sub === false){%>
     <div style="display: inline;"id="sub_passages">
         <%subPassages.forEach(function(sub_passage) { %>
-            <%- include('passage', {passage: sub_passage, sub: true}) %>
+            <%- include('passage', {passage: sub_passage, sub: true, subPassage: true}) %>
         <%}); %>
     </div>
     <ul class="page-count">
