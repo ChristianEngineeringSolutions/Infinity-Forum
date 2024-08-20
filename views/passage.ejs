@@ -289,7 +289,7 @@
             <%}else{%>
                 <%showMore = '';%>
             <%}%>
-            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=code%></code></pre></div><%-showMore%>
+            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=code%></code></pre></div><br><%-showMore%>
         <%}%>
         <!-- Show .EXT -->
         <!-- Show License -->
