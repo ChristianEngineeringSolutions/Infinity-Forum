@@ -334,7 +334,7 @@
     border: 1px solid black;
     padding: 5px;
     display: inline-block;
-    width: 30%;
+/*    width: 30%;*/
     overflow: scroll;
     resize: both;
     vertical-align: top;
