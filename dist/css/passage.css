@@ -134,7 +134,7 @@
     font-weight: lighter;
     padding-top: 0px;
     padding-bottom: 0px;
-    cursor: pointer;
+/*    cursor: pointer;*/
 }
 .passage_description, .ql-container, .ql-editor{
     background: white;

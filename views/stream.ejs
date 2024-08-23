@@ -22,7 +22,7 @@
                 <%}else if (!passageTitle){%>
                     
                 <%}else{%>
-                    <div data-url="/stream"id="parent_title">Infinity</div>
+                    <div id="parent_title"><a href="/stream"style="color:white;">Infinity</a></div>
                 <%}%>
                 <%if(typeof passageTitle != 'undefined' && passageTitle != false){%>
                     <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon></span></div></div>
