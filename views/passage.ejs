@@ -261,7 +261,7 @@
             <%}else{%>
                 <%var showMoreHTML = '';%>
             <%}%>
-            <div id="passage_detail_html_<%=passage._id%>"class="code_display display_html display_data_<%=passage._id%>"><pre><code class="language-html"></code><%=html%></code></pre></div>
+            <div id="passage_detail_html_<%=passage._id%>"style="width:30%;"class="code_display display_html display_data_<%=passage._id%>"><pre><code class="language-html"></code><%=html%></code></pre></div>
             <%var css = passage.displayCSS || passage.css || '';%>
             <%if(!subPassage && sub){%>
                 <%var showMoreCSS = css.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
@@ -269,7 +269,7 @@
             <%}else{%>
                 <%var showMoreCSS = '';%>
             <%}%>
-            <div id="passage_detail_css_<%=passage._id%>"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=css%></code></pre></div>
+            <div id="passage_detail_css_<%=passage._id%>"style="width:30%;"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=css%></code></pre></div>
             <%var js = passage.displayJavascript || passage.javascript || '';%>
             <%if(!subPassage && sub){%>
                 <%var showMoreJS = js.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
@@ -277,7 +277,7 @@
             <%}else{%>
                 <%var showMoreJS = '';%>
             <%}%>
-            <div id="passage_detail_js_<%=passage._id%>"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=js%></code></pre></div>
+            <div id="passage_detail_js_<%=passage._id%>"style="width:30%;"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=js%></code></pre></div>
             <%if(showMoreHTML.length > 0 || showMoreJS.length > 0 || showMoreCSS.length > 0){%>
                 <br><%-showMoreHTML%><br>
             <%}%>
@@ -300,6 +300,7 @@
         <% hide = ' hide'; %>
     <%}else{%>
         <% hide = ''; %>
+        <br><br>
         <a target="_blank"href="/eval/<%=passage._id%>"><ion-icon title="Full Screen"src="/images/ionicons/expand-outline.svg"></ion-icon></a>
     <%}%>
     <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
