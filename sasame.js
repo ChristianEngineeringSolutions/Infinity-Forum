@@ -200,6 +200,12 @@ scripts.getNumViews = async function(id){
     // }
     return views;
 }
+scripts.getMaxToGiveOut = async function(){
+    let users = await User.find({stripeOnboardingComplete: true});
+    const maxAmountPerUser = 100; //ofc they can get more than this; this is just number for if they all had equal portion
+    var maxToGiveOut = maxAmountPerUser * users.length * 100;
+    var usd = parseInt(await totalUSD());
+}
 app.use(cookieParser());
 app.use(session);
 io.use(sharedsession(session, {
@@ -336,18 +342,24 @@ function monthDiff(d1, d2) {
 //Get total star count and pay out users
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    //80% of funds to users
     var usd = parseInt(await totalUSD());
     let users = await User.find({stripeOnboardingComplete: true});
+    const maxAmountPerUser = 100; //ofc they can get more than this; this is just number for if they all had equal portion
+    var totalToGiveOut = maxAmountPerUser * users.length * 100;
     for(const user of users){
         //appropriate percentage based on stars
         //users get same allotment as they have percentage of stars
         let userUSD = parseInt((await percentStars(user.starsGiven)) * usd);
-        const transfer = await stripe.transfers.create({
-            amount: userUSD,
-            currency: "usd",
-            destination: user.stripeAccountId,
-        });
+        try{
+            const transfer = await stripe.transfers.create({
+                amount: userUSD,
+                currency: "usd",
+                destination: user.stripeAccountId,
+            });
+        }
+        catch(err){
+            console.log(err);
+        }
     }
     console.log("Users paid");
 }
@@ -499,15 +511,22 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     await passage.save();
     //star each source
     var i = 0;
+    var authors = [];
     for(const source of passage.sourceList){
         var bonus1 = i == 0 ? bonus : 0;
         await starMessages(source._id, amount);
         let sourceAuthor = await User.findOne({_id: source.author._id});
         //you won't get extra stars for citing your own work
-        if(sourceAuthor._id.toString() != req.session.user._id.toString() && sourceAuthor._id.toString() != passage.author._id.toString()){
+        //also star once per author
+        if(sourceAuthor._id.toString() != req.session.user._id.toString() 
+            && sourceAuthor._id.toString() != passage.author._id.toString()
+            /*&& !authors.includes(sourceAuthor._id)*/){
             source.stars += amount + bonus1;
-            sourceAuthor.stars += amount + bonus1;
-            await sourceAuthor.save();
+            if(!authors.includes(sourceAuthor._id)){
+                sourceAuthor.stars += amount + bonus1;
+                await sourceAuthor.save();
+            }
+            authors.push(sourceAuthor._id);
             await source.save();
         }
         ++i;
@@ -3271,18 +3290,23 @@ app.post('/star_passage/', async (req, res) => {
     var amount = parseInt(req.body.amount);
     //get user from db
     let sessionUser = await User.findOne({_id: user._id});
+    var subPassage = req.body.parent == 'root' ? false : true;
     if(req.session && user){
         if(sessionUser.stars > amount && process.env.REMOTE == 'true'){
             //user must trade their own stars
             sessionUser.stars -= parseInt(amount);
             let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
             await sessionUser.save();
-            return res.render('passage', {subPassages: false, passage: passage, sub: true});
+            passage = bubbleUpAll(passage);
+            passage.location = await returnPassageLocation(passage);
+            return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
         }
         else if(process.env.REMOTE == 'false'){
             let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
             await sessionUser.save();
-            return res.render('passage', {subPassages: false, passage: passage, sub: true});
+            passage = bubbleUpAll(passage);
+            passage.location = await returnPassageLocation(passage);
+            return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
         }
         else{
             return res.send("Not enough stars!");
@@ -3575,6 +3599,7 @@ app.post('/update_passage/', async (req, res) => {
     }
     passage = bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
+    passage.location = await returnPassageLocation(passage);
     var subPassage = formData.parent == 'root' ? false : true;
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
