@@ -1,12 +1,20 @@
 <%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
 </head>
 <%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
 <input id="chief_passage_id"type="hidden" value="root"name="">
     <br><br><br><br><br><br>
     <div style="margin:auto;text-align:center;">
         <h3>Cash Pool:</h3>
         <h1><span style="color:gold;font-size:1.3em;">$<%=usd%></span></h1>
-        <h1 style="font-size:3em;">Invest.</h1>
+        <h1 style="font-size:3em;">Invest:</h1>
         <h2><a target="_blank"href="<%=donateLink%>">Custom Amount</a></h2>
         <h2><a target="_blank"href="<%=subscribeLink%>">Subscribe</a></h2>
         <%if(user && user.subscribed){%>

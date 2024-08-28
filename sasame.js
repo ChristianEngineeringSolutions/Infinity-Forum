@@ -205,6 +205,13 @@ scripts.getMaxToGiveOut = async function(){
     const maxAmountPerUser = 100; //ofc they can get more than this; this is just number for if they all had equal portion
     var maxToGiveOut = maxAmountPerUser * users.length * 100;
     var usd = parseInt(await totalUSD());
+    if(maxToGiveOut > usd){
+        usd = usd;
+    }
+    else if(maxToGiveOut < usd){
+        usd = maxToGiveOut;
+    }
+    return usd;
 }
 app.use(cookieParser());
 app.use(session);
@@ -342,10 +349,7 @@ function monthDiff(d1, d2) {
 //Get total star count and pay out users
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    var usd = parseInt(await totalUSD());
-    let users = await User.find({stripeOnboardingComplete: true});
-    const maxAmountPerUser = 100; //ofc they can get more than this; this is just number for if they all had equal portion
-    var totalToGiveOut = maxAmountPerUser * users.length * 100;
+    var usd = await scripts.getMaxToGiveOut();
     for(const user of users){
         //appropriate percentage based on stars
         //users get same allotment as they have percentage of stars
@@ -1800,7 +1804,7 @@ app.get('/donate', async function(req, res){
     var usd = await totalUSD();
     var stars = await totalStars();
     res.render('donate', {
-        passage: {id: 'root'}, usd: (usd/100), stars: stars,
+        passage: {id: 'root'}, usd: ((await scripts.getMaxToGiveOut())/100), stars: stars,
         donateLink: process.env.STRIPE_DONATE_LINK,
         subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK
     });
