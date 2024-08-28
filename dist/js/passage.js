@@ -705,7 +705,8 @@ $(function(){
             type: 'POST',
             data: {
                 passage_id: passage_id,
-                amount: amount
+                amount: amount,
+                parent: $('#chief_passage_id').val()
             },
             success: function(data){
                 if(data[0] == 'N'){
