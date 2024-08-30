@@ -719,7 +719,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
         bookmarks = getBookmarks(req.session.user);
     }
     var usd = 0;
-    usd = parseInt((await percentStars(profile.starsGiven)) * (await totalUSD()));
+    usd = parseInt((await percentStars(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
     if(isNaN(usd)){
 		usd = 0;
 	}
