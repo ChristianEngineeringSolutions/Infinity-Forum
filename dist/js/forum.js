@@ -143,6 +143,11 @@
 							} else {
 								$('#forum-pages').html('');
 							}
+							if(page == 'thread'){
+								$('#sub_passages').sortable({
+						        handle: '.passage_options'
+						    });
+							}
 						});
 					$(".forum_2").show("slide", {
 						direction: ((id !== "l") ? "left" : "right")
