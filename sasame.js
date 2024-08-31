@@ -1500,7 +1500,8 @@ app.get('/thread', async (req, res) => {
         ISMOBILE: bigRes.ISMOBILE,
         thread: true,
         parentID: bigRes.parentID,
-        topicID: bigRes.passage._id
+        topicID: bigRes.passage._id,
+        subPassage: true
     });
 });
 app.get('/cat', async (req, res) => {
@@ -1514,6 +1515,11 @@ app.get('/cat', async (req, res) => {
             {code: {$regex:search,$options:'i'}},
         ],
     };
+    if(search == ''){
+        find = {
+            parent: req.query._id.toString()
+        };
+    }
     var parent = await Passage.findOne({_id: req.query._id});
     console.log('search:'+search);
     var topics = await Passage.paginate(find, {sort: '-date', page: pNumber, limit: 20, populate: 'passages.author'});
@@ -3241,6 +3247,17 @@ app.post('/create_initial_passage/', async (req, res) => {
             passage.public = true;
             break;
     }
+    var chief = formData.chief;
+    if(chief !== 'root'){
+        var parent = await Passage.findOne({_id:chief.toString()});
+        // passage.forum = parent.forum;
+        if(parent.forumType == 'category'){
+            if(req.body.subforums != 'true'){
+                passage.forumType = 'subcat';
+            }
+            passage.forum = true;
+        }
+    }
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
@@ -3284,7 +3301,7 @@ app.post('/create_initial_passage/', async (req, res) => {
         return res.render('cat_row', {subPassages: false, topic: passage, sub: true});
     }
     else{
-        return res.render('passage', {subPassages: false, passage: passage, sub: true});
+        return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
     }
 });
 app.post('/star_passage/', async (req, res) => {
@@ -3550,6 +3567,7 @@ app.post('/update_passage/', async (req, res) => {
     else if(passage.public_daemon == 2 || passage.default_daemon){
         return res.send("Not allowed.");
     }
+    console.log('test');
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
