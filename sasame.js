@@ -2106,7 +2106,7 @@ app.post('/transfer_bookmark', async (req, res) => {
             return res.render('cat_row', {subPassages: false, topic: copy, sub: true});
         }
         else{
-            return res.render('passage', {subPassages: false, passage: copy, sub: true});
+            return res.render('passage', {subPassage: true, subPassages: false, passage: copy, sub: true});
         }
     }else{
         //add passage to sourcelist
