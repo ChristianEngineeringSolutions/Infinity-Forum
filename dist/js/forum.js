@@ -81,7 +81,7 @@
 			// if (block)
 			// 	return;
 			var pages = ["forum", "cat", "thread"];
-			var pg = 1;
+			var pg = window.location.href.split('/').at(-1);
 			var hash = window.location.hash.substring(1); //get the hashtag
 			// alert(hash);
 			var _id = hash.split('/')[2];
@@ -160,6 +160,7 @@
 						}
 						// alert(1);
 					}, 2000);
+					highlightPageNumber();
 				}
 			});
 		}

@@ -42,7 +42,18 @@
         //to see if we should allow sorting
 
     }
+    function highlightPageNumber(){
+        if(!isNaN(window.location.href.split('/').at(-1))){
+            var num = window.location.href.split('/').at(-1);
+            $('.pnum').css('font-weight', 'normal');
+            $('.pnum-'+num).css('font-weight', 'bolder');
+        }else{
+            $('.pnum').css('font-weight', 'normal');
+            $('.pnum-1').css('font-weight', 'bolder');
+        }
+    }
 $(function(){
+    highlightPageNumber();
     // $('.passage').draggable();
     hljs.configure({   // optionally configure hljs
         languages: ['javascript', 'ruby', 'python', 'cpp', 'html', 'css', 'r', 'c', 'php']
@@ -473,6 +484,18 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^="passage_comments_"]', function(e){
+        var _id = getPassageId(this);
+        let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
+        flashIcon($('#passage_comments_' + _id), 'green');
+        if($('#passage_private_'+_id).length > 0){
+            window.location.href = '/comments/' + title + '/' + _id;
+        }
+        else{
+            $('#passage_more_' + _id).click();
+        }
+
+    });
     $(document).on('click', '[id^="passage_download_"]', function(e){
         var _id = getPassageId(this);
         var thiz = $(this);
@@ -774,6 +797,7 @@ $(function(){
             $('#isChief_' + _id).val(true);
 
             $('#yes-subforums-' + _id).val($('#yes-subforums').val());
+            $('#yes-comments-' + _id).val($('#yes-comments').val());
             //TODO: only do if order is different from original
             // $.ajax({
             //     // url: DOMAIN + '/update_passage_order',
@@ -871,6 +895,7 @@ $(function(){
         e.preventDefault();
         $('.editor-chief').val($('#chief_passage_id').val());
         $('#which-subforums').val($('#yes-subforums').val());
+        $('#which-comments').val($('#yes-comments').val());
         var thiz = $(this);
         var formData = new FormData(this);
         if($('#passage_file').val() != ''){

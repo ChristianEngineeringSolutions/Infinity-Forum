@@ -1,14 +1,19 @@
 <%if(subPassages && sub === false){%>
     <ul class="page-count">
-        <%if(!passage.public && !passage.forum){%>
-        
+        <%if(!passage.forum && (typeof comments == 'undefined' || !comments)){%>
+
         <%}else{%>
             <%for(var i = 1; i < totalPages + 1; i += 1){%>
                 <%if(totalPages > 1){%>
-                    <%if(!thread){%>
-                        <a style="color:inherit;text-decoration:none;"href="/passage/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%if(typeof comments != 'undefined'){%>
+                        <%var loc = comments ? 'comments' : 'passage';%>
                     <%}else{%>
-                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                        <%var loc = 'passages';%>
+                    <%}%>
+                    <%if(!thread){%>
+                        <a style="color:inherit;text-decoration:none;"href="/<%=loc%>/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
+                    <%}else{%>
+                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
                     <%}%>
                 <%}%>
             <%}%>
@@ -72,7 +77,7 @@
         <%}%>
     </div>
     <ul class="passage_options">
-        <% if(sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || passage.passages.length > 0 || passage.public || passage.parent == null)){%>
+        <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || passage.passages.length > 0 || passage.public || passage.parent == null))){%>
         <li id="passage_more_<%=passage._id%>" class="passage_option">Details</li>
         <%}%>
         <%if(user){%>
@@ -89,6 +94,12 @@
                 <!-- <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li> -->
                 <%if(user){%>
                 <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
+                <%}%>
+                <%if(!passage.public && !passage.forum){%>
+                    <input type="hidden" id="passage_private_<%=passage._id%>"name=""value="true">
+                <%}%>
+                <%if(typeof comments == 'undefined' || !comments){%>
+                <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
                 <%}%>
                 <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
                     <%if(passage.public_daemon != 2 && passage.default_daemon != true){%>
@@ -334,15 +345,20 @@
         <%}); %>
     </div>
     <ul class="page-count">
-        <%if(!passage.public && !passage.forum){%>
+        <%if(!passage.public && !passage.forum && (typeof comments == 'undefined' || !comments)){%>
         
         <%}else{%>
             <%for(var i = 1; i < totalPages + 1; i += 1){%>
                 <%if(totalPages > 1){%>
-                    <%if(!thread){%>
-                        <a style="color:inherit;text-decoration:none;"href="/passage/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                    <%if(typeof comments != 'undefined'){%>
+                        <%var loc = comments ? 'comments' : 'passage';%>
                     <%}else{%>
-                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li><%=i%></li></a>
+                        <%var loc = 'passages';%>
+                    <%}%>
+                    <%if(!thread){%>
+                        <a style="color:inherit;text-decoration:none;"href="/<%=loc%>/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
+                    <%}else{%>
+                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
                     <%}%>
                 <%}%>
             <%}%>
