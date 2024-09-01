@@ -235,6 +235,9 @@ $(function(){
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
         popup("New Post", $('#clean_editor').val());
+        if($('.popup').css('position') == 'absolute'){
+            $('.popup').css('top', $(window).scrollTop() + 'px');
+        }
         $('#passage_form').show();
         summonQuill();
         //create a passage and then show it
