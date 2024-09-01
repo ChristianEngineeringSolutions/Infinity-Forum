@@ -84,6 +84,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    comment: {
+        type: Boolean,
+        default:false
+    },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Tag'
@@ -134,6 +138,10 @@ const passageSchema = mongoose.Schema({
     },
     // sub passages under this passage
     passages: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    }],
+    comments: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],

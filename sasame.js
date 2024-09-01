@@ -250,7 +250,7 @@ app.use(async function(req, res, next) {
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
     //daemoncheck
-    if(['stream', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+    if(['stream', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -1309,7 +1309,7 @@ app.get('/forum', async (req, res) => {
     // await Subforum.deleteMany({});
     // fillForum();
 });
-async function getBigPassage(req, res, params=false, subforums=false){
+async function getBigPassage(req, res, params=false, subforums=false, comments=false){
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
@@ -1393,9 +1393,9 @@ async function getBigPassage(req, res, params=false, subforums=false){
     console.log(passage.displayCode);
     if(passage.public == true && !passage.forum){
         // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        var subPassages = await Passage.paginate({parent: passage_id}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        var subPassages = await Passage.paginate({parent: passage_id, comment: false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
         if(replacing){
-            var subPassages = await Passage.paginate({parent: replacement._id}, {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
         }
         subPassages = subPassages.docs;
     }
@@ -1404,16 +1404,16 @@ async function getBigPassage(req, res, params=false, subforums=false){
             passage.showIframe = true;
         }
         if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
             if(replacing){
-                var subPassages = await Passage.paginate({parent: replacement._id}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+                var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
             }
             subPassages = subPassages.docs;
         }
         else{ 
-            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
+            var subPassages = await Passage.find({parent: passage_id, comment:false}).populate('author users sourceList');  
             if(replacing){
-                var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList');
+                var subPassages = await Passage.find({parent: replacement._id, comment:false}).populate('author users sourceList');
             }
         }
     }
@@ -1452,6 +1452,10 @@ async function getBigPassage(req, res, params=false, subforums=false){
     passage.passages = await fillUsedInList(passage.passages);
     if(subforums){
         passage.passages = passage.subforums;
+    }
+    else if(comments){
+        var comments = await Passage.paginate({comment:true, parent:passage._id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        passage.passages = comments.docs;
     }else{
         //remove subforums from passages
         passage.passages = passage.passages.filter(function(value, index, array){
@@ -2679,6 +2683,28 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         location: location
     });
 });
+app.get('/comments/:passage_title/:passage_id/:page?', async function(req, res){
+    if(req.session.CESCONNECT){
+        return getRemotePage(req, res);
+    }
+    var bigRes = await getBigPassage(req, res, true, false, true);
+    if(!bigRes){
+        return res.redirect('/');
+    }
+    // console.log('TEST'+bigRes.passage.title);
+    // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
+    // console.log('TEST'+bigRes.passage.usedIn);
+    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+    var location = await getPassageLocation(bigRes.passage);
+    res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+        ISMOBILE: bigRes.ISMOBILE,
+        thread: false,
+        page: 'more',
+        whichPage: 'comments',
+        location: location,
+        comments: true
+    });
+});
 app.get('/subforums/:passage_title/:passage_id/:page?', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
@@ -3141,7 +3167,7 @@ app.post(/\/delete_passage\/?/, (req, res) => {
 app.get('/passage_form/', (req, res) => {
     res.render('passage_form');
 });
-async function createPassage(user, parentPassageId, subforums=false){
+async function createPassage(user, parentPassageId, subforums=false, comments=false){
     let users = null;
     let parentId = null;
     var isRoot = parentPassageId == 'root';
@@ -3206,6 +3232,10 @@ async function createPassage(user, parentPassageId, subforums=false){
             parent.subforums.push(passage);
             parent.markModified('subforums');
         }
+        else if(comments == 'true'){
+            // parent.comments.push(passage);
+            // parent.markModified('comments');
+        }
         else{
             parent.passages.push(passage);
             parent.markModified('passages');
@@ -3232,7 +3262,7 @@ app.post('/create_initial_passage/', async (req, res) => {
     }
     let user = req.session.user || null;
     //create passage
-    var newPassage = await createPassage(user, req.body.chief.toString(), req.body.subforums);
+    var newPassage = await createPassage(user, req.body.chief.toString(), req.body.subforums, req.body.comments);
     //update passage
     var formData = req.body;
     var passage = await Passage.findOne({_id: newPassage._id}).populate('author users sourceList');
@@ -3257,6 +3287,9 @@ app.post('/create_initial_passage/', async (req, res) => {
             }
             passage.forum = true;
         }
+    }
+    if(req.body.comments == 'true'){
+        passage.comment = true;
     }
     passage.html = formData.html;
     passage.css = formData.css;
