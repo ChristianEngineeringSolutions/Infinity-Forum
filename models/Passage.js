@@ -86,7 +86,7 @@ const passageSchema = mongoose.Schema({
     },
     comment: {
         type: Boolean,
-        default:false
+        default: false
     },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,

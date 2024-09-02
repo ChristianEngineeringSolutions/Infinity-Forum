@@ -581,8 +581,8 @@ $(function(){
             }
         });
     });
-    $(document).on('click touch', '#parent_title', function(e){
-        // window.location.href = $(this).data('url');
+    $(document).on('click touch', '#parent_title2', function(e){
+        window.location.href = $(this).data('url');
     });
     $(document).on('click', '.passage_setting', function(){
         let _id = $(this).attr('id').split('_').at(-1);

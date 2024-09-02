@@ -1319,7 +1319,6 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage_id = req.params.passage_id;
     }
     var page = req.query.page || req.params.page || 1;
-    console.log(page);
     var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums');
     try{
         var mirror = await Passage.findOne({_id:passage.mirror._id});
@@ -1389,11 +1388,9 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     if(replacing){
     replacement = bubbleUpAll(replacement);
     }
-    console.log(passage.code);
-    console.log(passage.displayCode);
     if(passage.public == true && !passage.forum){
         // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        var subPassages = await Passage.paginate({parent: passage_id, comment: false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
         if(replacing){
             var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
         }
@@ -1411,9 +1408,20 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
             subPassages = subPassages.docs;
         }
         else{ 
-            var subPassages = await Passage.find({parent: passage_id, comment:false}).populate('author users sourceList');  
-            if(replacing){
-                var subPassages = await Passage.find({parent: replacement._id, comment:false}).populate('author users sourceList');
+            if(passage.forumType == null){
+                var subPassages = await Passage.find({parent: passage_id, comment:false}).populate('author users sourceList');  
+                if(replacing){
+                    var subPassages = await Passage.find({parent: replacement._id, comment:false}).populate('author users sourceList');
+                }
+            }
+            else{
+                var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
+                if(replacing){
+                    var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList');
+                }
+                subPassages = subPassages.filter(function(p){
+                    return p.comment ? false : true;
+                });
             }
         }
     }
