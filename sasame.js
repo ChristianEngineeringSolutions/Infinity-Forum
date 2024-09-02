@@ -1408,21 +1408,14 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
             subPassages = subPassages.docs;
         }
         else{ 
-            if(passage.forumType == null){
-                var subPassages = await Passage.find({parent: passage_id, comment:false}).populate('author users sourceList');  
-                if(replacing){
-                    var subPassages = await Passage.find({parent: replacement._id, comment:false}).populate('author users sourceList');
-                }
+            //private passages
+            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
+            if(replacing){
+                var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList');
             }
-            else{
-                var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList');  
-                if(replacing){
-                    var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList');
-                }
-                subPassages = subPassages.filter(function(p){
-                    return p.comment ? false : true;
-                });
-            }
+            subPassages = subPassages.filter(function(p){
+                return p.comment ? false : true;
+            });
         }
     }
     //we have to do this because of issues with populating passage.passages foreign keys
@@ -2683,7 +2676,7 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     // console.log('TEST'+bigRes.passage.usedIn);
     bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
     var location = await getPassageLocation(bigRes.passage);
-    res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+    res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
         thread: false,
         page: 'more',
