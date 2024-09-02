@@ -921,6 +921,9 @@ $(function(){
                     if(chief == 'root'){
                         $('#passage_wrapper').prepend(data);
                     }
+                    else if($('#yes-comments').val() == 'true'){
+                        $(data).insertAfter('.passage:first');
+                    }
                     else{
                         $('#passage_wrapper').append(data);
                         //go to last passage

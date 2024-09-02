@@ -3290,6 +3290,7 @@ app.post('/create_initial_passage/', async (req, res) => {
     }
     if(req.body.comments == 'true'){
         passage.comment = true;
+        passage.forum = true;
     }
     passage.html = formData.html;
     passage.css = formData.css;

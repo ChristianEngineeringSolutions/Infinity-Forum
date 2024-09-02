@@ -356,9 +356,9 @@
                         <%var loc = 'passages';%>
                     <%}%>
                     <%if(!thread){%>
-                        <a style="color:inherit;text-decoration:none;"href="/<%=loc%>/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
+                        <a style="color:inherit;text-decoration:none;"href="/<%=loc%>/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
                     <%}else{%>
-                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
+                        <a style="color:inherit;text-decoration:none;"href="#thread/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
                     <%}%>
                 <%}%>
             <%}%>
