@@ -18,7 +18,7 @@
             <input type="hidden" id="selection">
             <div id="page_title_container">
                 <%if(passage.parent != null){%>
-                    <div data-url="/passage/<%=encodeURIComponent(passage.parent.title) == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=location.join('/')%></div>
+                    <div id="parent_title"><span data-url="/passage/<%=encodeURIComponent(passage.parent.title) == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title2"><%=location.join('/')%></span></div>
                 <%}else if (passageTitle != '' && !passageTitle){%>
                     
                 <%}else{%>
