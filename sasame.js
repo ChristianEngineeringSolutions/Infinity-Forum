@@ -585,7 +585,7 @@ app.get('/messages', async(req, res) => {
         passage: {
             $ne: null
         }
-    }).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+    }).populate('passage').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
     messages = messages.filter(function(x){
         return x.passage != null;
     });
@@ -1139,7 +1139,17 @@ async function fillUsedInList(passages){
 async function getPassageLocation(passage, train){
     train = train || [];
     if(passage.parent == null){
-        train.push('Infinity');
+        var word;
+        if(!passage.public && !passage.forum){
+            word = 'Projects';
+        }
+        else if(passage.public && !passage.forum){
+            word = 'Tasks';
+        }
+        else if(passage.forum){
+            word = 'Infinity Forum';
+        }
+        train.push(word);
         return train.reverse();
     }
     else{
