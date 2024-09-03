@@ -17,7 +17,7 @@
             <input type="hidden" value="false", id="is_profile"/>
             <input type="hidden" id="selection">
             <div id="page_title_container">
-                <%passageTitle = passageTitle == '' ? 'Untitled' : passageTitle;%>
+                <%passageTitle = passageTitle === '' ? 'Untitled' : passageTitle;%>
                 <%if(passage.parent != null){%>
                     <div id="parent_title"><span data-url="/passage/<%=encodeURIComponent(passage.parent.title) == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title2"><%=location.join('/')%></span></div>
                 <%}else if (passageTitle != '' && !passageTitle){%>
