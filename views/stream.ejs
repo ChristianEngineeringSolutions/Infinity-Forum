@@ -17,6 +17,7 @@
             <input type="hidden" value="false", id="is_profile"/>
             <input type="hidden" id="selection">
             <div id="page_title_container">
+                <%passageTitle = passageTitle == '' ? 'Untitled' : passageTitle;%>
                 <%if(passage.parent != null){%>
                     <div id="parent_title"><span data-url="/passage/<%=encodeURIComponent(passage.parent.title) == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title2"><%=location.join('/')%></span></div>
                 <%}else if (passageTitle != '' && !passageTitle){%>
@@ -25,13 +26,13 @@
                     <div id="parent_title"><a href="/stream"style="color:white;">Infinity</a></div>
                 <%}%>
                 <%if(typeof passageTitle != 'undefined' && ((passageTitle == '' || passageTitle.length > 1) && passageTitle != false)){%>
+
                     <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon></span>
                     <%if(typeof comments != 'undefined' && comments){%>
                         <div style="font-weight:lighter;"id="comment-header">Comments</div>
                     <%}%>
                     </div></div>
                 <%}else{%>
-
                 <%}%>
             </div>
             <%if(passages){%>
