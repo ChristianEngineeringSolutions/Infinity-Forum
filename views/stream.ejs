@@ -22,8 +22,21 @@
                     <div id="parent_title"><span data-url="/passage/<%=encodeURIComponent(passage.parent.title) == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title2"><%=location.join('/')%></span></div>
                 <%}else if (passageTitle != '' && !passageTitle){%>
                 <%}else if(!passageTitle){%>
+                    <%if(whichPage == 'projects'){%>
+                        <div id="page_title">Projects</div>
+                    <%}else if(whichPage == 'tasks'){%>
+                        <div id="page_title">Tasks</div>
+                    <%}else if(whichPage == 'stream'){%>
+                    <div id="page_title">All</div>
+                    <%}%>
                 <%}else{%>
-                    <div id="parent_title"><a href="/stream"style="color:white;">Infinity</a></div>
+                    <%if(!passage.public && !passage.forum){%>
+                        <div id="parent_title"><a href="/projects"style="color:white;">Projects</a></div>
+                    <%}else if(passage.public && !passage.forum){%>
+                        <div id="parent_title"><a href="/tasks"style="color:white;">Tasks</a></div>
+                    <%}else if(passage.forum){%>
+                        <div id="parent_title"><a href="/forum"style="color:white;">Infinity Forum</a></div>
+                    <%}%>
                 <%}%>
                 <%if(typeof passageTitle != 'undefined' && ((passageTitle == '' || passageTitle.length > 1) && passageTitle != false)){%>
 

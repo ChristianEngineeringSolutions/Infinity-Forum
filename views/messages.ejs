@@ -17,6 +17,7 @@
             <input type="hidden" value="messages", id="is_profile"/>
             <input type="hidden" id="selection">
             <div id="page_title_container">
+                <div id="page_title">Messages</div>
                 <%if(passage.parent != null){%>
                     <div data-url="/passage/<%=encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title"><%=passage.parent.title%></div>
                 <%}%>
