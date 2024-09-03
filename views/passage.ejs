@@ -80,6 +80,9 @@
         <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || passage.passages.length > 0 || passage.public || passage.parent == null))){%>
         <li id="passage_more_<%=passage._id%>" class="passage_option">Details</li>
         <%}%>
+        <%if((typeof comments == 'undefined' || !comments) && !passage.public && !passage.forum){%>
+            <li id="passage_comments_<%=passage.id%>" class="passage_option">Comment</li>
+        <%}%>
         <%if(user){%>
             <li id="passage_expand_<%=passage._id%>" class="passage_option passage_option_expand">Options</li>
             <span id="passage_condensed_<%=passage._id%>"class="condensed">
@@ -97,9 +100,6 @@
                 <%}%>
                 <%if(!passage.public && !passage.forum){%>
                     <input type="hidden" id="passage_private_<%=passage._id%>"name=""value="true">
-                <%}%>
-                <%if(typeof comments == 'undefined' || !comments){%>
-                <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
                 <%}%>
                 <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
                     <%if(passage.public_daemon != 2 && passage.default_daemon != true){%>
