@@ -1524,11 +1524,12 @@ app.get('/cat', async (req, res) => {
     var search = req.query.search || '';
     var find = {
         parent: req.query._id.toString(),
-        $or: [
-            {title: {$regex:search,$options:'i'}},
-            {content: {$regex:search,$options:'i'}},
-            {code: {$regex:search,$options:'i'}},
-        ],
+        title: {$regex:search,$options:'i'},
+        // $or: [
+        //     {title: {$regex:search,$options:'i'}},
+        //     {content: {$regex:search,$options:'i'}},
+        //     {code: {$regex:search,$options:'i'}},
+        // ],
     };
     if(search == ''){
         find = {
@@ -1857,11 +1858,12 @@ app.post('/search_profile/', async (req, res) => {
         author: req.body._id,
         deleted: false,
         personal: false,
-        $or: [
-            {title: {$regex:search,$options:'i'}},
-            {content: {$regex:search,$options:'i'}},
-            {code: {$regex:search,$options:'i'}},
-        ],
+        title: {$regex:search,$options:'i'},
+        // $or: [
+        //     {title: {$regex:search,$options:'i'}},
+        //     {content: {$regex:search,$options:'i'}},
+        //     {code: {$regex:search,$options:'i'}},
+        // ],
     };
     let results = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
@@ -1879,11 +1881,12 @@ app.post('/search_messages/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     var find = {
         to: req.session.user._id,
-        $or: [
-            {title: {$regex:search,$options:'i'}},
-            {content: {$regex:search,$options:'i'}},
-            {code: {$regex:search,$options:'i'}},
-        ],
+        title: {$regex:search,$options:'i'},
+        // $or: [
+        //     {title: {$regex:search,$options:'i'}},
+        //     {content: {$regex:search,$options:'i'}},
+        //     {code: {$regex:search,$options:'i'}},
+        // ],
     };
     var messages = await Message.find(find).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
     var passages = [];
@@ -1949,11 +1952,12 @@ app.post('/search_passage/', async (req, res) => {
         deleted: false,
         personal: false,
         parent: req.body._id,
-        $or: [
-            {title: {$regex:search,$options:'i'}},
-            {content: {$regex:search,$options:'i'}},
-            {code: {$regex:search,$options:'i'}},
-        ],
+        title: {$regex:search,$options:'i'},
+        // $or: [
+        //     {title: {$regex:search,$options:'i'}},
+        //     {content: {$regex:search,$options:'i'}},
+        //     {code: {$regex:search,$options:'i'}},
+        // ],
     };
     let results = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
     if(results.length < 1 && req.session.user){
@@ -2021,11 +2025,12 @@ app.post('/search/', async (req, res) => {
     var find = {
         deleted: false,
         personal: req.body.personal,
-        $or: [
-            {title: {$regex:search,$options:'i'}},
-            {content: {$regex:search,$options:'i'}},
-            {code: {$regex:search,$options:'i'}},
-        ],
+        title: {$regex:search,$options:'i'},
+        // $or: [
+        //     {title: {$regex:search,$options:'i'}},
+        //     {content: {$regex:search,$options:'i'}},
+        //     {code: {$regex:search,$options:'i'}},
+        // ],
     };
     if(req.body.personal == 'true'){
         find.users = {
@@ -3069,11 +3074,12 @@ app.post('/paginate', async function(req, res){
     if(profile != 'filestream' && profile != 'messages' && profile != 'leaderboard'){
         let find = {
             personal: false,
-            $or: [
-                {title: new RegExp(''+search+'', "i")},
-                {content: new RegExp(''+search+'', "i")},
-                {code: new RegExp(''+search+'', "i")},
-            ]
+            title: new RegExp(''+search+'', "i"),
+            // $or: [
+            //     {title: new RegExp(''+search+'', "i")},
+            //     {content: new RegExp(''+search+'', "i")},
+            //     {code: new RegExp(''+search+'', "i")},
+            // ]
         };
         switch(req.body.whichPage){
             case 'tasks':
