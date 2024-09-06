@@ -139,6 +139,8 @@
 }
 #parent_title2{
     cursor: pointer;
+    position: relative;
+    z-index: 49999999;
 }
 .passage_description, .ql-container, .ql-editor{
     background: white;
