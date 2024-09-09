@@ -516,8 +516,14 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     //star each source
     var i = 0;
     var authors = [];
+    //recursively star ssources
+    await starSources(passage, passage);
+    return await fillUsedInListSingle(passage);
+}
+async function starSources(passage, top, authors=[]){
+    var i = 0;
+    var bonus;
     for(const source of passage.sourceList){
-        var bonus1 = i == 0 ? bonus : 0;
         await starMessages(source._id, amount);
         let sourceAuthor = await User.findOne({_id: source.author._id});
         //you won't get extra stars for citing your own work
@@ -525,17 +531,18 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
         if(sourceAuthor._id.toString() != req.session.user._id.toString() 
             && sourceAuthor._id.toString() != passage.author._id.toString()
             /*&& !authors.includes(sourceAuthor._id)*/){
-            source.stars += amount + bonus1;
+            bonus = passageSimilarity(top, source)
+            source.stars += amount + bonus;
             if(!authors.includes(sourceAuthor._id)){
-                sourceAuthor.stars += amount + bonus1;
+                sourceAuthor.stars += amount + bonus;
                 await sourceAuthor.save();
             }
             authors.push(sourceAuthor._id);
             await source.save();
         }
+        await starSources(source, passage, authors);
         ++i;
     }
-    return await fillUsedInListSingle(passage);
 }
 async function starMessages(passage, stars=1){
     //keep message stars aligned with passage
@@ -2684,6 +2691,10 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     }
     var bigRes = await getBigPassage(req, res, true);
     if(!bigRes){
+        return res.redirect('/');
+    }
+    if(bigRes.passage.personal && bigRes.passage.author._id.tostring() != req.session.user._id &&
+        !bigRes.passage.users.includes(req.session.user._id)){
         return res.redirect('/');
     }
     // console.log('TEST'+bigRes.passage.title);
