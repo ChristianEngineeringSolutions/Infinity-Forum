@@ -2693,7 +2693,7 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     if(!bigRes){
         return res.redirect('/');
     }
-    if(bigRes.passage.personal && bigRes.passage.author._id.tostring() != req.session.user._id &&
+    if(bigRes.passage.personal && bigRes.passage.author._id.toString() != req.session.user._id &&
         !bigRes.passage.users.includes(req.session.user._id)){
         return res.redirect('/');
     }
@@ -3249,6 +3249,7 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
         forum: forum,
         lang: lang,
         fileStreamPath: fileStreamPath,
+        personal: personal
     });
     if(subforums == 'true'){
         passage.forumType = 'subforum';
@@ -3303,6 +3304,9 @@ app.post('/create_initial_passage/', async (req, res) => {
     switch(req.body.whichPage){
         case 'tasks':
             passage.public = true;
+            break;
+        case 'personal':
+            passage.personal = true;
             break;
     }
     var chief = formData.chief;

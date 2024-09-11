@@ -898,6 +898,7 @@ $(function(){
         $('#which-comments').val($('#yes-comments').val());
         var thiz = $(this);
         var formData = new FormData(this);
+        // formData.append("whichPage", $('#which-page').val());
         if($('#passage_file').val() != ''){
             $('#loading').show();
         }
