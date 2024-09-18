@@ -2701,6 +2701,12 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     // console.log('TEST'+bigRes.passage.usedIn);
     bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+    bigRes.subPassages.filter(function(p){
+        if(p.personal && p.author._id.toString() != req.session.user._id.toString() && !p.users.includes(req.session.user._id.toString())){
+            return false;
+        }
+        return true;
+    });
     var location = await getPassageLocation(bigRes.passage);
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,

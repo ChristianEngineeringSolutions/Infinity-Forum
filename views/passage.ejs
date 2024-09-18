@@ -179,10 +179,13 @@
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><a style="color:white;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%=passage.title%></a></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
     <%var showMore = '';%>
-    <%if(passage.displayContent != null && passage.displayContent != ''){%>
+    <%if(passage.displayContent != null && passage.displayContent.replace(/<[^>]*>?/gm, '') != ''){%>
         <hr class="hr">
         <%}%>
         <%var content = passage.displayContent || passage.content;%>
+        <%if(content == '<p><br></p>'){%>
+            <%content = '';%>
+        <%}%>
         <%if(!subPassage && sub){%>
             <%showMore = content.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
                 <%content = content.length < 800 ? content : content.substring(0,800).trim()%>
