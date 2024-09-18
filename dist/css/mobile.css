@@ -465,6 +465,10 @@
     .bottom-bar{
         padding-bottom:31px;
         padding-top:0px;
+        font-size:0.7em;
+    }
+    .star{
+        font-size:1.9em !important;
     }
     .profile_image{
         font-size: 1.8em;
