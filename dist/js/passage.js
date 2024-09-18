@@ -271,9 +271,9 @@ $(function(){
         //     }
         // });
     });
-    function getPassageId(thiz){
+    function getPassageId(thiz, separator){
         //passage_id is the last part of the html id
-        return $(thiz).attr('id').split('_')[$(thiz).attr('id').split('_').length - 1];
+        return $(thiz).attr('id').split(separator)[$(thiz).attr('id').split(separator).length - 1];
     }
     function getDashPassageID(thiz){
         //passage_id is the last part of the html id
@@ -282,8 +282,8 @@ $(function(){
     function getPassageTitle(_id){
         return encodeURIComponent($('#passage_title_'+_id).val());
     }
-    function thisPassage(thiz){
-        return $('#passage_' + getPassageId(thiz));
+    function thisPassage(thiz, separator='_'){
+        return $('#passage_' + getPassageId(thiz, separator));
     }
     $(document).on('click', '[id^="passage-delete-"]', function(e){
         var _id = $(this).attr('id').split('-').at(-1);
@@ -741,6 +741,20 @@ $(function(){
                 else{
                     thisPassage(thiz).replaceWith(data);
                 }
+            }
+        });
+    });
+    $(document).on('click', '[id^=star]', function(){
+        var thiz = $(this);
+        $.ajax({
+            type: 'post',
+            url: '/single_star/',
+            data: {
+                _id: $(this).attr('id').split('-').at(-1),
+                on: $(this).css('color') == 'white' ? true : false
+            },
+            success: function(data){
+                thisPassage(thiz, '-').replaceWith(data);
             }
         });
     });

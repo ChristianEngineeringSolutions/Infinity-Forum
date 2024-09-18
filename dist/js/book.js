@@ -293,28 +293,28 @@ $(function(){
         $("html, body").animate({ scrollTop: $(document).height() - 1300 }, "slow");
     });
 
-    $(document).on('click', '[id^=star_]', function(){
-        var _id = $(this).attr('id').split('_')[1];
-        var thiz = $(this);
-        var newCount = parseInt($('.star_count_'+_id).text(), 10) + 1;
-        $.ajax({
-            type: 'post',
-            // url: DOMAIN + '/star/' + fromOtro,
-            url: '/star/',
-            data: {
-                _id: _id
-            },
-            success: function(data){
-                if(data == "You don't have enough stars to give!"){
-                    alert(data);
-                }
-                else{
-                    flashIcon(thiz);
-                    $('.star_count_'+_id).text(newCount);
-                }
-            }
-        });
-    });
+    // $(document).on('click', '[id^=star_]', function(){
+    //     var _id = $(this).attr('id').split('_')[1];
+    //     var thiz = $(this);
+    //     var newCount = parseInt($('.star_count_'+_id).text(), 10) + 1;
+    //     $.ajax({
+    //         type: 'post',
+    //         // url: DOMAIN + '/star/' + fromOtro,
+    //         url: '/star/',
+    //         data: {
+    //             _id: _id
+    //         },
+    //         success: function(data){
+    //             if(data == "You don't have enough stars to give!"){
+    //                 alert(data);
+    //             }
+    //             else{
+    //                 flashIcon(thiz);
+    //                 $('.star_count_'+_id).text(newCount);
+    //             }
+    //         }
+    //     });
+    // });
     $(document).on('click', '#graphic_mode', function(){
         var thiz = $(this);
         if(!$('#ppe').is(':visible')){
