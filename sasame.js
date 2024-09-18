@@ -3407,28 +3407,33 @@ app.post('/star_passage/', async (req, res) => {
     }
 });
 app.post('/single_star/', async (req, res) => {
-    var passage = await Passage.findOne({_id: req.body._id});
-    var user = req.session.user._id.toString();
-    if(req.body.on && !passage.starrers.includes(user)){
-        passage.stars += 1;
-        passage.starrers.push(user);
+    if(req.session && req.session.user){
+        var passage = await Passage.findOne({_id: req.body._id});
+        var user = req.session.user._id.toString();
+        if(req.body.on && !passage.starrers.includes(user)){
+            passage.stars += 1;
+            passage.starrers.push(user);
+        }
+        else{
+            if(passage.starrers.includes(user)){
+                passage.stars -= 1;
+                passage.starrers = passage.starrers.filter(u => {
+                    console.log(u);
+                    console.log(user);
+                    return u != user;
+                });
+            }
+        }
+        passage.markModified("starrers");
+        await passage.save();
+        passage = bubbleUpAll(passage);
+        passage = await fillUsedInListSingle(passage);
+        passage.location = await returnPassageLocation(passage);
+        return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
     }
     else{
-        if(passage.starrers.includes(user)){
-            passage.stars -= 1;
-            passage.starrers = passage.starrers.filter(u => {
-                console.log(u);
-                console.log(user);
-                return u != user;
-            });
-        }
+        return res.render("Must be logged in.");
     }
-    passage.markModified("starrers");
-    await passage.save();
-    passage = bubbleUpAll(passage);
-    passage = await fillUsedInListSingle(passage);
-    passage.location = await returnPassageLocation(passage);
-    return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
 });
 app.post('/update_passage_order/', async (req, res) => {
     let passage = await Passage.findOne({_id: req.body._id});
