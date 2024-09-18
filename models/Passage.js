@@ -13,6 +13,10 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    starrers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     interactions: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Interaction'
