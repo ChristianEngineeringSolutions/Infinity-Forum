@@ -334,7 +334,9 @@
         <%if(user){%>
         <%var gold = passage.starrers.includes(user._id.toString()) ? 'color:gold;' : ''%>
         <%}%>
-        <div class="passage_stars"><ion-icon class="star"id="star-<%=passage._id%>"style="font-size:1.2em;float:left;<%=gold%>"title="Star Passage"src="/images/ionicons/star.svg"></ion-icon>&emsp;<%=parseInt(passage.stars)%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
+        <div class="passage_stars">
+            <%if(user){%>
+            <ion-icon class="star"id="star-<%=passage._id%>"style="font-size:1.2em;float:left;<%=gold%>"title="Star Passage"src="/images/ionicons/star.svg"></ion-icon>&emsp;<%}%><%=parseInt(passage.stars)%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
             <% if(user){ %>
                 <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
                 <input autocomplete="off" id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" />
