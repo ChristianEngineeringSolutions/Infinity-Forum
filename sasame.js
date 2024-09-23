@@ -69,6 +69,7 @@ const Category = require('./models/Category');
 const Subcat = require('./models/Subcat');
 const Subforum = require('./models/Subforum');
 const Visitor = require('./models/Visitor');
+const Follower = require('./models/Follower');
 // Controllers
 const passageController = require('./controllers/passageController');
 // Routes
@@ -1769,6 +1770,57 @@ app.get('/tasks', async (req, res) => {
             personal: false,
             public: true,
             forum: false
+        }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
+        for(const passage of passages){
+            passages[passage] = bubbleUpAll(passage);
+            passage.location = await returnPassageLocation(passage);
+        }
+        let passageUsers = [];
+        let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
+        if(req.session.user){
+            bookmarks = getBookmarks(req.session.user);
+        }
+        passages = await fillUsedInList(passages);
+        res.render("stream", {
+            subPassages: false,
+            passageTitle: false, 
+            scripts: scripts, 
+            passages: passages, 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+            ISMOBILE: ISMOBILE,
+            page: 'tasks',
+            whichPage: 'tasks',
+            thread: false
+        });
+    }
+});
+app.get('/feed', async (req, res) => {
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    //REX
+    if(req.session.CESCONNECT){
+        getRemotePage(req, res);
+    }
+    else{
+        let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+        let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+        let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+        let golden = '';
+        let addPassageAllowed = true;
+        let addChapterAllowed = true;
+        var user = req.session.user || null;
+        const followings = await Follower.find({ user: req.session.user._id.toString() });
+        const followingIds = followings.map(f => f.following._id);
+        let passages = await Passage.find({
+            deleted: false,
+            personal: false,
+            author: { $in: followingIds },
         }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);

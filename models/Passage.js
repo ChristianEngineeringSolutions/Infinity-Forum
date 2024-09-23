@@ -66,6 +66,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    pinned: {
+        type: Boolean,
+        default: false
+    },
     flagged: {
         type: Boolean,
         default: false
