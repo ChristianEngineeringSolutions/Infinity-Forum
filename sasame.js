@@ -3720,7 +3720,46 @@ app.post('/update_passage/', async (req, res) => {
     else if(passage.public_daemon == 2 || passage.default_daemon){
         return res.send("Not allowed.");
     }
-    console.log('test');
+    //if the passage has changed (formdata vs passage)
+    //save the old version in a new passage
+    if(formData.html != passage.html || formData.css != passage.css || formData.javascript
+        != passage.javascript || formData.code != passage.code || formData.content
+        != passage.content){
+        var oldVersion = await Passage.create({
+            parent: parent,
+            author: passage.author,
+            versionOf: passage._id,
+            users: passage.users,
+            sourceList: sourceList,
+            title: passage.title,
+            content: passage.content,
+            html: passage.html,
+            css: passage.css,
+            javascript: passage.javascript,
+            filename: passage.filename,
+            code: passage.code,
+            lang: passage.lang,
+            isSVG: passage.isSVG,
+            license: passage.license,
+            mimeType: passage.mimeType,
+            thumbnail: passage.thumbnail,
+            metadata: passage.metadata,
+            sourceLink: passage.sourceLink,
+            personal: passage.personal,
+            synthetic: synthetic,
+            mirror: passage.mirror,
+            bestOf: passage.bestOf,
+            mirrorEntire: passage.mirrorEntire,
+            mirrorContent: passage.mirrorContent,
+            bestOfEntire: passage.bestOfEntire,
+            bestOfContent: passage.bestOfContent,
+            public: passage.public,
+            forum: passage.forum
+        });
+        //now add to versions of new passage
+        passage.versions.push(oldVersion);
+    }
+    // console.log('test');
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
@@ -3767,6 +3806,7 @@ app.post('/update_passage/', async (req, res) => {
         }
         // console.log(passageOrder);
     }
+    passage.markModified('versions');
     await passage.save();
     if(passage.mainFile && req.session.user.admin){
         //also update file and server

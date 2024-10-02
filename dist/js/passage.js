@@ -271,7 +271,7 @@ $(function(){
         //     }
         // });
     });
-    function getPassageId(thiz, separator){
+    function getPassageId(thiz, separator='_'){
         //passage_id is the last part of the html id
         return $(thiz).attr('id').split(separator)[$(thiz).attr('id').split(separator).length - 1];
     }
