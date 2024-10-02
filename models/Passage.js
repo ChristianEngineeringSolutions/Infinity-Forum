@@ -21,6 +21,14 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Interaction'
     }],
+    versions: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    }],
+    versionOf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    },
     uuid: {
         type: String,
         default: () => v4()
