@@ -12,7 +12,7 @@
     <%}%>
         <div class="rich_input_<%=passage._id%> input-field-<%=passage._id%> <%=hide%>">
             <div class="passage_description" id="passage_content_<%=passage._id%>" cols="30" rows="10" placeholder="Content"></div>
-            <input id="quill-data-<%=passage._id%>"value="<%=passage.content%>"name="content"type="hidden">
+            <input autocomplete="off"id="quill-data-<%=passage._id%>"value="<%=passage.content%>"name="content"type="hidden">
         </div>
         <%if(passage.lang == 'mixed'){%>
             <%hide = '';%>

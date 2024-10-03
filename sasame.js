@@ -3726,11 +3726,12 @@ app.post('/update_passage/', async (req, res) => {
         != passage.javascript || formData.code != passage.code || formData.content
         != passage.content){
         var oldVersion = await Passage.create({
-            parent: parent,
+            parent: null,
             author: passage.author,
+            date: Date.now(),
             versionOf: passage._id,
             users: passage.users,
-            sourceList: sourceList,
+            sourceList: passage.sourceList,
             title: passage.title,
             content: passage.content,
             html: passage.html,
@@ -3746,7 +3747,7 @@ app.post('/update_passage/', async (req, res) => {
             metadata: passage.metadata,
             sourceLink: passage.sourceLink,
             personal: passage.personal,
-            synthetic: synthetic,
+            synthetic: false,
             mirror: passage.mirror,
             bestOf: passage.bestOf,
             mirrorEntire: passage.mirrorEntire,
