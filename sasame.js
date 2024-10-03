@@ -1365,6 +1365,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         parent: passage._id
     })
     var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
+    console.log("totalDocuments:"+totalDocuments);
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
         return res.send("Must be on Userlist");
     }
