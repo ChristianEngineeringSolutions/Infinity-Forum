@@ -606,6 +606,8 @@ app.get('/messages', async(req, res) => {
     }
     for(const passage of passages){
         passages[passage] = bubbleUpAll(passage);
+        passage.location = await returnPassageLocation(passage);
+        passage.sourceList = await getRecursiveSourceList(passage.sourceList);
     }
     let bookmarks = [];
         // if(req.session.user){
@@ -661,6 +663,8 @@ app.get('/personal/:user_id', async (req, res) => {
         }).populate('users').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
+            passage.location = await returnPassageLocation(passage);
+            passage.sourceList = await getRecursiveSourceList(passage.sourceList);
         }
         let bookmarks = [];
         // if(req.session.user){
@@ -719,6 +723,8 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     let passages = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const passage of passages){
         passages[passage] = bubbleUpAll(passage);
+        passage.location = await returnPassageLocation(passage);
+        passage.sourceList = await getRecursiveSourceList(passage.sourceList);
     }
     // if(req.session.user){
     //     bookmarks = await User.find({_id: req.session.user._id}).populate('passages').passages;
@@ -1192,6 +1198,7 @@ app.get('/stream', async (req, res) => {
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
+            passage.sourceList = await getRecursiveSourceList(passage.sourceList);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1352,6 +1359,8 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     catch(e){
         var bestOf = null;
     }
+    passage.sourceList = await getRecursiveSourceList(passage.sourceList);
+    console.log(passage.sourceList);
     var replacement = mirror == null ? bestOf : mirror;
     var replacing = false;
     replacement = bestOf == null ? mirror : bestOf;
@@ -1461,6 +1470,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     passage.passages = reordered;
     for(const p of passage.passages){
         passage.passages[p] = bubbleUpAll(p);
+        passage.passages[p].location = await returnPassageLocation(passage.passages[p]);
     }
     if(passage.parent != null){
         var parentID = passage.parent._id;
@@ -1469,6 +1479,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         var parentID = 'root';
     }
     passage = await fillUsedInListSingle(passage);
+    passage.location = await returnPassageLocation(passage);
     passage.passages = await fillUsedInList(passage.passages);
     if(subforums){
         passage.passages = passage.subforums;
@@ -1725,6 +1736,7 @@ app.get('/projects', async (req, res) => {
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
+            passage.sourceList = await getRecursiveSourceList(passage.sourceList);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1752,6 +1764,17 @@ app.get('/projects', async (req, res) => {
         });
     }
 });
+async function getRecursiveSourceList(sourceList, sources=[]){
+    for(const source of sourceList){
+        var sourcePassage = await Passage.findOne({_id:source});
+        if(sourcePassage != null){
+            sources.push(sourcePassage);
+            sources = await getRecursiveSourceList(sourcePassage.sourceList, sources);
+        }
+    }
+    sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
+    return sources;
+}
 app.get('/tasks', async (req, res) => {
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //REX
@@ -1775,6 +1798,7 @@ app.get('/tasks', async (req, res) => {
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
+            passage.sourceList = await getRecursiveSourceList(passage.sourceList);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1826,6 +1850,7 @@ app.get('/feed', async (req, res) => {
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
+            passage.sourceList = await getRecursiveSourceList(passage.sourceList);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -4389,6 +4414,7 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
     for(const passage of passages){
         passages[passage] = bubbleUpAll(passage);
         passage.location = await returnPassageLocation(passage);
+        passage.sourceList = await getRecursiveSourceList(passage.sourceList);
     }
     passages = await fillUsedInList(passages);
     res.render("filestream", {

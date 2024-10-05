@@ -15,7 +15,7 @@
 			else
 				ele.slideUp(500); //else hide
 		});
-		$(document).on("click", "a:not(#link-more)", function(e) {
+		$(document).on("click", "a:not(#link-more):not(.option_link)", function(e) {
 			setTimeout(function() {
 				hash_ajax();
 			}, 200)
