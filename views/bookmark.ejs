@@ -7,5 +7,5 @@
     | <span id="add_daemon_<%=bookmark.passage._id%>"class="add_daemon">Add to Daemons</span>
     <%}%>
     </div>
-    <h3><%=bookmark.passage.title%></h3>
+    <h3><%=bookmark.passage.title == '' ? 'Untitled' : bookmark.passage.title%></h3>
   </div>
