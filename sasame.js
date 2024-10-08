@@ -1194,6 +1194,7 @@ app.get('/stream', async (req, res) => {
         let passages = await Passage.find({
             deleted: false,
             personal: false,
+            versionOf: null
         }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
@@ -1731,8 +1732,9 @@ app.get('/projects', async (req, res) => {
             deleted: false,
             personal: false,
             public: false,
-            forum: false
-        }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
+            forum: false,
+            versionOf: null
+        }).populate('author users sourceList parent versions').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
@@ -1793,7 +1795,8 @@ app.get('/tasks', async (req, res) => {
             deleted: false,
             personal: false,
             public: true,
-            forum: false
+            forum: false,
+            versionOf: null
         }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
@@ -1943,6 +1946,7 @@ app.post('/search_profile/', async (req, res) => {
         author: req.body._id,
         deleted: false,
         personal: false,
+        versionOf: null,
         title: {$regex:search,$options:'i'},
         // $or: [
         //     {title: {$regex:search,$options:'i'}},
@@ -2036,6 +2040,7 @@ app.post('/search_passage/', async (req, res) => {
     var find = {
         deleted: false,
         personal: false,
+        // versionOf: null,
         parent: req.body._id,
         title: {$regex:search,$options:'i'},
         // $or: [
@@ -2109,6 +2114,7 @@ app.post('/search/', async (req, res) => {
     // }
     var find = {
         deleted: false,
+        versionOf: null,
         personal: req.body.personal,
         title: {$regex:search,$options:'i'},
         // $or: [
@@ -3169,6 +3175,7 @@ app.post('/paginate', async function(req, res){
     if(profile != 'filestream' && profile != 'messages' && profile != 'leaderboard'){
         let find = {
             personal: false,
+            versionOf: null,
             title: new RegExp(''+search+'', "i"),
             // $or: [
             //     {title: new RegExp(''+search+'', "i")},

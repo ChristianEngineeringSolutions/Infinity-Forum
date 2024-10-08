@@ -57,7 +57,7 @@
         Sources:
         <div id="sourcelist_<%=passage._id%>">
             <%passage.sourceList.forEach(function(source) { %>
-                <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a></div>
+                <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a></div>
             <%});%>
         </div>
         <%}%>
@@ -75,6 +75,18 @@
         <%if(passage.bibliography != null){%>
             <p><%=passage.bibliography%></p>
         <%}%>
+        <%if(passage.author != null && passage.author){%>
+            <%if(passage.author && user && (passage.author._id == user._id || user.admin)){%>
+                Versions:
+                <%if(passage.versions.length == 0){ %>
+                    No Versions
+                <%}%>
+                <%passage.versions.forEach(function(version) { %>
+                    <div class="passage_version_<%=passage._id%>"><a target="_blank"href="/passage/<%=version.title == '' ? 'Untitled' : version.title%>/<%=version._id%>"><%=version.title == '' ? "Untitled" : version.title%></a></div>
+                <%});%>
+            <%}%>
+        <%}%>
+
     </div>
     <ul class="passage_options">
         <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || passage.passages.length > 0 || passage.public || passage.parent == null))){%>
@@ -88,7 +100,7 @@
             <span id="passage_condensed_<%=passage._id%>"class="condensed">
                 <!-- Show them settings only if they made the passage -->
                 <%if(passage.author != null && passage.author){%>
-                    <%if(passage.author && user && passage.author._id == user._id){%>
+                    <%if(passage.author && user && passage.author._id == user._id && passage.versionOf == null){%>
                         <a class="basic_link option_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
                         <%}%>
                 <%}%>
@@ -102,7 +114,7 @@
                     <input type="hidden" id="passage_private_<%=passage._id%>"name=""value="true">
                 <%}%>
                 <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
-                    <%if(passage.public_daemon != 2 && passage.default_daemon != true){%>
+                    <%if(passage.public_daemon != 2 && passage.default_daemon != true && passage.versionOf == null){%>
                         <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
                         <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
                         <li id="passage_delete_<%=passage.id%>" class="passage_option passage_delete">Delete</li>
