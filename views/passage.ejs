@@ -93,7 +93,7 @@
         <li id="passage_more_<%=passage._id%>" class="passage_option">Details</li>
         <%}%>
         <%if((typeof comments == 'undefined' || !comments) && !passage.public && !passage.forum){%>
-            <li id="passage_comments_<%=passage.id%>" class="passage_option">Comment</li>
+            <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
         <%}%>
         <%if(user){%>
             <li id="passage_expand_<%=passage._id%>" class="passage_option passage_option_expand">Options</li>

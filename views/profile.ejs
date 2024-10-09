@@ -42,7 +42,10 @@
 <%if(user && profile._id == user._id){%>
   <div style="cursor:pointer;text-align: center;margin:auto;padding:10px;margin-bottom:15px;color:grey;"id="view-personal"><a href="/personal/<%=user._id%>"class="basic_link">View Personal Passages</a></div>
 <%}else{%>
-  <!-- <div style="cursor:pointer;text-align: center;margin:auto;padding:10px;margin-bottom:15px;color:grey;"id="view-personal"><a href="/personal/<%=user._id%>"class="basic_link">Follow</a></div> -->
+  <%if(user){%>
+    <%=following%>
+    <div style="cursor:pointer;text-align: center;margin:auto;padding:10px;margin-bottom:15px;color:grey;"><a id="follow-<%=profile._id%>"class="basic_link"><%=following ? "Unfollow" : "Follow";%></a></div>
+  <%}%>
 <%}%>
 <input type="hidden" id="search">
 <input id="search_profile"placeholder="Search Profile..." type="" name="" autocomplete="off">

@@ -24,4 +24,23 @@ $(function(){
     $(document).on('click', '#change-photo', function(){
         $('#update_profile_picture').submit();
     });
+    $(document).on('click', '[id^=follow-]', function(){
+        var who = $(this).attr('id').split('-').at(-1);
+        var thiz = $(this);
+        $.ajax({
+            type: 'post',
+            url: '/follow/',
+            data: {
+                who: who
+            },
+            success: function(data){
+                if(thiz.text() == 'Follow'){
+                    thiz.text('Unfollow');
+                }
+                else if(thiz.text() == 'Unfollow'){
+                    thiz.text('Follow');
+                }
+            }
+        });
+    });
 });
