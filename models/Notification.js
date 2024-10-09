@@ -8,10 +8,19 @@ const notificationSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    //who is the notification about?
+    about: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    //which passage does the notification concern?
+    about: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    },
     content: String,
     //date of creation
     date: {type: Date, default: Date.now},
-    type: String
 });
 
 notificationSchema.plugin(mongoosePaginate);

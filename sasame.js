@@ -251,7 +251,7 @@ app.use(async function(req, res, next) {
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
     //daemoncheck
-    if(['stream', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+    if(['feed', 'stream', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -738,15 +738,53 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
 		usd = 0;
 	}
     passages = await fillUsedInList(passages);
+    var following;
+    var follower = await Follower.findOne({
+        user: req.session.user._id,
+        following: profile._id
+    });
+    if(follower == null){
+        var followings = await Follower.find({});
+        console.log(followings);
+        console.log("Not Following");
+        following = false;
+    }
+    else{
+        following = true;
+    }
     res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
     whichPage: 'profile',
     thread: false,
+    following: following,
     passage: {id:'root', author: {
                 _id: 'root',
                 username: 'Sasame'
             }}
     });
+});
+app.post('/follow', async (req, res) => {
+    var isFollowing = await Follower.findOne({
+        user: req.session.user,
+        following: req.body.who
+    });
+    if(isFollowing == null){
+        var following = await Follower.create({
+            user: req.session.user,
+            following: req.body.who
+        });
+        return res.send("Followed.");
+    }
+    else{
+        await Follower.deleteOne({
+        user: req.session.user,
+        following: req.body.who
+    });
+    }
+    return res.send("Unfollowed");
+});
+app.get('/notifications', async (req, res) => {
+    res.render('notifications');
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
@@ -1875,8 +1913,8 @@ app.get('/feed', async (req, res) => {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            page: 'tasks',
-            whichPage: 'tasks',
+            page: 'feed',
+            whichPage: 'feed',
             thread: false
         });
     }

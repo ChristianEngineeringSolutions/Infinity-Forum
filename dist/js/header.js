@@ -193,11 +193,14 @@ $(function(){
     $(document).on('click', '#profile_link', function(){
         window.location.href = "/profile/";
     });
+    $(document).on('click', '#feed_link', function(){
+        window.location.href = "/feed";
+    });
     $(document).on('click', '#messages', function(){
         window.location.href = "/messages";
     });
-    $(document).on('click', '#help_link', function(){
-        
+    $(document).on('click', '#notifications', function(){
+        window.location.href = "/notifications";
     });
     $(document).on('click', '#distraction_free', function(){
         $('#left-side-panel').hide();

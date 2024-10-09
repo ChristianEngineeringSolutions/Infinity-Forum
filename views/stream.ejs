@@ -28,19 +28,21 @@
                         <div id="page_title">Tasks</div>
                     <%}else if(whichPage == 'stream'){%>
                     <div id="page_title">All</div>
+                    <%}else if(whichPage == 'feed'){%>
+                    <div id="page_title">Feed</div>
                     <%}%>
                 <%}else{%>
                     <%if(!passage.public && !passage.forum){%>
-                        <div id="parent_title"><a href="/projects"style="color:white;">Projects</a></div>
+                        <div id="parent_title"><a href="/projects"style="color:white;z-index:999999;">Projects</a></div>
                     <%}else if(passage.public && !passage.forum){%>
-                        <div id="parent_title"><a href="/tasks"style="color:white;">Tasks</a></div>
+                        <div id="parent_title"><a href="/tasks"style="color:white;z-index:999999;">Tasks</a></div>
                     <%}else if(passage.forum){%>
-                        <div id="parent_title"><a href="/forum"style="color:white;">Infinity Forum</a></div>
+                        <div id="parent_title"><a href="/forum"style="color:white;z-index:999999;">Infinity Forum</a></div>
                     <%}%>
                 <%}%>
                 <%if(typeof passageTitle != 'undefined' && ((passageTitle == '' || passageTitle.length > 1) && passageTitle != false)){%>
 
-                    <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon></span>
+                    <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a>&emsp;<ion-icon id="watch-chapter"title="Watch Chapter"src="/images/ionicons/notifications-sharp.svg"></ion-icon><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon></span>
                     <%if(typeof comments != 'undefined' && comments){%>
                         <div style="font-weight:lighter;"id="comment-header">Comments</div>
                     <%}%>
