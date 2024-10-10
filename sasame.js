@@ -2174,6 +2174,14 @@ app.post('/search/', async (req, res) => {
         case 'projects':
             find.public = false;
             find.forum = false;
+            break;
+        case 'feed':
+            const followings = await Follower.find({ user: req.session.user._id.toString() });
+            const followingIds = followings.map(f => f.following._id);
+            find.author = {
+                $in: followingIds
+            };
+            break;
     }
     let results = await Passage.find(find).populate('author users sourceList parent').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(const result of results){
@@ -3236,6 +3244,13 @@ app.post('/paginate', async function(req, res){
                 $in: [req.session.user._id]
                 }
                 break;
+            case 'feed':
+                const followings = await Follower.find({ user: req.session.user._id.toString() });
+                const followingIds = followings.map(f => f.following._id);
+                find.author = {
+                    $in: followingIds
+                };
+            break;
         }
         if(parent != 'root'){
             find.parent = parent;
