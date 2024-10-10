@@ -18,6 +18,10 @@
     width: 100%;
     margin-top: 10px;
 }
+.settings-update{
+    padding-bottom: 20px !important;
+    padding-right: 10px !important;
+}
 .leader{
     background: url(/images/gray_sand.png);
     background: rgba(204,204,204,.2);

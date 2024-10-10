@@ -3211,19 +3211,33 @@ app.post('/register/', async function(req, res) {
 app.post('/update_settings/', async function(req, res) {
     if ((req.body.email ||
       req.body.name) &&
-      req.body.password &&
-      req.body.passwordConf && 
       req.body.password == req.body.passwordConf &&
       req.body.oldPassword) {  
         var user = await authenticateUsername(req.body.oldUsername, req.body.oldPassword);
+        console.log(req.body.oldUsername + " : " + req.body.oldPassword);
+        
+        //for emergency reset during development
+        // var profile = await User.findOne({username: req.body.oldUsername});
+        // bcrypt.hash(req.body.oldPassword, 10, async function (err, hash){
+        //     console.log(hash + ':' + profile.password);
+        //     profile.password = hash;
+        //     await profile.save();
+        //   });
+
         if(user){
             req.session.user = user;
             user.name = req.body.name;
+            user.about = req.body.about;
             user.username = req.body.newUsername;
             user.email = req.body.email;
-            user.password = await bcrypt.hash(req.body.password, 10);
+            if(req.body.password.length > 0){
+                user.password = await bcrypt.hash(req.body.password, 10);
+            }
             await user.save();
             req.session.user = user;
+            return res.redirect('/profile/');
+        }
+        else{
             return res.redirect('/profile/');
         }
     }
