@@ -3906,6 +3906,23 @@ app.post('/update_passage/', async (req, res) => {
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
 });
+app.post('/watch', async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body.passage});
+    if(!passage.watching.includes(req.session.user._id)){
+        passage.watching.push(req.session.user._id);
+    }
+    else{
+        passage.watching = passage.watching.filter(function(person){
+            if(person._id == req.session.user._id){
+                return false;
+            }
+            return true;
+        });
+    }
+    passage.markModified('watching');
+    await passage.save();
+    return res.send("Done");
+});
 app.post('/removeFile', async (req, res) => {
     var passage = await Passage.findOne({_id: req.body._id});
     passage.filename = '';

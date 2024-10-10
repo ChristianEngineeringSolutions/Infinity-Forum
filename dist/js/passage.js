@@ -83,6 +83,25 @@ $(function(){
         $('.sub_passages').show();
     }
     getBrief();
+    $(document).on('click', '[id^=watch-]', function(){
+        var passage = $(this).attr('id').split('-').at(-1);
+        var thiz = $(this);
+        $.ajax({
+            type: 'post',
+            url: '/watch',
+            data: {
+                passage: passage
+            },
+            success: function(data){
+                if(thiz.css('color') == 'rgb(255, 255, 255)'){
+                    thiz.css('color', 'gold');
+                }
+                else if(thiz.css('color') == 'rgb(255, 215, 0)'){
+                    thiz.css('color', 'white');
+                }
+            }
+        });
+    });
     $(document).on('click', '[id^="passage_executable_"]', function(e){
         let _id = $(this).attr('id').split('_').at(-1);
     });

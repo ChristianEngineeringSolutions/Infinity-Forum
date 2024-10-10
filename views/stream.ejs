@@ -41,8 +41,12 @@
                     <%}%>
                 <%}%>
                 <%if(typeof passageTitle != 'undefined' && ((passageTitle == '' || passageTitle.length > 1) && passageTitle != false)){%>
-
-                    <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a>&emsp;<ion-icon id="watch-chapter"title="Watch Chapter"src="/images/ionicons/notifications-sharp.svg"></ion-icon><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon></span>
+                    <%if(passage.watching.includes(user._id)){%>
+                        <%var gold = 'color:gold;'%>
+                    <%}else{%>
+                        <%var gold = '';%>
+                    <%}%>
+                    <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a>&emsp;<ion-icon style="<%=gold%>"id="watch-<%=passage._id%>"title="Watch Chapter"src="/images/ionicons/notifications-sharp.svg"></ion-icon><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon></span>
                     <%if(typeof comments != 'undefined' && comments){%>
                         <div style="font-weight:lighter;"id="comment-header">Comments</div>
                     <%}%>
