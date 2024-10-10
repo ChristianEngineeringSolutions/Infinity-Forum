@@ -8,9 +8,6 @@
 }) %>
 <%-include('menu')%>
 <%-include('sidebar')%>
-<%if(!ISMOBILE){%>
-<%- include('member_box') %>
-<%}%>
 <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
 <input id="chief_passage_id"type="hidden" value="<%=passage.id || 'root'%>"name="chief">
             <input id="is_distraction_free"type="hidden" value="<%=passage.distraction_free || false%>"name="">

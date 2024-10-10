@@ -34,6 +34,9 @@
   &nbsp;
   <span id="parent_chapter_title"><%=profile.name%></span>
   <div style="font-size:1em;color:grey;"><%=profile.username%></div>
+  <%if(profile.about.length > 0){%>
+    <div style="margin-top:5px !important;width:50%;margin:auto;"><%=profile.about%></div>
+  <%}%>
   <div id="profile_stars">
     <p><%=parseInt(profile.stars)%> Star<%-parseInt(profile.stars) == 1 ? '' : 's'%>. <%=profile.starsGiven%> Star<%-profile.starsGiven == 1 ? '' : 's'%> Invested ($<%=usd%>)</p>
   </div>

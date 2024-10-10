@@ -28,22 +28,26 @@
         <input placeholder="Recommended" id="register_email" value="<%=profile.email%>"type="text" name="email"autocomplete="off"/>
     </div>
     <div>
+        <label>Bio:</label>
+        <textarea autocomplete="off"style="display: block;width: 100%;margin-bottom: 5px;"name="about"><%=profile.about%></textarea>
+    </div>
+    <div>
         <label>New Password:</label>
-        <input id="register_password" value=""type="password" name="password"autocomplete="off"/>
+        <input placeholder="Optional"id="register_password" value=""type="password" name="password"autocomplete="off"/>
     </div>
     <div>
         <label>Confirm New Password:</label>
-        <input id="register_confirm" type="password" name="passwordConf"autocomplete="off"/>
+        <input placeholder="Optional"id="register_confirm" type="password" name="passwordConf"autocomplete="off"/>
     </div>
     <div>
         <label>Old Password:</label>
-        <input id="register_confirm" type="password" name="oldPassword"autocomplete="off"/>
+        <input placeholder="Required"id="register_confirm" type="password" name="oldPassword"autocomplete="off"/>
     </div>
     <!-- <div>
         <label>Developer Mode (Advanced):</label>
         <input id="register_confirm" type="checkbox" name="passwordConf"autocomplete="off"/>
     </div> -->
     <div>
-        <input id="register_button"type="submit" value="Update"/>
+        <input class="settings-update"id="register_button"type="submit" value="Update"/>
     </div>
 </form>
