@@ -43,7 +43,6 @@
   <div style="cursor:pointer;text-align: center;margin:auto;padding:10px;margin-bottom:15px;color:grey;"id="view-personal"><a href="/personal/<%=user._id%>"class="basic_link">View Personal Passages</a></div>
 <%}else{%>
   <%if(user){%>
-    <%=following%>
     <div style="cursor:pointer;text-align: center;margin:auto;padding:10px;margin-bottom:15px;color:grey;"><a id="follow-<%=profile._id%>"class="basic_link"><%=following ? "Unfollow" : "Follow";%></a></div>
   <%}%>
 <%}%>

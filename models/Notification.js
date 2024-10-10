@@ -14,7 +14,7 @@ const notificationSchema = mongoose.Schema({
         ref: 'User'
     },
     //which passage does the notification concern?
-    about: {
+    passage: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     },
