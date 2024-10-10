@@ -70,6 +70,7 @@ const Subcat = require('./models/Subcat');
 const Subforum = require('./models/Subforum');
 const Visitor = require('./models/Visitor');
 const Follower = require('./models/Follower');
+const Notification = require('./models/Notification');
 // Controllers
 const passageController = require('./controllers/passageController');
 // Routes
@@ -251,7 +252,7 @@ app.use(async function(req, res, next) {
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
     //daemoncheck
-    if(['feed', 'stream', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+    if(['notifications', 'feed', 'stream', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -784,7 +785,31 @@ app.post('/follow', async (req, res) => {
     return res.send("Unfollowed");
 });
 app.get('/notifications', async (req, res) => {
-    res.render('notifications');
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    if(!req.session.user){
+        return res.redirect('/');
+    }
+    var notifications = await Notification.find({
+        for: req.session.user
+    }).sort({_id: -1}).limit(20);
+    if(req.session.user){
+        var bookmarks = getBookmarks(req.session.user);
+    }
+    return res.render('notifications', {
+            subPassages: false,
+            passageTitle: false, 
+            scripts: scripts, 
+            passages: [], 
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+            ISMOBILE: ISMOBILE,
+            page: 'more',
+            whichPage: 'more',
+            notifications: notifications
+        });
 });
 app.get('/loginform', function(req, res){
     res.render('login_register', {scripts: scripts});
@@ -2815,6 +2840,12 @@ function bubbleUpAll(passage){
     }
     return passage;
 }
+function handleUntitled(title){
+    return title == '' ? 'Untitled' : title;
+}
+function handlePassageLink(passage){
+    return '<a href="/passage/'+handleUntitled(passage.title)+'/'+passage._id+'">'+handleUntitled(passage.title)+'</a>';
+}
 app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     if(req.session.CESCONNECT){
         return getRemotePage(req, res);
@@ -3491,6 +3522,18 @@ app.post('/create_initial_passage/', async (req, res) => {
         await uploadFile(req, res, passage);
     }
     await passage.save();
+    //create notification if making a sub passage
+    if(chief !== 'root'){
+        for(const user of parent.watching){
+            // if(parent.author != req.session.user)
+            await Notification.create({
+                for: user,
+                about: req.session.user,
+                passage: passage,
+                content: '<a href="/profile/'+req.session.user.name+'">' + req.session.user.name + '</a> created "' + handlePassageLink(passage) + '" in "' + handlePassageLink(parent) + '"'
+            });
+        }
+    }
     if(passage.mainFile && req.session.user.admin){
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);

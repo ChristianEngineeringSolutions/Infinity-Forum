@@ -4,7 +4,7 @@ const mongoosePaginate = require('mongoose-paginate');
 
 const notificationSchema = mongoose.Schema({
     //who is the notification for?
-    user: {
+    for: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
