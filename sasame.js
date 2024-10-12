@@ -1230,6 +1230,7 @@ async function getPassageLocation(passage, train){
         return train.reverse();
     }
     else{
+        
         passage.parent = await Passage.findOne({_id:passage.parent._id});
         train.push(passage.parent.title == '' ? 'Untitled' : passage.parent.title);
         return await getPassageLocation(passage.parent, train);
@@ -1532,7 +1533,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     passage.passages = reordered;
     for(const p of passage.passages){
         passage.passages[p] = bubbleUpAll(p);
-        passage.passages[p].location = await returnPassageLocation(passage.passages[p]);
+        // passage.passages[p].location = await returnPassageLocation(passage.passages[p]);
     }
     if(passage.parent != null){
         var parentID = passage.parent._id;
@@ -1541,7 +1542,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         var parentID = 'root';
     }
     passage = await fillUsedInListSingle(passage);
-    passage.location = await returnPassageLocation(passage);
+    // passage.location = await returnPassageLocation(passage);
     passage.passages = await fillUsedInList(passage.passages);
     if(subforums){
         passage.passages = passage.subforums;
@@ -1555,7 +1556,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
             return value.sub == false;
         });
     }
-    return {
+    var bigRes = {
         subPassages: passage.passages,
         passage: passage,
         passageTitle: passage.title,
@@ -1564,6 +1565,25 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         parentID: parentID
 
     };
+    if(!bigRes){
+        return res.redirect('/');
+    }
+    if(bigRes.passage.personal && bigRes.passage.author._id.toString() != req.session.user._id &&
+        !bigRes.passage.users.includes(req.session.user._id)){
+        return res.redirect('/');
+    }
+    if(bigRes.passage.personal && bigRes.passage.author._id.toString() != req.session.user._id &&
+        !bigRes.passage.users.includes(req.session.user._id)){
+        return res.redirect('/');
+    }
+    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+    bigRes.subPassages.filter(function(p){
+        if(p.personal && p.author._id.toString() != req.session.user._id.toString() && !p.users.includes(req.session.user._id.toString())){
+            return false;
+        }
+        return true;
+    });
+    return bigRes;
 }
 async function logVisit(req){
     let ipAddress = req.ip; // Default to req.ip
@@ -2850,23 +2870,9 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         return getRemotePage(req, res);
     }
     var bigRes = await getBigPassage(req, res, true);
-    if(!bigRes){
-        return res.redirect('/');
-    }
-    if(bigRes.passage.personal && bigRes.passage.author._id.toString() != req.session.user._id &&
-        !bigRes.passage.users.includes(req.session.user._id)){
-        return res.redirect('/');
-    }
     // console.log('TEST'+bigRes.passage.title);
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     // console.log('TEST'+bigRes.passage.usedIn);
-    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
-    bigRes.subPassages.filter(function(p){
-        if(p.personal && p.author._id.toString() != req.session.user._id.toString() && !p.users.includes(req.session.user._id.toString())){
-            return false;
-        }
-        return true;
-    });
     var location = await getPassageLocation(bigRes.passage);
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,

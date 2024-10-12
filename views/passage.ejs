@@ -323,6 +323,12 @@
         <!-- Show .EXT -->
         <!-- Show License -->
     <!-- </div> -->
+    <%if(passage.filename.length > 0){%>
+        <br>
+        <%for(file of passage.filename){%>
+            <a target="_blank"href="/uploads/<%=file%>"><%=file%></a><br>
+        <%}%>
+    <%}%>
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
     <!-- Hide Iframe window if there is neither html nor js, or if it is not a daemon -->
     <%if((passage.lang != 'mixed') && (passage.lang != 'daemon' && passage.lang != 'daemonFrame') && (passage.displayHTML == null || passage.displayHTML == '') && (passage.displayJavascript == null || passage.displayJavascript == '')){%>
