@@ -18,6 +18,12 @@
 				</tr>
 				<%var numPosts = 0; %>
 				<%if(topics.length > 0){%>
+				<% for(stickied of stickieds){ %>
+					<%if(stickied.forumType != 'subforum'){%>
+						<%++numPosts;%>
+						<%- include('cat_row', {topic: stickied}) %>
+					<%}%>
+				<%}%>
 				<% for(topic of topics){ %>
 					<%if(topic.forumType != 'subforum'){%>
 						<%++numPosts;%>

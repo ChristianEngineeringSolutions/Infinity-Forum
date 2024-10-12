@@ -847,6 +847,25 @@ $(function(){
         }
         $('#passage_form_' + _id).submit();
     });
+    $(document).on('click', '[id^=passage_sticky_]', function(){
+        var thiz = $(this);
+        var _id = $(this).attr('id').split('_').at(-1);
+        $.ajax({
+            type: 'post',
+            url: '/sticky',
+            data: {
+                _id: _id
+            },
+            success: function(data){
+                if(thiz.css('color') == 'rgb(255, 255, 255)'){
+                    thiz.css('color', 'gold');
+                }
+                else if(thiz.css('color') == 'rgb(255, 215, 0)'){
+                    thiz.css('color', 'white');
+                }
+            }
+        });
+    });
     //For Home, Search, and Profile
     $(document).on('click', '#view_more, #view-more-leaders', function(){
         checkIfFromOtro();

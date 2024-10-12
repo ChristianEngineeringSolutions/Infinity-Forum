@@ -1,9 +1,10 @@
 <tr>
 	<td><a href="#thread/<%=topic.title.replace(' ', '_')%>/<%=topic._id%>"><b>
+		<%var stickied = topic.stickied ? '<i href="/profile"title="stickied"style="color:gold;"class="fa fa-solid fa-thumbtack"></i>&nbsp;&nbsp;' : ''%>
 		<%if(topic.title == ''){%>
 			Untitled
 		<%}else{%>
-		<%=topic.title%>
+		<%-stickied%><%=topic.title%>
 		<%}%>
 		</b>
 	<br/><i><a href="/user/$u">Started by: <%=topic.author.name%></a></i>

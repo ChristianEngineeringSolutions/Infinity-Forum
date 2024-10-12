@@ -165,6 +165,9 @@ $(function(){
     $(document).on('click', '#menu-contact', function(){
         alert("Email CEO at: uriahsanders99@gmail.com");
     });
+    $(document).on('click', '#menu-terms', function(){
+        window.location.href = '/terms';
+    });
     //click blocking for panels
     $(document).on('click', function(e){
         var container = $("#left-side-panel");
