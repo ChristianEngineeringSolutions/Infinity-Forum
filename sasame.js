@@ -2205,6 +2205,11 @@ app.post('/search/', async (req, res) => {
         //     {code: {$regex:search,$options:'i'}},
         // ],
     };
+    // var find1 = find;
+    // find1.title = search;
+    // var find2 = find;
+    // find2.title = {};
+
     if(req.body.personal == 'true'){
         find.users = {
             $in: [req.session.user._id]
@@ -2298,9 +2303,16 @@ app.post('/transfer_bookmark', async (req, res) => {
     }
     parent = req.body.parent == 'root' ? null : req.body.parent;
     if(req.body.focus == 'false'){
+        if(req.body.which == 'comments'){
+            var comment = true;
+        }
+        else{
+            var comment = false;
+        }
+        console.log(comment);
         let copy = await passageController.copyPassage(passage, user, parent, function(){
             
-        });
+        }, false, comment);
         copy = bubbleUpAll(copy);
         copy = await fillUsedInListSingle(copy);
         if(req.body.which && req.body.which == 'cat'){
