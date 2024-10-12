@@ -71,7 +71,7 @@ module.exports = {
         //     await Passage.deleteOne({_id: passage._id()});
         // }
     },
-    copyPassage: async function(passage, user, parent, callback, synthetic=false){
+    copyPassage: async function(passage, user, parent, callback, synthetic=false, comment=false){
         //add source
         let sourceList = passage.sourceList;
         sourceList.push(passage._id);
@@ -102,7 +102,8 @@ module.exports = {
             mirrorEntire: passage.mirrorEntire,
             mirrorContent: passage.mirrorContent,
             bestOfEntire: passage.bestOfEntire,
-            bestOfContent: passage.bestOfContent
+            bestOfContent: passage.bestOfContent,
+            comment: comment
         });
         //Add copy to passage it was duplicated into
         if(parent != "root" && parent != null){
