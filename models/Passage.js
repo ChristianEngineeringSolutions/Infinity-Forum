@@ -188,6 +188,10 @@ const passageSchema = mongoose.Schema({
     parentTracker: Number, //For Forum,
     tracker: Number,
     forumType: String, //category, subcat, subforum
+    stickied: {
+        type: Boolean,
+        default: false
+    },
     sub: {
         type: Boolean,
         default: false
