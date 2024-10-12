@@ -807,7 +807,7 @@ app.get('/notifications', async (req, res) => {
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
             page: 'more',
-            whichPage: 'more',
+            whichPage: 'notifications',
             notifications: notifications
         });
 });
@@ -1424,7 +1424,6 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         var bestOf = null;
     }
     passage.sourceList = await getRecursiveSourceList(passage.sourceList);
-    console.log(passage.sourceList);
     var replacement = mirror == null ? bestOf : mirror;
     var replacing = false;
     replacement = bestOf == null ? mirror : bestOf;
@@ -1438,7 +1437,6 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         parent: passage._id
     })
     var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
-    console.log("totalDocuments:"+totalDocuments);
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
         return res.send("Must be on Userlist");
     }
@@ -1621,7 +1619,6 @@ app.get('/cat', async (req, res) => {
         };
     }
     var parent = await Passage.findOne({_id: req.query._id});
-    console.log('search:'+search);
     var topics = await Passage.paginate(find, {sort: '-date', page: pNumber, limit: 20, populate: 'passages.author'});
     var totalDocuments = await Passage.countDocuments(find);
     var totalPages = Math.floor(totalDocuments/20) + 1;
@@ -1634,12 +1631,14 @@ app.get('/cat', async (req, res) => {
         }
     }
     topics = topics.docs;
+    var stickieds = await Passage.find({parent:req.query._id.toString(), stickied: true});
     return res.render('cat', {
         _id: parent._id,
         name: parent.title,
         topics: topics,
         postCount: topics.length,
-        totalPages: totalPages
+        totalPages: totalPages,
+        stickieds: stickieds
     });
     // var s = false;
     // var categories = await Passage.find({forumType: 'category'});
@@ -2876,6 +2875,17 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         whichPage: 'sub',
         location: location
     });
+});
+app.post('/sticky', async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body._id});
+    if(passage.stickied){
+        passage.stickied = false;
+    }
+    else{
+        passage.stickied = true;
+    }
+    await passage.save();
+    return res.send("Done.");
 });
 app.get('/comments/:passage_title/:passage_id/:page?', async function(req, res){
     if(req.session.CESCONNECT){

@@ -123,6 +123,9 @@
                         <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
                     </div>
                     <a class="basic_link option_link" href="#passage-share-modal-<%=passage._id%>" rel="modal:open"><li id="passage_share_<%=passage.id%>" class="passage_option">Share</li></a>
+                    <%if(user && user.admin){%>
+                        <li style="<%=passage.stickied ? 'color:gold' : ''%>"id="passage_sticky_<%=passage.id%>" class="passage_option">Sticky</li>
+                    <%}%>
                     <%/*%>
                     <li id="passage-show-more-<%=passage._id%>" class="passage_option">More</li>
                     <span style="display:none;"id="passage-display-more-<%=passage._id%>">
