@@ -1410,6 +1410,9 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     }
     var page = req.query.page || req.params.page || 1;
     var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums');
+    if(passage == null){
+        return res.redirect('/');
+    }
     try{
         var mirror = await Passage.findOne({_id:passage.mirror._id});
         passage.sourceList.push(mirror);
@@ -3405,6 +3408,9 @@ app.post(/\/delete_passage\/?/, async (req, res) => {
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("Only passage author can delete.");
     }
+    if(passage.versionOf != null){
+        return res.send("Not allowed.");
+    }
     await deletePassage(passage);
     return res.send("Deleted.");
 });
@@ -3438,6 +3444,7 @@ async function deletePassage(passage){
         await deletePassage(p);
     }
     await Passage.deleteOne({_id: passage._id});
+    await Passage.deleteMany({versionOf: passage});
 }
 
 // app.use('/passage', passageRoutes);
@@ -3923,6 +3930,9 @@ app.post('/update_passage/', async (req, res) => {
     else if(passage.public_daemon == 2 || passage.default_daemon){
         return res.send("Not allowed.");
     }
+    if(passage.versionOf != null){
+        return res.send("Not allowed.");
+    }
     //if the passage has changed (formdata vs passage)
     //save the old version in a new passage
     if(formData.html != passage.html || formData.css != passage.css || formData.javascript
@@ -3931,7 +3941,7 @@ app.post('/update_passage/', async (req, res) => {
         var oldVersion = await Passage.create({
             parent: null,
             author: passage.author,
-            date: Date.now(),
+            date: passage.updated,
             versionOf: passage._id,
             users: passage.users,
             sourceList: passage.sourceList,
@@ -3976,6 +3986,7 @@ app.post('/update_passage/', async (req, res) => {
     passage.fileStreamPath = formData.filestreampath;
     //no longer synthetic if it has been edited
     passage.synthetic = false;
+    passage.updated = Date.now();
     var uploadTitle = '';
     if (!req.files || Object.keys(req.files).length === 0) {
         //no files uploaded
