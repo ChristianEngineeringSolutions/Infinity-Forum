@@ -175,6 +175,10 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],
+    alternates: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    }],
     // 
     input: [{
         type: mongoose.Schema.Types.ObjectId,
