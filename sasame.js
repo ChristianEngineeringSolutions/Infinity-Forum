@@ -4185,11 +4185,14 @@ async function uploadFile(req, res, passage){
                     cmd = 'ffmpeg -i '+partialpath+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy '+partialpath+'/'+newfilename;
                     break;
                 // case 'mp4':
-                //     cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
+                //     // cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
+                //     cmd = 'ffmpeg -i '+partialpath+'/'+uploadTitle + ' -vcodec libx25 -crf 18 '+partialpath+'/'+newfilename;
                 //     break;
                 default:
-                    cmd = 'echo "Hello, World"';
-                    newfilename = uploadTitle;
+                    cmd = 'ffmpeg -i '+partialpath+'/'+uploadTitle + ' '+partialpath+'/'+newfilename;
+                    // cmd = 'echo "Hello, World"';
+                    // newfilename = uploadTitle;
+                    break;
                 }
                 exec(cmd
                 , async (err, stdout, stderr) => {
@@ -4220,42 +4223,42 @@ async function uploadFile(req, res, passage){
                             });
                         }
                         //not enough memory on server. local for now.
-                        if(process.env.LOCAL == 'true'){
-                            var screenshotName = v4();
-                            ffmpeg(fullpath+'/'+newfilename)
-                              .on('filenames', function(filenames) {
-                                console.log('Will generate ' + filenames.join(', '))
-                              })
-                              .on('end', async function() {
-                                console.log('Screenshots taken');
-                                exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
-                                    , (err, stdout, stderr) => {
-                                    console.log(err + stdout + stderr);
-                                    console.log("Finished Processing Media.");
-                                    //done
-                                    //delete each screenshot
-                                    for(var t = 1; t < 4; ++t){
-                                      fs.unlink(partialpath + '/' + screenshotName+'_'+t + '.png', function(err2){
-                                        if (err2 && err2.code == 'ENOENT') {
-                                            // file doens't exist
-                                            console.info("File doesn't exist, won't remove it.");
-                                        } else if (err2) {
-                                            // other errors, e.g. maybe we don't have enough permission
-                                            console.error("Error occurred while trying to remove file");
-                                        } else {
-                                            console.info(`removed screenshot.`);
-                                        }
-                                      });
-                                    }
-                                });
-                              })
-                              .screenshots({
-                                // Will take screens at 25%, 50%, 75%
-                                count: 3,
-                                filename: screenshotName +'_%i.png',
-                                folder: partialpath
-                              });
-                      }
+                      //   if(process.env.LOCAL == 'true'){
+                      //       var screenshotName = v4();
+                      //       ffmpeg(fullpath+'/'+newfilename)
+                      //         .on('filenames', function(filenames) {
+                      //           console.log('Will generate ' + filenames.join(', '))
+                      //         })
+                      //         .on('end', async function() {
+                      //           console.log('Screenshots taken');
+                      //           exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
+                      //               , (err, stdout, stderr) => {
+                      //               console.log(err + stdout + stderr);
+                      //               console.log("Finished Processing Media.");
+                      //               //done
+                      //               //delete each screenshot
+                      //               for(var t = 1; t < 4; ++t){
+                      //                 fs.unlink(partialpath + '/' + screenshotName+'_'+t + '.png', function(err2){
+                      //                   if (err2 && err2.code == 'ENOENT') {
+                      //                       // file doens't exist
+                      //                       console.info("File doesn't exist, won't remove it.");
+                      //                   } else if (err2) {
+                      //                       // other errors, e.g. maybe we don't have enough permission
+                      //                       console.error("Error occurred while trying to remove file");
+                      //                   } else {
+                      //                       console.info(`removed screenshot.`);
+                      //                   }
+                      //                 });
+                      //               }
+                      //           });
+                      //         })
+                      //         .screenshots({
+                      //           // Will take screens at 25%, 50%, 75%
+                      //           count: 3,
+                      //           filename: screenshotName +'_%i.png',
+                      //           folder: partialpath
+                      //         });
+                      // }
                     });
             }
         });
