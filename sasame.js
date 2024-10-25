@@ -2682,7 +2682,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
             subscriber.subscribed = true;
             subscriber.lastSubscribed = new Date();
             let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-            subscriber.stars += (await percentUSD(80 * monthsSubscribed)) * (await totalStars());
+            subscriber.stars += (await percentUSD(80 * 100 * monthsSubscribed)) * (await totalStars());
             await subscriber.save();
         }
     }
