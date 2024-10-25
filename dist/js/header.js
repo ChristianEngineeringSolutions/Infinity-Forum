@@ -13,6 +13,9 @@ $(function(){
         // $('.blocker').click();
         // $('#side_panel').scrollTop(0);
     });
+    $(document).on('click', '#show_passage_info', function(){
+        popup("Passage Info", "<br>ID: " + $(this).data('id'));
+    });
 
     $(document).on('click', '#nav_donate', function(){
         window.location.href = '/donate';

@@ -1771,9 +1771,13 @@ background-color: rgba(255, 255, 255, .7);
 .panel-body{
 /*	background:url('/images/gray_sand.png');*/
     background: rgba(204,204,204,.2);
-	padding: 10px;
+	padding: 20px;
 	border: 1px solid #000;
 }
+/*.panel-body-text{
+    width: 50%;
+    margin:auto;
+}*/
 .feature{
 	display: inline-block;
 }

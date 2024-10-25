@@ -2,12 +2,22 @@
     .detail-div{
         /* margin-left: 280px; */
         width: 100%;
-    } 
+    }
+
+}
+@media screen and (min-width: 1800px){
+    .panel-body-text{
+   /* width: 50%;
+    mar*/gin:auto;
+}
 
 }
 
 /* Tablets landscape */
 @media screen and (max-width: 1200px){
+    .tablet-hide{
+        display: none;
+    }
     home_link{
         font-size: 1.2em !important;
         /* margin-top: -250px; */
@@ -45,6 +55,9 @@
 }
 /* Tablets portrait*/
 @media screen and (max-width: 820px){
+    .tablet-hide{
+        display: none;
+    }
     #main2{
         padding-top: 0px;
     }
