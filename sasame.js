@@ -3030,8 +3030,8 @@ app.post('/recover', async(req, res) => {
     if(user != null){
         user.recoveryToken = v4();
         await user.save();
-        sendEmail(req.body.email, 'Recover Password: christianengineeringsolutions.com', 
-        'https://christianengineeringsolutions.com/recoverpassword/'+user._id+'/'+user.recoveryToken);
+        sendEmail(req.body.email, 'Recover Password: Infinity-Forum.org', 
+        'https://infinity-forum.org/recoverpassword/'+user._id+'/'+user.recoveryToken);
         return res.render('recover_password', {token: null});
     }
     else{
