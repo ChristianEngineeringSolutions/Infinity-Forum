@@ -740,10 +740,15 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
 	}
     passages = await fillUsedInList(passages);
     var following;
-    var follower = await Follower.findOne({
-        user: req.session.user._id,
-        following: profile._id
-    });
+    if(req.session.user){
+        var follower = await Follower.findOne({
+            user: req.session.user._id,
+            following: profile._id
+        });
+    }
+    else{
+        var follower = null;
+    }
     if(follower == null){
         var followings = await Follower.find({});
         console.log(followings);
