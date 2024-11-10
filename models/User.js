@@ -50,7 +50,7 @@ const userSchema = mongoose.Schema({
     },
     stars: {
         type: Number,
-        default: 100
+        // default: 100
     },
     starsGiven: {
         type: Number,
