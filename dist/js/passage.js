@@ -577,7 +577,7 @@ $(function(){
                 type: 'POST',
                 data: {
                     passageID: thiz.attr('id').split('_').at(-1),
-                    email: thiz.val()
+                    username: thiz.val()
                 },
                 success: function (data) {
                     window.location.reload();
