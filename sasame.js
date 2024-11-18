@@ -661,7 +661,7 @@ app.get('/personal/:user_id', async (req, res) => {
             users: {
                 $in: [req.params.user_id]
             }
-        }).populate('users').limit(DOCS_PER_PAGE);
+        }).populate('author users sourcelist parent versions').limit(DOCS_PER_PAGE);
         for(const passage of passages){
             var p = passage;
             passages[p] = bubbleUpAll(p);
@@ -1272,8 +1272,8 @@ async function getPassageLocation(passage, train){
     }
     else{
         var parent;
-        // parent = await Passage.findOne({_id:passage.parent._id.toString()});
-        parent = passage.parent;
+        parent = await Passage.findOne({_id:passage.parent._id.toString()});
+        // parent = passage.parent;
         train.push(parent.title == '' ? 'Untitled' : parent.title);
         return await getPassageLocation(parent, train);
     }
