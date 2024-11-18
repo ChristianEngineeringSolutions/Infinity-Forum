@@ -491,7 +491,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     if(passage.author._id.toString() != req.session.user._id.toString()){
         user.starsGiven += amount;
         if(passage.collaborators.length > 0){
-            passage.author.stars += (amount + bonus)/passage.collaborators.length;
+            passage.author.stars += (amount + bonus)/(passage.collaborators.length + 1);
         }
         else{
             passage.author.stars += amount + bonus;
@@ -506,7 +506,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
                 }
                 let collaber = await User.findOne({email:collaborator});
                 if(collaber != null){
-                    collaber.stars += (amount + bonus)/passage.collaborators.length;
+                    collaber.stars += (amount + bonus)/(passage.collaborators.length + 1);
                     await collaber.save();
                 }
             }
@@ -1235,7 +1235,7 @@ async function getPassageLocation(passage, train){
         return train.reverse();
     }
     else{
-        
+
         passage.parent = await Passage.findOne({_id:passage.parent._id});
         train.push(passage.parent.title == '' ? 'Untitled' : passage.parent.title);
         return await getPassageLocation(passage.parent, train);
@@ -2481,18 +2481,19 @@ app.post('/add_user', async (req, res) => {
 app.post('/add_collaborator', async (req, res) => {
     var passage = await Passage.findOne({_id: req.body.passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        if(!passage.collaborators.includes(req.body.email)){
-            passage.collaborators.push(req.body.email);
+        var collaborator = await User.findOne({username:req.body.username});
+        if(!passage.collaborators.includes(collaborator._id.toString())){
+            passage.collaborators.push(collaborator._id.tostring());
             passage.markModified('collaborators');
         }
         //if possible add user
-        let collabUser = await User.findOne({email: req.body.email});
-        if(collabUser != null && !isPassageUser(collabUser, passage)){
-            passage.users.push(collabUser._id);
-            passage.markModified('users');
-        }
+        // let collabUser = await User.findOne({email: req.body.email});
+        // if(collabUser != null && !isPassageUser(collabUser, passage)){
+        //     passage.users.push(collabUser._id);
+        //     passage.markModified('users');
+        // }
         await passage.save();
-        return res.send("User Added");
+        return res.send("Collaborator Added");
     }
     else{
         return res.send("Wrong permissions.");
