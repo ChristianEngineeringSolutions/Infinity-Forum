@@ -1549,8 +1549,12 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
             if(replacing){
                 var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList');
             }
+            // subPassages = subPassages.filter(function(p){
+            //     return p.comment ? false : true;
+            // });
+            //will query for no comments after finding out why it doesnt work.
             subPassages = subPassages.filter(function(p){
-                return p.comment ? false : true;
+                return ((p.personal && (!req.session.user || p.author._id.toString() != req.session.user._id.toString()))|| p.comment) ? false : true;
             });
         }
     }
