@@ -1,0 +1,5 @@
+{
+  "watch": ["dist/", "sasame.js", "controllers/", "models/", "views/", "compress.py"],
+  "ignore": ["node_modules/", ".git/"],
+  "ext": "*"
+}

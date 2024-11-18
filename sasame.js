@@ -663,9 +663,10 @@ app.get('/personal/:user_id', async (req, res) => {
             }
         }).populate('users').limit(DOCS_PER_PAGE);
         for(const passage of passages){
-            passages[passage] = bubbleUpAll(passage);
-            passage.location = await returnPassageLocation(passage);
-            passage.sourceList = await getRecursiveSourceList(passage.sourceList);
+            var p = passage;
+            passages[p] = bubbleUpAll(p);
+            p.location = await returnPassageLocation(p);
+            p.sourceList = await getRecursiveSourceList(p.sourceList);
         }
         let bookmarks = [];
         // if(req.session.user){
@@ -678,7 +679,7 @@ app.get('/personal/:user_id', async (req, res) => {
         const ISMOBILE = browser(req.headers['user-agent']).mobile;
         return res.render("stream", {
             subPassages: false,
-            passageTitle: 'Christian Engineering Solutions', 
+            passageTitle: false, 
             scripts: scripts, 
             passages: passages, 
             page: 'personal',
@@ -1218,8 +1219,43 @@ async function fillUsedInList(passages){
     }
     return passages;
 }
+// async function fillUsedInList(passages) {
+//     if (!passages?.length) {
+//         return passages;
+//     }
+
+//     const passageIds = passages.map(passage => passage._id);
+    
+//     // Fetch all related passages in a single query
+//     const relatedPassages = await Passage.find({
+//         sourceList: { $in: passageIds }
+//     }).select('_id title');
+
+//     // Create a map of source passages to their usage
+//     const usageMap = relatedPassages.reduce((acc, related) => {
+//         for (const sourceId of related.sourceList) {
+//             if (!acc[sourceId]) {
+//                 acc[sourceId] = [];
+//             }
+//             acc[sourceId].push({
+//                 id: related._id,
+//                 title: related.title
+//             });
+//         }
+//         return acc;
+//     }, {});
+
+//     // Update original passages with their usage information
+//     return passages.map(passage => ({
+//         ...passage,
+//         usedIn: (usageMap[passage._id] || []).map(usage => 
+//             `<a href="/passage/${encodeURIComponent(usage.title)}/${usage.id}">${usage.title}</a>`
+//         )
+//     }));
+// }
 async function getPassageLocation(passage, train){
     train = train || [];
+    console.log(passage.parent);
     if(passage.parent == null){
         var word;
         if(!passage.public && !passage.forum){
@@ -1235,10 +1271,11 @@ async function getPassageLocation(passage, train){
         return train.reverse();
     }
     else{
-        
-        passage.parent = await Passage.findOne({_id:passage.parent._id});
-        train.push(passage.parent.title == '' ? 'Untitled' : passage.parent.title);
-        return await getPassageLocation(passage.parent, train);
+        var parent;
+        // parent = await Passage.findOne({_id:passage.parent._id.toString()});
+        parent = passage.parent;
+        train.push(parent.title == '' ? 'Untitled' : parent.title);
+        return await getPassageLocation(parent, train);
     }
 }
 async function returnPassageLocation(passage){
@@ -4040,7 +4077,9 @@ app.post('/update_passage/', async (req, res) => {
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
 });
 app.post('/watch', async (req, res) => {
-    var passage = await Passage.findOne({_id: req.body.passage});
+    console.log('test');
+    var passage = await Passage.findOne({_id: req.body.passage.toString()});
+    // console.log('what'+passage);
     if(!passage.watching.includes(req.session.user._id)){
         passage.watching.push(req.session.user._id);
     }

@@ -11,7 +11,9 @@
             <li id="projects-link"class="menu-option menu-link forum-link">Projects</li>
             <li id="tasks-link"class="menu-option menu-link forum-link">Tasks</li>
             <li id="stream-link"class="menu-option menu-link">All</li>
-            <li id="feed-link"class="menu-option menu-link">Feed</li>
+            <%if(user != null){%>
+                <li id="feed-link"class="menu-option menu-link">Feed</li>
+            <%}%>
             <!--<li id="wall-link"class="menu-option menu-link forum-link">Wall</li>-->
             <%if(user != null){%>
                 <li id="bookmarks_icon"class="menu-option">Bookmarks</li>

@@ -27,6 +27,8 @@
                     <div id="page_title">All</div>
                     <%}else if(whichPage == 'feed'){%>
                     <div id="page_title">Feed</div>
+                    <%}else if(whichPage == 'personal'){%>
+                    <div id="page_title">Personal</div>
                     <%}%>
                 <%}else{%>
                     <%if(!passage.public && !passage.forum){%>
@@ -38,7 +40,7 @@
                     <%}%>
                 <%}%>
                 <%if(typeof passageTitle != 'undefined' && ((passageTitle == '' || passageTitle.length > 1) && passageTitle != false)){%>
-                    <%if(user && passage.watching.includes(user._id)){%>
+                    <%if(user && passage.watching && passage.watching.includes(user._id)){%>
                         <%var gold = 'color:gold;'%>
                     <%}else{%>
                         <%var gold = '';%>
