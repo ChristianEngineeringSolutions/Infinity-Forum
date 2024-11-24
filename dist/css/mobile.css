@@ -226,7 +226,7 @@
     }
     .passage_stars{
         float: left;
-        margin-top: 25px;
+/*        margin-top: 25px;*/
         width: 100%;
         text-align: left;
     }
@@ -485,6 +485,9 @@
     }
     .profile_image{
         font-size: 1.8em;
+    }
+    .passage_stars{
+        margin-top: 25px;
     }
     
 }
