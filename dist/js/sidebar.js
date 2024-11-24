@@ -104,9 +104,11 @@ $(function(){
                     else{
                         if(_chief == 'root'){
                             $('#passage_wrapper').prepend(data);
+                            $('#passage_wrapper').children().first()[0].scrollIntoView();
                         }
                         else{
                             $('#passage_wrapper').append(data);
+                            $('#passage_wrapper').children().last()[0].scrollIntoView();
                             getBrief();
                         }
                     }
@@ -119,6 +121,9 @@ $(function(){
                     //add source to sourcelist client side
                     var ID = $('.new-sources:visible').attr('id').split('-').at(-1);
                     $('#sourcelist_'+ID).append('<div class="passage_source_'+ID+'"><a target="_blank"href="/passage/'+title+'/'+token+'">'+title+'</a></div>');
+                }
+                if(window.matchMedia("(max-width: 715px)").matches){
+                    $('#side_panel_close').click();
                 }
             }
         });
