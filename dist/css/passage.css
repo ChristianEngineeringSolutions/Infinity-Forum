@@ -15,11 +15,18 @@
     width: 80%;
 }
 .p-date{
-    padding-top: 20px;
+    padding-top: 11px;
     /* font-style: italic; */
     font-size: 0.5em;
     font-weight: lighter;
     padding-bottom: 6px;
+}
+.p-date-admin{
+    padding-top:11px;
+}
+.p-admin{
+    font-weight: lighter;
+    color: red;
 }
 .p-thumbnail{
     margin:auto;
