@@ -331,8 +331,20 @@ $(function(){
 
 
     // jQuery
-    $(window).on('DOMContentLoaded load resize scroll', handler);
-
+    // $(window).on('DOMContentLoaded load resize scroll', handler);
+    var goScroll = true;
+    $(window).scroll(function() {
+       if($(window).scrollTop() + $(window).height() >= $(document).height() - 850) {
+           console.log();
+           if(goScroll==true){
+               goScroll = false;
+               $('#view_more').click();
+            }
+       }
+       else{
+        goScroll = true;
+       }
+    });
     // $(document).on('click', '[id^=star_]', function(){
     //     var _id = $(this).attr('id').split('_')[1];
     //     var thiz = $(this);
