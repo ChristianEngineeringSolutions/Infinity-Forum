@@ -293,41 +293,41 @@ $(function(){
         $("html, body").animate({ scrollTop: $(document).height() - 1300 }, "slow");
     });
 
-    function isElementInViewport (el) {
+    // function isElementInViewport (el) {
 
-        // Special bonus for those using jQuery
-        if (typeof jQuery === "function" && el instanceof jQuery) {
-            el = el[0];
-        }
+    //     // Special bonus for those using jQuery
+    //     if (typeof jQuery === "function" && el instanceof jQuery) {
+    //         el = el[0];
+    //     }
 
-        var rect = el.getBoundingClientRect();
+    //     var rect = el.getBoundingClientRect();
 
-        return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /* or $(window).height() */
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
-        );
-    }
+    //     return (
+    //         rect.top >= 0 &&
+    //         rect.left >= 0 &&
+    //         rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /* or $(window).height() */
+    //         rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
+    //     );
+    // }
 
-    function onVisibilityChange(el, callback) {
-        var old_visible;
-        return function () {
-            var visible = isElementInViewport(el);
-            if (visible != old_visible) {
-                old_visible = visible;
-                if (typeof callback == 'function') {
-                    if(visible){
-                        callback();
-                    }
-                }
-            }
-        }
-    }
+    // function onVisibilityChange(el, callback) {
+    //     var old_visible;
+    //     return function () {
+    //         var visible = isElementInViewport(el);
+    //         if (visible != old_visible) {
+    //             old_visible = visible;
+    //             if (typeof callback == 'function') {
+    //                 if(visible){
+    //                     callback();
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
-    var handler = onVisibilityChange($('#view_more'), function() {
-        $('#view_more').click();
-    });
+    // var handler = onVisibilityChange($('#view_more'), function() {
+    //     $('#view_more').click();
+    // });
 
 
     // jQuery
