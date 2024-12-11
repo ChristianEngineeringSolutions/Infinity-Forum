@@ -867,36 +867,41 @@ $(function(){
         });
     });
     //For Home, Search, and Profile
+    var okPaginate = true;
     $(document).on('click', '#view_more, #view-more-leaders', function(){
-        checkIfFromOtro();
-        //check if home, search, or profile
-        var isProfile = $('#is_profile').val();
-        page += 1;
-        if(!$('#page-loader').length){
-            $('#passage_wrapper').append('<div id="page-loader">'+$('#small-loading').html()+'</div>');
-        }
-        $.ajax({
-            type: 'post',
-            url: '/paginate/',
-            // url: DOMAIN + '/paginate/' + fromOtro,
-            data: {
-                page: page,
-                passage: $('#chief_passage_id').val(),
-                profile: isProfile,
-                search: $('#search').val(),
-                whichPage: $('#which-page').val()
-            },
-            success: function(data){
-                $('#page-loader').remove();
-                if($('#is_profile').val() == 'leaderboard'){
-                    $('#leaders').append(data);
-                }else{
-                    $('#passage_wrapper').append(data);
-                    syntaxHighlight();
-                    replacePassages();
-                }
+        if(okPaginate == true){
+            okPaginate = false;
+            checkIfFromOtro();
+            //check if home, search, or profile
+            var isProfile = $('#is_profile').val();
+            page += 1;
+            if(!$('#page-loader').length){
+                $('#passage_wrapper').append('<div id="page-loader">'+$('#small-loading').html()+'</div>');
             }
-        });
+            $.ajax({
+                type: 'post',
+                url: '/paginate/',
+                // url: DOMAIN + '/paginate/' + fromOtro,
+                data: {
+                    page: page,
+                    passage: $('#chief_passage_id').val(),
+                    profile: isProfile,
+                    search: $('#search').val(),
+                    whichPage: $('#which-page').val()
+                },
+                success: function(data){
+                    $('#page-loader').remove();
+                    if($('#is_profile').val() == 'leaderboard'){
+                        $('#leaders').append(data);
+                    }else{
+                        $('#passage_wrapper').append(data);
+                        syntaxHighlight();
+                        replacePassages();
+                    }
+                    okPaginate = true;
+                }
+            });
+        }
     });
     $(document).on('keyup', '[id^=display_html_]', function(){
         var _id = getPassageId(this);
