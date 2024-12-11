@@ -43,6 +43,11 @@ const passageSchema = mongoose.Schema({
         default: ''
         // index: true
     },
+    label: {
+        type: String,
+        default: ''
+        // index: true
+    },
     forumSpecial: {
         type: Boolean,
         default: false

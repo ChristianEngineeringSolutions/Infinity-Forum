@@ -121,6 +121,12 @@
     #initial{
         color: black;
     }
+    #sort-select-div:after, #label-select-div:after{
+      right: 2.5%;
+     }
+    #sort-select-div, #label-select-div{
+      width: 97%;
+     }
 }
 @media screen and (max-width: 715px){
     /*#top{
