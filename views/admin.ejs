@@ -26,10 +26,31 @@
                 <%}%>
                  <div id="page_title"><%= "Admin Panel: " + decodeURIComponent(passageTitle)   || "Admin Panel"%></div>
                  <div style="margin-left:97px;margin-bottom:10px;">
-                    <a href="/dbbackup">Download Database Backup</a>
+                    <a href="/dbbackup.zip">Backup and Download Database</a>
                  </div>
                  <div style="margin-left:97px;margin-bottom:10px;">
-                    <a href="/uploadsbackup">Download Uploads Backup</a>
+                    <a href="/uploadsbackup.zip">Download Uploads</a>
+                 </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <a href="/protectedbackup.zip">Download Protected</a>
+                 </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <form style="border: 1px solid white;width:fit-content;padding:10px"action="/restoredatabase" method="POST" enctype="multipart/form-data">
+                        <input type="file" name="file" multiple/>
+                        <button type="submit">Restore Database</button>
+                    </form>
+                 </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <form style="border: 1px solid white;width:fit-content;padding:10px"action="/restoreuploads" method="POST" enctype="multipart/form-data">
+                        <input type="file" name="file" multiple/>
+                        <button type="submit">Restore Uploads</button>
+                    </form>
+                 </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <form style="border: 1px solid white;width:fit-content;padding:10px"action="/restoreprotected" method="POST" enctype="multipart/form-data">
+                        <input type="file" name="file" multiple/>
+                        <button type="submit">Restore Protected</button>
+                    </form>
                  </div>
             </div>
             <%if(passages){%>
