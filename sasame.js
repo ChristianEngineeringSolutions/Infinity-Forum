@@ -101,6 +101,21 @@ var server = http.Server(app);
 
 //socket io
 const io = require('socket.io')(server);
+const BKP = require('mongodb-snapshot');
+async function mongoSnap(path, restore = false) {
+    console.log("TEST");
+    const mongo_connector = new BKP.MongoDBDuplexConnector({
+        connection: { uri: process.env.MONGODB_CONNECTION_URL, dbname: 'sasame' }
+    });
+    const localfile_connector = new BKP.LocalFileSystemDuplexConnector({
+        connection: { path: path }
+    });
+    const transferer = restore ? 
+        new BKP.MongoTransferer({ source: localfile_connector, targets: [mongo_connector] }) : 
+        new BKP.MongoTransferer({ source: mongo_connector, targets: [localfile_connector] }) ;
+    for await (const { total, write } of transferer) { }
+}
+
 // const io = require("socket.io")(server, {
 //     cors: {
 //       origin: "https://example.com",
@@ -3144,25 +3159,26 @@ app.post('/login', async function(req, res) {
         return res.redirect('/loginform');
     }
 });
-app.get('/dbbackup', async (req, res) => {
+app.get('/dbbackup.zip', async (req, res) => {
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
-    var directory1 = __dirname + '/dump';
-    var directory2 = __dirname + '/dist/images';
-    var AdmZip = require("adm-zip");
-    const fsp = require('fs').promises;
-    var zip1 = new AdmZip();
-    var zip2 = new AdmZip();
-    //compress /dump and /dist/uploads then send
-    const files = await readdir(directory1);
-    for(const file of files){
-        console.log(file);
-        zip1.addLocalFolder(__dirname + '/dump/' + file);
-    }
-    return res.send(zip1.toBuffer());
+    exec("mongodump", async function(){
+        var directory1 = __dirname + '/dump';
+        var AdmZip = require("adm-zip");
+        const fsp = require('fs').promises;
+        var zip1 = new AdmZip();
+        var zip2 = new AdmZip();
+        //compress /dump and /dist/uploads then send
+        const files = await readdir(directory1);
+        for(const file of files){
+            console.log(file);
+            zip1.addLocalFolder(__dirname + '/dump/' + file);
+        }
+        return res.send(zip1.toBuffer());
+    });
 });
-app.get('/uploadsbackup', async (req, res) => {
+app.get('/uploadsbackup.zip', async (req, res) => {
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
@@ -3178,8 +3194,69 @@ app.get('/uploadsbackup', async (req, res) => {
     }
     return res.send(zip1.toBuffer());
 });
+app.get('/protectedbackup.zip', async (req, res) => {
+    if(!req.session.user || !req.session.user.admin){
+        return res.redirect('/');
+    }
+    var directory1 = __dirname + '/protected';
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var zip1 = new AdmZip();
+    //compress /dump and /dist/uploads then send
+    const files = await readdir(directory1);
+    for(const file of files){
+        console.log(file);
+        zip1.addLocalFile(__dirname + '/protected/' + file);
+    }
+    return res.send(zip1.toBuffer());
+});
+app.post('/restoredatabase', async (req, res) => {
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var files = req.files;
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var fileToUpload = req.files.file;
+    fileToUpload.mv('./tmp/db.zip', async function(err) {
+        var zip1 = new AdmZip(__dirname + '/tmp/db.zip');
+        zip1.extractAllTo(__dirname + '/dump/sasame/');
+        await fsp.rename(__dirname + "/dump/sasame/system.version.bson", __dirname + "/dump/admin/system.version.bson");
+        await fsp.rename(__dirname + "/dump/sasame/system.version.metadata.json", __dirname + "/dump/admin/system.version.metadata.json");
+        await fsp.unlink(__dirname + "/tmp/db.zip");
+        exec("mongorestore", async function(){
+           return res.send("Database restored."); 
+        });
+    });
+});
+app.post('/restoreuploads', async (req, res) => {
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var files = req.files;
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var fileToUpload = req.files.file;
+    fileToUpload.mv('./tmp/uploads.zip', async function(err) {
+        var zip1 = new AdmZip(__dirname + '/tmp/uploads.zip');
+        zip1.extractAllTo(__dirname + '/dist/uploads/');
+        await fsp.unlink(__dirname + "/tmp/uploads.zip");
+        return res.send("Uploads restored.");
+    });
+});
+app.post('/restoreprotected', async (req, res) => {
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var files = req.files;
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var fileToUpload = req.files.file;
+    fileToUpload.mv('./tmp/protected.zip', async function(err) {
+        var zip1 = new AdmZip(__dirname + '/tmp/protected.zip');
+        zip1.extractAllTo(__dirname + '/protected/');
+        await fsp.unlink(__dirname + "/tmp/protected.zip");
+        return res.send("Protected Uploads restored.");
+    });
+});
 //test
 app.get('/admin', async function(req, res){
+    // await mongoSnap('./backup/collections.tar'); // backup
+    // await mongoSnap('./backups/collections.tar', true); // restore
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
