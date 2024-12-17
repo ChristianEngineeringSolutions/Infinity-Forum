@@ -83,6 +83,9 @@ $(function(){
         $('.sub_passages').show();
     }
     getBrief();
+    $(document).on('click', '#show_passage_info', function(){
+        popup("Passage Info", "<br>ID: " + $(this).data('id'));
+    });
     $(document).on('click', '[id^=watch-]', function(){
         var passage = $(this).attr('id').split('-').at(-1);
         var thiz = $(this);
@@ -262,6 +265,53 @@ $(function(){
         }
         $('#passage_thumbnail_' + _id).fadeIn();
     });
+    $(document).on('change', '#editor-label', function(e){
+        switch($(this).val()){
+            case 'Project':
+            case 'Idea':
+            case 'Database':
+                $('#editor-label-color').css('color', 'red');
+                break;
+            case 'Social':
+            case 'Question':
+            case 'Comment':
+            case 'Task':
+                $('#editor-label-color').css('color', 'green');
+                break;
+            case 'Forum':
+                $('#editor-label-color').css('color', 'brown');
+                break;
+
+        }
+    });
+    $(document).on('change', '[id^="label-select-"]', function(e){
+        var ID = $(this).attr('id').split('-').at(-1);
+        console.log(ID);
+        switch($(this).val()){
+            case 'Project':
+            case 'Idea':
+            case 'Database':
+                // $('#label-color-'+ID).removeClass();
+                // $('#label-color-'+ID).addClass('brown');
+                $('#label-color-'+ID).css('color', 'red');
+                break;
+            case 'Social':
+            case 'Question':
+            case 'Comment':
+            case 'Task':
+                console.log('green');
+                // $('#label-color-'+ID).removeClass();
+                // $('#label-color-'+ID).addClass('green');
+                $('#label-color-'+ID).css('color', 'green');
+                break;
+            case 'Forum':
+                // $('#label-color-'+ID).removeClass();
+                // $('#label-color-'+ID).addClass('brown');
+                $('#label-color-'+ID).css('color', 'brown');
+                break;
+
+        }
+    });
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
         popup("New Post", $('#clean_editor').val());
@@ -302,6 +352,7 @@ $(function(){
         return encodeURIComponent($('#passage_title_'+_id).val());
     }
     function thisPassage(thiz, separator='_'){
+        console.log(getPassageId(thiz, separator));
         return $('#passage_' + getPassageId(thiz, separator));
     }
     $(document).on('click', '[id^="passage-delete-"]', function(e){
@@ -602,6 +653,22 @@ $(function(){
     });
     $(document).on('click touch', '#parent_title2', function(e){
         window.location.href = $(this).data('url');
+    });
+    $(document).on('change', '[id^=label-select-]', function(e){
+        var thiz = $(this);
+        $.ajax({
+            // url: DOMAIN + '/remove_user',
+            url: '/change_label',
+            type: 'POST',
+            data: {
+                _id: $(this).attr('id').split('-').at(-1),
+                label: $(this).val(),
+                parent: $('#chief_passage_id').val()
+            },
+            success: function (data) {
+                thisPassage(thiz, '-').replaceWith(data);
+            }
+        });
     });
     $(document).on('click', '.passage_setting', function(){
         let _id = $(this).attr('id').split('_').at(-1);
@@ -980,7 +1047,7 @@ $(function(){
                     else{
                         $('#passage_wrapper').append(data);
                         //go to last passage
-                        // $('.passage').last()[0].scrollIntoView();
+                        $('.passage').eq(-2)[0].scrollIntoView();
                     }
                 }
                 else if(which == 'thread'){

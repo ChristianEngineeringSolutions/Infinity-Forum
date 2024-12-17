@@ -24,9 +24,9 @@
                     <%}else if(whichPage == 'tasks'){%>
                         <div id="page_title">Tasks</div>
                     <%}else if(whichPage == 'stream'){%>
-                    <div id="page_title">Posts <ion-icon id=""title="Show Filter Options"src="/images/ionicons/filter-sharp.svg"></ion-icon></div>
+                    <div id="page_title">Posts <ion-icon id="show-filter-options"title="Show Filter Options"src="/images/ionicons/filter-sharp.svg"></ion-icon></div>
                     <%}else if(whichPage == 'feed'){%>
-                    <div id="page_title">Feed <ion-icon id=""title="Show Filter Options"src="/images/ionicons/filter-sharp.svg"></ion-icon></div>
+                    <div id="page_title">Feed <ion-icon id="show-filter-options"title="Show Filter Options"src="/images/ionicons/filter-sharp.svg"></ion-icon></div>
                     <%}else if(whichPage == 'personal'){%>
                     <div id="page_title">Personal</div>
                     <%}%>
@@ -46,7 +46,7 @@
                     <%}else{%>
                         <%var gold = '';%>
                     <%}%>
-                    <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a>&emsp;<ion-icon data-id="<%=passage._id%>"id="show_passage_info"title="Show Info"src="/images/ionicons/information-circle-sharp.svg"></ion-icon><%if(user){%><ion-icon style="<%=gold%>"id="watch-<%=passage._id%>"title="Watch Chapter"src="/images/ionicons/notifications-sharp.svg"></ion-icon><%}%><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon><ion-icon id=""title="Show Filter Options"src="/images/ionicons/filter-sharp.svg"></ion-icon></span>
+                    <div id="page_title"><a style="text-decoration: none;color:inherit;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%= decodeURIComponent(passageTitle) == '' ? 'Untitled' : decodeURIComponent(passageTitle)%></a>&emsp;<ion-icon data-id="<%=passage._id%>"id="show_passage_info"title="Show Info"src="/images/ionicons/information-circle-sharp.svg"></ion-icon><%if(user){%><ion-icon style="<%=gold%>"id="watch-<%=passage._id%>"title="Watch Chapter"src="/images/ionicons/notifications-sharp.svg"></ion-icon><%}%><ion-icon id="show_brief"title="Show Brief"src="/images/ionicons/menu-sharp.svg"></ion-icon><%if(!passage.forum && passage.public){%><ion-icon id="show-filter-options"title="Show Filter Options"src="/images/ionicons/filter-sharp.svg"></ion-icon><%}%></span>
                     <%if(typeof comments != 'undefined' && comments){%>
                         <div style="font-weight:lighter;"id="comment-header">Comments</div>
                     <%}%>
@@ -54,34 +54,20 @@
                 <%}else{%>
                 <%}%>
             </div>
-            <div style="display:none;"id='label-select-div'>
-                <select id="label-select">
-                    <option>All</option>
-                    <option >Projects</option>
-                    <option>Tasks</option>
-                    <option>Social</option>
-                    <option>Forum</option>
-                    <option>Questions</option>
-                    <option>Databases</option>
-                </select>
-            </div>
+            <%-include('label_select');%>
             <%if(passages){%>
                 <input id="search"placeholder="Search Posts..." type="" name="" autocomplete="off">
             <%}else if (passage){%>
                 <input id="search"placeholder="Search Posts..." type="hidden" name="" autocomplete="off">
                 <input id="search_passage"placeholder="Search <%=passage.title%>..." type="" name="" autocomplete="off">
             <%} %>
-            <div style="display:none;"id="sort-select-div">
-                <select id="sort-select">
-                    <option>Most Stars</option>
-                    <option>Newest-Oldest</option>
-                    <option>Oldest-Newest</option>
-                </select>
-            </div>
+            <%-include('sort_select');%>
             <%if((typeof comments != 'undefined' && comments == true) || (user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
-                <%if((typeof comments != 'undefined' && comments == true) || (passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true)){%>
-                    <button title="Add Passage"id="add_passage_button">+</button>
-                    <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
+                <%if((user && passage.id == 'root') || (user && (passage.author._id == user._id || passage.public || passageUsers.includes(user._id.toString())))){%>
+                    <%if(passage.id != 'root' && passage.public_daemon != 2 && passage.default_daemon != true && ( typeof comments == 'undefined' || !comments)){%>
+                        <button title="Add Passage"id="add_passage_button">+</button>
+                        <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
+                    <%}%>
                 <%}%>
             <%}%>
             <br id="top_spacer">

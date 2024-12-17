@@ -52,6 +52,7 @@ function summonQuill(){
                         syntax: true,              // Include syntax module
                         toolbar: toolbarOptions,  // Include button in toolbar
                     },
+                    placeholder: 'What are  you creating?',
                     theme: 'snow'
                     });
                     quill.root.innerHTML = document.getElementById('quill-data').value;
@@ -130,7 +131,26 @@ $(function(){
     //     //force height of passages only on home page
     //     document.styleSheets[0].insertRule('.passage_content{max-height:300px}');
     // }
-
+    $(document).on('click', '#show_brief', function(){
+        $('#right_side_select').val('brief').change();
+        $('#side_panel').toggle();
+        // $('.blocker').click();
+        // $('#side_panel').scrollTop(0);
+    });
+    $(document).on('click', '#show-filter-options', function(){
+        $("#label-select-div").toggle();
+        $("#sort-select-div").toggle();
+    });
+    $(document).on('change', '#label-select-div, #sort-select-div', function(){
+        //trigger search
+        //TODO: do for profile and messages
+        if($('#chief_passage_id') == 'root'){
+            $("#search").trigger({ type: "keypress", which: 13 });
+        }
+        else{
+            $("#search_passage").trigger({ type: "keypress", which: 13 });
+        }
+    });
     //search
     $('#search').on('keypress', function(e){
         checkIfFromOtro();
@@ -145,7 +165,9 @@ $(function(){
                 data: {
                     search: thiz.val(),
                     personal: window.location.href.split('/').at(-2) == 'personal' ? true : false,
-                    whichPage: $('#which-page').val()
+                    whichPage: $('#which-page').val(),
+                    label: $('#label-select').val(),
+                    sort: $('#sort-select').val()
                 },
                 success: function(data){
                     $('#passage_wrapper').html(data);
@@ -215,7 +237,9 @@ $(function(){
                 url: '/search_messages/',
                 data: {
                     search: thiz.val(),
-                    _id: $('#is_profile').val()
+                    _id: $('#is_profile').val(),
+                    label: $('#label-select').val(),
+                    sort: $('#sort-select').val()
                 },
                 success: function(data){
                     $('#passage_wrapper').html(data);
@@ -259,7 +283,9 @@ $(function(){
                 url: '/search_passage/',
                 data: {
                     search: thiz.val(),
-                    _id: $('#chief_passage_id').val()
+                    _id: $('#chief_passage_id').val(),
+                    label: $('#label-select').val(),
+                    sort: $('#sort-select').val()
                 },
                 success: function(data){
                     $('#passage_wrapper').html(data);
