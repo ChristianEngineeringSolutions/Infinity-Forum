@@ -7,15 +7,6 @@ $(function(){
         $('.blocker').click();
         $('#side_panel').scrollTop(0);
     });
-    $(document).on('click', '#show_brief', function(){
-        $('#right_side_select').val('brief').change();
-        $('#side_panel').toggle();
-        // $('.blocker').click();
-        // $('#side_panel').scrollTop(0);
-    });
-    $(document).on('click', '#show_passage_info', function(){
-        popup("Passage Info", "<br>ID: " + $(this).data('id'));
-    });
 
     $(document).on('click', '#nav_donate', function(){
         window.location.href = '/donate';
@@ -183,7 +174,7 @@ $(function(){
             e.stopPropagation();
         }
         var container = $("#side_panel");
-        console.log(e.target.id);
+        // console.log(e.target.id);
         if(container.is(':visible') && e.target.id != 'show_brief' && e.target.id != 'bookmarks_icon' && (e.target.id.length > 0 && !$('#' + e.target.id).hasClass('b-bar'))){
             // if the target of the click isn't the container nor a descendant of the container
             if (!container.is(e.target) && container.has(e.target).length === 0) 

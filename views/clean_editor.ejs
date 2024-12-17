@@ -1,9 +1,22 @@
 <form style="display:none;"id="passage_form"class="passage_form"action="/create_initial_passage/" type="post"enctype="multipart/form-data">
+    <br>
+    <ion-icon id="editor-label-color"style="color:red;"src="/images/ionicons/ellipse.svg"></ion-icon>
+    <select id="editor-label"name="label">
+        <option>Project</option>
+        <option>Task</option>
+        <option>Social</option>
+        <option>Forum</option>
+        <option>Question</option>
+        <option>Idea</option>
+        <option>Database</option>
+        <option>Comment</option>
+    </select>
+    <br><br>
     <input id="passage_title"class="passage_title" value="" type="text"name="title"placeholder="Title (Optional)">
 
         <div class="rich_input input-field">
-            <div class="passage_description" id="passage_content" cols="30" rows="10" placeholder="Content"></div>
-            <input id="quill-data"value=""name="content"type="hidden">
+            <div class="passage_description" id="passage_content" cols="30" rows="10" placeholder="What are you creating?"></div>
+            <input id="quill-data"value=""name="content"placeholder="What are you creating?"type="hidden">
         </div>
         <div class="mixed_input input-field hide2">
             <textarea style="display:none;"class="passage_html" name="html" id="passage_html" cols="30" rows="10" placeholder="HTML"></textarea>

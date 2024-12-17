@@ -101,6 +101,21 @@ var server = http.Server(app);
 
 //socket io
 const io = require('socket.io')(server);
+const BKP = require('mongodb-snapshot');
+async function mongoSnap(path, restore = false) {
+    console.log("TEST");
+    const mongo_connector = new BKP.MongoDBDuplexConnector({
+        connection: { uri: process.env.MONGODB_CONNECTION_URL, dbname: 'sasame' }
+    });
+    const localfile_connector = new BKP.LocalFileSystemDuplexConnector({
+        connection: { path: path }
+    });
+    const transferer = restore ? 
+        new BKP.MongoTransferer({ source: localfile_connector, targets: [mongo_connector] }) : 
+        new BKP.MongoTransferer({ source: mongo_connector, targets: [localfile_connector] }) ;
+    for await (const { total, write } of transferer) { }
+}
+
 // const io = require("socket.io")(server, {
 //     cors: {
 //       origin: "https://example.com",
@@ -252,7 +267,7 @@ app.use(async function(req, res, next) {
     res.locals.CESCONNECT = req.session.CESCONNECT;
     res.locals.fromOtro = req.query.fromOtro || false;
     //daemoncheck
-    if(['notifications', 'feed', 'stream', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+    if(['notifications', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
         let daemons = [];
         if(req.session.user){
             let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -323,9 +338,10 @@ app.get('/highlight.css', function(req, res) {
 app.get('/highlight.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/highlight.js/lib/index.js');
 });
-app.get('/quill-to-pdf.js', function(req, res) {
-    res.send(__dirname + '/node_modules/quill-to-pdf/dist/src');
+app.get('/caret-down.svg', function(req, res) {
+    res.send(__dirname + '/node_modules/ionicons/dist/svg/caret-down.svg');
 });
+
 
 //CRON
 var cron = require('node-cron');
@@ -1255,7 +1271,7 @@ async function fillUsedInList(passages){
 // }
 async function getPassageLocation(passage, train){
     train = train || [];
-    console.log(passage.parent);
+    // console.log(passage.parent);
     if(passage.parent == null){
         var word;
         if(!passage.public && !passage.forum){
@@ -1267,12 +1283,34 @@ async function getPassageLocation(passage, train){
         else if(passage.forum){
             word = 'Infinity Forum';
         }
+        if(word != 'Infnity Forum'){
+            word = passage.label + 's';
+        }
+        if(passage.label == "Social"){
+            word = 'Network'
+        }
         train.push(word);
         return train.reverse();
     }
     else{
         var parent;
+        // console.log(passage.parent);
         parent = await Passage.findOne({_id:passage.parent._id.toString()});
+        // console.log(parent);
+        if(parent == null){
+            var word;
+            if(!passage.public && !passage.forum){
+                word = 'Projects';
+            }
+            else if(passage.public && !passage.forum){
+                word = 'Tasks';
+            }
+            else if(passage.forum){
+                word = 'Infinity Forum';
+            }
+            train.push(word);
+            return train.reverse();
+        }
         // parent = passage.parent;
         train.push(parent.title == '' ? 'Untitled' : parent.title);
         return await getPassageLocation(parent, train);
@@ -1281,9 +1319,9 @@ async function getPassageLocation(passage, train){
 async function returnPassageLocation(passage){
     var location = (await getPassageLocation(passage)).join('/');
     // return passage.parent ? passage.parent.title + passage.parent.parent.title : '';
-    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + passage.parent.title + '/' + passage.parent._id) : '/stream') +'">' + location + '</a>';
+    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + passage.parent.title + '/' + passage.parent._id) : '/posts') +'">' + location + '</a>';
 }
-app.get('/stream', async (req, res) => {
+app.get('/posts', async (req, res) => {
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //REX
     if(req.session.CESCONNECT){
@@ -1327,7 +1365,7 @@ app.get('/stream', async (req, res) => {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            page: 'more',
+            page: 'posts',
             whichPage: 'stream'
         });
     }
@@ -1482,6 +1520,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     var totalDocuments = await Passage.countDocuments({
         parent: passage._id
     })
+    console.log(totalDocuments);
     var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
         return res.send("Must be on Userlist");
@@ -2085,7 +2124,22 @@ app.post('/search_profile/', async (req, res) => {
         //     {code: {$regex:search,$options:'i'}},
         // ],
     };
-    let results = await Passage.find(find).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    if(label != 'All'){
+        find.label = req.body.label;
+    }
+    var sort = {stars: -1, _id: -1};
+    switch(req.body.sort){
+        case 'Most Stars':
+            sort = {stars: -1, _id: -1};
+            break;
+        case 'Newest-Oldest':
+            sort = {date: -1};
+            break;
+        case 'Oldest-Newest':
+            sort = {date: 1};
+            break;
+    }
+    let results = await Passage.find(find).populate('author users sourceList').sort(sort).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
     }
@@ -2108,7 +2162,22 @@ app.post('/search_messages/', async (req, res) => {
         //     {code: {$regex:search,$options:'i'}},
         // ],
     };
-    var messages = await Message.find(find).populate('passage').sort('-stars').limit(DOCS_PER_PAGE);
+    if(label != 'All'){
+        find.label = req.body.label;
+    }
+    var sort = {stars: -1, _id: -1};
+    switch(req.body.sort){
+        case 'Most Stars':
+            sort = {stars: -1, _id: -1};
+            break;
+        case 'Newest-Oldest':
+            sort = {date: -1};
+            break;
+        case 'Oldest-Newest':
+            sort = {date: 1};
+            break;
+    }
+    var messages = await Message.find(find).populate('passage').sort(sort).limit(DOCS_PER_PAGE);
     var passages = [];
     for(const message of messages){
         var p = await Passage.findOne({
@@ -2180,7 +2249,23 @@ app.post('/search_passage/', async (req, res) => {
         //     {code: {$regex:search,$options:'i'}},
         // ],
     };
-    let results = await Passage.find(find).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    if(req.body.label != 'All'){
+        find.label = req.body.label;
+    }
+    var sort = {stars: -1, _id: -1};
+    switch(req.body.sort){
+        case 'Most Stars':
+            sort = {stars: -1, _id: -1};
+            break;
+        case 'Newest-Oldest':
+            sort = {date: -1};
+            break;
+        case 'Oldest-Newest':
+            sort = {date: 1};
+            break;
+    }
+    console.log(sort);
+    let results = await Passage.find(find).populate('author users sourceList').sort(sort).limit(DOCS_PER_PAGE);
     if(results.length < 1 && req.session.user){
         var parent = await Passage.findOne({_id: req.body._id});
         let users = [req.session.user._id];
@@ -2231,6 +2316,23 @@ function escapeBackSlash(str){
     console.log(temp);
     return str;
 }
+async function labelOldPassages(){
+    var passages = await Passage.find({});
+    for(const passage of passages){
+        if(passage.public && passage.forum){
+            passage.label = 'Task';
+        }
+        else if(!passage.public && !passage.forum){
+            passage.label = 'Project';
+        }
+        else if(passage.forum){
+            passage.label = 'Forum';
+        }
+        await passage.save();
+    }
+    console.log("Old Passages labeled.");
+}
+// await labelOldPassages();
 app.post('/search/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     // let exact = await Passage.findOne({personal:false,deleted:false,title:search});
@@ -2243,6 +2345,7 @@ app.post('/search/', async (req, res) => {
     //         public: true
     //     });
     // }
+    var label = req.body.label;
     var find = {
         deleted: false,
         versionOf: null,
@@ -2254,6 +2357,9 @@ app.post('/search/', async (req, res) => {
         //     {code: {$regex:search,$options:'i'}},
         // ],
     };
+    if(label != 'All'){
+        find.label = req.body.label;
+    }
     // var find1 = find;
     // find1.title = search;
     // var find2 = find;
@@ -2281,7 +2387,20 @@ app.post('/search/', async (req, res) => {
             };
             break;
     }
-    let results = await Passage.find(find).populate('author users sourceList parent').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    console.log(req.body.whichPage);
+    var sort = {stars: -1, _id: -1};
+    switch(req.body.sort){
+        case 'Most Stars':
+            sort = {stars: -1, _id: -1};
+            break;
+        case 'Newest-Oldest':
+            sort = {date: -1};
+            break;
+        case 'Oldest-Newest':
+            sort = {date: 1};
+            break;
+    }
+    let results = await Passage.find(find).populate('author users sourceList parent').sort(sort).limit(DOCS_PER_PAGE);
     for(const result of results){
         results[result] = bubbleUpAll(result);
         result.location = await returnPassageLocation(result);
@@ -3143,25 +3262,26 @@ app.post('/login', async function(req, res) {
         return res.redirect('/loginform');
     }
 });
-app.get('/dbbackup', async (req, res) => {
+app.get('/dbbackup.zip', async (req, res) => {
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
-    var directory1 = __dirname + '/dump';
-    var directory2 = __dirname + '/dist/images';
-    var AdmZip = require("adm-zip");
-    const fsp = require('fs').promises;
-    var zip1 = new AdmZip();
-    var zip2 = new AdmZip();
-    //compress /dump and /dist/uploads then send
-    const files = await readdir(directory1);
-    for(const file of files){
-        console.log(file);
-        zip1.addLocalFolder(__dirname + '/dump/' + file);
-    }
-    return res.send(zip1.toBuffer());
+    exec("mongodump", async function(){
+        var directory1 = __dirname + '/dump';
+        var AdmZip = require("adm-zip");
+        const fsp = require('fs').promises;
+        var zip1 = new AdmZip();
+        var zip2 = new AdmZip();
+        //compress /dump and /dist/uploads then send
+        const files = await readdir(directory1);
+        for(const file of files){
+            console.log(file);
+            zip1.addLocalFolder(__dirname + '/dump/' + file);
+        }
+        return res.send(zip1.toBuffer());
+    });
 });
-app.get('/uploadsbackup', async (req, res) => {
+app.get('/uploadsbackup.zip', async (req, res) => {
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
@@ -3177,8 +3297,69 @@ app.get('/uploadsbackup', async (req, res) => {
     }
     return res.send(zip1.toBuffer());
 });
+app.get('/protectedbackup.zip', async (req, res) => {
+    if(!req.session.user || !req.session.user.admin){
+        return res.redirect('/');
+    }
+    var directory1 = __dirname + '/protected';
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var zip1 = new AdmZip();
+    //compress /dump and /dist/uploads then send
+    const files = await readdir(directory1);
+    for(const file of files){
+        console.log(file);
+        zip1.addLocalFile(__dirname + '/protected/' + file);
+    }
+    return res.send(zip1.toBuffer());
+});
+app.post('/restoredatabase', async (req, res) => {
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var files = req.files;
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var fileToUpload = req.files.file;
+    fileToUpload.mv('./tmp/db.zip', async function(err) {
+        var zip1 = new AdmZip(__dirname + '/tmp/db.zip');
+        zip1.extractAllTo(__dirname + '/dump/sasame/');
+        await fsp.rename(__dirname + "/dump/sasame/system.version.bson", __dirname + "/dump/admin/system.version.bson");
+        await fsp.rename(__dirname + "/dump/sasame/system.version.metadata.json", __dirname + "/dump/admin/system.version.metadata.json");
+        await fsp.unlink(__dirname + "/tmp/db.zip");
+        exec("mongorestore", async function(){
+           return res.send("Database restored."); 
+        });
+    });
+});
+app.post('/restoreuploads', async (req, res) => {
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var files = req.files;
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var fileToUpload = req.files.file;
+    fileToUpload.mv('./tmp/uploads.zip', async function(err) {
+        var zip1 = new AdmZip(__dirname + '/tmp/uploads.zip');
+        zip1.extractAllTo(__dirname + '/dist/uploads/');
+        await fsp.unlink(__dirname + "/tmp/uploads.zip");
+        return res.send("Uploads restored.");
+    });
+});
+app.post('/restoreprotected', async (req, res) => {
+    var AdmZip = require("adm-zip");
+    const fsp = require('fs').promises;
+    var files = req.files;
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var fileToUpload = req.files.file;
+    fileToUpload.mv('./tmp/protected.zip', async function(err) {
+        var zip1 = new AdmZip(__dirname + '/tmp/protected.zip');
+        zip1.extractAllTo(__dirname + '/protected/');
+        await fsp.unlink(__dirname + "/tmp/protected.zip");
+        return res.send("Protected Uploads restored.");
+    });
+});
 //test
 app.get('/admin', async function(req, res){
+    // await mongoSnap('./backup/collections.tar'); // backup
+    // await mongoSnap('./backups/collections.tar', true); // restore
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
@@ -3626,6 +3807,27 @@ app.post('/create_initial_passage/', async (req, res) => {
         passage.comment = true;
         passage.forum = true;
     }
+    passage.label = formData.label;
+    switch(passage.label){
+        case 'Project':
+        case 'Idea':
+        case 'Database':
+            passage.public = false;
+            passage.forum = false;
+            break;
+        case 'Social':
+        case 'Question':
+        case 'Comment':
+        case 'Task':
+            passage.public = true;
+            passage.forum = false;
+            break;
+        case 'Forum':
+            passage.public = true;
+            passage.forum = true;
+            break;
+
+    }
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
@@ -3683,6 +3885,44 @@ app.post('/create_initial_passage/', async (req, res) => {
     else{
         return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
     }
+});
+app.post('/change_label', async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var _id = req.body._id;
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
+    passage.label = req.body.label;
+    switch(passage.label){
+        case 'Project':
+        case 'Idea':
+        case 'Database':
+            passage.public = false;
+            passage.forum = false;
+            break;
+        case 'Social':
+        case 'Question':
+        case 'Comment':
+        case 'Task':
+            passage.public = true;
+            passage.forum = false;
+            break;
+        case 'Forum':
+            passage.public = true;
+            passage.forum = true;
+            break;
+
+    }
+    await passage.save();
+    passage = bubbleUpAll(passage);
+    passage = await fillUsedInListSingle(passage);
+    passage.location = await returnPassageLocation(passage);
+    var subPassage = req.body.parent == 'root' ? false : true;
+    return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
+    return res.send("Label updated.");
 });
 app.post('/star_passage/', async (req, res) => {
     console.log('star_passage');
@@ -3966,6 +4206,9 @@ app.post('/change_profile_picture/', async (req, res) => {
     res.redirect("/profile");
 });
 app.post('/update_passage/', async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
     var _id = req.body._id;
     var formData = req.body;
     var subforums = formData.subforums;

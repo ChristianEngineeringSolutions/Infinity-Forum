@@ -177,7 +177,7 @@
                 <%}else{%>
                     <ion-icon style=""class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
                 <%}%>
-        </div><div class="p-date<%=passage.author.admin ? ' p-date-admin' : ''%>"><%if(passage.author.admin){%><div class="p-admin">ADMIN</div><%}%><%- include('profile_thumbnail', {profile: passage.author}) %>, <%=passage.date ? passage.date.toLocaleDateString() : ''%><br class="mobile-show"><span class="mobile-hide">&emsp;&emsp;</span><%if(passage.forum){%><ion-icon style="color:brown;"src="/images/ionicons/ellipse.svg"></ion-icon> Forum<%}else if(passage.public){%><ion-icon style="color:green;"src="/images/ionicons/ellipse.svg"></ion-icon> Task<%}else if(!passage.public){%><ion-icon style="color:red;"src="/images/ionicons/ellipse.svg"></ion-icon> Project<%}%><%if(passage.location){%> in <%-passage.location%><%}%></div></div>
+        </div><div class="p-date<%=passage.author.admin ? ' p-date-admin' : ''%>"><%if(passage.author.admin){%><div class="p-admin">ADMIN</div><%}%><%- include('profile_thumbnail', {profile: passage.author}) %>, <%=passage.date ? passage.date.toLocaleDateString() : ''%><br class="mobile-show"><span class="mobile-hide">&emsp;&emsp;</span><%if(passage.forum){%><ion-icon style="color:brown;"src="/images/ionicons/ellipse.svg"></ion-icon> Forum<%}else if(passage.public){%><ion-icon style="color:green;"src="/images/ionicons/ellipse.svg"></ion-icon> <%=passage.label%><%}else if(!passage.public){%><ion-icon style="color:red;"src="/images/ionicons/ellipse.svg"></ion-icon> <%=passage.label%><%}%><%if(passage.location){%> in <%-passage.location%><%}%></div></div>
     <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><a style="color:white;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%=passage.title%></a></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
     <%var showMore = '';%>
@@ -369,7 +369,7 @@
                     <%if(typeof comments != 'undefined'){%>
                         <%var loc = comments ? 'comments' : 'passage';%>
                     <%}else{%>
-                        <%var loc = 'passages';%>
+                        <%var loc = 'passage';%>
                     <%}%>
                     <%if(!thread){%>
                         <a style="color:inherit;text-decoration:none;"href="/<%=loc%>/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>/<%=i%>"><li class="pnum pnum-<%=i%>"><%=i%></li></a>
