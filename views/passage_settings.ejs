@@ -24,12 +24,22 @@ Add User (Read/Write Access): <br>
 Add Collaborator (Split Stars): <br>
 <input autocomplete="off" placeholder="Email..."class="passage_add_collaborator"id="passage_add_collaborator_<%=passage._id%>"type="">
 <br><br>
+<!-- <div id="label-color-<%=passage._id%>"style="display:inline"class="test"><ion-icon src="/images/ionicons/ellipse.svg"></ion-icon></div> -->
+<select id="label-select-<%=passage._id%>"style="font-weight:normal;border: 1px solid black;"class="label-select">
+    <option><%=passage.label%></option>
+    <option>Project</option>
+    <option>Task</option>
+    <option>Social</option>
+    <option>Forum</option>
+    <option>Question</option>
+    <option>Idea</option>
+    <option>Database</option>
+    <option>Comment</option>
+</select>
+<br><br>
 Toggle Green/Red for Active/Inactive
 <br>
-<div data-setting="private"class="passage_setting <%=passage.public == false ? 'green' : 'red';%>"id="passage_setting_make_private_<%=passage._id%>">Make Private (Default) (Only Team members can add passages)</div>
-<div data-setting="public"class="passage_setting <%=passage.public == true ? 'green' : 'red';%>"id="passage_setting_make_public_<%=passage._id%>">Make Public (Everyone can add passages, ranked by best)</div>
 <div data-setting="personal"class="passage_setting <%=passage.personal == true ? 'green' : 'red';%>"id="passage_setting_make_private_<%=passage._id%>">Make Personal (Only Team members can View)</div>
-<div data-setting="forum"class="passage_setting <%=passage.forum == true ? 'green' : 'red';%>"id="passage_setting_make_forum_<%=passage._id%>">Make Forum (Everyone's a Team Member)</div>
 <!-- <div data-setting="personal"class="passage_setting <%=passage.personal == false ? 'green' : 'red';%>"id="passage_setting_make_personal_<%=passage._id%>">Make Personal (Only Team members can even see the passage)</div> -->
 <div data-setting="cross-origin-allowed"class="passage_setting <%=passage.personal_cross_origin == true ? 'green' : 'red';%>"id="passage_setting_cross_origin_allowed_<%=passage._id%>">Cross Origin Allowed (Dangerous: Personal Advanced)</div>
 <div data-setting="request-public-daemon"class="passage_setting <%=passage.public_daemon == 0 ? 'red' : 'yellow';%>"id="passage_setting_public_daemon_requested_<%=passage._id%>">Request Public Daemonization (Locks Passage)</div>
