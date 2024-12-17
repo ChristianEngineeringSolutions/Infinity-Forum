@@ -39,6 +39,7 @@
     "mongodb": "6.8",
     "mongodb-backup": "^0.2.0",
     "mongodb-restore": "^0.1.0",
+    "mongodb-snapshot": "^1.4.1",
     "mongoose": "^5.7.1",
     "mongoose-paginate": "^5.0.3",
     "n": "^9.0.1",
@@ -60,6 +61,7 @@
     "string-similarity": "^4.0.4",
     "string-similarity-js": "^2.1.4",
     "stripe": "^11.5.0",
+    "unzipper": "^0.12.3",
     "uuid": "^7.0.1"
   },
   "devDependencies": {

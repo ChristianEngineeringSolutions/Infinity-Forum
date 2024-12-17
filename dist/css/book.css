@@ -17,6 +17,9 @@ hr{
 .red{
     color: red;
 }
+.brown{
+    color: brown;
+}
 .basic_link{
     text-decoration: none;
     color: inherit;
@@ -36,6 +39,68 @@ hr{
 #page_title_container{
     margin-top: 120px;
 }
+#label-select-div{
+  width: 90%;
+  overflow: hidden;
+  border: 1px solid #000;
+  position: relative;
+  padding: 10px 0;
+  margin:auto;
+}
+#label-select-div:after{
+  width: 0; 
+  height: 0; 
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #fff;
+  position: absolute;
+  top: 40%;
+  right: 1%;
+  content: "";
+  z-index: 98;
+ }
+#label-select, #sort-select{
+    z-index: 9999999 !important;
+    position: relative;
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+    margin: auto;
+    margin-bottom: 10px;
+    padding-left: 0px;
+    padding-right: 0px;
+    /* margin-top: 80px; */
+    display: block;
+    padding: 15px;
+    background: url('/images/gray_sand.png');
+    background: rgba(204,204,204,.2);
+  border: 0;
+  color: white;
+}
+#sort-select-div{
+  width: 90%;
+  overflow: hidden;
+  border: 1px solid #000;
+  position: relative;
+  padding: 10px 0;
+  margin: auto;
+}
+#sort-select-div:after{
+  width: 0; 
+  height: 0; 
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #fff;
+  position: absolute;
+  top: 40%;
+  right: 1%;
+  content: "";
+  z-index: 98;
+ }
+ #sort-select{
+    width: 100%;
+    font-weight: lighter;
+ }
 #search{
 	z-index: 9999999 !important;
 	position: relative;
