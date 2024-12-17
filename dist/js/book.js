@@ -144,7 +144,7 @@ $(function(){
     $(document).on('change', '#label-select-div, #sort-select-div', function(){
         //trigger search
         //TODO: do for profile and messages
-        if($('#chief_passage_id') == 'root'){
+        if($('#chief_passage_id').val() == 'root'){
             $("#search").trigger({ type: "keypress", which: 13 });
         }
         else{
@@ -213,7 +213,9 @@ $(function(){
                 url: '/search_profile/',
                 data: {
                     search: thiz.val(),
-                    _id: $('#is_profile').val()
+                    _id: $('#is_profile').val(),
+                    label: $('#label-select').val(),
+                    sort: $('#sort-select').val()
                 },
                 success: function(data){
                     $('#passage_wrapper').html(data);

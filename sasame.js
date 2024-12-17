@@ -1286,6 +1286,9 @@ async function getPassageLocation(passage, train){
         if(word != 'Infnity Forum'){
             word = passage.label + 's';
         }
+        if(passage.label == "Social"){
+            word = 'Network'
+        }
         train.push(word);
         return train.reverse();
     }
@@ -2261,6 +2264,7 @@ app.post('/search_passage/', async (req, res) => {
             sort = {date: 1};
             break;
     }
+    console.log(sort);
     let results = await Passage.find(find).populate('author users sourceList').sort(sort).limit(DOCS_PER_PAGE);
     if(results.length < 1 && req.session.user){
         var parent = await Passage.findOne({_id: req.body._id});
