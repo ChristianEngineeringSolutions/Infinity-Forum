@@ -284,33 +284,24 @@ $(function(){
 
         }
     });
-    $(document).on('change', '[id^="label-select-"]', function(e){
-        var ID = $(this).attr('id').split('-').at(-1);
-        console.log(ID);
-        switch($(this).val()){
-            case 'Project':
-            case 'Idea':
-            case 'Database':
-                // $('#label-color-'+ID).removeClass();
-                // $('#label-color-'+ID).addClass('brown');
-                $('#label-color-'+ID).css('color', 'red');
-                break;
-            case 'Social':
-            case 'Question':
-            case 'Comment':
-            case 'Task':
-                console.log('green');
-                // $('#label-color-'+ID).removeClass();
-                // $('#label-color-'+ID).addClass('green');
-                $('#label-color-'+ID).css('color', 'green');
-                break;
-            case 'Forum':
-                // $('#label-color-'+ID).removeClass();
-                // $('#label-color-'+ID).addClass('brown');
-                $('#label-color-'+ID).css('color', 'brown');
-                break;
-
-        }
+    
+    $(document).on('change', '[id^="passage_showbestof_"]', function(e){
+        var ID = $(this).attr('id').split('_').at(-1);
+        var thiz = $(this);
+        console.log($(this).is(':checked'));
+        $.ajax({
+            type: 'post',
+            // url: DOMAIN + '/create_passage/' + fromOtro,
+            url: '/show-bestof/',
+            data: {
+                _id: ID,
+                checked: thiz.is(':checked')
+            },
+            success: function(data){
+                thisPassage(thiz, '_').replaceWith(data);
+            }
+        });
+        
     });
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
@@ -352,7 +343,7 @@ $(function(){
         return encodeURIComponent($('#passage_title_'+_id).val());
     }
     function thisPassage(thiz, separator='_'){
-        console.log(getPassageId(thiz, separator));
+        // console.log(getPassageId(thiz, separator));
         return $('#passage_' + getPassageId(thiz, separator));
     }
     $(document).on('click', '[id^="passage-delete-"]', function(e){
@@ -655,6 +646,7 @@ $(function(){
         window.location.href = $(this).data('url');
     });
     $(document).on('change', '[id^=label-select-]', function(e){
+        var ID = $(this).attr('id').split('-').at(-1);
         var thiz = $(this);
         $.ajax({
             // url: DOMAIN + '/remove_user',
@@ -667,6 +659,34 @@ $(function(){
             },
             success: function (data) {
                 thisPassage(thiz, '-').replaceWith(data);
+                // switch($('#label-select-'+ID).val()){
+                //     case 'Project':
+                //     case 'Idea':
+                //     case 'Database':
+                //         // $('#label-color-'+ID).removeClass();
+                //         // $('#label-color-'+ID).addClass('brown');
+                //         $('#label-color-'+ID).css('color', 'red');
+                //         // $('#show-bestof-'+ID).hide();
+                //         break;
+                //     case 'Social':
+                //     case 'Question':
+                //     case 'Comment':
+                //     case 'Task':
+                //         console.log('green');
+                //         // $('#label-color-'+ID).removeClass();
+                //         // $('#label-color-'+ID).addClass('green');
+                //         console.log('#label-color-'+ID);
+                //         $('#label-color-'+ID).css('color', 'green');
+                //         // $('#show-bestof-'+ID).show();
+                //         break;
+                //     case 'Forum':
+                //         // $('#label-color-'+ID).removeClass();
+                //         // $('#label-color-'+ID).addClass('brown');
+                //         $('#label-color-'+ID).css('color', 'brown');
+                //         // $('#show-bestof-'+ID).hide();
+                //         break;
+
+                // }
             }
         });
     });
@@ -1052,7 +1072,7 @@ $(function(){
                     else{
                         $('#passage_wrapper').append(data);
                         //go to last passage
-                        $('.passage').eq(-2)[0].scrollIntoView();
+                        // $('.passage').eq(-2)[0].scrollIntoView();
                     }
                 }
                 else if(which == 'thread'){
@@ -1076,19 +1096,19 @@ $(function(){
     replacePassages();
 });
 function replacePassages(){
-        $('[id^=p_mirror_], [id^=p_bestOf_]').each(function(){
-            var parentID = $(this).parent().attr('id');
-            $(this).parent().html($('#small-loading').html());
-            $.ajax({
-                url: '/get_big_passage',
-                type: 'get',
-                data: {
-                    _id: $(this).attr('id').split('_').at(-1)
-                },
-                success: function(data){
-                    $('#' + parentID).replaceWith(data);
-                }
-            });
-        });
-        syntaxHighlight();
+        // $('[id^=p_mirror_], [id^=p_bestOf_]').each(function(){
+        //     var parentID = $(this).parent().attr('id');
+        //     $(this).parent().html($('#small-loading').html());
+        //     $.ajax({
+        //         url: '/get_big_passage',
+        //         type: 'get',
+        //         data: {
+        //             _id: $(this).attr('id').split('_').at(-1)
+        //         },
+        //         success: function(data){
+        //             $('#' + parentID).replaceWith(data);
+        //         }
+        //     });
+        // });
+        // syntaxHighlight();
     }

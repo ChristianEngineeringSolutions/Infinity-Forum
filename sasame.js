@@ -1321,6 +1321,13 @@ async function returnPassageLocation(passage){
     // return passage.parent ? passage.parent.title + passage.parent.parent.title : '';
     return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + passage.parent.title + '/' + passage.parent._id) : '/posts') +'">' + location + '</a>';
 }
+async function modifyArrayAsync(array, asyncFn) {
+  const promises = array.map(async (item) => {
+    return await asyncFn(item);
+  });
+
+  return Promise.all(promises);
+}
 app.get('/posts', async (req, res) => {
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     //REX
@@ -1340,10 +1347,14 @@ app.get('/posts', async (req, res) => {
             personal: false,
             versionOf: null
         }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
-        for(const passage of passages){
-            passages[passage] = bubbleUpAll(passage);
-            passage.location = await returnPassageLocation(passage);
-            passage.sourceList = await getRecursiveSourceList(passage.sourceList);
+        // for(const passage of passages){
+        //     // return await getPassage(passage._id);
+        //     // passages[passage] = bubbleUpAll(passage);
+        //     // passage.location = await returnPassageLocation(passage);
+        //     // passage.sourceList = await getRecursiveSourceList(passage.sourceList);
+        // }
+        for(var i = 0; i < passages.length; ++i){
+            passages[i] = await getPassage(passages[i]._id);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -1479,6 +1490,102 @@ app.get('/forum', async (req, res) => {
     // await Subforum.deleteMany({});
     // fillForum();
 });
+async function getPassage(_id){
+    var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums');
+    if(passage == null){
+        return res.redirect('/');
+    }
+    try{
+        var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums');
+        passage.sourceList.push(mirror);
+    }
+    catch(e){
+        var mirror = null;
+    }
+    try{
+        var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums');
+        passage.sourceList.push(bestOf);
+    }
+    catch(e){
+        var bestOf = null;
+    }
+    passage.sourceList = await getRecursiveSourceList(passage.sourceList);
+    var replacement = mirror == null ? bestOf : mirror;
+    var replacing = false;
+    replacement = bestOf == null ? mirror : bestOf;
+    if(replacement != null){
+        replacing = true;
+    }
+    if(passage == null){
+        return false;
+    }
+    passage.showIframe = false;
+    // if(passage == null){
+    //     return res.redirect('/');
+    // }
+    let passageUsers = [];
+    if(passage.users != null && passage.users[0] != null){
+        // passage.users.forEach(function(u){
+        //     passageUsers.push(u._id.toString());
+        // });
+        for(const u of passage.users){
+            passageUsers.push(u._id.toString());
+        }
+    }
+    if(replacing){
+        passage.passages = replacement.passages;
+    }
+    if(replacing && passage.mirrorEntire && passage.mirror != null){
+        passage.lang = replacement.lang;
+        passage.title = replacement.title;
+        passage.content = replacement.content;
+        passage.code = replacement.code;
+        passage.html = replacement.html;
+        passage.css = replacement.css;
+        passage.javascript = replacement.javascript;
+    }
+    if(replacing && passage.bestOfEntire && passage.bestOf != null){
+        passage.lang = replacement.lang;
+        passage.title = replacement.title;
+        passage.content = replacement.content;
+        passage.code = replacement.code;
+        passage.html = replacement.html;
+        passage.css = replacement.css;
+        passage.javascript = replacement.javascript;
+    }
+    passage = bubbleUpAll(passage);
+    if(replacing){
+    replacement = bubbleUpAll(replacement);
+    }
+    if(passage.public == true && !passage.forum){
+        
+    }
+    else{
+        if(passage.displayHTML.length > 0 || passage.displayCSS.length > 0 || passage.displayJavascript.length > 0){
+            passage.showIframe = true;
+        }
+        if(passage.forum){
+        }
+        else{ 
+        }
+    }
+    if(passage.parent != null){
+        var parentID = passage.parent._id;
+    }
+    else{
+        var parentID = 'root';
+    }
+    passage = await fillUsedInListSingle(passage);
+    passage.location = await returnPassageLocation(passage);
+    if(passage.showBestOf){
+        //get best sub passage
+        var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+        passage.bestSub = await getPassage(best._id);
+    }else{
+        passage.bestSub = false;
+    }
+    return passage;
+}
 async function getBigPassage(req, res, params=false, subforums=false, comments=false){
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
     let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
@@ -1490,6 +1597,9 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     }
     var page = req.query.page || req.params.page || 1;
     var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums');
+    if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
+        return res.send("Must be on Userlist");
+    }
     if(passage == null){
         return res.redirect('/');
     }
@@ -1522,9 +1632,6 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     })
     console.log(totalDocuments);
     var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
-    if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
-        return res.send("Must be on Userlist");
-    }
     passage.showIframe = false;
     // if(passage == null){
     //     return res.redirect('/');
@@ -1619,9 +1726,12 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         reordered = subPassages;
     }
     passage.passages = reordered;
-    for(const p of passage.passages){
-        passage.passages[p] = bubbleUpAll(p);
-        // passage.passages[p].location = await returnPassageLocation(passage.passages[p]);
+    // for(const p of passage.passages){
+    //     passage.passages[p] = bubbleUpAll(p);
+    //     // passage.passages[p].location = await returnPassageLocation(passage.passages[p]);
+    // }
+    for(var i = 0; i < passage.passages.length; ++i){
+        passage.passages[i] = await getPassage(passage.passages[i]._id);
     }
     if(passage.parent != null){
         var parentID = passage.parent._id;
@@ -2923,7 +3033,7 @@ function concatObjectProps(passage, sub){
         passage.displayCSS += (typeof sub.displayCSS == 'undefined' || sub.displayCSS == '' ? '' : '\n' + sub.displayCSS);
     if(typeof passage.javascript != 'undefined')
         passage.displayJavascript += (typeof sub.displayJavascript == 'undefined' || sub.displayJavascript == '' ? '' : '\n' + sub.displayJavascript);
-    if(passage.mimeType[0] == 'video'){
+    if(sub.mimeType[0] == 'video'){
         var filename = sub.filename[0];
         // console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
@@ -3134,7 +3244,8 @@ app.get('/get_big_passage', async function(req, res){
         sub: true,
         page: 'more',
         whichPage: 'sub',
-        location: location
+        location: location,
+        subPassage: true
     });
 });
 app.get('/stripeAuthorize', async function(req, res){
@@ -3578,7 +3689,8 @@ app.post('/paginate', async function(req, res){
                 subPassages: false,
                 passages: passages.docs,
                 sub: true,
-                subPassage: false
+                subPassage: false,
+                page: page
             });
         }
         else{
@@ -3922,7 +4034,25 @@ app.post('/change_label', async (req, res) => {
     passage.location = await returnPassageLocation(passage);
     var subPassage = req.body.parent == 'root' ? false : true;
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
-    return res.send("Label updated.");
+});
+app.post('/show-bestof', async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var _id = req.body._id;
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
+    console.log(req.body.checked);
+    passage.showBestOf = req.body.checked;
+    await passage.save();
+    // passage = bubbleUpAll(passage);
+    // passage = await fillUsedInListSingle(passage);
+    // passage.location = await returnPassageLocation(passage);
+    passage = await getPassage(passage._id);
+    var subPassage = req.body.parent == 'root' ? false : true;
+    return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
 });
 app.post('/star_passage/', async (req, res) => {
     console.log('star_passage');

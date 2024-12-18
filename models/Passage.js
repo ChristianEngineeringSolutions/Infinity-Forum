@@ -52,6 +52,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    showBestOf: {
+        type: Boolean,
+        default: false
+    },
     //to help user apps (store JSON)
     metadata: String,
     html: {
@@ -229,6 +233,10 @@ const passageSchema = mongoose.Schema({
     },
     //permissions/settings
     public: {
+        type: Boolean,
+        default: false
+    },
+    showBestOf: {
         type: Boolean,
         default: false
     },
