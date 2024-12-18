@@ -72,10 +72,10 @@
             <div id="passage_wrapper">
                 <!-- Show passage list or search list -->
                 <%if(passages){%>
-                    <%- include('passages') %>
+                    <%- include('passages', {page: page}) %>
                 <%}else if (passage){%>
                 <!-- Just show one passage -->
-                    <%- include('passage', {passage: passage, sub: sub, subPassages: subPassages, subPassage: false}) %>
+                    <%- include('passage', {passage: passage, sub: sub, subPassages: subPassages, subPassage: false, page: page}) %>
                 <%} %>
             </div>
             <div id="passage_form_wrapper"></div>

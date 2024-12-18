@@ -1,0 +1,170 @@
+<div class="detail-div"style="<%=bg || ''%>">
+        <div style="<%=short%>"class="p-padding-box">
+            <div class="toppings">
+            <div style=""class="p-image-container">
+            <%if(passage.author && passage.author.thumbnail != null){%>
+                <div class="p-thumbnail"style="display:block;background:url('/uploads/<%=passage.author.thumbnail%>');background-size:cover;background-position: center center;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>"></div>
+                <%}else{%>
+                    <ion-icon style=""class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
+                <%}%>
+        </div><div class="p-date<%=passage.author.admin ? ' p-date-admin' : ''%>"><%if(passage.author.admin){%><div class="p-admin">ADMIN</div><%}%><%- include('profile_thumbnail', {profile: passage.author}) %>, <%=passage.date ? passage.date.toLocaleDateString() : ''%><br class="mobile-show"><span class="mobile-hide">&emsp;&emsp;</span><%if(passage.forum){%><ion-icon style="color:brown;"src="/images/ionicons/ellipse.svg"></ion-icon> Forum<%}else if(passage.public){%><ion-icon style="color:green;"src="/images/ionicons/ellipse.svg"></ion-icon> <%=passage.label%><%}else if(!passage.public){%><ion-icon style="color:red;"src="/images/ionicons/ellipse.svg"></ion-icon> <%=passage.label%><%}%><%if(passage.location){%> in <%-passage.location%><%}%></div></div>
+    <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><a style="color:white;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%=passage.title%></a></h3></div>
+    <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
+    <%var showMore = '';%>
+    <%if(passage.displayContent != null && passage.displayContent.replace(/<[^>]*>?/gm, '') != ''){%>
+        <hr class="hr">
+        <%}%>
+        <%var content = passage.displayContent || passage.content;%>
+        <%if(content == '<p><br></p>'){%>
+            <%content = '';%>
+        <%}%>
+        <%if(!subPassage && sub && content){%>
+            <%showMore = content.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%content = content.length < 800 ? content : content.substring(0,800).trim()%>
+        <%}else{%>
+            <%showMore = '';%>
+        <%}%>
+        <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-content + showMore%></div>
+        <!-- <ul class="passage_tabs">
+            <li class="passage_tab passage_tab_open_advanced">Advanced</li> -->
+            <!-- Display Result -->
+            <!-- <li class="passage_tab">Alternates</li> -->
+        <!-- </ul> -->
+    <%if(passage.author && user && passage.author._id == user._id){%>
+        <%- include('editor') %>
+    <%}else{%>
+    <%}%>
+    <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
+    <% if(passage.filename){ %>
+        <%passage.filename.forEach(function(fname, i){%>
+            <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
+                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
+           <%}else if (passage.isSVG){%>
+               <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
+           <%}else if(passage.mimeType[i] == 'audio'){%>
+               <%-passage.audio%>
+           <%}else if(passage.mimeType[i] == 'video'){%>
+               <%-passage.video%>
+           <%}else if(passage.mimeType[i] == 'model'){%>
+               <%if(passage.thumbnail == null){%>
+                   <img id="p_thumbnail_<%=passage._id%>" alt="">
+                   <!-- Create and upload thumbnail if it does not exist -->
+                   <script>
+                       var _id = "<%=passage._id%>";
+                       const scene = new THREE.Scene();
+                       const camera = new THREE.PerspectiveCamera( 75, 300 / 300, 0.1, 1000 );
+                       var srcLink = "/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>";
+                       const renderer = new THREE.WebGLRenderer();
+                       renderer.domElement.id = "model_thumbnail_canvas_" + _id;
+                       renderer.domElement.style = "display:none;";
+                       renderer.setSize( 300, 300 );
+                       $("#p_thumbnail_" + _id).after(renderer.domElement);
+                       //load model into scene
+                       var loader = new THREE.GLTFLoader();
+                       loader.load(srcLink, function(data){
+                           scene.add( data.scene );
+                           camera.position.z = 5;
+                           //make sure there is light to see the object
+                           var light = new THREE.PointLight( 0xffffcc, 20, 200 );
+                           light.position.set( 4, 30, -20 );
+                           scene.add( light );
+       
+                           var light2 = new THREE.AmbientLight( 0x20202A, 20, 100 );
+                           light2.position.set( 30, -10, 30 );
+                           scene.add( light2 );
+                           renderer.render(scene, camera);
+                           //save snapshot of canvas to thumbnail field as data url
+                           var base64Image = renderer.domElement.toDataURL();
+                           $('#p_thumbnail_' + _id).attr('src', base64Image);
+                           $.ajax({
+                               type: 'post',
+                               url: '/update_thumbnail/',
+                               data: {
+                                   passageID: _id,
+                                   thumbnail: base64Image
+                               },
+                               success: function(data){
+                                   // alert(data);
+                               }
+                           });
+   
+                           // $('#thumbnail_clip_' + id).val(base64Image);
+                       });
+                   </script>
+               <%}else{%>
+                   <img id="p_thumbnail_<%=passage._id%>" src="/<%=getUploadFolder(passage)%>/<%=passage.thumbnail%>" alt="">
+               <%}%>
+           <%}%>
+
+        <%});%>
+    <%}%>
+    <!-- <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced"> -->
+        <%if(passage.lang == 'mixed' && passage.lang != 'rich'){%>
+            <%var html = passage.displayHTML || passage.html || '';%>
+            <%if(!subPassage && sub){%>
+                <%var showMoreHTML = html.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%html = html.length < 800 ? html : html.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%var showMoreHTML = '';%>
+            <%}%>
+            <div id="passage_detail_html_<%=passage._id%>"style="width:30%;"class="code_display display_html display_data_<%=passage._id%>"><pre><code class="language-html"></code><%=html%></code></pre></div>
+            <%var css = passage.displayCSS || passage.css || '';%>
+            <%if(!subPassage && sub){%>
+                <%var showMoreCSS = css.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%css = css.length < 800 ? css : css.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%var showMoreCSS = '';%>
+            <%}%>
+            <div id="passage_detail_css_<%=passage._id%>"style="width:30%;"class="code_display display_css display_data_<%=passage._id%>"><pre><code class="language-css"><%=css%></code></pre></div>
+            <%var js = passage.displayJavascript || passage.javascript || '';%>
+            <%if(!subPassage && sub){%>
+                <%var showMoreJS = js.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%js = js.length < 800 ? js : js.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%var showMoreJS = '';%>
+            <%}%>
+            <div id="passage_detail_js_<%=passage._id%>"style="width:30%;"class="code_display display_js display_data_<%=passage._id%>"><pre><code class="language-javascript"><%=js%></code></pre></div>
+            <%if(showMoreHTML.length > 0 || showMoreJS.length > 0 || showMoreCSS.length > 0){%>
+                <br><%-showMoreHTML%><br>
+            <%}%>
+        <%}else if(passage.lang != 'rich'){%>
+            <%var code = passage.displayCode || passage.code;%>
+            <%if(!subPassage && sub && code){%>
+                <%showMore = code.length < 800 ? '' : '<a href="/passage/'+(passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title))+'/'+passage._id+'"style="color:white;font-weight:bolder;cursor:pointer;">...Show More</a>';%>
+                <%code = code.length < 800 ? code : code.substring(0,800).trim() + '[...]'%>
+            <%}else{%>
+                <%showMore = '';%>
+            <%}%>
+            <div id="passage_detail_code_<%=passage._id%>"class="display_code display_data_<%=passage._id%>"><pre><code class="language-<%=passage.lang == 'daemon' || passage.lang == 'daemonFrame' ? 'javascript' : passage.lang%>"><%=code%></code></pre></div><br><%-showMore%>
+        <%}%>
+        <!-- Show .EXT -->
+        <!-- Show License -->
+    <!-- </div> -->
+    <%if(passage.filename && passage.filename.length > 0){%>
+        <br>
+        <%for(file of passage.filename){%>
+            <a target="_blank"href="/uploads/<%=file%>"><%=file%></a><br>
+        <%}%>
+    <%}%>
+    <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
+    <!-- Hide Iframe window if there is neither html nor js, or if it is not a daemon -->
+    <%if((passage.lang != 'mixed') && (passage.lang != 'daemon' && passage.lang != 'daemonFrame') && (passage.displayHTML == null || passage.displayHTML == '') && (passage.displayJavascript == null || passage.displayJavascript == '')){%>
+        <% hide = ' hide'; %>
+    <%}else{%>
+        <% hide = ''; %>
+        <br><br>
+        <a target="_blank"href="/eval/<%=passage._id%>"><ion-icon title="Full Screen"src="/images/ionicons/expand-outline.svg"></ion-icon></a>
+    <%}%>
+    <div id="passage_iframe_<%=passage._id%>"class="passage_iframe<%=hide%>" id="result_div">
+        <%if((user && passage.personal_cross_origin && user._id == passage.author._id) || (passage.public_daemon == 2)){%>
+            <!-- Only allow daemon in scope -->
+            <%if(sub === false || subPassages){%>
+                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+            <%}else{%>
+                <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+            <%}%>
+        <%}else{%>
+            <iframe class="iframe" src="/eval/<%=passage._id%>" frameborder="0" sandbox="allow-scripts"></iframe>
+        <%}%>
+    </div>
+</div>

@@ -363,7 +363,6 @@ $(function(){
     var goScroll = true;
     $(window).scroll(function() {
        if($(window).scrollTop() + $(window).height() >= $(document).height() - 850) {
-           console.log();
            if(goScroll==true){
                goScroll = false;
                $('#view_more').click();

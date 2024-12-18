@@ -37,6 +37,8 @@ Add Collaborator (Split Stars): <br>
     <option>Comment</option>
 </select>
 <br><br>
+<div id="show-bestof-<%=passage._id%>"><input id="passage_showbestof_<%=passage._id%>"<%=passage.showBestOf ? ' checked ' : ''%>type="checkbox" name="mirrorEntire"> Show best of</div>
+<br><br>
 Toggle Green/Red for Active/Inactive
 <br>
 <div data-setting="personal"class="passage_setting <%=passage.personal == true ? 'green' : 'red';%>"id="passage_setting_make_private_<%=passage._id%>">Make Personal (Only Team members can View)</div>
