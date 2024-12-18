@@ -35,7 +35,10 @@
     <%}else{%>
     <%}%>
     <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
-    <% if(passage.filename || passage.video){ %>
+    <%if(passage.filename || passage.video.length > 1){ %>
+        <%if(passage.filename == false){%>
+            <%passage.filename = [1];%>
+        <%}%>
         <%passage.filename.forEach(function(fname, i){%>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
                 <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
@@ -43,7 +46,7 @@
                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}else if(passage.mimeType[i] == 'audio'){%>
                <%-passage.audio%>
-           <%}else if(passage.video){%>
+           <%}else if(passage.video.length > 1){%>
                <%-passage.video%>
            <%}else if(passage.mimeType[i] == 'model'){%>
                <%if(passage.thumbnail == null){%>
