@@ -18,8 +18,8 @@ const request = promisify(require('request'));
 const browser = require('browser-detect');
 var ffmpeg = require('fluent-ffmpeg');
 const axios = require("axios"); //you can use any http client
-const tf = require("@tensorflow/tfjs-node");
-const nsfw = require("nsfwjs");
+// const tf = require("@tensorflow/tfjs-node");
+// const nsfw = require("nsfwjs");
 var fs = require('fs'); 
 const fsp = require('fs').promises;
 //for daemons access to help code
@@ -1667,6 +1667,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage.javascript = replacement.javascript;
     }
     passage = bubbleUpAll(passage);
+    console.log('fire'+passage.video);
     if(replacing){
     replacement = bubbleUpAll(replacement);
     }
@@ -3069,6 +3070,7 @@ function concatObjectProps(passage, sub){
         </script>
         `;
     }
+    // console.log(passage.video);
     passage.sourceList = [...passage.sourceList, ...sub.sourceList];
 }
 function getAllSubData(passage){
@@ -3100,12 +3102,14 @@ function getAllSubData(passage){
         //     }
         // });
     }
+    // console.log(passage.video);
     return passage;
 }
 function bubbleUpAll(passage){
     if(typeof passage == 'undefined'){
         return passage;
     }
+    passage.video = '';
     if(passage.mimeType[0] == 'video'){
         passage.video = `
         <video id="passage_video_`+passage._id+`"class="passage_video"width="320" height="240" controls>
@@ -3145,8 +3149,10 @@ function bubbleUpAll(passage){
         return passage;
     }
     if(!passage.public && !passage.forum){
-        return getAllSubData(passage);
+        passage = getAllSubData(passage);
+        // return getAllSubData(passage);
     }
+    // console.log(passage.video);
     return passage;
 }
 function handleUntitled(title){
