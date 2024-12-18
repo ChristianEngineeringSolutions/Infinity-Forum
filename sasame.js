@@ -753,8 +753,8 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     var usd = 0;
     usd = parseInt((await percentStars(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
     if(isNaN(usd)){
-		usd = 0;
-	}
+        usd = 0;
+    }
     passages = await fillUsedInList(passages);
     var following;
     if(req.session.user){
@@ -898,7 +898,7 @@ app.get('/alternate', async(req, res) => {
     //need to test more and bugfix algorithm above
     reordered = reordered.filter(x => x !== 0); //just get rid of extra 0s
     if(parent.passages.length < 1){
-	    reordered = subPassages;
+        reordered = subPassages;
     }
     parent.passages = reordered;
     // if(parent._id.toString() == req.query.passageID){
@@ -1553,9 +1553,9 @@ async function getPassage(_id){
         passage.css = replacement.css;
         passage.javascript = replacement.javascript;
     }
-    passage = bubbleUpAll(passage);
+    passage = await bubbleUpAll(passage);
     if(replacing){
-    replacement = bubbleUpAll(replacement);
+    replacement = await bubbleUpAll(replacement);
     }
     if(passage.public == true && !passage.forum){
         
@@ -1611,7 +1611,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         var mirror = null;
     }
     try{
-        var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars');
+        var bestOf = await Passage.findOne({parent:passage.bestOf._id}, null, {sort: {stars: -1}});
         passage.sourceList.push(bestOf);
     }
     catch(e){
@@ -1666,10 +1666,10 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage.css = replacement.css;
         passage.javascript = replacement.javascript;
     }
-    passage = bubbleUpAll(passage);
-    console.log('fire'+passage.video);
+    passage = await bubbleUpAll(passage);
+    console.log('twice'+passage.video);
     if(replacing){
-    replacement = bubbleUpAll(replacement);
+    replacement = await bubbleUpAll(replacement);
     }
     if(passage.public == true && !passage.forum){
         // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
@@ -3021,8 +3021,8 @@ app.get('/eval/:passage_id', async function(req, res){
     }
     res.render("eval", {passage: passage, all: all});
 });
-function concatObjectProps(passage, sub){
-    sub = bubbleUpAll(sub);
+async function concatObjectProps(passage, sub){
+    sub = await bubbleUpAll(sub);
     // console.log(sub.code);
     if(typeof passage.content != 'undefined')
         passage.displayContent += (typeof sub.displayContent == 'undefined' || sub.displayContent == '' ? '' : sub.displayContent);
@@ -3038,8 +3038,13 @@ function concatObjectProps(passage, sub){
         var filename = sub.filename[0];
         // console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
+        if(passage.video == ''){
+            var displayNone = '';
+        }else{
+            var displayNone = 'style="display:none"';
+        }
         passage.video += `
-        <video class="passage-file-`+sub._id+`"style="display:none"id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
+        <video class="passage-file-`+sub._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename[0].split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
@@ -3071,21 +3076,26 @@ function concatObjectProps(passage, sub){
         `;
     }
     // console.log(passage.video);
-    passage.sourceList = [...passage.sourceList, ...sub.sourceList];
+    passage.sourceList = [...passage.sourceList, sub, ...sub.sourceList];
 }
-function getAllSubData(passage){
+async function getAllSubData(passage){
     if(!passage.public && passage.passages && passage.bubbling){
         for(const p of passage.passages){
             if(typeof p == 'undefined'){
                 return p;
             }
-            p.displayContent = p.content;
-            p.displayCode = p.code;
-            p.displayHTML = p.html;
-            p.displayCSS = p.css;
-            p.displayJavascript = p.javascript;
-            if(p.lang == passage.lang){
-                concatObjectProps(passage, getAllSubData(p));
+            var b = p;
+            if(p.showBestOf){
+                var best = await Passage.findOne({parent: p._id}, null, {sort: {stars: -1}});
+                b = best;
+            }
+            b.displayContent = p.content;
+            b.displayCode = p.code;
+            b.displayHTML = p.html;
+            b.displayCSS = p.css;
+            b.displayJavascript = p.javascript;
+            if(b.lang == passage.lang){
+                await concatObjectProps(passage, await getAllSubData(b));
             }
         }
         // passage.passages.forEach((p)=>{
@@ -3102,10 +3112,11 @@ function getAllSubData(passage){
         //     }
         // });
     }
-    // console.log(passage.video);
+    // console.log(passage.title+passage.video);
     return passage;
 }
-function bubbleUpAll(passage){
+async function bubbleUpAll(passage){
+    // console.log(passage.passages);
     if(typeof passage == 'undefined'){
         return passage;
     }
@@ -3149,10 +3160,10 @@ function bubbleUpAll(passage){
         return passage;
     }
     if(!passage.public && !passage.forum){
-        passage = getAllSubData(passage);
+        passage = await getAllSubData(passage);
         // return getAllSubData(passage);
     }
-    // console.log(passage.video);
+    // console.log('once'+passage.video);
     return passage;
 }
 function handleUntitled(title){
@@ -3867,6 +3878,7 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
             // parent.markModified('comments');
         }
         else{
+            console.log("pushed");
             parent.passages.push(passage);
             parent.markModified('passages');
         }
@@ -3985,7 +3997,7 @@ app.post('/create_initial_passage/', async (req, res) => {
         //also update file and server
         updateFile(passage.fileStreamPath, passage.code);
     }
-    passage = bubbleUpAll(passage);
+    passage = await bubbleUpAll(passage);
     passage = await fillUsedInListSingle(passage);
     if(formData.page == 'stream'){
         return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage:true});
@@ -5471,8 +5483,8 @@ process.on('SIGTERM', function(err){
 /**
  * 
 (async function(){
-	var passage = await GETPASSAGE('63faabffa5dc86b7e4d28180');
-	document.write(passage);
+    var passage = await GETPASSAGE('63faabffa5dc86b7e4d28180');
+    document.write(passage);
 })();
 
 */
