@@ -1,10 +1,10 @@
-# Engineering Solutions for the Church
+# Engineering Solutions for the People
 
-Christian Engineering Solutions (CES) is a Not for Profit Organization specializing in collaborative solutions development for the Church. In the Spirit of Jesus Christ, we are to spread the gospel throughout the Earth, taking care to be good examples of Christ Jesus by serving others. CES is designed to help the Church meet these goals in the most rigorous manner possible.
+Infinity-Forum (IF) is a Not for Profit Organization specializing in collaborative solutions development for helping others.
 
 # Our Technology
 
-Our Technology (Sasame) is scripture based in its goals and foundations. Open-Source and Free, one may use our services to both learn and solve problems with the goals of helping others and growing closer to God.
+Our Technology (Sasame) is Open-Source and Free, one may use our services to both learn and solve problems with the goal of helping others.
 
 # Features
 
@@ -23,12 +23,12 @@ Update env file
 
 install and run mongod
 
-Use same email as on CES for full features
+Use same email as on IF for full features
 
 # Website
 
 Public Version available at:
-christianengineeringsolutions.com
+infinity-forum.org
 
 Use the App for more features
-(CES Connect, Filesystem, and More!)
+(IF Connect, Filesystem, and More!)
