@@ -4467,6 +4467,7 @@ app.post('/update_passage/', async (req, res) => {
     if(subforums == 'true'){
         console.log(3);
     }
+     console.log('OKKKKKKKKKKKKKKKKKK');
     console.log("INFO: " + subforums);
     //Only for private passages
     if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
@@ -4494,9 +4495,10 @@ app.post('/update_passage/', async (req, res) => {
         //also update file and server
         // updateFile(passage.fileStreamPath, passage.code);
     }
-    passage = bubbleUpAll(passage);
-    passage = await fillUsedInListSingle(passage);
-    passage.location = await returnPassageLocation(passage);
+    console.log('OKKKKKKKKKKKKKKKKKK');
+    passage = await getPassage(passage._id);
+    console.log('flair'+passage.usedIn);
+    console.log("WHAAAAAAAT");
     var subPassage = formData.parent == 'root' ? false : true;
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
