@@ -518,7 +518,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     if(passage.author._id.toString() != req.session.user._id.toString()){
         user.starsGiven += amount;
         if(passage.collaborators.length > 0){
-            passage.author.stars += (amount + bonus)/passage.collaborators.length;
+            passage.author.stars += (amount + bonus)/(passage.collaborators.length + 1);
         }
         else{
             passage.author.stars += amount + bonus;
@@ -533,7 +533,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
                 }
                 let collaber = await User.findOne({email:collaborator});
                 if(collaber != null){
-                    collaber.stars += (amount + bonus)/passage.collaborators.length;
+                    collaber.stars += (amount + bonus)/(passage.collaborators.length + 1);
                     await collaber.save();
                 }
             }
@@ -1357,7 +1357,7 @@ app.get('/posts', async (req, res) => {
             deleted: false,
             personal: false,
             versionOf: null
-        }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent collaborators').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         // for(const passage of passages){
         //     // return await getPassage(passage._id);
         //     // passages[passage] = bubbleUpAll(passage);
@@ -1502,7 +1502,7 @@ app.get('/forum', async (req, res) => {
     // fillForum();
 });
 async function getPassage(_id){
-    var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums');
+    var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
         return res.redirect('/');
     }
@@ -2768,18 +2768,19 @@ app.post('/add_user', async (req, res) => {
 app.post('/add_collaborator', async (req, res) => {
     var passage = await Passage.findOne({_id: req.body.passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        if(!passage.collaborators.includes(req.body.email)){
-            passage.collaborators.push(req.body.email);
+        var collaborator = await User.findOne({username:req.body.username});
+        if(!passage.collaborators.includes(collaborator._id.toString())){
+            passage.collaborators.push(collaborator._id.toString());
             passage.markModified('collaborators');
         }
         //if possible add user
-        let collabUser = await User.findOne({email: req.body.email});
-        if(collabUser != null && !isPassageUser(collabUser, passage)){
-            passage.users.push(collabUser._id);
-            passage.markModified('users');
-        }
+        // let collabUser = await User.findOne({email: req.body.email});
+        // if(collabUser != null && !isPassageUser(collabUser, passage)){
+        //     passage.users.push(collabUser._id);
+        //     passage.markModified('users');
+        // }
         await passage.save();
-        return res.send("User Added");
+        return res.send("Collaborator Added");
     }
     else{
         return res.send("Wrong permissions.");
@@ -2905,6 +2906,30 @@ app.post('/remove_user', async (req, res) => {
             ++index;
         }
         passage.markModified('users');
+        await passage.save();
+        res.send("Done.");
+    }
+});
+app.post('/remove_collaber', async (req, res) => {
+    let passageID = req.body.passageID;
+    let userID = req.body.userID;
+    let passage = await Passage.findOne({_id: passageID});
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        // passage.users.forEach(async function(u, index){
+        //     if(u == userID){
+        //         //remove user
+        //         passage.users.splice(index, 1);
+        //     }
+        // });
+        var index = 0;
+        for(const u of passage.collaborators){
+            if(u == userID){
+                //remove user
+                passage.collaborators.splice(index, 1);
+            }
+            ++index;
+        }
+        passage.markModified('collaborators');
         await passage.save();
         res.send("Done.");
     }
