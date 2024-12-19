@@ -5,6 +5,8 @@
 	z-index: 99999;
 	position: fixed;
 	width: 100%;
+	top: 0px;
+	z-index: 99999999;
 }
 #ppe_canvas{
 	cursor: none;
