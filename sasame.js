@@ -1264,7 +1264,7 @@ app.get('/stream', async (req, res) => {
             deleted: false,
             personal: false,
             versionOf: null
-        }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent collaborators').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         for(const passage of passages){
             passages[passage] = bubbleUpAll(passage);
             passage.location = await returnPassageLocation(passage);
@@ -1414,7 +1414,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage_id = req.params.passage_id;
     }
     var page = req.query.page || req.params.page || 1;
-    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums');
+    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
         return res.redirect('/');
     }
@@ -2483,7 +2483,7 @@ app.post('/add_collaborator', async (req, res) => {
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         var collaborator = await User.findOne({username:req.body.username});
         if(!passage.collaborators.includes(collaborator._id.toString())){
-            passage.collaborators.push(collaborator._id.tostring());
+            passage.collaborators.push(collaborator._id.toString());
             passage.markModified('collaborators');
         }
         //if possible add user
@@ -2619,6 +2619,30 @@ app.post('/remove_user', async (req, res) => {
             ++index;
         }
         passage.markModified('users');
+        await passage.save();
+        res.send("Done.");
+    }
+});
+app.post('/remove_collaber', async (req, res) => {
+    let passageID = req.body.passageID;
+    let userID = req.body.userID;
+    let passage = await Passage.findOne({_id: passageID});
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        // passage.users.forEach(async function(u, index){
+        //     if(u == userID){
+        //         //remove user
+        //         passage.users.splice(index, 1);
+        //     }
+        // });
+        var index = 0;
+        for(const u of passage.collaborators){
+            if(u == userID){
+                //remove user
+                passage.collaborators.splice(index, 1);
+            }
+            ++index;
+        }
+        passage.markModified('collaborators');
         await passage.save();
         res.send("Done.");
     }

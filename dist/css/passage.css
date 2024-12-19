@@ -1,4 +1,4 @@
-.passage_remove_user{
+.passage_remove_user, .passage_remove_collaber{
 	cursor: pointer;
 	color:red;
 }
