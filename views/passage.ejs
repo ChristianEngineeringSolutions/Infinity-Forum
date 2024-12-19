@@ -185,6 +185,18 @@
         })%>
     </div>
     <%}%>
+    <%if(passage.best != null && sub == true && !passage.showBestOf){%>
+        <hr>
+        <%-include('detail-div', {
+            short: short, 
+            passage: passage.best, 
+            bg: 'background:rgba(0,0,0,0);',
+            test: 'testing',
+            link: false,
+            bestOf: true
+        })%>
+    </div>
+    <%}%>
    <div class="bottom-bar">
         <%if(user && passage.starrers){%>
         <%var gold = passage.starrers.includes(user._id.toString()) ? 'color:gold;' : ''%>
