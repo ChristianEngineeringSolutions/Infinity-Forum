@@ -167,14 +167,21 @@
             <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
         <%}%>
     </ul>
-    <%-include('detail-div', {short: short, bg: ''})%>
+    <%-include('detail-div', {
+        short: short, 
+        bg: '',
+        link: false,
+        bestOf: false
+    })%>
     <%if(passage.bestSub && sub == true){%>
         <hr>
         <%-include('detail-div', {
             short: short, 
             passage: passage.bestSub, 
             bg: 'background:rgba(0,0,0,0);',
-            test: 'testing'
+            test: 'testing',
+            link: '/passage/'+passage.title+'/'+passage._id,
+            bestOf: true
         })%>
     </div>
     <%}%>

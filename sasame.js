@@ -130,6 +130,17 @@ app.use(cors());
 app.use(helmet());
 app.use(fileUpload());
 
+const labelOptions = [
+    "Project",
+    'Idea',
+    'Database',
+    "Social",
+    "Question",
+    "Comment",
+    "Task",
+    "Forum"
+];
+
 // make sure recordings folder exists
 const recordingFolder = './dist/recordings/';
 if (!fs.existsSync(recordingFolder)) {
@@ -1580,7 +1591,12 @@ async function getPassage(_id){
     if(passage.showBestOf){
         //get best sub passage
         var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
-        passage.bestSub = await getPassage(best._id);
+        if(best != null){
+            passage.bestSub = await getPassage(best._id);
+        }
+        else{
+            passage.bestSub = false;
+        }
     }else{
         passage.bestSub = false;
     }
@@ -3024,16 +3040,18 @@ app.get('/eval/:passage_id', async function(req, res){
 async function concatObjectProps(passage, sub){
     sub = await bubbleUpAll(sub);
     // console.log(sub.code);
-    if(typeof passage.content != 'undefined')
+    if(sub.mimeType[0] != 'video' && sub.mimeType[0] != 'audio'){
+        if(typeof passage.content != 'undefined')
         passage.displayContent += (typeof sub.displayContent == 'undefined' || sub.displayContent == '' ? '' : sub.displayContent);
-    if(typeof passage.code != 'undefined')
-        passage.displayCode += (typeof sub.displayCode == 'undefined' || sub.displayCode == '' ? '' : '\n' + sub.displayCode);
-    if(typeof passage.html != 'undefined')
-        passage.displayHTML += (typeof sub.displayHTML == 'undefined' || sub.displayHTML == '' ? '' : '\n' + sub.displayHTML);
-    if(typeof passage.css != 'undefined')
-        passage.displayCSS += (typeof sub.displayCSS == 'undefined' || sub.displayCSS == '' ? '' : '\n' + sub.displayCSS);
-    if(typeof passage.javascript != 'undefined')
-        passage.displayJavascript += (typeof sub.displayJavascript == 'undefined' || sub.displayJavascript == '' ? '' : '\n' + sub.displayJavascript);
+        if(typeof passage.code != 'undefined')
+            passage.displayCode += (typeof sub.displayCode == 'undefined' || sub.displayCode == '' ? '' : '\n' + sub.displayCode);
+        if(typeof passage.html != 'undefined')
+            passage.displayHTML += (typeof sub.displayHTML == 'undefined' || sub.displayHTML == '' ? '' : '\n' + sub.displayHTML);
+        if(typeof passage.css != 'undefined')
+            passage.displayCSS += (typeof sub.displayCSS == 'undefined' || sub.displayCSS == '' ? '' : '\n' + sub.displayCSS);
+        if(typeof passage.javascript != 'undefined')
+            passage.displayJavascript += (typeof sub.displayJavascript == 'undefined' || sub.displayJavascript == '' ? '' : '\n' + sub.displayJavascript);
+    }
     if(sub.mimeType[0] == 'video'){
         var filename = sub.filename[0];
         // console.log((filename + '').split('.'));
@@ -3057,12 +3075,17 @@ async function concatObjectProps(passage, sub){
         </script>
         `;
     }
-    else if(passage.mimeType[0] == 'audio'){
+    else if(sub.mimeType[0] == 'audio'){
         var filename = sub.filename[0];
         // console.log((filename + '').split('.'));
         //`+passage.filename.split('.').at(-1)+`
+        if(passage.audio == ''){
+            var displayNone = '';
+        }else{
+            var displayNone = 'style="display:none"';
+        }
         passage.audio += `
-        <audio style="display:none"id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
+        <audio `+displayNone+`id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename[0].split('.').at(-1)+`">
             Your browser does not support the audio tag.
         </audio>
@@ -3121,6 +3144,7 @@ async function bubbleUpAll(passage){
         return passage;
     }
     passage.video = '';
+    passage.audio = '';
     if(passage.mimeType[0] == 'video'){
         passage.video = `
         <video id="passage_video_`+passage._id+`"class="passage_video"width="320" height="240" controls>
@@ -3858,7 +3882,7 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
         author: user,
         users: users,
         parent: parentId,
-        forum: forum,
+        // forum: forum,
         lang: lang,
         fileStreamPath: fileStreamPath,
         personal: personal
@@ -3938,6 +3962,9 @@ app.post('/create_initial_passage/', async (req, res) => {
         passage.forum = true;
     }
     passage.label = formData.label;
+    if(!labelOptions.includes(passage.label)){
+        return res.send("Not an option.");
+    }
     switch(passage.label){
         case 'Project':
         case 'Idea':
@@ -4026,6 +4053,9 @@ app.post('/change_label', async (req, res) => {
         return res.send("You can only update your own passages.");
     }
     passage.label = req.body.label;
+    if(!labelOptions.includes(passage.label)){
+        return res.send("Not an option.");
+    }
     switch(passage.label){
         case 'Project':
         case 'Idea':
