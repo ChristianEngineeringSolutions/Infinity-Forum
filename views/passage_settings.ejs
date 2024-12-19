@@ -11,7 +11,8 @@ Users:
 <br><br>
 Collaborators:
 <%if(passage.collaborators && passage.collaborators.length > 0){passage.collaborators.forEach(function(collaber, i) { %>
-    <%=collaber%>
+    <%=collaber.username%>
+    <span class="passage_remove_collaber"data-userid="<%=collaber._id%>"id="delete_passage_collaber_<%=passage._id%>">X</span>
     ,
 <%});}else{%>
     None
