@@ -2459,7 +2459,7 @@ async function labelOldPassages(){
     }
     console.log("Old Passages labeled.");
 }
-// await labelOldPassages();
+await labelOldPassages();
 app.post('/search/', async (req, res) => {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     // let exact = await Passage.findOne({personal:false,deleted:false,title:search});
