@@ -294,6 +294,10 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     },
+    best: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
+    },
     bestOf: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'

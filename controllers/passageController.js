@@ -75,6 +75,10 @@ module.exports = {
         //add source
         let sourceList = passage.sourceList;
         sourceList.push(passage._id);
+        if(passage.showBestOf){
+            var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+            copy.best = best;
+        }
         //duplicate main passage
         let copy = await Passage.create({
             parent: parent,
@@ -116,34 +120,38 @@ module.exports = {
         //copy children
         async function copyPassagesRecursively(passage, copy){
             let copySubPassages = [];
-            for(const p of passage.passages){
-                let sourceList = p.sourceList;
-                sourceList.push(p._id);
-                let pcopy = await Passage.create({
-                    author: user[0],
-                    users: user,
-                    parent: copy,
-                    sourceList: sourceList,
-                    title: p.title,
-                    content: p.content,
-                    html: p.html,
-                    css: p.css,
-                    javascript: p.javascript,
-                    filename: p.filename,
-                    code: p.code,
-                    lang: p.lang,
-                    isSVG: p.isSVG,
-                    license: p.license,
-                    mimeType: p.mimeType,
-                    thumbnail: p.thumbnail,
-                    metadata: p.metadata,
-                    sourceLink: p.sourceLink,
-                    synthetic: synthetic,
-                    personal: p.personal
-                });
-                copy.passages.push(pcopy._id);
-                await copy.save();
-                if(p.passages){
+            //copy children
+            if(!passage.public && !passage.forum){
+                for(const p of passage.passages){
+                    let sourceList = p.sourceList;
+                    sourceList.push(p._id);
+                    let pcopy = await Passage.create({
+                        author: user[0],
+                        users: user,
+                        parent: copy,
+                        sourceList: sourceList,
+                        title: p.title,
+                        content: p.content,
+                        html: p.html,
+                        css: p.css,
+                        javascript: p.javascript,
+                        filename: p.filename,
+                        code: p.code,
+                        lang: p.lang,
+                        isSVG: p.isSVG,
+                        license: p.license,
+                        mimeType: p.mimeType,
+                        thumbnail: p.thumbnail,
+                        metadata: p.metadata,
+                        sourceLink: p.sourceLink,
+                        synthetic: synthetic,
+                        personal: p.personal
+                    });
+                    copy.passages.push(pcopy._id);
+                    await copy.save();
+                }
+                //copy children's children
+                if(p.passages && !p.public && !p.forum){
                     await copyPassagesRecursively(p, pcopy);
                 }
             }
