@@ -619,7 +619,7 @@ $(function(){
                 type: 'POST',
                 data: {
                     passageID: thiz.attr('id').split('_').at(-1),
-                    email: thiz.val()
+                    username: thiz.val()
                 },
                 success: function (data) {
                     window.location.reload();
@@ -632,6 +632,21 @@ $(function(){
         $.ajax({
             // url: DOMAIN + '/remove_user',
             url: '/remove_user',
+            type: 'POST',
+            data: {
+                passageID: $(this).attr('id').split('_').at(-1),
+                userID: thiz.data('userid')
+            },
+            success: function (data) {
+                window.location.reload();
+            }
+        });
+    });
+    $(document).on('click', '.passage_remove_collaber', function(e){
+        var thiz = $(this);
+        $.ajax({
+            // url: DOMAIN + '/remove_user',
+            url: '/remove_collaber',
             type: 'POST',
             data: {
                 passageID: $(this).attr('id').split('_').at(-1),
