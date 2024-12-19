@@ -9,3 +9,4 @@ protected/*
 *.log
 .env
 restart.sh
+collections.tar
