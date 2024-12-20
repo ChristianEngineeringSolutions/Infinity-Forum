@@ -509,6 +509,8 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     //star all sub passages (content is displayed in parent)
     if(passage.bubbling && passage.passages && !passage.public){
         for(const p of passage.passages){
+            //also star sources for each sub passage
+            passage.sourceList = [...passage.sourceList, ...p.sourceList];
             await starPassage(req, amount, p._id, userID, false);
         }
     }
@@ -544,11 +546,34 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     //star each source
     var i = 0;
     var authors = [];
+    //add sources for best,bestof,and mirror
+    if(passage.showBestOf){
+        var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+        if(best != null){
+            passage.sourceList.push(best);
+        }
+    }
+    else{
+        try{
+            var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums');
+            if(mirror != null)
+            passage.sourceList.push(mirror);
+        }
+        catch(e){
+        }
+        try{
+            var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums');
+            if(bestOf != null)
+                passage.sourceList.push(bestOf);
+        }
+        catch(e){
+        }
+    }
     //recursively star ssources
-    await starSources(passage, passage);
+    await starSources(passage, passage, [], amount, req);
     return await fillUsedInListSingle(passage);
 }
-async function starSources(passage, top, authors=[]){
+async function starSources(passage, top, authors=[], amount, req){
     var i = 0;
     var bonus;
     for(const source of passage.sourceList){
@@ -559,7 +584,7 @@ async function starSources(passage, top, authors=[]){
         if(sourceAuthor._id.toString() != req.session.user._id.toString() 
             && sourceAuthor._id.toString() != passage.author._id.toString()
             /*&& !authors.includes(sourceAuthor._id)*/){
-            bonus = passageSimilarity(top, source)
+            bonus = passageSimilarity(top, source);
             source.stars += amount + bonus;
             if(!authors.includes(sourceAuthor._id)){
                 sourceAuthor.stars += amount + bonus;
@@ -1499,26 +1524,31 @@ async function getPassage(passage){
     if(passage == null){
         return res.redirect('/');
     }
-    try{
-        var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums');
-        passage.sourceList.push(mirror);
-    }
-    catch(e){
-        var mirror = null;
-    }
-    try{
-        var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums');
-        passage.sourceList.push(bestOf);
-    }
-    catch(e){
-        var bestOf = null;
-    }
-    passage.sourceList = await getRecursiveSourceList(passage.sourceList);
-    var replacement = mirror == null ? bestOf : mirror;
+    var mirror = null;
+    var bestOf = null;
+    var replacement = null; 
     var replacing = false;
-    replacement = bestOf == null ? mirror : bestOf;
-    if(replacement != null){
-        replacing = true;
+    if(!passage.showBestOf){
+        try{
+            var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums');
+            passage.sourceList.push(mirror);
+        }
+        catch(e){
+            var mirror = null;
+        }
+        try{
+            var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums');
+            passage.sourceList.push(bestOf);
+        }
+        catch(e){
+            var bestOf = null;
+        }
+        var replacement = mirror == null ? bestOf : mirror;
+        var replacing = false;
+        replacement = bestOf == null ? mirror : bestOf;
+        if(replacement != null){
+            replacing = true;
+        }
     }
     if(passage == null){
         return false;
@@ -1586,6 +1616,7 @@ async function getPassage(passage){
         var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
         if(best != null){
             passage.bestSub = await getPassage(best);
+            passage.sourceList.push(best);
         }
         else{
             passage.bestSub = false;
@@ -1593,6 +1624,7 @@ async function getPassage(passage){
     }else{
         passage.bestSub = false;
     }
+    passage.sourceList = await getRecursiveSourceList(passage.sourceList);
     return passage;
 }
 async function getBigPassage(req, res, params=false, subforums=false, comments=false){
@@ -3008,7 +3040,7 @@ async function concatObjectProps(passage, sub){
         `;
     }
     // console.log(passage.video);
-    passage.sourceList = [...passage.sourceList, sub, ...sub.sourceList];
+    // passage.sourceList = [...passage.sourceList, sub, ...sub.sourceList];
 }
 async function getAllSubData(passage){
     if(!passage.public && passage.passages && passage.bubbling){
