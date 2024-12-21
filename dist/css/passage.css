@@ -121,6 +121,15 @@
     word-wrap: break-word;
 /*    border: 1px solid rgba(255, 255, 255, 0.23);*/
 }
+.bottom-hr{
+    display: none;
+}
+.bottom-br{
+    display: none;
+}
+.repost{
+    float:left;
+}
 .passage_public{
 /*    border: 2px solid green;*/
 }
