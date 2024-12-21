@@ -149,10 +149,10 @@ module.exports = {
                     });
                     copy.passages.push(pcopy._id);
                     await copy.save();
-                }
-                //copy children's children
-                if(p.passages && !p.public && !p.forum){
-                    await copyPassagesRecursively(p, pcopy);
+                    //copy children's children
+                    if(p.passages && !p.public && !p.forum){
+                        await copyPassagesRecursively(p, pcopy);
+                    }
                 }
             }
             // console.log(copy.title);

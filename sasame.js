@@ -71,6 +71,7 @@ const Subforum = require('./models/Subforum');
 const Visitor = require('./models/Visitor');
 const Follower = require('./models/Follower');
 const Notification = require('./models/Notification');
+const Star = require('./models/Star');
 // Controllers
 const passageController = require('./controllers/passageController');
 // Routes
@@ -1430,7 +1431,7 @@ app.get('/', async (req, res) => {
             personal: false,
         }).populate('author users sourceList').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
         for(var i = 0; i < passages.length; ++i){
-            passages[i] = await getPassage(passage);
+            passages[i] = await getPassage(passages[i]);
         }
         let passageUsers = [];
         let bookmarks = [];
@@ -4069,22 +4070,87 @@ app.post('/star_passage/', async (req, res) => {
         }
     }
 });
+async function singleStarSources(user, sources, reverse=false){
+    for(const source of sources){
+        //check if starred already
+        var recordSingle = await Star.findOne({user: user._id, passage:source, single:true, system:false});
+        var recordSingleSystem = await Star.findOne({user: user._id, passage:source, single:true, system:true});
+        //unstar if no previous record of being starred
+        if(reverse && recordSingle == null){
+            await Star.deleteOne({user: user, passage: source._id, single: true});
+            source.stars -= 1;
+            passage.starrers = passage.starrers.filter(u => {
+                return u != user;
+            });
+        }
+        //star if hasnt been starred already
+        else if(recordSingleSystem == null && recordSingle == null){
+            source.stars += 1;
+            source.starrers.push(user);
+            var sources = await getRecursiveSourceList(source.sourceList);
+            var star = await Star.create({
+                user: user,
+                passage: source,
+                amount: 1,
+                sources: sources,
+                single: true,
+                system: true
+            });
+        }
+    }
+}
 app.post('/single_star/', async (req, res) => {
     if(req.session && req.session.user){
         var passage = await Passage.findOne({_id: req.body._id});
         var user = req.session.user._id.toString();
+        var sources = await getRecursiveSourceList(passage.sourceList);
         if(req.body.on && !passage.starrers.includes(user)){
+            //star mirror best and bestof and repost
+            //and add to sources
+            if(passage.showBestOf){
+                var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+                if(best != null){
+                    sources.push(best);
+                }
+            }
+            else{
+                try{
+                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums');
+                    if(mirror != null)
+                    sources.push(mirror);
+                }
+                catch(e){
+                }
+                try{
+                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums');
+                    if(bestOf != null)
+                        sources.push(bestOf);
+                }
+                catch(e){
+                }
+            }
+            //star each source recursively
+            var star = await Star.create({
+                user: req.session.user._id,
+                passage: passage._id,
+                amount: 1,
+                sources: sources,
+                single: true,
+                system: false
+            });
+            await singleStarSources(user, sources);
             passage.stars += 1;
             passage.starrers.push(user);
         }
         else{
             if(passage.starrers.includes(user)){
+                var record = await Star.findOne({user:req.session.user._id, passage: passage._id});
+                await singleStarSources(user, sources, true);
                 passage.stars -= 1;
                 passage.starrers = passage.starrers.filter(u => {
-                    console.log(u);
-                    console.log(user);
                     return u != user;
                 });
+                await Star.deleteOne({user: user, passage: passage._id, single: true});
             }
         }
         passage.markModified("starrers");
