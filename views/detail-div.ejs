@@ -43,7 +43,7 @@
         <%passage.filename.forEach(function(fname, i){%>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
                 <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
-           <%}else if (passage.isSVG){%>
+           <%}if (passage.isSVG){%>
                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}else if(passage.audio.length > 1){%>
                <%-passage.audio%>

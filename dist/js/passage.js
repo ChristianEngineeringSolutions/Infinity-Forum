@@ -1114,7 +1114,9 @@ $(function(){
                         $(data).insertAfter('.passage:first');
                     }
                     else{
-                        $('#passage_wrapper').append(data);
+                        if(formData.get('post-top') != 'on'){
+                            $('#passage_wrapper').append(data);
+                        }
                         //go to last passage
                         // $('.passage').eq(-2)[0].scrollIntoView();
                     }
@@ -1137,7 +1139,7 @@ $(function(){
 
         });
     });
-    replacePassages();
+    // replacePassages();
 });
 function replacePassages(){
         // $('[id^=p_mirror_], [id^=p_bestOf_]').each(function(){
