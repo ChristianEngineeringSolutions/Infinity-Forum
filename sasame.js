@@ -5218,7 +5218,7 @@ app.get('/filestream/:viewMainFile?/:directory?', async function(req, res){
         bookmarks = getBookmarks(req.session.user);
     }
     for(var i = 0; i < passages.length; ++i){
-        passages[i] = await getPassage(passage);
+        passages[i] = await getPassage(passages[i]);
     }
     res.render("filestream", {
         subPassages: false,
