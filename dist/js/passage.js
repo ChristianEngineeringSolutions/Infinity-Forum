@@ -1106,6 +1106,9 @@ $(function(){
                 $('#dim').click();
                 //okay so for forum we add a row to the table
                 //for stream/projects/questions we add the passage
+                if(formData.has('repost-id')){
+                    alert("Passage Sent.");
+                }
                 if($('#forum-post').length == 0){ //stream
                     if(chief == 'root'){
                         $('#passage_wrapper').prepend(data);
