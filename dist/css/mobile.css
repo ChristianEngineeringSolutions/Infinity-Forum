@@ -482,12 +482,23 @@
         width: 100%;
     } 
     .bottom-bar{
-        padding-bottom:31px;
-        padding-top:0px;
+        padding-bottom:70px;
+        padding-top:9px;
         font-size:0.7em;
+        padding-left:0px;
     }
-    .star{
+    .bottom-hr{
+        display: block;
+    }
+    .repost{
+        float: none;
+    }
+    .star, .repost{
         font-size:1.9em !important;
+        margin-left:10px;
+    }
+    .repost{
+        font-size: 2.2em !important;
     }
     .profile_image{
         font-size: 1.8em;

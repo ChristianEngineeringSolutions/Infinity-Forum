@@ -879,6 +879,35 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^=repost-]', function(){
+        var id = $(this).attr('id').split('-').at(-1);
+        popup("Repost", $('#repost-editor').val());
+        if($('.popup').css('position') == 'absolute'){
+            $('.popup').css('top', $(window).scrollTop() + 'px');
+        }
+        $('#passage_form').show();
+        $('<input id="repost-id">').attr('type','hidden').appendTo('#passage_form');
+        $('#repost-id').val(id);
+        $('#repost-id').attr('name', 'repost-id');
+        //hide post to thread if on root
+        if($('#chief_passage_id').val() == 'root'){
+            $('#post-thread-div').remove();
+            $('#post-top-div').remove();
+            $('<input id="post-top-hidden">').attr('type','hidden').appendTo('#passage_form');
+            $('#post-top-hidden').val('true');
+        }
+        summonQuill();
+    });
+    $(document).on('change', '.post-top', function(){
+        if($(this).is(':checked')){
+            $('.post-thread').prop('checked', false);
+        }
+    });
+    $(document).on('change', '.post-thread', function(){
+        if($(this).is(':checked')){
+            $('.post-top').prop('checked', false);
+        }
+    });
     $(document).on('click', '.change_passage_file', function(){
         let _id = $(this).attr('id').split('_')[$(this).attr('id').split('_').length - 1];
         // $('#passage_file_' + _id).

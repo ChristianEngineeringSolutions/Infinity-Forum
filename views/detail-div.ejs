@@ -1,3 +1,4 @@
+<%if(passage != null){%>
 <div class="detail-div"style="<%=bg || ''%>">
         <div style="<%=short%>"class="p-padding-box">
             <div class="toppings">
@@ -171,3 +172,25 @@
         <%}%>
     </div>
 </div>
+    <%if((!passage.showBestOf && sub == true && passage.best != null)
+        || passage.repost != null
+        || (passage.bestSub && sub == true))%>
+    <%if(passage.special != null){%>
+    <hr>
+    <%}%>
+    <div>
+    <%-include('detail-div', {
+        short: short, 
+        passage: passage.special, 
+        bg: 'background:rgba(0,0,0,0);',
+        test: 'testing',
+        link: false,
+        bestOf: true,
+        sub: true,
+        last: true
+    })%>
+    </div>
+    <%if(last){%>
+    </div>
+    <%}%>
+<%}%>
