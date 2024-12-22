@@ -481,11 +481,14 @@
         margin-left: 0px;;
         width: 100%;
     } 
-    .bottom-bar{
+    .bottom-bar-loggedin{
         padding-bottom:70px;
         padding-top:9px;
         font-size:0.7em;
         padding-left:0px;
+    }
+    .bottom-bar-loggedout{
+
     }
     .bottom-hr{
         display: block;
@@ -503,7 +506,7 @@
     .profile_image{
         font-size: 1.8em;
     }
-    .passage_stars{
+    .star-bottom{
         margin-top: 25px;
     }
     
