@@ -174,14 +174,23 @@
         bestOf: false,
         last: false
     })%>
-   <div class="bottom-bar">
+    <%if(user){%>
+        <%var bottom = 'bottom-bar-loggedin';%>
+        <%var starBottom = ' star-bottom';%>
+    <%}else{%>
+        <%var bottom = 'bottom-bar-loggedout';%>
+        <%var starBottom = '';%>
+    <%}%>
+   <div class="bottom-bar <%=bottom%>">
         <%if(user && passage.starrers){%>
         <%var gold = passage.starrers.includes(user._id.toString()) ? 'color:gold;' : ''%>
         <%}%>
-        <ion-icon class="repost"id="repost-<%=passage._id%>"style="font-size:1.4em;margin-right:20px;"title="Star Passage"src="/images/ionicons/repeat-sharp.svg"></ion-icon>
-        <br class="bottom-br">
-        <hr class="bottom-hr"style="background:rgba(204,204,204,.2);">
-        <div class="passage_stars">
+        <%if(user){%>
+            <ion-icon class="repost"id="repost-<%=passage._id%>"style="font-size:1.4em;margin-right:20px;"title="Star Passage"src="/images/ionicons/repeat-sharp.svg"></ion-icon>
+            <br class="bottom-br">
+            <hr class="bottom-hr"style="background:rgba(204,204,204,.2);">
+        <%}%>
+        <div class="passage_stars<%=starBottom%>">
             <%if(user){%>
             <ion-icon class="star"id="star-<%=passage._id%>"style="font-size:1.2em;float:left;<%=gold%>"title="Star Passage"src="/images/ionicons/star.svg"></ion-icon>&emsp;<%}%><%=parseInt(passage.stars)%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
             <% if(user){ %>
