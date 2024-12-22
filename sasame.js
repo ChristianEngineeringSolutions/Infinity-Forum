@@ -2083,7 +2083,6 @@ async function fillForum(req){
     
 //     res.render("projects");
 // });
-
 async function getRecursiveSourceList(sourceList, sources=[], passage){
     for(const source of sourceList){
         var sourcePassage = await Passage.findOne({_id:source});
@@ -2103,10 +2102,9 @@ async function getRecursiveSourceList(sourceList, sources=[], passage){
                 console.log('void2');
                 special = source.best;
             }
-            // if(source.repost != null){
-            //     console.log('void2');
-            //     special = source.repost;
-            // }
+            if(source.repost != null){
+                special = source.repost;
+            }
             if(source.bestOf != null){
                 console.log('void3');
                 special = source.bestOf;
@@ -3246,10 +3244,9 @@ async function getRecursiveSpecials(passage){
     if(passage.best != null){
         special = passage.best;
     }
-    // if(passage.repost != null){
-    //     console.log('void2');
-    //     special = passage.repost;
-    // }
+    if(passage.repost != null){
+        special = passage.repost;
+    }
     if(passage.bestOf != null){
         special = passage.bestOf;
     }
@@ -4007,7 +4004,7 @@ app.post('/create_initial_passage/', async (req, res) => {
             break;
     }
     var chief = formData.chief;
-    if(req.body['post-top'] && req.body['post-top'] == true){
+    if(req.body['post-top'] && req.body['post-top'] == 'on'){
         chief = 'root';
     }
     if(chief !== 'root'){
