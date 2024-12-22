@@ -12,7 +12,7 @@
         <option>Comment</option>
     </select>
     <br><br>
-    <input type="hidden" name="repost"value="false">
+    <input type="hidden" name="repost"value="true">
     <input id="passage_title"class="passage_title" value="" type="text"name="title"placeholder="Title (Optional)">
 
         <div class="rich_input input-field">
@@ -109,5 +109,8 @@
     <ul class="passage_tabs"style="margin-top:20px;text-align:left;">
         <li id="passage_executable"class="passage_tab passage_tab_open_advanced open_advanced view_code">Advanced</li>
     </ul>
-    <button id="post-passage"style="margin:auto;text-align:center;font-size:1.3em;">Post</button>
+    <div id="post-top-div"><input class="post-top"id="post-top-<%=passage._id%>"checked="checked"type="checkbox" name="post-top"> Post to Top Level</div>
+    <div id="post-thread-div"><input class="post-thread"id="post-thread-<%=passage._id%>"type="checkbox" name="post-thread"> Post to this Thread</div>
+    <br>
+    <button id="post-passage"style="margin:auto;text-align:center;font-size:1.3em;">Repost</button>
 </form>

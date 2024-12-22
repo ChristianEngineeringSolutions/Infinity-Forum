@@ -95,6 +95,12 @@ mongoose.connect(process.env.MONGODB_CONNECTION_URL, {
     useCreateIndex: true,
     useFindAndModify: false,
     useUnifiedTopology: true
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch((err) => {
+    console.error('MongoDB connection error:', err);
+    // Implement proper cleanup
+    process.exit(1);
 });
 
 var app = express();
@@ -167,11 +173,25 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 const MongoStore  = require('connect-mongo');
 
 // User Session Setup Logic
+// const session = require('express-session')({
+//     secret: "ls",
+//     resave: true,
+//     saveUninitialized: true,
+//     store: MongoStore.create({ mongoUrl: process.env.MONGODB_CONNECTION_URL })
+// });
 const session = require('express-session')({
     secret: "ls",
-    resave: true,
-    saveUninitialized: true,
-    store: MongoStore.create({ mongoUrl: process.env.MONGODB_CONNECTION_URL })
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ 
+        mongoUrl: process.env.MONGODB_CONNECTION_URL,
+        ttl: 24 * 60 * 60, // 1 day TTL
+        autoRemove: 'native',
+        touchAfter: 24 * 3600 // Only update sessions every 24 hours
+    }),
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+    }
 });
 var sharedsession = require("express-socket.io-session");
 const cookieParser = require('cookie-parser');
@@ -242,6 +262,12 @@ scripts.getMaxToGiveOut = async function(){
     }
     return usd;
 }
+scripts.getBest = async function(passage){
+    return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
+};
+scripts.getPassage = async function(passage){
+    return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
+};
 app.use(cookieParser());
 app.use(session);
 io.use(sharedsession(session, {
@@ -1520,10 +1546,11 @@ app.get('/forum', async (req, res) => {
     // await Subforum.deleteMany({});
     // fillForum();
 });
-async function getPassage(passage){
+async function getPassage(passage, small=true){
     // var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
-        return res.redirect('/');
+        // return res.redirect('/');
+        return null;
     }
     var mirror = null;
     var bestOf = null;
@@ -1533,6 +1560,7 @@ async function getPassage(passage){
         try{
             var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums');
             passage.sourceList.push(mirror);
+            passage.special = await getPassage(mirror);
         }
         catch(e){
             var mirror = null;
@@ -1540,6 +1568,7 @@ async function getPassage(passage){
         try{
             var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums');
             passage.sourceList.push(bestOf);
+            passage.special = await getPassage(bestOf);
         }
         catch(e){
             var bestOf = null;
@@ -1617,7 +1646,10 @@ async function getPassage(passage){
         var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
         if(best != null){
             passage.bestSub = await getPassage(best);
+            if(small){
             passage.sourceList.push(best);
+            }
+            passage.special = passage.bestSub;
         }
         else{
             passage.bestSub = false;
@@ -1625,7 +1657,22 @@ async function getPassage(passage){
     }else{
         passage.bestSub = false;
     }
-    passage.sourceList = await getRecursiveSourceList(passage.sourceList);
+    if(passage.repost != null){
+        //get best sub passage
+        var repost = await Passage.findOne({_id:passage.repost});
+        if(repost != null){
+            passage.repostFixed = await getPassage(repost);
+            passage.special = passage.repostFixed;
+            passage.sourceList.push(repost);
+        }
+        else{
+            passage.repostFixed = false;
+        }
+    }else{
+        passage.repostFixed = false;
+    }
+
+    passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
     return passage;
 }
 async function getBigPassage(req, res, params=false, subforums=false, comments=false){
@@ -1659,7 +1706,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     catch(e){
         var bestOf = null;
     }
-    passage.sourceList = await getRecursiveSourceList(passage.sourceList);
+    passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
     var replacement = mirror == null ? bestOf : mirror;
     var replacing = false;
     replacement = bestOf == null ? mirror : bestOf;
@@ -1708,9 +1755,9 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage.css = replacement.css;
         passage.javascript = replacement.javascript;
     }
-    passage = await getPassage(passage);
+    passage = await getPassage(passage, false);
     if(replacing){
-    replacement = await getPassage(replacement);
+    replacement = await getPassage(replacement, false);
     }
     if(passage.public == true && !passage.forum){
         // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
@@ -2037,14 +2084,48 @@ async function fillForum(req){
 //     res.render("projects");
 // });
 
-async function getRecursiveSourceList(sourceList, sources=[]){
+async function getRecursiveSourceList(sourceList, sources=[], passage){
     for(const source of sourceList){
         var sourcePassage = await Passage.findOne({_id:source});
+        //get specials as well
+        // sourcePassage = await getPassage(sourcePassage);
+        console.log('lol'+passage.title);
         if(sourcePassage != null){
+            console.log('two');
+            var special = null;
             sources.push(sourcePassage);
-            sources = await getRecursiveSourceList(sourcePassage.sourceList, sources);
+            if(source.showBestOf == true){
+                console.log('void1');
+                special = await Passage.findOne({parent: source._id}, null, {sort: {stars: -1}});
+                special = special._id;
+            }
+            if(source.best != null){
+                console.log('void2');
+                special = source.best;
+            }
+            // if(source.repost != null){
+            //     console.log('void2');
+            //     special = source.repost;
+            // }
+            if(source.bestOf != null){
+                console.log('void3');
+                special = source.bestOf;
+            }
+            if(source.mirror != null){
+                console.log('void4');
+                special = source.mirror;
+            }
+            console.log('special'+special);
+            if(special != null){
+                special = await Passage.findOne({_id:special});
+                console.log(special.title);
+                sources.push(special);
+            }
+            console.log(sources);
+            sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage);
         }
     }
+    console.log(sources);
     sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
     return sources;
 }
@@ -3147,6 +3228,7 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     // console.log('TEST'+bigRes.passage.usedIn);
     var location = await getPassageLocation(bigRes.passage);
+    await getRecursiveSpecials(bigRes.passage);
     res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
         ISMOBILE: bigRes.ISMOBILE,
         thread: false,
@@ -3155,6 +3237,36 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
         location: location
     });
 });
+async function getRecursiveSpecials(passage){
+    var special = null;
+    if(passage.showBestOf == true){
+        special = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+        special = special._id;
+    }
+    if(passage.best != null){
+        special = passage.best;
+    }
+    // if(passage.repost != null){
+    //     console.log('void2');
+    //     special = passage.repost;
+    // }
+    if(passage.bestOf != null){
+        special = passage.bestOf;
+    }
+    if(passage.mirror != null){
+        special = passage.mirror;
+    }
+    if(special != null){
+        special = await Passage.findOne({_id:special});
+    }
+    if(special == null){
+        return null;
+    }
+    else{
+        passage.special = special;
+        await getRecursiveSpecials(special);
+    }
+}
 app.post('/sticky', async (req, res) => {
     var passage = await Passage.findOne({_id: req.body._id});
     if(passage.stickied){
@@ -3872,7 +3984,14 @@ app.post('/create_initial_passage/', async (req, res) => {
     var newPassage = await createPassage(user, req.body.chief.toString(), req.body.subforums, req.body.comments);
     //update passage
     var formData = req.body;
+    var repost = req.body.repost == 'true' ? true : false;
+    var repostID = req.body['repost-id'];
     var passage = await Passage.findOne({_id: newPassage._id}).populate('author users sourceList');
+    if(repost){
+        var reposted = await Passage.findOne({_id:repostID});
+        passage.repost = repostID;
+        console.log(repostID);
+    }
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
@@ -3888,6 +4007,9 @@ app.post('/create_initial_passage/', async (req, res) => {
             break;
     }
     var chief = formData.chief;
+    if(req.body['post-top'] && req.body['post-top'] == true){
+        chief = 'root';
+    }
     if(chief !== 'root'){
         var parent = await Passage.findOne({_id:chief.toString()});
         // passage.forum = parent.forum;
@@ -4087,7 +4209,7 @@ async function singleStarSources(user, sources, reverse=false){
         else if(recordSingleSystem == null && recordSingle == null){
             source.stars += 1;
             source.starrers.push(user);
-            var sources = await getRecursiveSourceList(source.sourceList);
+            var sources = await getRecursiveSourceList(source.sourceList, [], source);
             var star = await Star.create({
                 user: user,
                 passage: source,
@@ -4103,7 +4225,7 @@ app.post('/single_star/', async (req, res) => {
     if(req.session && req.session.user){
         var passage = await Passage.findOne({_id: req.body._id});
         var user = req.session.user._id.toString();
-        var sources = await getRecursiveSourceList(passage.sourceList);
+        var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
         if(req.body.on && !passage.starrers.includes(user)){
             //star mirror best and bestof and repost
             //and add to sources
@@ -4157,6 +4279,14 @@ app.post('/single_star/', async (req, res) => {
         await passage.save();
         passage = await getPassage(passage);
         return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
+    }
+    else{
+        return res.render("Must be logged in.");
+    }
+});
+app.post('/repost/', async (req, res) => {
+    if(req.session && req.session.user){
+        
     }
     else{
         return res.render("Must be logged in.");
@@ -5466,32 +5596,45 @@ async function propagatePassage(passageID){
 
 
 //SOCKETS 
-io.on('connection', async (socket) => {
-    socket.join('root');
-    console.log('A user connected');
-    //set room from client by sending passageID
-    socket.on('controlPassage', async (passageID) => {
-        console.log('works');
-        // console.log(socket.handshake.session);
-        var passage = await Passage.findOne({_id: passageID});
-        socket.leave('root');
-        socket.join(passage._id.toString());
-        await User.findOneAndUpdate({_id: socket.handshake.session.user._id.toString()}, {$set: {room: passage._id.toString()}});
-        io.sockets.in(passage._id.toString()).emit(passage._id.toString(), "Room for Passage: " + passage.title);
-    });
-    //send messages to room from client
-    socket.on('add', async (msg) => {
-        var user = await User.findOne({_id: socket.handshake.session.user._id.toString()});
-        var room = user.room;
-        console.log(room);
-        io.sockets.in(room).emit(room, user.name + ': ' + msg);
+// io.on('connection', async (socket) => {
+//     socket.join('root');
+//     console.log('A user connected');
+//     //set room from client by sending passageID
+//     socket.on('controlPassage', async (passageID) => {
+//         console.log('works');
+//         // console.log(socket.handshake.session);
+//         var passage = await Passage.findOne({_id: passageID});
+//         socket.leave('root');
+//         socket.join(passage._id.toString());
+//         await User.findOneAndUpdate({_id: socket.handshake.session.user._id.toString()}, {$set: {room: passage._id.toString()}});
+//         io.sockets.in(passage._id.toString()).emit(passage._id.toString(), "Room for Passage: " + passage.title);
+//     });
+//     //send messages to room from client
+//     socket.on('add', async (msg) => {
+//         var user = await User.findOne({_id: socket.handshake.session.user._id.toString()});
+//         var room = user.room;
+//         console.log(room);
+//         io.sockets.in(room).emit(room, user.name + ': ' + msg);
 
-    });
-    socket.on('disconnect', function () {
-        console.log('A user disconnected');
-    });
-});
+//     });
+//     socket.on('disconnect', function () {
+//         console.log('A user disconnected');
+//     });
+// });
+const initialMemory = process.memoryUsage().heapUsed;
+const MAX_MEMORY_INCREASE = 500 * 1024 * 1024; // 500MB increase threshold
 
+// Check memory every 1 minutes
+setInterval(() => {
+    const currentMemory = process.memoryUsage().heapUsed;
+    const memoryIncrease = currentMemory - initialMemory;
+
+    if (memoryIncrease > MAX_MEMORY_INCREASE) {
+        console.error(`Memory leak alert! Memory increased by ${memoryIncrease / 1024 / 1024}MB`);
+        // Send alert (email, Slack, etc.)
+        sendAlert('Memory Leak Warning', `Memory increased by ${memoryIncrease / 1024 / 1024}MB`);
+    }
+}, 1 * 60 * 1000);
 // CLOSING LOGIC
 server.listen(PORT, () => {
     console.log(`Sasame started on Port ${PORT}`);
@@ -5506,6 +5649,17 @@ process.on('SIGTERM', function(err){
     console.log('SIGTERM');
     console.log(err);
     server.close();
+});
+// Proper cleanup on application shutdown
+process.on('SIGINT', async () => {
+    try {
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed through app termination');
+        process.exit(0);
+    } catch (err) {
+        console.error('Error during MongoDB shutdown:', err);
+        process.exit(1);
+    }
 });
 
 //debugging

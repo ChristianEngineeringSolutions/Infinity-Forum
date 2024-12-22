@@ -171,36 +171,16 @@
         short: short, 
         bg: '',
         link: false,
-        bestOf: false
+        bestOf: false,
+        last: false
     })%>
-    <%if(passage.bestSub && sub == true){%>
-        <hr>
-        <%-include('detail-div', {
-            short: short, 
-            passage: passage.bestSub, 
-            bg: 'background:rgba(0,0,0,0);',
-            test: 'testing',
-            link: '/passage/'+passage.title+'/'+passage._id,
-            bestOf: true
-        })%>
-    </div>
-    <%}%>
-    <%if(passage.best != null && sub == true && !passage.showBestOf){%>
-        <hr>
-        <%-include('detail-div', {
-            short: short, 
-            passage: passage.best, 
-            bg: 'background:rgba(0,0,0,0);',
-            test: 'testing',
-            link: false,
-            bestOf: true
-        })%>
-    </div>
-    <%}%>
    <div class="bottom-bar">
         <%if(user && passage.starrers){%>
         <%var gold = passage.starrers.includes(user._id.toString()) ? 'color:gold;' : ''%>
         <%}%>
+        <ion-icon class="repost"id="repost-<%=passage._id%>"style="font-size:1.4em;margin-right:20px;"title="Star Passage"src="/images/ionicons/repeat-sharp.svg"></ion-icon>
+        <br class="bottom-br">
+        <hr class="bottom-hr"style="background:rgba(204,204,204,.2);">
         <div class="passage_stars">
             <%if(user){%>
             <ion-icon class="star"id="star-<%=passage._id%>"style="font-size:1.2em;float:left;<%=gold%>"title="Star Passage"src="/images/ionicons/star.svg"></ion-icon>&emsp;<%}%><%=parseInt(passage.stars)%> Star<%=passage.stars == 1 ? '' : 's'%> &emsp; 
@@ -211,6 +191,7 @@
             <% } %>
         </div>
     </div>
+</div>
 </div>
 </div>
  <%if(subPassages && sub === false){%>
