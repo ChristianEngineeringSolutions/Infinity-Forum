@@ -1662,8 +1662,6 @@ async function getPassage(passage, small=true){
         var repost = await Passage.findOne({_id:passage.repost});
         if(repost != null){
             passage.repostFixed = await getPassage(repost);
-            passage.repostFixed.filename = passage.repostFixed.filename || [];
-        passage.repostFixed.mimeType = passage.repostFixed.mimeType || [];
             passage.special = passage.repostFixed;
             passage.sourceList.push(repost);
         }
@@ -3074,7 +3072,7 @@ async function concatObjectProps(passage, sub){
             var displayNone = 'style="display:none"';
         }
         passage.video += `
-        <video class="passage-file-`+sub._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video"width="320" height="240" controls>
+        <video class="passage-file-`+sub._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename[0].split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
@@ -3159,7 +3157,7 @@ async function bubbleUpAll(passage){
     passage.audio = '';
     if(passage.mimeType[0] == 'video'){
         passage.video = `
-        <video id="passage_video_`+passage._id+`"class="passage_video"width="320" height="240" controls>
+        <video id="passage_video_`+passage._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
             <source src="/`+getUploadFolder(passage)+`/`+passage.filename[0]+`" type="video/`+passage.filename[0].split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
@@ -4755,13 +4753,13 @@ async function uploadFile(req, res, passage){
 
                     //not enough memory on server
                     //local for now
-                    if(process.env.LOCAL == 'true'){
-                        exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
-                        , (err, stdout, stderr) => {
-                                //done
-                                console.log(err + stdout + stderr);
-                            });
-                    }
+                    // if(process.env.LOCAL == 'true'){
+                    //     exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
+                    //     , (err, stdout, stderr) => {
+                    //             //done
+                    //             console.log(err + stdout + stderr);
+                    //         });
+                    // }
                 });
             }
             var newfilename = uploadTitle.split('.')[0]+'_c.'+uploadTitle.split('.')[1];

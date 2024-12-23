@@ -42,7 +42,7 @@
         <%}%>
         <%for(var i = 0; i < passage.filename.length; ++i){%>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
-                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
+                <img class="passage-file-<%=passage._id%> uploadedImage"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}if(passage.isSVG){%>
                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}if(passage.audio && passage.audio.length > 1){%>
