@@ -22,6 +22,8 @@ $(function(){
     $(document).on('click', '.open_advanced', function(){
         $('#passage_advanced').slideToggle();
     });
+    analyzeImages();
+    analyzeVideos();
 });
 
 function summonQuill(){

@@ -1030,6 +1030,8 @@ $(function(){
                         replacePassages();
                     }
                     okPaginate = true;
+                    analyzeImages();
+                    analyzeVideos();
                 }
             });
         }

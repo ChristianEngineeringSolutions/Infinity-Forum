@@ -68,6 +68,8 @@
         <!-- <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@1.1/code-input.js"></script> -->
         <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@1.1/plugins/indent.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@1.1/plugins/autodetect.js"></script>
+        <!-- <script type="module"> import nsfwjs from 'https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/+esm' </script> -->
+        <script src=" https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/browser/nsfwjs.min.js "></script>
         <script>
         codeInput.registerTemplate("code-input", codeInput.templates.prism(Prism, [new codeInput.plugins.Indent()]));
         // codeInput.registerTemplate("syntax-highlighted", 
@@ -89,6 +91,14 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.1/jspdf.debug.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/2.3.4/jspdf.plugin.autotable.min.js"></script>
         <!-- Must minify and consider moving to footer -->
+        <!-- Include TensorFlow.js first -->
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+        <!-- Then include NSFW.js -->
+        <script src="https://unpkg.com/nsfwjs@2.4.0/dist/nsfw.min.js"></script>
+        <script src="/js/NSFWModel.js"></script>
+        <script src="/js/ImageFilter.js"></script>
+        <script src="/js/VideoFilter.js"></script>
+        <script src="/js/nsfw.js"></script>
         <script src="/js/new.js"></script>
         <script src="/js/book.js"></script>
         <script src="/js/sidebar.js"></script>
