@@ -1560,7 +1560,7 @@ async function getPassage(passage, small=true){
         try{
             var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums');
             passage.sourceList.push(mirror);
-            passage.special = await getPassage(mirror);
+            // passage.special = await getPassage(mirror);
         }
         catch(e){
             var mirror = null;
@@ -1568,7 +1568,7 @@ async function getPassage(passage, small=true){
         try{
             var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums');
             passage.sourceList.push(bestOf);
-            passage.special = await getPassage(bestOf);
+            // passage.special = await getPassage(bestOf);
         }
         catch(e){
             var bestOf = null;
@@ -1662,6 +1662,8 @@ async function getPassage(passage, small=true){
         var repost = await Passage.findOne({_id:passage.repost});
         if(repost != null){
             passage.repostFixed = await getPassage(repost);
+            passage.repostFixed.filename = passage.repostFixed.filename || [];
+        passage.repostFixed.mimeType = passage.repostFixed.mimeType || [];
             passage.special = passage.repostFixed;
             passage.sourceList.push(repost);
         }
@@ -1671,7 +1673,6 @@ async function getPassage(passage, small=true){
     }else{
         passage.repostFixed = false;
     }
-
     passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
     return passage;
 }
@@ -2088,42 +2089,32 @@ async function getRecursiveSourceList(sourceList, sources=[], passage){
         var sourcePassage = await Passage.findOne({_id:source});
         //get specials as well
         // sourcePassage = await getPassage(sourcePassage);
-        console.log('lol'+passage.title);
         if(sourcePassage != null){
-            console.log('two');
             var special = null;
             sources.push(sourcePassage);
             if(source.showBestOf == true){
-                console.log('void1');
                 special = await Passage.findOne({parent: source._id}, null, {sort: {stars: -1}});
                 special = special._id;
             }
             if(source.best != null){
-                console.log('void2');
                 special = source.best;
             }
             if(source.repost != null){
                 special = source.repost;
             }
             if(source.bestOf != null){
-                console.log('void3');
                 special = source.bestOf;
             }
             if(source.mirror != null){
-                console.log('void4');
                 special = source.mirror;
             }
-            console.log('special'+special);
             if(special != null){
                 special = await Passage.findOne({_id:special});
-                console.log(special.title);
                 sources.push(special);
             }
-            console.log(sources);
             sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage);
         }
     }
-    console.log(sources);
     sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
     return sources;
 }

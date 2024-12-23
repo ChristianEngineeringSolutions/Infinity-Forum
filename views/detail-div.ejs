@@ -36,18 +36,18 @@
     <%}else{%>
     <%}%>
     <canvas style="display:none;"id="thumbnail_canvas_<%=passage._id%>"></canvas>
-    <%if(passage.filename || passage.video.length > 1 || passage.audio.length > 1){ %>
+    <%if(passage.filename || passage.video.length > 1 || passage.audio.length > 1 || passage.mimeType[0] == 'image'){ %>
         <%if(passage.filename == false){%>
             <%passage.filename = [1];%>
         <%}%>
-        <%passage.filename.forEach(function(fname, i){%>
+        <%for(var i = 0; i < passage.filename.length; ++i){%>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
                 <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
-           <%}if (passage.isSVG){%>
+           <%}if(passage.isSVG){%>
                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
-           <%}else if(passage.audio.length > 1){%>
+           <%}if(passage.audio && passage.audio.length > 1){%>
                <%-passage.audio%>
-           <%}else if(passage.video.length > 1){%>
+           <%}else if(passage.video && passage.video.length > 1){%>
                <%-passage.video%>
            <%}else if(passage.mimeType[i] == 'model'){%>
                <%if(passage.thumbnail == null){%>
@@ -100,7 +100,7 @@
                <%}%>
            <%}%>
 
-        <%});%>
+        <%}%>
     <%}%>
     <!-- <div id="passage_details_advanced_<%=passage._id%>"class="passage_advanced"> -->
         <%if(passage.lang == 'mixed' && passage.lang != 'rich'){%>
@@ -179,6 +179,14 @@
     <hr>
     <%}%>
     <div>
+    <%if(
+        (!passage.showBestOf && sub == true && passage.best != null)
+        || passage.repost != null
+        || (passage.bestSub && sub == true)
+        && passage
+        && passage.special){
+    %>
+    <%var isSVG = passage.special.isSVG%>
     <%-include('detail-div', {
         short: short, 
         passage: passage.special, 
@@ -187,8 +195,10 @@
         link: false,
         bestOf: true,
         sub: true,
-        last: true
+        last: true,
+        isSVG: isSVG
     })%>
+    <%}%>
     </div>
     <%if(last){%>
     </div>
