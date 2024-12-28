@@ -20,11 +20,14 @@ Collaborators:
 <br><br>
 Add User (Read/Write Access): <br>
 <input autocomplete="off" placeholder="Username..."class="passage_add_user"id="passage_add_user_<%=passage._id%>"type="">
-<br>
+<div id="same-users-<%=passage._id%>"><input id="passage_same_users_<%=passage._id%>"<%=passage.sameUsers ? ' checked ' : ''%>type="checkbox" autocomplete="off"> Use same users for Sub-passages</div>
 <br>
 Add Collaborator (Split Stars): <br>
 <input autocomplete="off" placeholder="Username..."class="passage_add_collaborator"id="passage_add_collaborator_<%=passage._id%>"type="">
-<br><br>
+<div id="same-collabers-<%=passage._id%>"><input id="passage_same_collabers_<%=passage._id%>"<%=passage.sameCollabers ? ' checked ' : ''%>type="checkbox" autocomplete="off"> Use same collaborators for Sub-passages</div>
+<hr>
+<div id="same-sources-<%=passage._id%>"><input id="passage_same_sources_<%=passage._id%>"<%=passage.sameSources ? ' checked ' : ''%>type="checkbox" autocomplete="off"> Use same Sources for Sub-passages</div>
+<hr> 
 <!-- <div id="label-color-<%=passage._id%>"style="display:inline"class="test"><ion-icon src="/images/ionicons/ellipse.svg"></ion-icon></div> -->
 <select id="label-select-<%=passage._id%>"style="font-weight:normal;border: 1px solid black;"class="label-select">
     <option><%=passage.label%></option>
@@ -38,7 +41,7 @@ Add Collaborator (Split Stars): <br>
     <option>Comment</option>
 </select>
 <br><br>
-<div id="show-bestof-<%=passage._id%>"><input id="passage_showbestof_<%=passage._id%>"<%=passage.showBestOf ? ' checked ' : ''%>type="checkbox" name="mirrorEntire"> Show best of</div>
+<div id="show-bestof-<%=passage._id%>"><input id="passage_showbestof_<%=passage._id%>"<%=passage.showBestOf ? ' checked ' : ''%>type="checkbox"> Show best of</div>
 <br><br>
 Toggle Green/Red for Active/Inactive
 <br>

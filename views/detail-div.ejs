@@ -55,17 +55,6 @@
                <%-passage.audio%>
            <%}else if(passage.video && passage.video.length > 1){%>
                <%-passage.video%>
-               <div id="tempxyz-<%=passage._id%>"></div>
-               <script>
-                    var videos = [];
-                   $('.passage-video-<%=passage._id%>').each(function(){
-                    console.log('hello'+$(this).children(':first').attr('src'));
-                    videos.push($(this).children(':first').attr('src'));
-                   });
-                   if(videos.length > 1){
-                        createMergedVideoPlayer(videos);
-                    }
-               </script>
            <%}else if(passage.mimeType[i] == 'model'){%>
                <%if(passage.thumbnail == null){%>
                    <img id="p_thumbnail_<%=passage._id%>" alt="">
