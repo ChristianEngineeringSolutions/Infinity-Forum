@@ -145,7 +145,7 @@ $(function(){
     });
     $(document).on('click', '[id^=view_bookmark_]', function(){
         var thiz = this;
-        window.location.href = "/passage/" + encodeURIComponent($(this).data('title')) + '/' + $(this).attr('id').split('_').at(-1);
+        window.location.href = "/passage/" + encodeURIComponent($(this).data('title') == '' ? 'Untitled' : $(this).data('title')) + '/' + $(this).attr('id').split('_').at(-1);
     });
     $(document).on('click', '[id^=view_daemon_]', function(){
         var thiz = this;

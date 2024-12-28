@@ -303,6 +303,60 @@ $(function(){
         });
         
     });
+    $(document).on('change', '[id^="passage_same_users_"]', function(e){
+        var ID = $(this).attr('id').split('_').at(-1);
+        var thiz = $(this);
+        console.log($(this).is(':checked'));
+        $.ajax({
+            type: 'post',
+            // url: DOMAIN + '/create_passage/' + fromOtro,
+            url: '/same-users/',
+            data: {
+                _id: ID,
+                checked: thiz.is(':checked')
+            },
+            success: function(data){
+                
+            }
+        });
+        
+    });
+    $(document).on('change', '[id^="passage_same_collabers_"]', function(e){
+        var ID = $(this).attr('id').split('_').at(-1);
+        var thiz = $(this);
+        console.log($(this).is(':checked'));
+        $.ajax({
+            type: 'post',
+            // url: DOMAIN + '/create_passage/' + fromOtro,
+            url: '/same-collabers/',
+            data: {
+                _id: ID,
+                checked: thiz.is(':checked')
+            },
+            success: function(data){
+
+            }
+        });
+        
+    });
+    $(document).on('change', '[id^="passage_same_sources_"]', function(e){
+        var ID = $(this).attr('id').split('_').at(-1);
+        var thiz = $(this);
+        console.log($(this).is(':checked'));
+        $.ajax({
+            type: 'post',
+            // url: DOMAIN + '/create_passage/' + fromOtro,
+            url: '/same-sources/',
+            data: {
+                _id: ID,
+                checked: thiz.is(':checked')
+            },
+            success: function(data){
+                
+            }
+        });
+        
+    });
     $(document).on('click', '#add_passage_button', function(e){
         var chief = $('#chief_passage_id').val();
         popup("New Post", $('#clean_editor').val());
@@ -1146,98 +1200,6 @@ $(function(){
     });
     // replacePassages();
 });
-class VideoMerger {
-    constructor() {
-        this.mediaSource = new MediaSource();
-        this.sourceBuffer = null;
-        this.videoElement = document.createElement('video');
-        this.videoElement.controls = true;
-        this.videoElement.src = URL.createObjectURL(this.mediaSource);
-    }
-
-    async mergeVideos(videoUrls) {
-        try {
-            // Wait for MediaSource to open
-            await new Promise(resolve => {
-                this.mediaSource.addEventListener('sourceopen', resolve, { once: true });
-            });
-
-            // Create source buffer for WebM
-            this.sourceBuffer = this.mediaSource.addSourceBuffer('video/webm; codecs="vp8,opus"');
-
-            // Fetch and append each video
-            for (const url of videoUrls) {
-                await this.appendVideo(url);
-            }
-
-            // Signal end of stream
-            if (this.mediaSource.readyState === 'open') {
-                this.mediaSource.endOfStream();
-            }
-
-            return this.videoElement;
-        } catch (error) {
-            console.error('Error merging videos:', error);
-            throw error;
-        }
-    }
-
-    async appendVideo(url) {
-        try {
-            // Fetch video data
-            const response = await fetch(url);
-            const videoData = await response.arrayBuffer();
-
-            // Wait for any pending updates to complete
-            await this.waitForSourceBuffer();
-
-            // Append the video data
-            this.sourceBuffer.appendBuffer(videoData);
-
-            // Wait for this append to complete
-            await this.waitForSourceBuffer();
-        } catch (error) {
-            console.error(`Error appending video ${url}:`, error);
-            throw error;
-        }
-    }
-
-    waitForSourceBuffer() {
-        return new Promise((resolve) => {
-            if (!this.sourceBuffer.updating) {
-                resolve();
-                return;
-            }
-
-            const updateEndHandler = () => {
-                this.sourceBuffer.removeEventListener('updateend', updateEndHandler);
-                resolve();
-            };
-
-            this.sourceBuffer.addEventListener('updateend', updateEndHandler);
-        });
-    }
-}
-
-// Example usage:
-async function createMergedVideoPlayer(videoUrls, containerId) {
-    try {
-        const merger = new VideoMerger();
-        const videoElement = await merger.mergeVideos(videoUrls);
-        
-        // Add the video element to the specified container
-        const container = document.getElementById(containerId);
-        if (container) {
-            container.appendChild(videoElement);
-        } else {
-            document.body.appendChild(videoElement);
-        }
-        
-        return videoElement;
-    } catch (error) {
-        console.error('Error creating video player:', error);
-    }
-}
 function replacePassages(){
         // $('[id^=p_mirror_], [id^=p_bestOf_]').each(function(){
         //     var parentID = $(this).parent().attr('id');

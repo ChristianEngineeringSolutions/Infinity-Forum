@@ -13,6 +13,18 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    sameUsers: {
+        type: Boolean,
+        default: false
+    },
+    sameCollabers: {
+        type: Boolean,
+        default: false
+    },
+    sameSources: {
+        type: Boolean,
+        default: false
+    },
     //who wants notifications
     watching: [{
         type: mongoose.Schema.Types.ObjectId,
