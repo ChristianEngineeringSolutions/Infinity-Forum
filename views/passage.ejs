@@ -55,19 +55,32 @@
         <%}else{%>
         Sources:
         <div id="sourcelist_<%=passage._id%>">
-            <%passage.sourceList.forEach(function(source) { %>
-                <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a></div>
+            <div id="recursive-sources-<%=passage._id%>">
+                <%passage.sourceList.forEach(function(source) { %>
+                    <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a></div>
+                <%});%>
+            </div>
+            <div id="original-sources-<%=passage._id%>"style="display:none;">
+            <%passage.originalSourceList.forEach(function(source) { %>
+                <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a> <span class="passage_remove_source"data-source="<%=source._id%>"id="delete-passage-source-<%=passage._id%>" style="cursor:pointer;color:red;">X</span></div>
             <%});%>
+            </div>
+            <%if(user && user._id == passage.author._id){%>
+                <br>
+                <span id="remove-sources-<%=passage._id%>"class="link">Remove Sources</span>
+            <%}%>
         </div>
         <%}%>
         <br>
-        Used In:
-        <%if(passage.usedIn.length == 0){ %>
-            No Passages
-        <%}%>
-        <%passage.usedIn.forEach(function(passage) { %>
-            <%-passage%>,
-        <%});%>
+        <div>
+            Used In:
+            <%if(passage.usedIn.length == 0){ %>
+                No Passages <br>
+            <%}%>
+            <%passage.usedIn.forEach(function(passage) { %>
+                <%-passage%>,
+            <%});%>
+        </div>
         <!-- List collaborators and allow them to be added (permanent) -->
 
         <!-- Show Additional Source info -->

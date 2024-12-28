@@ -1120,6 +1120,34 @@ $(function(){
         $('.new-sources:not(#new-sources-'+_id+')').hide();
         $('#new-sources-' + _id).slideToggle();
     });
+    $(document).on('click', '[id^=remove-sources-]', function(){
+        var _id = $(this).attr('id').split('-').at(-1);
+        $('#original-sources-'+_id).toggle();
+        $('#recursive-sources-'+_id).toggle();
+        if($(this).text() == 'Remove Sources'){
+            $(this).text("View Sources");
+        }else{
+            $(this).text("Remove Sources");
+        }
+
+    });
+    $(document).on('click', '[id^=delete-passage-source-]', function(){
+        var _id = $(this).attr('id').split('-').at(-1);
+        var thiz = $(this);
+        $.ajax({
+            // url: DOMAIN + '/remove_user',
+            url: '/remove-source',
+            type: 'POST',
+            data: {
+                passageID: $(this).attr('id').split('-').at(-1),
+                sourceID: thiz.data('source')
+            },
+            success: function (data) {
+                window.location.reload();
+            }
+        });
+
+    });
     // $(document).on('keyup', '.passage_ext', function(){
     //     var _id = $(this).attr('id').split('_').at(-1);
     //     var code = $('#display_code_'+_id).val();

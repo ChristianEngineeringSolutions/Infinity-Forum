@@ -1547,6 +1547,8 @@ app.get('/forum', async (req, res) => {
     // fillForum();
 });
 async function getPassage(passage, small=true){
+    passage.originalSourceList = passage.sourceList.slice();
+    console.log(passage.originalSourceList.length);
     // var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
         // return res.redirect('/');
@@ -1676,6 +1678,7 @@ async function getPassage(passage, small=true){
         passage.repostFixed = false;
     }
     passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
+    console.log(passage.originalSourceList.length);
     return passage;
 }
 async function getBigPassage(req, res, params=false, subforums=false, comments=false){
@@ -1709,7 +1712,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     catch(e){
         var bestOf = null;
     }
-    passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
+    // passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
     var replacement = mirror == null ? bestOf : mirror;
     var replacing = false;
     replacement = bestOf == null ? mirror : bestOf;
@@ -1762,6 +1765,8 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     if(replacing){
     replacement = await getPassage(replacement, false);
     }
+    console.log('test'+passage.originalSourceList.length);
+    console.log(passage.sourceList.length);
     if(passage.public == true && !passage.forum){
         // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
         var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators'});
@@ -1873,6 +1878,8 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         }
         return true;
     });
+    console.log('test2'+passage.originalSourceList.length);
+    console.log(passage.sourceList.length);
     return bigRes;
 }
 async function logVisit(req){
@@ -2922,6 +2929,24 @@ app.post('/remove_collaber', async (req, res) => {
             ++index;
         }
         passage.markModified('collaborators');
+        await passage.save();
+        res.send("Done.");
+    }
+});
+app.post('/remove-source', async (req, res) => {
+    let passageID = req.body.passageID;
+    let sourceID = req.body.sourceID;
+    let passage = await Passage.findOne({_id: passageID});
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        var index = 0;
+        for(const s of passage.sourceList){
+            if(s == sourceID){
+                //remove source
+                passage.sourceList.splice(index, 1);
+            }
+            ++index;
+        }
+        passage.markModified('sourceList');
         await passage.save();
         res.send("Done.");
     }
