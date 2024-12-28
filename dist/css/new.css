@@ -262,6 +262,19 @@ a {
 a:hover {
     color: #fff;
 }
+.link {
+    text-decoration:none;
+    color:#8c8993;
+    -webkit-transition: all linear 0.2s;
+    -moz-transition: all linear 0.2s;
+    -ms-transition: all linear 0.2s;
+    -o-transition: all linear 0.2s;
+    transition: all linear 0.2s;
+    cursor: pointer;
+}
+.link:hover {
+    color: #fff;
+}
 
 /* Top bar START */
 #top{
