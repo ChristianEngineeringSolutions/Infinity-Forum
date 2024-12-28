@@ -1650,6 +1650,8 @@ async function getPassage(passage, small=true){
             passage.sourceList.push(best);
             }
             passage.special = passage.bestSub;
+            passage.special.isSpecial = true;
+            passage.special.specialType = 'Best';
         }
         else{
             passage.bestSub = false;
@@ -1664,6 +1666,8 @@ async function getPassage(passage, small=true){
             passage.repostFixed = await getPassage(repost);
             passage.special = passage.repostFixed;
             passage.sourceList.push(repost);
+            passage.special.isSpecial = true;
+            passage.special.specialType = 'Reposted';
         }
         else{
             passage.repostFixed = false;
@@ -3072,7 +3076,7 @@ async function concatObjectProps(passage, sub){
             var displayNone = 'style="display:none"';
         }
         passage.video += `
-        <video class="passage-file-`+sub._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
+        <video class="passage-file-`+sub._id+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
             <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename[0].split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
@@ -3157,7 +3161,7 @@ async function bubbleUpAll(passage){
     passage.audio = '';
     if(passage.mimeType[0] == 'video'){
         passage.video = `
-        <video id="passage_video_`+passage._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
+        <video id="passage_video_`+passage._id+`"class="passage_video uploadedVideo passage-video-`+passage._id+`"width="320" height="240" controls>
             <source src="/`+getUploadFolder(passage)+`/`+passage.filename[0]+`" type="video/`+passage.filename[0].split('.').at(-1)+`">
             Your browser does not support the video tag.
         </video>
