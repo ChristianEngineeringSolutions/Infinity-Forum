@@ -831,7 +831,8 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     else{
         following = true;
     }
-    res.render("profile", {usd: (usd/100), subPassages: false, passages: passages, scripts: scripts, profile: profile,
+    usd = usd == 0 ? 0 : usd/100;
+    res.render("profile", {usd: usd, subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
     whichPage: 'profile',
     page: 1,
