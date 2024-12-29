@@ -832,6 +832,9 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
         following = true;
     }
     usd = usd == 0 ? 0 : usd/100;
+    if(isNaN(usd)){
+        usd = 0;
+    }
     res.render("profile", {usd: usd, subPassages: false, passages: passages, scripts: scripts, profile: profile,
     bookmarks: bookmarks,
     whichPage: 'profile',
