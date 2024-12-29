@@ -3677,7 +3677,7 @@ app.post('/register/', async function(req, res) {
           });
           //send verification email
           if(user.email && user.email.length > 1){
-            sendEmail(user.email, 'Verify Email for Christian Engineering Solutions', 
+            sendEmail(user.email, 'Verify Email for Infinity Forum.', 
                 `
                     https://infinity-forum.org/verify/`+user._id+`/`+user.token+`
                 `);
