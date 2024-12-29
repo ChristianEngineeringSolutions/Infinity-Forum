@@ -5506,7 +5506,7 @@ function sendEmail(to, subject, body){
     });
 
     var mailOptions = {
-      from: 'Infinity-Forum.org',
+      from: 'admin@infinity-forum.org',
       to: to,
       subject: subject,
       text: body
