@@ -1,6 +1,6 @@
 <%passages.forEach(function(passage) { %>
     <%- include('passage', {passage: passage, sub: true, subPassage:false}) %>
 <%});%>
-<%if(passages.length == 0 && page == 1){%>
+<%if(passages.length == 0 && page && page == 1){%>
 	<div style="margin:auto;text-align:center;">No Passages Yet.</div>
 <%}%>
