@@ -3662,6 +3662,7 @@ app.post('/register/', async function(req, res) {
         name: req.body.username || req.body.email,
         username: req.body.username.split(' ').join('.') + '.' + numUsers || '',
         password: req.body.password,
+        stars: 0,
         token: v4()
         }  //use schema.create to insert data into the db
       if(req.body.email != ''){
