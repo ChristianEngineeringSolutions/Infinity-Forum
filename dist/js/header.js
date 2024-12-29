@@ -157,7 +157,7 @@ $(function(){
         window.location.href = 'https://infinity-forum.org/passage/Welcome!/65a1ca52f788bd934dd36d6a';
     });
     $(document).on('click', '#menu-contact', function(){
-        alert("Email CEO at: uriahsanders99@gmail.com");
+        alert("Email us at: admin@infinity-forum.org");
     });
     $(document).on('click', '#menu-terms', function(){
         window.location.href = '/terms';
