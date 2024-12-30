@@ -1226,22 +1226,68 @@ $(function(){
 
         });
     });
-    // replacePassages();
+    $(document).on('keyup', '[id^=fps-counter-]', function(e){
+        if(e.keyCode == 13){
+            var counter = parseInt($(this).val());
+            var _id = $(this).attr('id').split('-').at(-1);
+            $('#vid-img-'+_id).html(`
+                <div id="vid-img-`+_id+`-loading">
+                    <div style="text-align: center;background:transparent;padding:20px;width:90%;margin:auto;">
+                     <div class="circle"></div>
+                     <div class="circle1"></div>
+                     <div style=" color:rgba(255,255,255,0.9);
+                     text-shadow:0 0 15px #fff; margin-top:-28px; margin-left:10px; font-weight:bolder">Loading...</div>
+                    </div>
+                </div>
+            `);
+            createVideoFromImages(images, counter * 1000, "vid-img-"+_id+"-loading");
+        }
+    });
 });
-function replacePassages(){
-        // $('[id^=p_mirror_], [id^=p_bestOf_]').each(function(){
-        //     var parentID = $(this).parent().attr('id');
-        //     $(this).parent().html($('#small-loading').html());
-        //     $.ajax({
-        //         url: '/get_big_passage',
-        //         type: 'get',
-        //         data: {
-        //             _id: $(this).attr('id').split('_').at(-1)
-        //         },
-        //         success: function(data){
-        //             $('#' + parentID).replaceWith(data);
-        //         }
-        //     });
-        // });
-        // syntaxHighlight();
-    }
+async function createVideoFromImages(imageUrls, frameDuration, el) {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+
+  // Set canvas dimensions based on the first image
+  const firstImage = await loadImage(imageUrls[0]);
+  canvas.width = firstImage.width;
+  canvas.height = firstImage.height;
+
+  const stream = canvas.captureStream();
+  const recorder = new MediaRecorder(stream);
+  const chunks = [];
+
+  recorder.ondataavailable = (e) => chunks.push(e.data);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: 'video/mp4' });
+    const videoUrl = URL.createObjectURL(blob);
+
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.controls = true;
+    // document.body.appendChild(video);
+    $('#'+el).replaceWith(video);
+  };
+
+  recorder.start();
+
+  for (const imageUrl of imageUrls) {
+    const image = await loadImage(imageUrl);
+
+    context.drawImage(image, 0, 0);
+
+    await new Promise(resolve => setTimeout(resolve, frameDuration));
+    recorder.requestData();
+  }
+
+  recorder.stop();
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}

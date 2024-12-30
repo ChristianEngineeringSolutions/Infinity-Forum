@@ -3145,7 +3145,10 @@ async function concatObjectProps(passage, sub){
                 });
             </script>
             `;
-        }   
+        }
+        else if(sub.mimeType[i] == 'image'){
+            passage.vidImages.push('/' + getUploadFolder(sub) + '/' + sub.filename[i]);
+        }
     }
     // console.log(passage.video);
     // passage.sourceList = [...passage.sourceList, sub, ...sub.sourceList];
@@ -3194,6 +3197,7 @@ async function bubbleUpAll(passage){
     }
     passage.video = '';
     passage.audio = '';
+    passage.vidImages = [];
     for(var i = 0; i < passage.filename.length; ++i){
         if(passage.mimeType[i] == 'video'){
             passage.video += `

@@ -46,6 +46,25 @@
         <%if(passage.filename == false){%>
             <%passage.filename = [1];%>
         <%}%>
+        <%if(passage.vidImages.length > 0){%>
+        <div id="vid-img-<%=passage._id%>">
+            <div id="vid-img-<%=passage._id%>-loading">
+                <div style="text-align: center;background:transparent;padding:20px;width:90%;margin:auto;">
+                 <div class="circle"></div>
+                 <div class="circle1"></div>
+                 <div style=" color:rgba(255,255,255,0.9);
+                 text-shadow:0 0 15px #fff; margin-top:-28px; margin-left:10px; font-weight:bolder">Loading...</div>
+                </div>
+            </div>
+        </div>
+        <br>
+        Frames per Second<br>
+        <input autocomplete="off"id="fps-counter-<%=passage._id%>"type="number" name="" value="1">
+        <script type="text/javascript">
+            var images = <%-JSON.stringify(passage.vidImages);%>;
+            createVideoFromImages(images, 1 * 1000, "vid-img-<%=passage._id%>-loading");
+        </script>
+        <%}%>
         <%for(var i = 0; i < passage.filename.length; ++i){%>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
                 <img class="passage-file-<%=passage._id%> uploadedImage"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
