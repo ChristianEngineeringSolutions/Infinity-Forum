@@ -3273,6 +3273,7 @@ async function getRecursiveSpecials(passage){
     var special = null;
     if(passage.showBestOf == true){
         special = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+        if(special != null)
         special = special._id;
     }
     if(passage.best != null){
