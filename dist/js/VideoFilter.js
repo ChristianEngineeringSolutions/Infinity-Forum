@@ -57,6 +57,7 @@ class VideoFilter {
     // Add container for positioning
     const container = document.createElement('div');
     container.style.position = 'relative';
+    container.style.display = 'inline-block';  // Preserve image's inline behavior
     videoElement.parentNode.insertBefore(container, videoElement);
     container.appendChild(videoElement);
     container.appendChild(this.warningOverlay);

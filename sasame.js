@@ -3194,35 +3194,37 @@ async function bubbleUpAll(passage){
     }
     passage.video = '';
     passage.audio = '';
-    if(passage.mimeType[0] == 'video'){
-        passage.video = `
-        <video id="passage_video_`+passage._id+`"class="passage_video uploadedVideo passage-video-`+passage._id+`"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(passage)+`/`+passage.filename[0]+`" type="video/`+passage.filename[0].split('.').at(-1)+`">
-            Your browser does not support the video tag.
-        </video>
-        <script>
-            $('#passage_video_`+passage._id+`').on('ended', function(){
-                $(this).css('display', 'none');
-                $(this).next().next().css('display', 'block');
-                $(this).next().next().get(0).play();
-            });
-        </script>
-        `;
-    }
-    else if(passage.mimeType[0] == 'audio'){
-        passage.audio = `
-        <audio id="passage_audio_`+passage._id+`"class="passage_audio"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(passage)+`/`+passage.filename[0]+`" type="audio/`+passage.filename[0].split('.').at(-1)+`">
-            Your browser does not support the audio tag.
-        </audio>
-        <script>
-            $('#passage_audio_`+passage._id+`').on('ended', function(){
-                $(this).css('display', 'none');
-                $(this).next().next().css('display', 'block');
-                $(this).next().next().get(0).play();
-            });
-        </script>
-        `;
+    for(var i = 0; i < passage.filename.length; ++i){
+        if(passage.mimeType[i] == 'video'){
+            passage.video += `
+            <video id="passage_video_`+passage._id+`"class="passage_video uploadedVideo passage-video-`+passage._id+`"width="320" height="240" controls>
+                <source src="/`+getUploadFolder(passage)+`/`+passage.filename[i]+`" type="video/`+passage.filename[i].split('.').at(-1)+`">
+                Your browser does not support the video tag.
+            </video>
+            <script>
+                $('#passage_video_`+passage._id+`').on('ended', function(){
+                    $(this).css('display', 'none');
+                    $(this).parent().next().next().css('display', 'block');
+                    $(this).parent().next().next().get(0).play();
+                });
+            </script>
+            `;
+        }
+        else if(passage.mimeType[i] == 'audio'){
+            passage.audio += `
+            <audio id="passage_audio_`+passage._id+`"class="passage_audio"width="320" height="240" controls>
+                <source src="/`+getUploadFolder(passage)+`/`+passage.filename[i]+`" type="audio/`+passage.filename[i].split('.').at(-1)+`">
+                Your browser does not support the audio tag.
+            </audio>
+            <script>
+                $('#passage_audio_`+passage._id+`').on('ended', function(){
+                    $(this).css('display', 'none');
+                    $(this).next().next().css('display', 'block');
+                    $(this).next().next().get(0).play();
+                });
+            </script>
+            `;
+        }
     }
     passage.displayContent = passage.content;
     passage.displayCode = passage.code;
