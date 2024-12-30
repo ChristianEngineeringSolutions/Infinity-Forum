@@ -4809,6 +4809,7 @@ async function uploadFile(req, res, passage) {
     var passages = await Passage.find({}).limit(20);
     var files = req.files;
     var fileToUpload = req.files.file;
+    passage.filename = [];
     
     if (!Array.isArray(fileToUpload)) {
         fileToUpload = [fileToUpload];
