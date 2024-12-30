@@ -3099,51 +3099,53 @@ async function concatObjectProps(passage, sub){
         if(typeof passage.javascript != 'undefined')
             passage.displayJavascript += (typeof sub.displayJavascript == 'undefined' || sub.displayJavascript == '' ? '' : '\n' + sub.displayJavascript);
     }
-    if(sub.mimeType[0] == 'video'){
-        var filename = sub.filename[0];
-        // console.log((filename + '').split('.'));
-        //`+passage.filename.split('.').at(-1)+`
-        if(passage.video == ''){
-            var displayNone = '';
-        }else{
-            var displayNone = 'style="display:none"';
+    for(var i = 0; i < sub.mimeType.length; ++i){
+        if(sub.mimeType[i] == 'video'){
+            var filename = sub.filename[i];
+            // console.log((filename + '').split('.'));
+            //`+passage.filename.split('.').at(-1)+`
+            if(passage.video == ''){
+                var displayNone = '';
+            }else{
+                var displayNone = 'style="display:none"';
+            }
+            passage.video += `
+            <video class="passage-file-`+sub._id+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
+                <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename[0].split('.').at(-1)+`">
+                Your browser does not support the video tag.
+            </video>
+            <script>
+                $('#passage_video_`+sub._id+`').on('ended', function(){
+                    $(this).css('display', 'none');
+                    $(this).next().next().css('display', 'block');
+                    $(this).next().next().get(0).play();
+                });
+            </script>
+            `;
         }
-        passage.video += `
-        <video class="passage-file-`+sub._id+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="video/`+sub.filename[0].split('.').at(-1)+`">
-            Your browser does not support the video tag.
-        </video>
-        <script>
-            $('#passage_video_`+sub._id+`').on('ended', function(){
-                $(this).css('display', 'none');
-                $(this).next().next().css('display', 'block');
-                $(this).next().next().get(0).play();
-            });
-        </script>
-        `;
-    }
-    else if(sub.mimeType[0] == 'audio'){
-        var filename = sub.filename[0];
-        // console.log((filename + '').split('.'));
-        //`+passage.filename.split('.').at(-1)+`
-        if(passage.audio == ''){
-            var displayNone = '';
-        }else{
-            var displayNone = 'style="display:none"';
-        }
-        passage.audio += `
-        <audio `+displayNone+`id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
-            <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename[0].split('.').at(-1)+`">
-            Your browser does not support the audio tag.
-        </audio>
-        <script>
-            $('#passage_audio_`+sub._id+`').on('ended', function(){
-                $(this).css('display', 'none');
-                $(this).next().next().css('display', 'block');
-                $(this).next().next().get(0).play();
-            });
-        </script>
-        `;
+        else if(sub.mimeType[i] == 'audio'){
+            var filename = sub.filename[i];
+            // console.log((filename + '').split('.'));
+            //`+passage.filename.split('.').at(-1)+`
+            if(passage.audio == ''){
+                var displayNone = '';
+            }else{
+                var displayNone = 'style="display:none"';
+            }
+            passage.audio += `
+            <audio `+displayNone+`id="passage_audio_`+sub._id+`"class="passage_audio"width="320" height="240" controls>
+                <source src="/`+getUploadFolder(sub)+`/`+filename+`" type="audio/`+sub.filename[0].split('.').at(-1)+`">
+                Your browser does not support the audio tag.
+            </audio>
+            <script>
+                $('#passage_audio_`+sub._id+`').on('ended', function(){
+                    $(this).css('display', 'none');
+                    $(this).next().next().css('display', 'block');
+                    $(this).next().next().get(0).play();
+                });
+            </script>
+            `;
+        }   
     }
     // console.log(passage.video);
     // passage.sourceList = [...passage.sourceList, sub, ...sub.sourceList];
@@ -4795,176 +4797,159 @@ async function deleteOldUploads(passage){
     }
     await passage.save();
 }
-async function uploadFile(req, res, passage){
+async function uploadFile(req, res, passage) {
     console.log("Upload Test");
     await deleteOldUploads(passage);
     var passages = await Passage.find({}).limit(20);
     var files = req.files;
-    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
     var fileToUpload = req.files.file;
-    //check if fileToUpload is an array
-    if(Array.isArray(fileToUpload)){
-
-    }
-    else{
+    
+    if (!Array.isArray(fileToUpload)) {
         fileToUpload = [fileToUpload];
     }
-    // passage.filename = [];
-    var i = 0;
-    var j = 0;
-    for(const file of fileToUpload){
-        var mimeType = fileToUpload[i].mimetype; 
-        //uuid with  ext
-        var uploadTitle = v4() + "." + fileToUpload[i].name.split('.').at(-1);
-        var thumbnailTitle = v4() + ".jpg";
-        var where = passage.personal ? 'protected' : 'uploads';
-        if(where == 'protected'){
-            var fullpath = './' + where
-            var partialpath = where;
-            var simplepath = where
-        }
-        else{
-            var fullpath = './dist/' + where;
-            var partialpath = 'dist/' + where;
-            var simplepath = where
-        }
-        passage.filename[i] = uploadTitle;
-        console.log("PATH:"+fullpath+'/'+uploadTitle)
-        // Use the mv() method to place the file somewhere on the server
-        fileToUpload[i].mv(fullpath+'/'+uploadTitle, async function(err) {
-            if (err){
-                console.log("DID NOT MOVE FILE");
-                return res.status(500).send(err);
-            }
-            console.log("MOVED FILE");
-            //compress if image
-            if(mimeType.split('/')[0] == 'image'){
-                exec('python3 compress.py '+partialpath+'/'+uploadTitle + ' ' + mimeType.split('/')[1] + ' ' + passage._id
-            , async (err, stdout, stderr) => {
-                    console.log(err + stdout + stderr);
-                    console.log("=Ok actually finished compressing img");
 
-                    //not enough memory on server
-                    //local for now
-                    // if(process.env.LOCAL == 'true'){
-                    //     exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
-                    //     , (err, stdout, stderr) => {
-                    //             //done
-                    //             console.log(err + stdout + stderr);
-                    //         });
-                    // }
-                });
-            }
-            var newfilename = uploadTitle.split('.')[0]+'_c.'+uploadTitle.split('.')[1];
-            if(mimeType.split('/')[0] == 'video'){
-                console.log("Beginning video processing");
-                var ext = newfilename.split('.').at(-1);
-                var cmd = '';
-                switch(ext){
-                case 'webm':
-                    cmd = 'ffmpeg -i '+partialpath+'/'+uploadTitle + ' -c:v libvpx -crf 18 -preset veryslow -c:a copy '+partialpath+'/'+newfilename;
-                    break;
-                // case 'mp4':
-                //     // cmd = 'ffmpeg -i dist/'+where+'/'+uploadTitle + ' -vcodec libx25 -crf 18 dist/'+where+'/'+newfilename;
-                //     cmd = 'ffmpeg -i '+partialpath+'/'+uploadTitle + ' -vcodec libx25 -crf 18 '+partialpath+'/'+newfilename;
-                //     break;
-                default:
-                    cmd = 'ffmpeg -i '+partialpath+'/'+uploadTitle + ' '+partialpath+'/'+newfilename;
-                    // cmd = 'echo "Hello, World"';
-                    // newfilename = uploadTitle;
-                    break;
+    // Process files sequentially using for...of loop
+    let index = 0;
+    for (const file of fileToUpload) {
+        const mimeType = file.mimetype;
+        const uploadTitle = v4() + "." + file.name.split('.').at(-1);
+        const thumbnailTitle = v4() + ".jpg";
+        const where = passage.personal ? 'protected' : 'uploads';
+        
+        const fullpath = where === 'protected' ? './' + where : './dist/' + where;
+        const partialpath = where === 'protected' ? where : 'dist/' + where;
+        const simplepath = where;
+
+        passage.filename[index] = uploadTitle;
+        
+        // Wrap mv() in a Promise
+        await new Promise((resolve, reject) => {
+            file.mv(fullpath + '/' + uploadTitle, async (err) => {
+                if (err) {
+                    console.log("DID NOT MOVE FILE");
+                    reject(err);
+                    return;
                 }
-                exec(cmd
-                , async (err, stdout, stderr) => {
-                        console.log('Video compressed.' + newfilename);
-                        // UNCOMMENT TO VIEW OUTPUT
-                        console.log(err + stdout + stderr);
-
-                        passage.filename[j++] = newfilename;
-                        console.log("FILENAMES:" + passage.filename);
-                        // update filename to compressed video
-                        await Passage.findOneAndUpdate({_id: passage._id}, 
-                            {$set: {
-                                filename: passage.filename
-                            }
-                        });
-                        //delete uncompressed video
-                        if(newfilename != uploadTitle){
-                            fs.unlink(partialpath+'/'+uploadTitle, function(err){
-                                if (err && err.code == 'ENOENT') {
-                                    // file doens't exist
-                                    console.info("File doesn't exist, won't remove it.");
-                                } else if (err) {
-                                    // other errors, e.g. maybe we don't have enough permission
-                                    console.error("Error occurred while trying to remove file");
-                                } else {
-                                    console.info(`removed`);
+                
+                console.log("MOVED FILE");
+                
+                try {
+                    if (mimeType.split('/')[0] === 'image') {
+                        await new Promise((resolveCompress) => {
+                            exec('python3 compress.py ' + partialpath + '/' + uploadTitle + ' ' + 
+                                 mimeType.split('/')[1] + ' ' + passage._id,
+                                (err, stdout, stderr) => {
+                                    console.log(err + stdout + stderr);
+                                    console.log("=Ok actually finished compressing img");
+                                    resolveCompress();
                                 }
-                            });
+                            );
+                        });
+                    }
+
+                    const newfilename = uploadTitle.split('.')[0] + '_c.' + uploadTitle.split('.')[1];
+                    
+                    if (mimeType.split('/')[0] === 'video') {
+                        console.log("Beginning video processing for index:", index);
+                        const ext = newfilename.split('.').at(-1);
+                        let cmd = '';
+                        
+                        switch(ext) {
+                            case 'webm':
+                                cmd = `ffmpeg -i ${partialpath}/${uploadTitle} -c:v libvpx -crf 18 -preset veryslow -c:a copy ${partialpath}/${newfilename}`;
+                                break;
+                            default:
+                                cmd = `ffmpeg -i ${partialpath}/${uploadTitle} ${partialpath}/${newfilename}`;
+                                break;
                         }
-                        //not enough memory on server. local for now.
-                      //   if(process.env.LOCAL == 'true'){
-                      //       var screenshotName = v4();
-                      //       ffmpeg(fullpath+'/'+newfilename)
-                      //         .on('filenames', function(filenames) {
-                      //           console.log('Will generate ' + filenames.join(', '))
-                      //         })
-                      //         .on('end', async function() {
-                      //           console.log('Screenshots taken');
-                      //           exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
-                      //               , (err, stdout, stderr) => {
-                      //               console.log(err + stdout + stderr);
-                      //               console.log("Finished Processing Media.");
-                      //               //done
-                      //               //delete each screenshot
-                      //               for(var t = 1; t < 4; ++t){
-                      //                 fs.unlink(partialpath + '/' + screenshotName+'_'+t + '.png', function(err2){
-                      //                   if (err2 && err2.code == 'ENOENT') {
-                      //                       // file doens't exist
-                      //                       console.info("File doesn't exist, won't remove it.");
-                      //                   } else if (err2) {
-                      //                       // other errors, e.g. maybe we don't have enough permission
-                      //                       console.error("Error occurred while trying to remove file");
-                      //                   } else {
-                      //                       console.info(`removed screenshot.`);
-                      //                   }
-                      //                 });
-                      //               }
-                      //           });
-                      //         })
-                      //         .screenshots({
-                      //           // Will take screens at 25%, 50%, 75%
-                      //           count: 3,
-                      //           filename: screenshotName +'_%i.png',
-                      //           folder: partialpath
-                      //         });
-                      // }
-                    });
-            }
+
+                        console.log("Executing command:", cmd);
+                        
+                        try {
+                            await new Promise((resolveVideo, rejectVideo) => {
+                                const currentIndex = index; // Capture current index
+                                const process = exec(cmd, async (err, stdout, stderr) => {
+                                    if (err) {
+                                        console.error("Error in video processing:", err);
+                                        rejectVideo(err);
+                                        return;
+                                    }
+                                    
+                                    console.log('Video compressed. Index:', currentIndex, 'File:', newfilename);
+                                    console.log('STDOUT:', stdout);
+                                    console.log('STDERR:', stderr);
+                                    
+                                    try {
+                                        passage.filename[currentIndex] = newfilename;
+                                        passage.markModified('filename');
+                                        await passage.save();
+
+                                        if (newfilename !== uploadTitle) {
+                                            await new Promise((resolveUnlink) => {
+                                                fs.unlink(partialpath + '/' + uploadTitle, (err) => {
+                                                    if (err && err.code === 'ENOENT') {
+                                                        console.info("File doesn't exist, won't remove it.");
+                                                    } else if (err) {
+                                                        console.error("Error occurred while trying to remove file:", err);
+                                                    } else {
+                                                        console.info(`Removed original video file for index ${currentIndex}`);
+                                                    }
+                                                    resolveUnlink();
+                                                });
+                                            });
+                                        }
+                                        
+                                        resolveVideo();
+                                    } catch (error) {
+                                        console.error("Error in post-processing:", error);
+                                        rejectVideo(error);
+                                    }
+                                });
+
+                                // Add error handler for the exec process itself
+                                process.on('error', (error) => {
+                                    console.error("Exec process error:", error);
+                                    rejectVideo(error);
+                                });
+                            });
+                        } catch (error) {
+                            console.error("Video processing failed:", error);
+                            throw error; // Propagate error to main try-catch block
+                        }
+                    }
+
+                    if (mimeType.split('/')[0] === 'image' && mimeType.split('+')[0].split('/')[1] === 'svg') {
+                        passage.isSVG = true;
+                    } else {
+                        passage.isSVG = false;
+                    }
+
+                    passage.mimeType[index] = mimeType.split('/')[0];
+                    
+                    if (passage.mimeType[index] === 'model' || passage.isSVG) {
+                        const data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
+                        const buf = Buffer.from(data, 'base64');
+                        const fsp = require('fs').promises;
+                        await fsp.writeFile(fullpath + '/' + thumbnailTitle, buf);
+                        passage.thumbnail = thumbnailTitle;
+                    } else {
+                        passage.thumbnail = null;
+                    }
+
+                    passage.markModified('filename');
+                    passage.markModified('mimeType');
+                    await passage.save();
+                    
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
         });
-        if(mimeType.split('/')[0] == 'image'
-        && mimeType.split('+')[0].split('/')[1] == 'svg'){
-            passage.isSVG = true;
-        }
-        else{
-            passage.isSVG = false;
-        }
-        passage.mimeType[i] = mimeType.split('/')[0];
-        if(passage.mimeType[i] == 'model' || passage.isSVG){
-            var data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
-            var buf = Buffer.from(data, 'base64');
-            const fsp = require('fs').promises;
-            await fsp.writeFile(fullpath+'/'+thumbnailTitle, buf);
-            passage.thumbnail = thumbnailTitle;
-        }
-        else{
-            passage.thumbnail = null;
-        }
-        i++;
-        passage.markModified('filename');
-        passage.markModified('mimeType');
-        await passage.save();
+
+        index++;
     }
+    
     await passage.save();
     console.log(passage.filename + "TEST");
 }
