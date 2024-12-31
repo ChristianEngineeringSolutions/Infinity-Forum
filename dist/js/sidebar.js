@@ -6,7 +6,10 @@ function updateBookmarks(){
         // url: /*DOMAIN + */'/get_bookmarks',
         success: function(data){
             $('#bookmarks').html(data);
-        }
+        },
+        error: function(a, b, c){
+                    alert(JSON.stringify(a) + b + c);
+                }
     });
 }
 function updateDaemons(){
