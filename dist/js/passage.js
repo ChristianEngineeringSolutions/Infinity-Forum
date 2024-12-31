@@ -276,6 +276,7 @@ $(function(){
             case 'Question':
             case 'Comment':
             case 'Task':
+            case 'Challenge':
                 $('#editor-label-color').css('color', 'green');
                 break;
             case 'Forum':
@@ -1054,7 +1055,7 @@ $(function(){
     //For Home, Search, and Profile
     var okPaginate = true;
     $(document).on('click', '#view_more, #view-more-leaders', function(){
-        if(okPaginate == true){
+        if(true){
             okPaginate = false;
             checkIfFromOtro();
             //check if home, search, or profile
@@ -1072,7 +1073,9 @@ $(function(){
                     passage: $('#chief_passage_id').val(),
                     profile: isProfile,
                     search: $('#search').val(),
-                    whichPage: $('#which-page').val()
+                    whichPage: $('#which-page').val(),
+                    label: $('#label-select').val(),
+                    sort: $('#sort-select').val()
                 },
                 success: function(data){
                     $('#page-loader').remove();
@@ -1086,6 +1089,9 @@ $(function(){
                     okPaginate = true;
                     analyzeImages();
                     analyzeVideos();
+                },
+                error: function(a, b, c){
+                    alert(JSON.stringify(a) + b + c);
                 }
             });
         }

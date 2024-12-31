@@ -145,7 +145,8 @@ const labelOptions = [
     "Question",
     "Comment",
     "Task",
-    "Forum"
+    "Forum",
+    "Challenge"
 ];
 
 // make sure recordings folder exists
@@ -3804,11 +3805,28 @@ app.post('/paginate', async function(req, res){
         if(req.body.from_ppe_queue){
             find.mimeType = 'image';
         }
-        let passages = await Passage.paginate(find, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users parent sourceList'});
+        var sort = {stars: -1, _id: -1};
+        switch(req.body.sort){
+            case 'Most Stars':
+                sort = {stars: -1, _id: -1};
+                break;
+            case 'Newest-Oldest':
+                sort = {date: -1};
+                break;
+            case 'Oldest-Newest':
+                sort = {date: 1};
+                break;
+        }
+        var label = req.body.label;
+        if(label != 'All'){
+            find.label = req.body.label;
+        }
+        let passages = await Passage.paginate(find, {sort: sort, page: page, limit: DOCS_PER_PAGE, populate: 'author users parent sourceList'});
         passages.docs = await fillUsedInList(passages.docs);
         for(var i = 0; i < passages.docs.length; ++i){
             passages.docs[i] = await getPassage(passages.docs[i]);
         }
+        console.log("Page:"+page);
         if(!req.body.from_ppe_queue){
             // let test = await Passage.find({author: profile});
             // console.log(test);
@@ -4073,6 +4091,7 @@ app.post('/create_initial_passage/', async (req, res) => {
         case 'Question':
         case 'Comment':
         case 'Task':
+        case 'Challenge':
             passage.public = true;
             passage.forum = false;
             break;
@@ -4178,6 +4197,7 @@ app.post('/change_label', async (req, res) => {
         case 'Question':
         case 'Comment':
         case 'Task':
+        case 'Challenge':
             passage.public = true;
             passage.forum = false;
             break;

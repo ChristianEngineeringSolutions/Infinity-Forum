@@ -212,7 +212,6 @@
         && passage
         && passage.special){
     %>
-    <%var isSVG = passage.special.isSVG%>
     <%-include('detail-div', {
         short: short, 
         passage: passage.special, 
@@ -222,7 +221,6 @@
         bestOf: true,
         sub: true,
         last: true,
-        isSVG: isSVG
     })%>
     <%}%>
     </div>
