@@ -336,7 +336,7 @@ $(function(){
                             data: {
                                 dataURL: dataURL,
                                 parent: $('#chief_passage_id').val(),
-                                sourceList: sourceList
+                                sourceList: JSON.stringify(sourceList)
                             },
                             success: function(data){
                                 //and now replace it with the database version

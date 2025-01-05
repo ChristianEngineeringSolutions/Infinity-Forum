@@ -1389,7 +1389,7 @@ async function getPassageLocation(passage, train){
 async function returnPassageLocation(passage){
     var location = (await getPassageLocation(passage)).join('/');
     // return passage.parent ? passage.parent.title + passage.parent.parent.title : '';
-    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + passage.parent.title + '/' + passage.parent._id) : '/posts') +'">' + location + '</a>';
+    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + (passage.parent.title == '' ? 'Untitled' : passage.parent.title) + '/' + passage.parent._id) : '/posts') +'">' + location + '</a>';
 }
 async function modifyArrayAsync(array, asyncFn) {
   const promises = array.map(async (item) => {
@@ -3798,7 +3798,6 @@ app.post('/paginate', async function(req, res) {
                     find.author = { $in: followings.map(f => f.following._id) };
                     break;
             }
-            console.log("PARENT"+parent);
             if (parent !== 'root') find.parent = parent;
             if (profile !== 'false') find.author = profile;
             if (from_ppe_queue) find.mimeType = 'image';
@@ -4434,19 +4433,21 @@ app.post('/ppe_add', async (req, res) => {
     var buf = Buffer.from(data, 'base64');
     const fsp = require('fs').promises;
     await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
+    console.log(req.body.sourceList);
     let passage = await Passage.create({
         author: req.session.user,
         users: [req.session.user],
         parent: req.body.parent == 'root' ? null: req.body.parent,
         filename: uploadTitle,
-        sourceList: req.body.sourceList,
+        sourceList: JSON.parse(req.body.sourceList),
         mimeType: 'image'
     });
     var newOne = await Passage.find({_id: passage._id});
+    console.log(req.body.parent);
     if(req.body.parent !== 'root'){
-        let Parent = await Passage.findOne({_id: req.body.parent});
-        Parent.passages.push(newOne);
-        await Parent.save();
+        let parent = await Passage.findOne({_id: req.body.parent});
+        parent.passages.push(newOne);
+        await parent.save();
     }
     let find = await Passage.findOne({_id: passage._id});
     res.render('ppe_thumbnail', {thumbnail: find});
