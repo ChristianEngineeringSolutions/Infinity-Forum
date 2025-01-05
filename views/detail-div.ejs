@@ -46,7 +46,7 @@
         <%if(passage.filename == false){%>
             <%passage.filename = [1];%>
         <%}%>
-        <%if(passage.vidImages.length > 0){%>
+        <%if(passage.vidImages && passage.vidImages.length > 0){%>
         <div id="vid-img-<%=passage._id%>">
             <div id="vid-img-<%=passage._id%>-loading">
                 <div style="text-align: center;background:transparent;padding:20px;width:90%;margin:auto;">

@@ -314,6 +314,8 @@
 				var thread = hash.substr(hash.indexOf("t=") + 2, hash.indexOf("/") - 2); //get the ID of the thread
 			popup("New Post", $('#clean_editor').val());
 			$('#editor-label').val('Forum').change();
+			$('#editor-label').hide();
+			$('#editor-label-color').hide();
 			$('#chief_passage_id').val(chief);
 			$('#forum-which').val(which);
 
