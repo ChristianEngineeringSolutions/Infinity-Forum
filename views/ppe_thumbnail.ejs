@@ -1,6 +1,6 @@
 <div class="ppe_canvas_container">
     <div>
-        <span class="ppe_queue_link" data-href="/passage/<%=thumbnail.title%>/<%=thumbnail._id%>">Details</span>
+        <span class="ppe_queue_link" data-href="/passage/<%=thumbnail.title == '' ? 'Untitled' : thumbnail.title%>/<%=thumbnail._id%>">Details</span>
         </div>
         <h3 ><%=thumbnail.title%></h3>
     <img src="/uploads/<%=thumbnail.filename[0]%>"id="ppe_canvas_<%=thumbnail._id%>"class="ppe_queue_canvas">
