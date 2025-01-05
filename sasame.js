@@ -313,7 +313,7 @@ app.use(async function(req, res, next) {
             regenerateSession(req);
             daemons = user.daemons;
         }
-        let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList collaborators');
+        let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList collaborators versions');
         if(defaults.length > 0)
             daemons = daemons.concat(defaults);
         for(var i = 0; i < daemons.length; ++i){
@@ -584,14 +584,14 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     }
     else{
         try{
-            var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators subforums');
+            var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
             if(mirror != null)
             passage.sourceList.push(mirror);
         }
         catch(e){
         }
         try{
-            var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators subforums');
+            var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
             if(bestOf != null)
                 passage.sourceList.push(bestOf);
         }
@@ -682,7 +682,7 @@ app.get('/messages', async(req, res) => {
     for(const message of messages){
         var p = await Passage.findOne({
             _id: message.passage._id
-        }).populate('author users sourcelist collaborators');
+        }).populate('author users sourcelist collaborators versions');
         passages.push(p);
     }
     for(var i = 0; i < passages.length; ++i){
@@ -740,7 +740,7 @@ app.get('/personal/:user_id', async (req, res) => {
             users: {
                 $in: [req.params.user_id]
             }
-        }).populate('author users sourcelist collaborators parent versions').limit(DOCS_PER_PAGE);
+        }).populate('author users sourcelist collaborators versions parent').limit(DOCS_PER_PAGE);
         for(var i = 0; i < passages.length; ++i){
             passages[i] = await getPassage(passages[i]);
         }
@@ -798,7 +798,7 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
     //     find.$or = [{personal: true}, {personal: false}];
     // }
-    let passages = await Passage.find(find).populate('author users sourceList collaborators').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    let passages = await Passage.find(find).populate('author users sourceList collaborators versions').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(var i = 0; i < passages.length; ++i){
         passages[i] = await getPassage(passages[i]);
     }
@@ -926,7 +926,7 @@ async function alternate(passageID, iteration, prevs){
         return false;
     }
     var test = await Passage.find(find);
-    var alternate = await Passage.find(find).sort('-stars').populate('author users sourceList collaborators').skip(parseInt(iteration)).limit(1);
+    var alternate = await Passage.find(find).sort('-stars').populate('author users sourceList collaborators versions').skip(parseInt(iteration)).limit(1);
     alternate = alternate[0];
 
     return alternate;
@@ -947,7 +947,7 @@ app.get('/alternate', async(req, res) => {
     //...
     //I know and sorry this is a lot of duplicated code from passage view route
     //but TODO will see if we can put all this into a function
-    var subPassages = await Passage.find({parent: parent._id, personal: false}).populate('author users sourceList collaborators');
+    var subPassages = await Passage.find({parent: parent._id, personal: false}).populate('author users sourceList collaborators versions');
     //reorder sub passages to match order of passage.passages
     var reordered = Array(subPassages.length).fill(0);
     for(var i = 0; i < parent.passages.length; ++i){
@@ -1050,7 +1050,7 @@ if(process.env.LOCAL == 'true'){
     //send a passsage from local sasame to remote
     app.post('/push', async (req, res) => {
         const fsp = require('fs').promises;
-        var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList collaborators');
+        var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList collaborators versions');
 
           var url = 'https://christianengineeringsolutions.com/pull';
           //TODO add file
@@ -1416,7 +1416,7 @@ app.get('/posts', async (req, res) => {
             deleted: false,
             personal: false,
             versionOf: null
-        }).populate('author users sourceList parent collaborators').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent collaborators versions').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         // for(const passage of passages){
         //     // return await getPassage(passage._id);
         //     // passages[passage] = bubbleUpAll(passage);
@@ -1469,7 +1469,7 @@ app.get('/', async (req, res) => {
         let passages = await Passage.find({
             deleted: false,
             personal: false,
-        }).populate('author users sourceList collaborators').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList collaborators versions').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
         for(var i = 0; i < passages.length; ++i){
             passages[i] = await getPassage(passages[i]);
         }
@@ -1562,7 +1562,6 @@ app.get('/forum', async (req, res) => {
 });
 async function getPassage(passage, small=true){
     passage.originalSourceList = passage.sourceList.slice();
-    console.log(passage.originalSourceList.length);
     // var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
         // return res.redirect('/');
@@ -1574,7 +1573,7 @@ async function getPassage(passage, small=true){
     var replacing = false;
     if(!passage.showBestOf){
         try{
-            var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums collaborators');
+            var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList subforums collaborators versions');
             passage.sourceList.push(mirror);
             // passage.special = await getPassage(mirror);
         }
@@ -1582,7 +1581,7 @@ async function getPassage(passage, small=true){
             var mirror = null;
         }
         try{
-            var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums collaborators');
+            var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList subforums collaborators versions');
             passage.sourceList.push(bestOf);
             // passage.special = await getPassage(bestOf);
         }
@@ -1783,9 +1782,9 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     console.log(passage.sourceList.length);
     if(passage.public == true && !passage.forum){
         // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators'});
+        var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
         if(replacing){
-            var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators'});
+            var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
         }
         subPassages = subPassages.docs;
     }
@@ -1794,17 +1793,17 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
             passage.showIframe = true;
         }
         if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators'});
+            var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
             if(replacing){
-                var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators'});
+                var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
             }
             subPassages = subPassages.docs;
         }
         else{ 
             //private passages
-            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList collaborators');  
+            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList collaborators versions');  
             if(replacing){
-                var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList collaborators');
+                var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList collaborators versions');
             }
             // subPassages = subPassages.filter(function(p){
             //     return p.comment ? false : true;
@@ -4042,7 +4041,7 @@ app.post('/create_initial_passage/', async (req, res) => {
     var formData = req.body;
     var repost = req.body.repost == 'true' ? true : false;
     var repostID = req.body['repost-id'];
-    var passage = await Passage.findOne({_id: newPassage._id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: newPassage._id}).populate('author users sourceList collaborators versions');
     if(repost){
         var reposted = await Passage.findOne({_id:repostID});
         passage.repost = repostID;
@@ -4184,7 +4183,7 @@ app.post('/change_label', async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
@@ -4223,7 +4222,7 @@ app.post('/show-bestof', async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
@@ -4242,7 +4241,7 @@ app.post('/same-users', async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
@@ -4255,7 +4254,7 @@ app.post('/same-collabers', async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
@@ -4268,7 +4267,7 @@ app.post('/same-sources', async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
@@ -4351,14 +4350,14 @@ app.post('/single_star/', async (req, res) => {
             }
             else{
                 try{
-                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators subforums');
+                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
                     if(mirror != null)
                     sources.push(mirror);
                 }
                 catch(e){
                 }
                 try{
-                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators subforums');
+                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
                     if(bestOf != null)
                         sources.push(bestOf);
                 }
@@ -4608,7 +4607,7 @@ app.post('/update_metadata', async (req, res) => {
 });
 //temp function for external api (mostly to work with metadata)
 app.post('/passage_update', async (req, res) => {
-    var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList collaborators versions');
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         return res.send(await updatePassage(req.body._id, req.body.attributes));
     }
@@ -4616,7 +4615,7 @@ app.post('/passage_update', async (req, res) => {
 //attributes is an object
 //temp for external api
 async function updatePassage(_id, attributes){
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
     const keys = Object.keys(attributes);
     keys.forEach((key, index) => {
         passage[key] = attributes[key];
@@ -4635,7 +4634,7 @@ app.post('/update_passage/', async (req, res) => {
     var _id = req.body._id;
     var formData = req.body;
     var subforums = formData.subforums;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators');
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
