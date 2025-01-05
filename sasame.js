@@ -2420,23 +2420,23 @@ app.post('/search_passage/', async (req, res) => {
                 }
             }
             //can only add to private or personal if on the userlist
-            if(!scripts.isPassageUser(user, parent) && (!parent.public || parent.personal)){
+            if(!scripts.isPassageUser(req.session.user, parent) && (!parent.public || parent.personal)){
                 //do nothing
             }
             else if(parent.public_daemon == 2 || parent.default_daemon){
                 //do nothing
             }
             else if(parent.public){
-                let passage = await Passage.create({
-                    author: req.session.user._id,
-                    users: users,
-                    parent: req.body._id,
-                    title: req.body.search,
-                    public: true
-                });
-                parent.passages.push(passage);
-                await parent.save();
-                results = [passage];
+                // let passage = await Passage.create({
+                //     author: req.session.user._id,
+                //     users: users,
+                //     parent: req.body._id,
+                //     title: req.body.search,
+                //     public: true
+                // });
+                // parent.passages.push(passage);
+                // await parent.save();
+                // results = [passage];
             }
         }
     }
@@ -3798,7 +3798,7 @@ app.post('/paginate', async function(req, res) {
                     find.author = { $in: followings.map(f => f.following._id) };
                     break;
             }
-
+            console.log("PARENT"+parent);
             if (parent !== 'root') find.parent = parent;
             if (profile !== 'false') find.author = profile;
             if (from_ppe_queue) find.mimeType = 'image';

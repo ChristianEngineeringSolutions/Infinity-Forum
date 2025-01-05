@@ -1071,6 +1071,7 @@ $(function(){
                 data: {
                     page: page,
                     passage: $('#chief_passage_id').val(),
+                    parent: $('#chief_passage_id').val(),
                     profile: isProfile,
                     search: $('#search').val(),
                     whichPage: $('#which-page').val(),
