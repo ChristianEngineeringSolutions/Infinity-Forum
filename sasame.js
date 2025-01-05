@@ -406,6 +406,7 @@ function monthDiff(d1, d2) {
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     var usd = await scripts.getMaxToGiveOut();
+    var users = await User.find({stripeOnboardingComplete:true});
     for(const user of users){
         //appropriate percentage based on stars
         //users get same allotment as they have percentage of stars
@@ -936,7 +937,7 @@ app.get('/alternate', async(req, res) => {
     //then splice/replace in the alternate passage
     //and then return the whole deal :)
     //\UPDATE TODO
-    var parent = await Passage.findOne({_id: req.query.parentID});
+    var parent = await Passage.findOne({_id: req.query.parentID}).populate('author users sourceList');
     var passage = await alternate(req.query.passageID, req.query.iteration, req.query.altPrevs);
     if(!passage){
         return res.send("restart");
@@ -975,7 +976,11 @@ app.get('/alternate', async(req, res) => {
         var i = 0;
         for(const p of parent.passages){
             if(i == req.query.position){
-                parent.passages[i] = passage;
+                let processedPassage = await getPassage(passage);
+                if (!processedPassage.usedIn) {
+                    processedPassage.usedIn = [];
+                }
+                parent.passages[i] = processedPassage;
             }
             ++i;
         }
@@ -986,6 +991,8 @@ app.get('/alternate', async(req, res) => {
     //     }
     // }
     parent = await getPassage(parent);
+    console.log("SourceList:"+parent.originalSourceList.length);
+    // parent.originalSourceList = [];
     if(parent.displayHTML.length > 0 || parent.displayCSS.length > 0 || parent.displayJavascript.length > 0){
         parent.showIframe = true;
     }
@@ -994,6 +1001,7 @@ app.get('/alternate', async(req, res) => {
             subPassages: parent.passages,
             passage: parent,
             sub: false,
+            subPassage: true,
             altIteration: '_' + req.query.iteration
         });
     }
@@ -1702,7 +1710,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         return res.redirect('/');
     }
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
-        return res.send("Must be on Userlist");
+        return res.send(passage + "Must be on Userlist");
     }
     try{
         var mirror = await Passage.findOne({_id:passage.mirror._id});
@@ -4099,6 +4107,7 @@ app.post('/create_initial_passage/', async (req, res) => {
 
     }
     passage.html = formData.html;
+    console.log("HTML"+ passage.html);
     passage.css = formData.css;
     passage.javascript = formData.js;
     passage.title = formData.title;

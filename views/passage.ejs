@@ -61,9 +61,11 @@
                 <%});%>
             </div>
             <div id="original-sources-<%=passage._id%>"style="display:none;">
-            <%passage.originalSourceList.forEach(function(source) { %>
-                <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a> <span class="passage_remove_source"data-source="<%=source._id%>"id="delete-passage-source-<%=passage._id%>" style="cursor:pointer;color:red;">X</span></div>
-            <%});%>
+            <% if (passage.originalSourceList && passage.originalSourceList.length > 0) { %>
+                <%passage.originalSourceList.forEach(function(source) { %>
+                    <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a> <span class="passage_remove_source"data-source="<%=source._id%>"id="delete-passage-source-<%=passage._id%>" style="cursor:pointer;color:red;">X</span></div>
+                <%});%>
+            <%}%>
             </div>
             <%if(user && user._id == passage.author._id){%>
                 <br>
@@ -74,12 +76,15 @@
         <br>
         <div>
             Used In:
-            <%if(passage.usedIn.length == 0){ %>
+            <% if (!passage.usedIn || passage.usedIn.length === 0) { %>
                 No Passages <br>
-            <%}%>
-            <%passage.usedIn.forEach(function(passage) { %>
-                <%-passage%>,
-            <%});%>
+            <% } else { %>
+                <% passage.usedIn.forEach(function(usedPassage) { %>
+                    <a href="/passage/<%= usedPassage.title %>/<%= usedPassage.id %>">
+                        <%= usedPassage.title %>
+                    </a>
+                <% }); %>
+            <% } %>
         </div>
         <!-- List collaborators and allow them to be added (permanent) -->
 
@@ -101,7 +106,7 @@
 
     </div>
     <ul class="passage_options">
-        <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || (passage.passages && passage.passages.length > 0) || passage.public || passage.parent == null))){%>
+        <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || (passage.passages && passage.passages.length > 0) || passage.public || passage.parent == null)) || sub === true){%>
         <li id="passage_more_<%=passage._id%>" class="passage_option">Details</li>
         <%}%>
         <%if((typeof comments == 'undefined' || !comments) && !passage.public && !passage.forum){%>
@@ -173,7 +178,7 @@
         <%}else{%>
             <a class="basic_link option_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
         <%}%>
-        <%if(!passage.forum && sub == true && subPassages){%>
+        <%if(sub == true && subPassages){%>
             <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
         <%}%>
         <%if(user){%>
