@@ -46,7 +46,7 @@ class ImageFilter {
       height: 100%;
       background: rgba(0,0,0,1);
       color: white;
-      display: none;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -57,6 +57,36 @@ class ImageFilter {
     `;
     container.appendChild(this.warningOverlay);
     
+    // Show initial warning and blur
+    imgElement.style.filter = `blur(${this.options.blurAmount})`;
+    this.showWarning(imgElement, 'Analyzing content...');
+    
+    // Show initial warning immediately
+    // imgElement.style.filter = `blur(${this.options.blurAmount})`;
+    // this.showInitialWarning(imgElement);
+
+    // Show initial warning
+    this.warningOverlay.innerHTML = `
+      <div>Analyzing content...</div>
+      <button style="
+        margin-top: 10px;
+        padding: 8px 16px;
+        background: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: #000000;
+      ">Show Image Anyway</button>
+    `;
+    this.warningOverlay.style.display = 'flex';
+    
+    // Add click handler to button
+    const continueButton = this.warningOverlay.querySelector('button');
+    continueButton.onclick = () => {
+      this.hideWarning();
+      imgElement.style.filter = 'none';
+    };
+
     // Wait for image to load if it hasn't already
     if (!imgElement.complete) {
       await new Promise(resolve => {
@@ -81,8 +111,13 @@ class ImageFilter {
       // Add class to mark as checked
       imgElement.classList.add('nsfw-checked');
       
-      if (hasRestrictedContent) {
-        this.showWarning(imgElement);
+      if (!hasRestrictedContent) {
+        // Only remove warning if content is safe
+        this.hideWarning();
+        imgElement.style.filter = 'none';
+      } else {
+        // Update warning message for restricted content
+        this.showWarning(imgElement, this.options.warningMessage);
       }
     } catch (err) {
       console.error('Error analyzing image:', err);
@@ -98,31 +133,31 @@ class ImageFilter {
     });
   }
 
-  showWarning(imgElement) {
-    // Blur the image
-    imgElement.style.filter = `blur(${this.options.blurAmount})`;
-    
-    // Show warning overlay
+  showWarning(imgElement, message) {
     this.warningOverlay.innerHTML = `
-      <div>${this.options.warningMessage}</div>
-      <button style="
-        margin-top: 10px;
-        padding: 8px 16px;
-        background: #ffffff;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        color: #000000;
-      ">Show Image</button>
+      <div>${message}</div>
+      ${message !== 'Analyzing content...' ? `
+        <button style="
+          margin-top: 10px;
+          padding: 8px 16px;
+          background: #ffffff;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          color: #000000;
+        ">Show Image</button>
+      ` : ''}
     `;
     this.warningOverlay.style.display = 'flex';
     
-    // Add click handler to button
+    // Add click handler to button if it exists
     const continueButton = this.warningOverlay.querySelector('button');
-    continueButton.onclick = () => {
-      this.hideWarning();
-      imgElement.style.filter = 'none';
-    };
+    if (continueButton) {
+      continueButton.onclick = () => {
+        this.hideWarning();
+        imgElement.style.filter = 'none';
+      };
+    }
   }
 
   hideWarning() {
