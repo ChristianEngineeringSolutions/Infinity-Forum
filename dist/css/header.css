@@ -79,7 +79,7 @@ left: 10px;
     /* border-right: 1px solid black; */
 }
 #options{
-    height: 60px;
+/*    height: 60px;*/
     background: gold;
     font-size: 1.5em;
     display: none;
