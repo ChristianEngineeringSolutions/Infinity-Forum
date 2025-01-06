@@ -22,8 +22,8 @@ dir = "/home/uriah/Desktop/"
 
 search = ''
 
-website = "https://infinity-forum.org"
-#website = "http://localhost:3000"
+#website = "https://infinity-forum.org"
+website = "http://localhost:3000"
 
 #for alerts
 def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
@@ -86,25 +86,32 @@ def SearchModels(query="", which="Models", title=None, id=None):
         }
         if id is None:
             r = requests.get(website + '/models', params=data)
+            print("text" + r.text)
         else:
             r = requests.get(website + '/models/' + title + '/' + id, params=data)
-            print(r.text)
+            print("text" + r.text)
         if r.text is not None:
+            print(r.text is [])
+            print("Is not None")
             models = json.loads(r.text)
         else:
+            print("Is None")
             models = []
     #    ShowMessageBox(json.dumps(models))
         #List thumbnails
         for model in models:
         #    get thumbnail
+            if model['thumbnail'] is None:
+                model['thumbnail'] = ''
             req = requests.get(website + '/uploads/' + model["thumbnail"])
             model["image"] = dir + model["thumbnail"]
             print(model["thumbnail"])
             print(model["image"])
-            with open(dir + model["thumbnail"], 'wb') as f:
-                f.write(req.content)
+            if model['thumbnail'] is not '':
+                with open(dir + model["thumbnail"], 'wb') as f:
+                    f.write(req.content)
             power_list[model["title"]] = {
-                "filepath": dir + model["filename"],
+                "filepath": dir + model["filename"][0],
                 "_id": model["_id"]
             }
     elif which == "SVGs":
@@ -174,8 +181,8 @@ def AddObject(_id, context):
     mytool = scene.my_tool
     model = GetModel(_id)
         #    get file
-    req = requests.get(website + '/uploads/' + model['filename'])
-    with open(dir + model['filename'], 'wb') as f:
+    req = requests.get(website + '/uploads/' + model['filename'][0])
+    with open(dir + model['filename'][0], 'wb') as f:
         f.write(req.content)
 #        Import Object
 
@@ -519,15 +526,15 @@ class OBJECT_PT_CustomPanel(Panel):
             self.layout.template_icon(icon_value=custom_icons[model["thumbnail"][:-4]].icon_id,scale=10)
             operator = layout.operator("wm.cite")
             operator.title = model['title']
-            operator.filename = model['filename']
+            operator.filename = model['filename'][0]
             operator.id = model['_id']
             operator2 = layout.operator("wm.select")
             operator2.title = model['title']
-            operator2.filename = model['filename']
+            operator2.filename = model['filename'][0]
             operator2.id = model['_id']
             operator3 = layout.operator("wm.enter")
             operator3.title = model['title']
-            operator3.filename = model['filename']
+            operator3.filename = model['filename'][0]
             operator3.id = model['_id']
             layout.separator()
         

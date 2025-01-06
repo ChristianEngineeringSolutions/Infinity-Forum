@@ -1561,6 +1561,7 @@ app.get('/forum', async (req, res) => {
     // fillForum();
 });
 async function getPassage(passage, small=true){
+    console.log('+++++'+passage.sourceList.length);
     passage.originalSourceList = passage.sourceList.slice();
     // var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
@@ -1690,8 +1691,9 @@ async function getPassage(passage, small=true){
     }else{
         passage.repostFixed = false;
     }
+    console.log('FRUIT:'+passage.sourceList.length);
     passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
-    console.log(passage.originalSourceList.length);
+    console.log('***'+passage.sourceList.length);
     return passage;
 }
 async function getBigPassage(req, res, params=false, subforums=false, comments=false){
@@ -2113,6 +2115,11 @@ async function getRecursiveSourceList(sourceList, sources=[], passage){
         // sourcePassage = await getPassage(sourcePassage);
         if(sourcePassage != null){
             var special = null;
+            console.log(sourcePassage._id);
+            if(sources.includes(sourcePassage)){
+                console.log('flaiys');
+                continue;
+            }                
             sources.push(sourcePassage);
             if(source.showBestOf == true){
                 special = await Passage.findOne({parent: source._id}, null, {sort: {stars: -1}});
@@ -2637,7 +2644,9 @@ app.post('/transfer_bookmark', async (req, res) => {
         parent.sourceList = Object.values(parent.sourceList.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
         parent.markModified('sourceList');
         await parent.save();
-        console.log(parent.sourceList);
+        console.log('souces:'+parent.sourceList);
+        var test = await Passage.findOne({_id:parent._id});
+        console.log('sources'+test.sourceList);
         var title = passage.title == '' ? 'Untitled' : passage.title;
         return res.send('<div data-token="'+passage._id+'"data-title="'+title+'"class="new-source">"'+title+'" Added to Sourcelist.</div>');
     }
@@ -4306,6 +4315,7 @@ app.post('/star_passage/', async (req, res) => {
 });
 async function singleStarSources(user, sources, reverse=false){
     for(const source of sources){
+        console.log('wee'+source);
         //check if starred already
         var recordSingle = await Star.findOne({user: user._id, passage:source, single:true, system:false});
         var recordSingleSystem = await Star.findOne({user: user._id, passage:source, single:true, system:true});
@@ -4313,7 +4323,7 @@ async function singleStarSources(user, sources, reverse=false){
         if(reverse && recordSingle == null){
             await Star.deleteOne({user: user, passage: source._id, single: true});
             source.stars -= 1;
-            passage.starrers = passage.starrers.filter(u => {
+            source.starrers = source.starrers.filter(u => {
                 return u != user;
             });
         }
@@ -4331,6 +4341,7 @@ async function singleStarSources(user, sources, reverse=false){
                 system: true
             });
         }
+        await source.save();
     }
 }
 app.post('/single_star/', async (req, res) => {
