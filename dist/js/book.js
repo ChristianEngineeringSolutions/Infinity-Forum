@@ -408,6 +408,11 @@ $(function(){
                 overflow: 'hidden'
             });
             $('.book_option').hide();
+            $('#header').css('display', 'block');
+            $('#header').css('position', 'relative');
+            $('#header').css('display', 'block');
+            $('#header').css('z-index', '99999999999');
+
         }
         else{
             thiz.data('active', 'false');
@@ -418,6 +423,9 @@ $(function(){
             $('html, body').css({
                 overflow: 'scroll'
             });
+            if($('#top').is(':visible')){
+                $('#header').hide()
+            }
         }
     });
     $(document).on('click', '#cancel-subscription', function(){
