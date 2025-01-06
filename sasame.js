@@ -3131,7 +3131,7 @@ async function concatObjectProps(passage, sub){
                 var displayNone = 'style="display:none"';
             }
             passage.video += `
-            <video class="passage-file-`+sub._id+` passage-vid-`+sub.filename[i].split('.')[0]+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
+            <video class="uploadedVideo passage-file-`+sub._id+` passage-vid-`+sub.filename[i].split('.')[0]+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
                 <source src="/`+getUploadFolder(sub)+`/`+sub.filename[i]+`" type="video/`+sub.filename[i].split('.').at(-1)+`">
                 Your browser does not support the video tag.
             </video>
