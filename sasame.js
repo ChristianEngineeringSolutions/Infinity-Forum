@@ -3131,12 +3131,12 @@ async function concatObjectProps(passage, sub){
                 var displayNone = 'style="display:none"';
             }
             passage.video += `
-            <video class="passage-file-`+sub._id+` passage-vid-`+sub.filename[0].split('.')[0]+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
-                <source src="/`+getUploadFolder(sub)+`/`+sub.filename[0]+`" type="video/`+sub.filename[0].split('.').at(-1)+`">
+            <video class="passage-file-`+sub._id+` passage-vid-`+sub.filename[i].split('.')[0]+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
+                <source src="/`+getUploadFolder(sub)+`/`+sub.filename[i]+`" type="video/`+sub.filename[i].split('.').at(-1)+`">
                 Your browser does not support the video tag.
             </video>
             <script>
-                $('.passage-vid-`+sub.filename[0].split('.')[0]+`').on('ended', function(){
+                $('.passage-vid-`+sub.filename[i].split('.')[0]+`').on('ended', function(){
                     $(this).css('display', 'none');
                     $(this).next().next().css('display', 'block');
                     $(this).next().next().get(0).play();
@@ -3154,12 +3154,12 @@ async function concatObjectProps(passage, sub){
                 var displayNone = 'style="display:none"';
             }
             passage.audio += `
-            <audio `+displayNone+`id="passage_audio_`+sub._id+`"class="passage_audio passage-aud-`+sub.filename[0].split('.')[0]+`"width="320" height="240" controls>
-                <source src="/`+getUploadFolder(sub)+`/`+sub.filename[0]+`" type="audio/`+sub.filename[0].split('.').at(-1)+`">
+            <audio `+displayNone+`id="passage_audio_`+sub._id+`"class="passage_audio passage-aud-`+sub.filename[i].split('.')[0]+`"width="320" height="240" controls>
+                <source src="/`+getUploadFolder(sub)+`/`+sub.filename[i]+`" type="audio/`+sub.filename[i].split('.').at(-1)+`">
                 Your browser does not support the audio tag.
             </audio>
             <script>
-                $('.passage-aud-`+sub.filename[0].split('.')[0]+`').on('ended', function(){
+                $('.passage-aud-`+sub.filename[i].split('.')[0]+`').on('ended', function(){
                     $(this).css('display', 'none');
                     $(this).next().next().css('display', 'block');
                     $(this).next().next().get(0).play();
