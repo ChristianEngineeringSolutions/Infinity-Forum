@@ -24,6 +24,9 @@ hr{
     text-decoration: none;
     color: inherit;
 }
+.hard-link{
+    color: white;
+}
 #page_title{
     /* margin-top: 50px; */
     font-size: 2.15em;

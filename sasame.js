@@ -706,6 +706,7 @@ app.get('/messages', async(req, res) => {
             _id: 'root',
             username: 'Sasame'
         }},
+        page: 1,
         bookmarks: bookmarks,
     });
 });
