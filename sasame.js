@@ -1624,7 +1624,9 @@ async function getPassage(passage, small=true){
         passage.css = replacement.css;
         passage.javascript = replacement.javascript;
     }
+    console.log(passage.bestOfEntire);
     if(replacing && passage.bestOfEntire && passage.bestOf != null){
+        console.log("Best best");
         passage.lang = replacement.lang;
         passage.title = replacement.title;
         passage.content = replacement.content;
@@ -3885,9 +3887,47 @@ app.post('/paginate', async function(req, res) {
                 });
             }
         }
+        else if(profile == 'messages'){
+            console.log('messages');
+            let find = {
+                title: new RegExp(''+search+'', "i"),
+                to: req.session.user._id
+            };
+            var messages = await Message.paginate(find,
+            {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users passage'});
+            var passages = [];
+            for(const message of messages.docs){
+                var p = await Passage.findOne({
+                    _id: message.passage._id
+                }).populate('author users sourcelist');
+                passages.push(p);
+            }
+            for(var i = 0; i < passages.length; ++i){
+                passages[i] = await getPassage(passage);
+            }
+            res.render('passages', {
+                passages: passages,
+                subPassages: false,
+                sub: true,
+            });
+        }
+        else if(profile == 'filestream'){
 
-        // Rest of the code for messages and leaderboard remains the same...
-        // (Keeping the existing logic for other profile types)
+        }
+        else if(profile == 'leaderboard'){
+            console.log("leaderboard!");
+            let find = {
+                username: new RegExp(''+search+'', "i")
+            };
+            if(search == ''){
+                var rank = true;
+            }
+            else{
+                var rank = false;
+            }
+            let users = await User.paginate(find, {sort: "-starsGiven", page: page, limit: DOCS_PER_PAGE*2});
+            res.render('leaders', {users: users.docs, page: page, rank: rank});
+        }
 
     } catch (error) {
         console.error('Fatal error in pagination:', error);
