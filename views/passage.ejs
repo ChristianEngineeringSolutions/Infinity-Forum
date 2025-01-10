@@ -105,7 +105,7 @@
     </div>
     <ul class="passage_options">
         <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || (passage.passages && passage.passages.length > 0) || passage.public || passage.parent == null)) || sub === true){%>
-        <li id="passage_more_<%=passage._id%>" class="passage_option">Details</li>
+        <li class="passage_option"><a class="hard-link"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage.id%>">Details</a></li>
         <%}%>
         <%if((typeof comments == 'undefined' || !comments) && !passage.public && !passage.forum){%>
             <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
@@ -188,7 +188,8 @@
         bg: '',
         link: false,
         bestOf: false,
-        last: false
+        last: false,
+        minor: false
     })%>
     <%if(user){%>
         <%var bottom = 'bottom-bar-loggedin';%>

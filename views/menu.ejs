@@ -5,12 +5,12 @@
       </div>
       <div id="side_panel_body">
         <ul id="menu-options">
-            <li id="home-link"class="menu-option menu-link home-link">Home</li>
+            <li id="home-link"class="menu-option menu-link home-link"><a href="/" class="hard-link">Home</a></li>
             <a style="color:white;"href="https://infinity-forum.org/passage/About%20Us/66c2859b3bd82327e1be9e4a"><li id="about-link"class="menu-option menu-link">About</li></a>
-            <li id="forum-link"class="menu-option menu-link forum-link">Forum</li>
-            <li id="posts-link"class="menu-option menu-link">Posts</li>
+            <li id="forum-link"class="menu-option menu-link forum-link"><a href="/forum" class="hard-link">Forum</a></li>
+            <li id="posts-link"class="menu-option menu-link"><a href="/posts" class="hard-link">Posts</a></li>
             <%if(user != null){%>
-                <li id="feed-link"class="menu-option menu-link">Feed</li>
+                <li id="feed-link"class="menu-option menu-link"><a href="/feed" class="hard-link">Feed</a></li>
             <%}%>
             <!--<li id="wall-link"class="menu-option menu-link forum-link">Wall</li>-->
             <%if(user != null){%>
@@ -19,16 +19,16 @@
             <%if(typeof passage == 'undefined' || passage.id !== 'root'){%>
                 <li id="distraction_free"class="menu-option">Distraction Free Mode</li>
             <%}%>
-            <li id="leaderboard_link"class="menu-option">Leaderboard</li>
-            <li id="nav_donate"class="menu-option">Donate ($)</li>
+            <li id="leaderboard_link"class="menu-option"><a href="/leaderboard" class="hard-link">Leaderboard</a></li>
+            <li id="nav_donate"class="menu-option"><a href="/donate" class="hard-link">Donate ($)</a></li>
             <% if(user != null){ %>
-                <li id="profile_link"class="menu-option">Profile</li>
-                <li id="notifications"class="menu-option">Notifications</li>
-                <li id="messages"class="menu-option">Messages</li>
+                <li id="profile_link"class="menu-option"><a href="/profile" class="hard-link">Profile</a></li>
+                <li id="notifications"class="menu-option"><a href="/notifications" class="hard-link">Notifications</a></li>
+                <li id="messages"class="menu-option"><a href="/messages" class="hard-link">Messages</a></li>
                 <li id="logout"class="menu-option">Log Out</li>
                 <li id="menu-advanced"class="menu-option">Advanced</li>
                 <div style="display: none;"id="advanced-menu-options">
-                    <li id="file-stream"class="menu-option">File Stream</li>
+                    <li id="file-stream"class="menu-option"><a href="/filestream" class="hard-link">File Stream</a></li>
                     <li data-active="false"id="graphic_mode"class="menu-option">Graphic Mode</li>
                     <a style="color:white;"href="https://infinity-forum.org/passage/Graphic%20Mode%20Guide/676467269a47394983d0c3f4" target="__blank"><li class="menu-option menu-link">Graphic Mode Guide</li></a>
                 </div>
@@ -39,15 +39,15 @@
             <%} %>
             <!-- <li id="menu-help"class="menu-option">Help</li> -->
             <li id="menu-contact"class="menu-option">Contact Us</li>
-            <li id="menu-terms"class="menu-option">Terms</li>
+            <li id="menu-terms"class="menu-option"><a href="/terms" class="hard-link">Terms</a></li>
             <a style="color:white;"href="https://github.com/ChristianEngineeringSolutions/Infinity-Forum" target="__blank"><li class="menu-option menu-link">Github</li></a>
         </ul>
-        <div id="tab_panel">
+        <!-- <div id="tab_panel">
             <ul id="tab_list">
                 <li id="new_tab" class="tab">+</li>
             </ul>
             <br><br><br>
-        </div>
+        </div> -->
         <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
       </div>
     </div>
