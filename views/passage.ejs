@@ -49,6 +49,16 @@
         <%if(passage.sourceLink != null && passage.sourceLink.length > 1){%>
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="<%=passage.sourceLink%>">External Source</a></div>
         <%}%>
+        <div>
+            Collaborators:
+            <%if(passage.collaborators && passage.collaborators.length > 0){passage.collaborators.forEach(function(collaber, i) { %>
+                <a target="__blank"href="/profile/<%=collaber.username%>/<%=collaber._id%>"><%=collaber.name%></a>
+                ,
+            <%});}else{%>
+                None
+            <%}%>
+        </div>
+        <br>
         <%if((!passage.sourceList || passage.sourceList.length < 1) && (passage.sourceLink == null || passage.sourceLink.length < 1)){%>
             <div>No Sources</div>
             <div id="sourcelist_<%=passage._id%>"></div>
