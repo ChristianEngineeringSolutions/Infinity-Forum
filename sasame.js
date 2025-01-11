@@ -1354,7 +1354,7 @@ async function getPassageLocation(passage, train){
         else if(passage.forum){
             word = 'Infinity Forum';
         }
-        if(word != 'Infnity Forum'){
+        if(word != 'Infinity Forum'){
             word = passage.label + 's';
         }
         if(passage.label == "Social"){
@@ -4898,7 +4898,7 @@ async function uploadFile(req, res, passage) {
     let index = 0;
     for (const file of fileToUpload) {
         const mimeType = file.mimetype;
-        const uploadTitle = v4() + "." + file.name.split('.').at(-1);
+        const uploadTitle = file.name.split('.')[0] + '_' + v4() + "." + file.name.split('.').at(-1);
         const thumbnailTitle = v4() + ".jpg";
         const where = passage.personal ? 'protected' : 'uploads';
         
