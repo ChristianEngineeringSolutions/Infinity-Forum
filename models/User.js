@@ -82,6 +82,10 @@ const userSchema = mongoose.Schema({
       type: String,
       default: null
     },
+    canReceivePayouts: {
+      type: Boolean,
+      default: false
+    },
     subscriptionID: {
       type: String,
       default: null
