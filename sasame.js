@@ -1355,11 +1355,13 @@ async function getPassageLocation(passage, train){
             word = 'Infinity Forum';
         }
         if(word != 'Infinity Forum'){
+            console.log('IF');
             word = passage.label + 's';
         }
         if(passage.label == "Social"){
             word = 'Network'
         }
+        console.log(word);
         train.push(word);
         return train.reverse();
     }
@@ -3031,12 +3033,7 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         if(user){
             var totalAmount = await totalUSD();
             var amountToAdd = 0;
-            if(totalAmount == 0){
-                amountToAdd = 100;
-            }
-            else{
-                amountToAdd = (await percentUSD(parseInt(amount))) * (await totalStars());
-            }
+            amountToAdd = (await percentUSD(parseInt(amount))) * (await totalStars());
             user.stars += amountToAdd;
             await user.save();
         }
