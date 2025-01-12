@@ -3029,7 +3029,15 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         //get user from email
         var user = await User.findOne({email: payload.data.object.customer_details.email});
         if(user){
-            user.stars += (await percentUSD(parseInt(amount))) * (await totalStars());
+            var totalAmount = await totalUSD();
+            var amountToAdd = 0;
+            if(totalAmount == 0){
+                amountToAdd = 100;
+            }
+            else{
+                amountToAdd = (await percentUSD(parseInt(amount))) * (await totalStars());
+            }
+            user.stars += amountToAdd;
             await user.save();
         }
     }
@@ -3060,6 +3068,71 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
     else{
         console.log(event.type);
     }  
+    response.status(200).end();
+  });
+function canReceivePayouts(account){
+  // Check if payouts are enabled
+  if (account.payouts_enabled !== true) {
+    return false;
+  }
+
+  // Check payout capability status
+  if (account.capabilities && account.capabilities.transfers !== 'active') {
+    return false;
+  }
+
+  // Check if payouts are restricted
+  if (account.payouts_enabled === true && account.requirements) {
+    // Check for requirements that would block payouts
+    if (account.requirements.disabled_reason) {
+      return false;
+    }
+
+    // Check for past due requirements
+    if (account.requirements.past_due?.length > 0) {
+      return false;
+    }
+
+    // Check for currently due requirements
+    if (account.requirements.currently_due?.length > 0) {
+      return false;
+    }
+  }
+
+  return true;
+};
+app.post('/stripe_connect_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
+    // response.header("Access-Control-Allow-Origin", "*");
+    // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+    const endpointSecret = process.env.STRIPE_ENDPOINT_CONNECT_SECRET_KEY;
+    const payload = request.body;
+  
+    console.log("Got payload: " + payload);
+    const sig = request.headers['stripe-signature'];
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(request.rawBody, sig, endpointSecret);
+        console.log(event.type);
+    } catch (err) {
+        console.log(err);
+        //console.log(response.status(400).send(`Webhook Error: ${err.message}`));
+        return;
+        // return response.status(400).send(`Webhook Error: ${err.message}`);
+    }
+    switch (event.type) {
+        case 'account.updated':
+            const updatedAccount = event.data.object;
+            var user = await User.findOne({email: updatedAccount.email});
+            // Then define and call a function to handle the event account.updated
+            user.canReceivePayouts = canReceivePayouts(updatedAccount);
+            await user.save();
+          break;
+        // ... handle other event types
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+    }
     response.status(200).end();
   });
   function getStarsFromUSD(usd){
@@ -3408,9 +3481,10 @@ app.get('/stripeAuthorize', async function(req, res){
         var user = req.session.user;
         try {
             let accountId = user.stripeAccountId;
+            let onboardingComplete = user.stripeOnboardingComplete;
             const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
             // Create a Stripe account for this user if one does not exist already
-            if (accountId === null) {
+            if (onboardingComplete === false) {
                 console.log("No Account yet.");
                 const account = await stripe.accounts.create({
                     type: 'express',
@@ -3424,11 +3498,18 @@ app.get('/stripeAuthorize', async function(req, res){
                 catch(error){
                     console.error(error);
                 }
+                if(process.env.LOCAL){
+                    var refresh_url = 'http://localhost:3000/stripeAuthorize';
+                    var return_url = 'http://localhost:3000/stripeOnboarded';
+                }else{
+                    var refresh_url = 'https://infinity-forum.org/stripeAuthorize';
+                    var return_url = 'https://infinity-forum.org/stripeOnboarded';
+                }
                 // Create an account link for the user's Stripe account
                 const accountLink = await stripe.accountLinks.create({
                     account: account.id,
-                    refresh_url: 'https://infinity-forum.org/stripeAuthorize',
-                    return_url: 'https://infinity-forum.org/stripeOnboarded',
+                    refresh_url: refresh_url,
+                    return_url: return_url,
                     type: 'account_onboarding'
                 });
                 // console.log(accountLink);
@@ -3500,6 +3581,7 @@ app.get('/stripeOnboarded', async (req, res, next) => {
       const account = await stripe.account.retrieve(user.stripeAccountId);
       if (account.details_submitted) {
         user.stripeOnboardingComplete = true;
+        user.canReceivePayouts = canReceivePayouts(account);
         await user.save();
         res.redirect('/profile');
       } else {
