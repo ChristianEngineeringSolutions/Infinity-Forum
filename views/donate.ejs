@@ -16,7 +16,9 @@
         <h1><span style="color:gold;font-size:1.3em;">$<%=usd%></span></h1>
         <h1 style="font-size:3em;">Donate:</h1>
         <h2><a target="_blank"href="<%=donateLink%>">Custom Amount</a></h2>
+        <%/*%>
         <h2><a target="_blank"href="<%=subscribeLink%>">Subscribe</a></h2>
+        <%*/%>
         <%if(user && user.subscribed){%>
             <h5 id="cancel-subscription"style="font-weight:normal;color:red;cursor:pointer;">Cancel Active Subscription</h5>
         <%}%>
