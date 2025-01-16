@@ -497,6 +497,28 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '#subscribe-link', function(){
+        $.ajax({
+            type: 'post',
+            url: '/create-subscribe-checkout-session',
+            data: {
+                priceId: "price_1QgsBRI1HNERQZgvlbDh1bF1"
+            },
+            success: function(data){
+                window.location.href = data;
+            }
+        });
+    });
+    $(document).on('click', '#customer-portal-link', function(){
+        $.ajax({
+            type: 'post',
+            url: '/customer-portal',
+            data: {},
+            success: function(data){
+                window.location.href = data;
+            }
+        });
+    });
     $('#right_side_select').on('change', function(){
         $('#side_panel_switcher').children().hide();
         switch($(this).val()){

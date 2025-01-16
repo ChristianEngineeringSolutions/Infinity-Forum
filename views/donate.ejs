@@ -17,11 +17,13 @@
         <h1 style="font-size:3em;">Donate:</h1>
         <h2><a target="_blank"href="<%=donateLink%>">Custom Amount</a></h2>
         <%/*%>
-        <h2><a target="_blank"href="<%=subscribeLink%>">Subscribe</a></h2>
-        <%*/%>
-        <%if(user && user.subscribed){%>
-            <h5 id="cancel-subscription"style="font-weight:normal;color:red;cursor:pointer;">Cancel Active Subscription</h5>
+        <%if(user && !user.subscribed){%>
+        <h2><span style="color:#8c8993;cursor:pointer;"id="subscribe-link">Subscribe</span></h2>
         <%}%>
+        <%if(user && user.subscribed){%>
+            <h5 id="customer-portal-link"style="color:#8c8993;cursor:pointer;">Manage Subscription</h5>
+        <%}%>
+        <%*/%>
         <!-- <h5>(Subscriber stars are multiplied by the number of months subscribed.)</h5> -->
         <h3 style="margin-top:50px;">All Funds distributed monthly to Users based on merit (stars invested).</h3>
         <h3 style="margin-top:30px;">Donors/subscribers recieve an equivalent in stars.<br>(They get the same percentage of total stars given on the website as the percentage of the total budget they donated)</h3>

@@ -90,7 +90,15 @@ const userSchema = mongoose.Schema({
       type: String,
       default: null
     },
-    lastSubscribed: {type: Date, default: null},
+    subscriptionEmail: {
+      type: String,
+      default: null
+    },
+    subscriptionCheckoutSession: {
+      type: String,
+      default: null
+    },
+    firstSubscribed: {type: Date, default: null},
     room: {
       type: String,
       default: 'root'

@@ -3029,13 +3029,18 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         let amount = payload.data.object.amount_total;
         //Save recording passage in database and give user correct number of stars
         //get user from email
-        var user = await User.findOne({email: payload.data.object.customer_details.email});
-        if(user){
-            var totalAmount = await totalUSD();
-            var amountToAdd = 0;
-            amountToAdd = (await percentUSD(parseInt(amount))) * (await totalStars());
-            user.stars += amountToAdd;
-            await user.save();
+        if(payload.data.object.subscription){
+            console.log("Is a subscription. Doing nothing.");
+        }else{
+            console.log("One Time Payment.");
+            var user = await User.findOne({email: payload.data.object.customer_details.email});
+            if(user){
+                var totalAmount = await totalUSD();
+                var amountToAdd = 0;
+                amountToAdd = (await percentUSD(parseInt(amount))) * (await totalStars());
+                user.stars += amountToAdd;
+                await user.save();
+            }
         }
     }
     //For Subscriptions
@@ -3045,21 +3050,41 @@ app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (r
         if(email != null){
             //they get stars
             //plus time bonus
-            var subscriber = await User.findOne({email: email});
-            subscriber.subscriptionID = payload.data.object.subscription;
-            subscriber.subscribed = true;
-            subscriber.lastSubscribed = new Date();
-            let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-            subscriber.stars += (await percentUSD(80 * 100 * monthsSubscribed)) * (await totalStars());
-            await subscriber.save();
+            console.log(email);
+            setTimeout(async function(){
+                var subscribers = await User.find({subscriptionEmail: email});
+                for(const subscriber of subscribers){
+                    subscriber.subscriptionID = payload.data.object.subscription;
+                    subscriber.subscribed = true;
+                    if(subscriber.firstSubscribed == null){
+                        subscriber.firstSubscribed = new Date();
+                    }
+                    let monthsSubscribed = monthDiff(subscriber.firstSubscribed, new Date());
+                    subscriber.stars += (await percentUSD(15 * 100 * monthsSubscribed)) * (await totalStars());
+                    await subscriber.save();
+                }
+                console.log("Subscriber data set.");
+            }, 23000);
         }
     }
     else if(event.type == "invoice.payment_failed"){
         var email = payload.data.object.customer_email;
         if(email != null){
             var subscriber = await User.findOne({email: email});
-            subscriber.subscribed = false;  
+            subscriber.subscribed = false; 
+            subscriber.firstSubscribed = null; 
             await subscriber.save();
+        }
+    }
+    else if(event.type == "customer.subscription.deleted"){
+        var email = payload.data.object.customer_email;
+        if(email != null){
+            var subscribers = await User.find({subscriptionEmail: email});
+            for(const subscriber of subscribers){
+                subscriber.subscribed = false; 
+                subscriber.firstSubscribed = null; 
+                await subscriber.save();
+            }
         }
     }
     else{
@@ -3145,10 +3170,71 @@ app.post('/unsubscribe', async function(req, res){
         );
         user.subscribed = false;
         user.subscriptionID = null;
+        subscriber.firstSubscribed = null;
         await user.save();
         req.session.user = user;
     }
     res.send("Done.");
+});
+app.post('/create-subscribe-checkout-session', async function(req, res){
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    if(!req.session.user){
+        return res.send("Must be logged in.");
+    }
+    const priceId = req.body.priceId;
+    if(process.env.LOCAL){
+        var success_url = 'http://localhost:3000/subscribe-success?session_id={CHECKOUT_SESSION_ID}';
+        var cancel_url = 'http://localhost:3000/donate';
+    }else{
+        var success_url = 'https://infinity-forum.org/subscribe-success?session_id={CHECKOUT_SESSION_ID}';
+        var cancel_url = 'http://localhost:3000/donate';
+    }
+    const session = await stripe.checkout.sessions.create
+    ({
+      mode: 'subscription',
+      line_items: [
+        {
+          price: priceId,
+          // For metered billing, do not pass quantity
+          quantity: 1,
+        },
+      ],
+      // {CHECKOUT_SESSION_ID} is a string literal; do not change it!
+      // the actual Session ID is returned in the query parameter when your customer
+      // is redirected to the success page.
+      success_url: success_url,
+      cancel_url: cancel_url,
+    });
+    return res.send(session.url);
+});
+app.get('/subscribe-success', async function(req, res){
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    if(!req.session.user){
+        return res.send("Must be logged in.");
+    }
+    var sessionId = req.query.session_id;
+    //get the email they used for subscription
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    var email = session.customer_email;
+    var user = await User.findOne({_id: req.session.user._id});
+    user.subscriptionEmail = email;
+    user.subscriptionCheckoutSession = sessionId;
+    await user.save();
+    console.log("SubscriptionEmail set.");
+    return res.redirect('/donate');
+});
+app.post('/customer-portal', async function(req, res){
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    if(!req.session.user){
+        return res.send("Must be logged in.");
+    }
+    const checkoutSession = await stripe.checkout.sessions.retrieve(req.session.user.subscriptionCheckoutSession);
+    var returnUrl = process.env.LOCAL ? 'http://localhost:3000/donate' : 'https://infinity-forum.org/donate';
+    const portalSession = await stripe.billingPortal.sessions.create({
+        customer: checkoutSession.customer,
+        return_url: returnUrl,
+      });
+    return res.send(portalSession.url);
 });
 app.get('/eval/:passage_id', async function(req, res){
     if(req.session.CESCONNECT){
