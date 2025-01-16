@@ -3829,6 +3829,10 @@ app.post('/update_settings/', async function(req, res) {
             user.name = req.body.name;
             user.about = req.body.about;
             user.username = req.body.newUsername;
+            var sameEmail = await User.findOne({email: req.body.email});
+            if(sameEmail._id != user._id){
+                return res.send("An Account with that email already exists.");
+            }
             user.email = req.body.email;
             if(req.body.password.length > 0){
                 user.password = await bcrypt.hash(req.body.password, 10);
