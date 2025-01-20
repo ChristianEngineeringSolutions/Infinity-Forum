@@ -232,7 +232,9 @@
  <%if(subPassages && sub === false){%>
     <div style="display: inline;"id="sub_passages">
         <%subPassages.forEach(function(sub_passage) { %>
-            <%- include('passage', {passage: sub_passage, sub: true, subPassage: true}) %>
+            <%if(passage.public){ var subP = false;%>
+            <%}else { var subP = true; }%>
+            <%- include('passage', {passage: sub_passage, sub: true, subPassage: subP}) %>
         <%}); %>
     </div>
     <ul class="page-count">
