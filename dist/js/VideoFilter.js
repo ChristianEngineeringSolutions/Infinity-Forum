@@ -28,11 +28,6 @@ class VideoFilter {
   async setupVideoAnalysis(videoElement) {
     if (!videoElement) throw new Error('Video element is required');
     
-    // Load model if not already loaded
-    if (!this.model) {
-      await this.loadModel();
-    }
-    
     // Create warning overlay
     this.warningOverlay = document.createElement('div');
     this.warningOverlay.style.cssText = `
@@ -90,6 +85,11 @@ class VideoFilter {
       await new Promise(resolve => {
         videoElement.addEventListener('loadedmetadata', resolve, { once: true });
       });
+    }
+
+    // Load model if not already loaded
+    if (!this.model) {
+      await this.loadModel();
     }
 
     // Analyze frames at specific intervals
