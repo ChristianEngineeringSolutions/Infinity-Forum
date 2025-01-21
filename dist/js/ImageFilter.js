@@ -24,11 +24,6 @@ class ImageFilter {
   async setupImageAnalysis(imgElement) {
     if (!imgElement) throw new Error('Image element is required');
     
-    // Load model if not already loaded
-    if (!this.model) {
-      await this.loadModel();
-    }
-    
     // Create container for positioning
     const container = document.createElement('div');
     container.style.position = 'relative';
@@ -93,7 +88,10 @@ class ImageFilter {
         imgElement.onload = resolve;
       });
     }
-    
+    // Load model if not already loaded
+    if (!this.model) {
+      await this.loadModel();
+    }
     // Analyze the image
     await this.analyzeImage(imgElement);
     

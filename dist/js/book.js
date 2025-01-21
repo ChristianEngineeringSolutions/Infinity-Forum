@@ -172,10 +172,13 @@ $(function(){
                     sort: $('#sort-select').val()
                 },
                 success: function(data){
+                    alert('test');
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
-                    replacePassages();
+                    alert('test');
+                    analyzeImages();
+                    analyzeVideos();
                 }
             });
 
@@ -223,7 +226,8 @@ $(function(){
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
-                    replacePassages();
+                    analyzeImages();
+                    analyzeVideos();
                 }
             });
 
@@ -249,6 +253,8 @@ $(function(){
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
+                    analyzeImages();
+                    analyzeVideos();
                 }
             });
 
@@ -295,7 +301,8 @@ $(function(){
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
-                    replacePassages();
+                    analyzeImages();
+                    analyzeVideos();
                 }
             });
 
