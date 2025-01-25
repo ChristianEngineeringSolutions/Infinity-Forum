@@ -91,7 +91,7 @@ class VideoFilter {
     if (!this.model) {
       await this.loadModel();
     }
-
+    //
     // Analyze frames at specific intervals
     await this.analyzeVideoIntervals(videoElement, 4);
     

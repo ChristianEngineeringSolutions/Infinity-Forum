@@ -172,11 +172,9 @@ $(function(){
                     sort: $('#sort-select').val()
                 },
                 success: function(data){
-                    alert('test');
                     $('#passage_wrapper').html(data);
                     page = 1;
                     syntaxHighlight();
-                    alert('test');
                     analyzeImages();
                     analyzeVideos();
                 }
