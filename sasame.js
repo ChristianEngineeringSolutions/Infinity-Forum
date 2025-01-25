@@ -2765,7 +2765,7 @@ app.get('/leaderboard', async (req, res) => {
     }
     var page = req.query.page || 1;
     // let users = await User.find().sort('-starsGiven');
-    let users = await User.paginate({}, {sort: '-starsGiven', page: page, limit: 20});
+    let users = await User.paginate({}, {sort: '-starsGiven _id', page: page, limit: 20});
     users = users.docs;
     var i = 1;
     for(const user of users){
