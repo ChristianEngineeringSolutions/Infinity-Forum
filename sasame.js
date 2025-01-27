@@ -1282,7 +1282,8 @@ async function fillUsedInListSingle(passage){
         var ps = await Passage.find({
             sourceList: {
                 $in: [passage._id]
-            }
+            },
+            versionOf: null
         });
         for(const p of ps){
             var record = await Passage.findOne({_id: p._id});
@@ -1297,7 +1298,8 @@ async function fillUsedInList(passages){
         var ps = await Passage.find({
             sourceList: {
                 $in: [passage._id]
-            }
+            },
+            versionOf: null
         });
         for(const p of ps){
             var record = await Passage.findOne({_id: p._id});
