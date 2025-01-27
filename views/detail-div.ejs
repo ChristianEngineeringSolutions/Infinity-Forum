@@ -21,7 +21,7 @@
         <%}%>
         <%*/%>
         </div></div>
-    <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><a style="color:white;"href="/passage/<%=passage.title == '' ? 'Untitled' : passage.title%>/<%=passage._id%>"><%=bestOf ? (passage.title == '' ? 'Untitled' : passage.title) : passage.title%></a></h3></div>
+    <div id="detail_title_<%=passage._id%>"class="detail_title"><h3><a style="color:white;"href="/passage/<%=passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title);%>/<%=passage._id%>"><%=bestOf ? (passage.title == '' ? 'Untitled' : passage.title) : passage.title%></a></h3></div>
     <input value="<%=passage.params%>"id="passage_params_<%=passage._id%>"type="hidden" name="">
     <%var showMore = '';%>
     <%if(passage.displayContent != null && passage.displayContent.replace(/<[^>]*>?/gm, '') != ''){%>
