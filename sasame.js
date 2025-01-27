@@ -1930,13 +1930,16 @@ app.get('/thread', async (req, res) => {
     // ALT
     var bigRes = await getBigPassage(req, res);
     await logVisit(req);
-    res.render("thread", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: bigRes.ISMOBILE,
-        thread: true,
-        parentID: bigRes.parentID,
-        topicID: bigRes.passage._id,
-        subPassage: true
-    });
+    if(!res.headersSent){
+        await getRecursiveSpecials(bigRes.passage);
+        res.render("thread", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: true,
+            parentID: bigRes.parentID,
+            topicID: bigRes.passage._id,
+            subPassage: true
+        });
+    }
 });
 app.get('/cat', async (req, res) => {
     var pNumber = req.query.pNumber;
@@ -3353,15 +3356,17 @@ app.get('/passage/:passage_title/:passage_id/:page?', async function(req, res){
     // console.log('TEST'+bigRes.passage.title);
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     // console.log('TEST'+bigRes.passage.usedIn);
-    var location = await getPassageLocation(bigRes.passage);
-    await getRecursiveSpecials(bigRes.passage);
-    res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: bigRes.ISMOBILE,
-        thread: false,
-        page: 'more',
-        whichPage: 'sub',
-        location: location
-    });
+    if(!res.headersSent){
+        var location = await getPassageLocation(bigRes.passage);
+        await getRecursiveSpecials(bigRes.passage);
+        return res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            page: 'more',
+            whichPage: 'sub',
+            location: location
+        });
+    }
 });
 async function getRecursiveSpecials(passage){
     var special = null;
@@ -3415,16 +3420,19 @@ app.get('/comments/:passage_title/:passage_id/:page?', async function(req, res){
     // console.log('TEST'+bigRes.passage.title);
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     // console.log('TEST'+bigRes.passage.usedIn);
-    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
-    var location = await getPassageLocation(bigRes.passage);
-    res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: bigRes.ISMOBILE,
-        thread: false,
-        page: 'more',
-        whichPage: 'comments',
-        location: location,
-        comments: true
-    });
+    if(!res.headersSent){
+        bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+        var location = await getPassageLocation(bigRes.passage);
+        await getRecursiveSpecials(bigRes.passage);
+        res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            page: 'more',
+            whichPage: 'comments',
+            location: location,
+            comments: true
+        });
+    }
 });
 app.get('/subforums/:passage_title/:passage_id/:page?', async function(req, res){
     if(req.session.CESCONNECT){
@@ -3437,16 +3445,19 @@ app.get('/subforums/:passage_title/:passage_id/:page?', async function(req, res)
     // console.log('TEST'+bigRes.passage.title);
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     // console.log('TEST'+bigRes.passage.usedIn);
-    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
-    var location = await getPassageLocation(bigRes.passage);
-    res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: bigRes.ISMOBILE,
-        thread: false,
-        page: 'more',
-        whichPage: 'subforums',
-        location: location,
-        subforums: true
-    });
+    if(!res.headersSent){
+        bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+        var location = await getPassageLocation(bigRes.passage);
+        await getRecursiveSpecials(bigRes.passage);
+        res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            page: 'more',
+            whichPage: 'subforums',
+            location: location,
+            subforums: true
+        });
+    }
 });
 app.get('/get_big_passage', async function(req, res){
     console.log(req.query._id);
@@ -3457,17 +3468,20 @@ app.get('/get_big_passage', async function(req, res){
     // console.log('TEST'+bigRes.passage.title);
     // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
     // console.log('TEST'+bigRes.passage.usedIn);
-    bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
-    var location = await getPassageLocation(bigRes.passage);
-    res.render("passage", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
-        ISMOBILE: bigRes.ISMOBILE,
-        thread: false,
-        sub: true,
-        page: 'more',
-        whichPage: 'sub',
-        location: location,
-        subPassage: true
-    });
+    if(!res.headersSent){
+        bigRes.subPassages = await fillUsedInList(bigRes.subPassages);
+        var location = await getPassageLocation(bigRes.passage);
+        await getRecursiveSpecials(bigRes.passage);
+        res.render("passage", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            sub: true,
+            page: 'more',
+            whichPage: 'sub',
+            location: location,
+            subPassage: true
+        });
+    }
 });
 app.get('/stripeAuthorize', async function(req, res){
     if(req.session.user){
