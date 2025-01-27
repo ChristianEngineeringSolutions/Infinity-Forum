@@ -2,5 +2,5 @@
     <%if(rank){%>
     <div id="lead-num-<%=i + ((page-1)*20)%>"class="lead-num"><%=i + ((page-1)*20)%></div>
     <%}%>
-    <a class="basic_link" href="/profile/<%=user.username%>/<%=user._id%>"><%=user.name%></a>
+    <a class="basic_link" href="/profile/<%=encodeURIComponent(user.username);%>/<%=user._id%>"><%=user.name%></a>
 </div>
