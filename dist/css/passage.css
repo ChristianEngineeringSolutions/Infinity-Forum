@@ -121,6 +121,9 @@
     word-wrap: break-word;
 /*    border: 1px solid rgba(255, 255, 255, 0.23);*/
 }
+.uploadedImage{
+    max-width: 500px;
+}
 .bottom-hr{
     display: none;
 }
