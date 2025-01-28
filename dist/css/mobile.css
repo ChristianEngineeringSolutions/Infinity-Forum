@@ -130,6 +130,9 @@
     #sort-select-div, #label-select-div{
       width: 97%;
      }
+     .uploadedImage{
+        max-width: 250px;
+    }
 }
 @media screen and (max-width: 715px){
     /*#top{
@@ -329,6 +332,9 @@
 }
 /* Small Phones */
 @media screen and (max-width: 550px){
+     .uploadedImage{
+        max-width: 250px;
+    }
     #parent_title{
         text-align: center;
     }
