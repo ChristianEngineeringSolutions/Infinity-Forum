@@ -27,6 +27,12 @@ hr{
 .hard-link{
     color: white;
 }
+#rec-pwd-link{
+    color: grey;
+}
+#rec-pwd-link:hover{
+    color: white;
+}
 #page_title{
     /* margin-top: 50px; */
     font-size: 2.15em;

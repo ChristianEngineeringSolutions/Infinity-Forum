@@ -3550,9 +3550,12 @@ app.post('/recover', async(req, res) => {
     let user = await User.findOne({email: req.body.email});
     if(user != null){
         user.recoveryToken = v4();
+        //expires in one hour
+        user.recoveryExp = Date.now();
+        user.recoveryExp = user.recoveryExp.setHours(user.recoveryExp.getHours() + 1);
         await user.save();
         sendEmail(req.body.email, 'Recover Password: Infinity-Forum.org', 
-        'https://infinity-forum.org/recoverpassword/'+user._id+'/'+user.recoveryToken);
+        'Expires in one hour: https://infinity-forum.org/recoverpassword/'+user._id+'/'+user.recoveryToken);
         return res.render('recover_password', {token: null});
     }
     else{
@@ -3561,7 +3564,7 @@ app.post('/recover', async(req, res) => {
 });
 app.get('/recoverpassword/:user_id/:token', async(req, res) => {
     let user = await User.findOne({_id: req.params.user_id});
-    if(user.recoveryToken == req.params.token){
+    if(user && user.recoveryToken == req.params.token && (Date.now() < user.recoveryExp)){
         res.render("recover_password", {token: req.params.token, _id: user._id});
     }
     else{
