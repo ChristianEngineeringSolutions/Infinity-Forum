@@ -4052,6 +4052,8 @@ app.post(/\/delete_passage\/?/, async (req, res) => {
 });
 
 async function deletePassage(passage){
+    //delete old versions
+    await Passage.deleteMany({versionOf: passage});
     //delete uploads too
     for(const filename of passage.filename){
         //make sure no other passages are using the file
@@ -4080,7 +4082,6 @@ async function deletePassage(passage){
         await deletePassage(p);
     }
     await Passage.deleteOne({_id: passage._id});
-    await Passage.deleteMany({versionOf: passage});
 }
 
 // app.use('/passage', passageRoutes);
