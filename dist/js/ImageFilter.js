@@ -53,7 +53,7 @@ class ImageFilter {
     container.appendChild(this.warningOverlay);
     
     // Show initial warning and blur
-    imgElement.style.filter = `blur(${this.options.blurAmount})`;
+    // imgElement.style.filter = `blur(${this.options.blurAmount})`;
     this.showWarning(imgElement, 'Analyzing content...');
     
     // Show initial warning immediately

@@ -59,7 +59,7 @@ class VideoFilter {
     }
 
     // Show initial warning immediately
-    videoElement.style.filter = `blur(${this.options.blurAmount})`;
+    // videoElement.style.filter = `blur(${this.options.blurAmount})`;
     this.warningOverlay.innerHTML = `
       <div>Analyzing content...</div>
       <button style="
