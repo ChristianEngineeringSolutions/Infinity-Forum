@@ -177,6 +177,8 @@
         <!-- Show License -->
     <!-- </div> -->
     <%if(passage.filename && passage.filename.length > 0 && passage.filename != [1] && passage.filename != 1){%>
+        <br><br>
+        Download(s):
         <br>
         <%for(file of passage.filename){%>
             <a target="_blank"href="/uploads/<%=file%>"><%=file%></a><br>
