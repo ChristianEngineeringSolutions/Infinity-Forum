@@ -13,6 +13,7 @@
 <%-include('menu')%>
 <%-include('sidebar')%>
 <%- include('member_box') %>
+            <input type="hidden" id="safe-mode"value="<%=user ? user.safeMode : 'true'%>"name="">
             <input id="chief_passage_id"type="hidden" value="<%=passage.id || root%>"name="">
             <input type="hidden" value="messages", id="is_profile"/>
             <input type="hidden" id="selection">
