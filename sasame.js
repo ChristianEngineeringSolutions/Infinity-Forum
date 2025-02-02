@@ -3848,8 +3848,9 @@ app.post('/update_settings/', async function(req, res) {
             user.name = req.body.name;
             user.about = req.body.about;
             user.username = req.body.newUsername;
+            user.safeMode = req.body['safe-mode'] && req.body['safe-mode'] == 'on' ? true : false;
             var sameEmail = await User.findOne({email: req.body.email});
-            if(sameEmail._id != user._id){
+            if(sameEmail._id.toString() != user._id.toString()){
                 return res.send("An Account with that email already exists.");
             }
             user.email = req.body.email;
@@ -3861,11 +3862,11 @@ app.post('/update_settings/', async function(req, res) {
             return res.redirect('/profile/');
         }
         else{
-            return res.redirect('/profile/');
+            return res.send("Incorrect password.");
         }
     }
     else{
-        return res.redirect("/profile");
+        return res.send("Must have an email, name, and fill in your current password. No changes made.");
     }
 });
 app.get('/logout', function(req, res) {
