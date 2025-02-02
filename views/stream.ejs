@@ -9,6 +9,9 @@
 <%-include('menu')%>
 <%-include('sidebar')%>
 <input type="hidden" id="safe-mode"value="<%=user ? user.safeMode : 'true'%>"name="">
+<input type="hidden" id="is-root"value="<%=passage.id == 'root' ? 'true' : 'false'%>"name="">
+<input type="hidden" id="parent-label"value="<%=passage.id == 'root' ? 'project' : passage.label%>"name="">
+<input type="hidden" id="parent-public"value="<%=passage.public%>"name="">
 <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
 <input id="repost-editor"type="hidden" name=""value='<%- include("repost-editor", {passage:passage, page: 'stream'})%>'/>
 <input id="chief_passage_id"type="hidden" value="<%=passage.id || 'root'%>"name="chief">
