@@ -365,6 +365,21 @@ $(function(){
             $('.popup').css('top', $(window).scrollTop() + 'px');
         }
         $('#passage_form').show();
+        if($('#is-root').length > 0){
+            var isRoot = $('#is-root').val();
+            var parentLabel = $("#parent-label").val();
+            var parentPublic = $("#parent-public").val();
+            if(isRoot == 'false'){
+                if(parentPublic == 'true'){
+
+                }else{
+                    $('#editor-label').val(parentLabel).change();
+                }
+            }
+        }
+        else{
+            isRoot = 'true';
+        }
         summonQuill();
         //create a passage and then show it
         // alert(DOMAIN);
