@@ -146,7 +146,8 @@ const labelOptions = [
     "Comment",
     "Task",
     "Forum",
-    "Challenge"
+    "Challenge",
+    "Article"
 ];
 
 // make sure recordings folder exists
@@ -4241,6 +4242,7 @@ app.post('/create_initial_passage/', async (req, res) => {
         case 'Project':
         case 'Idea':
         case 'Database':
+        case 'Article':
             passage.public = false;
             passage.forum = false;
             break;
@@ -4348,6 +4350,7 @@ app.post('/change_label', async (req, res) => {
         case 'Project':
         case 'Idea':
         case 'Database':
+        case 'Article':
             passage.public = false;
             passage.forum = false;
             break;
