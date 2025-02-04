@@ -600,30 +600,34 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
         }
     }
     //recursively star ssources
-    await starSources(passage, passage, [], amount, req);
+    await starSources(passage, passage, [], [], amount, req);
     return await fillUsedInListSingle(passage);
 }
-async function starSources(passage, top, authors=[], amount, req){
+async function starSources(passage, top, authors=[], starredPassages=[], amount, req){
     var i = 0;
     var bonus;
     for(const source of passage.sourceList){
-        await starMessages(source._id, amount);
-        let sourceAuthor = await User.findOne({_id: source.author._id});
-        //you won't get extra stars for citing your own work
-        //also star once per author
-        if(sourceAuthor._id.toString() != req.session.user._id.toString() 
-            && sourceAuthor._id.toString() != passage.author._id.toString()
-            /*&& !authors.includes(sourceAuthor._id)*/){
-            bonus = passageSimilarity(top, source);
-            source.stars += amount + bonus;
-            if(!authors.includes(sourceAuthor._id)){
-                sourceAuthor.stars += amount + bonus;
-                await sourceAuthor.save();
+        //don't star same passage twice
+        if(!starredPassages.includes(source._id.toString())){
+            await starMessages(source._id, amount);
+            let sourceAuthor = await User.findOne({_id: source.author._id});
+            //you won't get extra stars for citing your own work
+            //also give author stars once per author
+            if(sourceAuthor._id.toString() != req.session.user._id.toString() 
+                && sourceAuthor._id.toString() != passage.author._id.toString()
+                /*&& !authors.includes(sourceAuthor._id)*/){
+                bonus = passageSimilarity(top, source);
+                source.stars += amount + bonus;
+                if(!authors.includes(sourceAuthor._id)){
+                    sourceAuthor.stars += amount + bonus;
+                    await sourceAuthor.save();
+                }
+                authors.push(sourceAuthor._id);
+                await source.save();
             }
-            authors.push(sourceAuthor._id);
-            await source.save();
+            starredPassages.push(source._id.toString());
         }
-        await starSources(source, passage, authors);
+        await starSources(source, passage, authors, starredPassages);
         ++i;
     }
 }
@@ -4463,7 +4467,6 @@ app.post('/star_passage/', async (req, res) => {
 });
 async function singleStarSources(user, sources, reverse=false){
     for(const source of sources){
-        console.log('wee'+source);
         //check if starred already
         var recordSingle = await Star.findOne({user: user._id, passage:source, single:true, system:false});
         var recordSingleSystem = await Star.findOne({user: user._id, passage:source, single:true, system:true});
