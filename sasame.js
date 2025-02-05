@@ -1815,16 +1815,16 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         }
         else{ 
             //private passages
-            var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList collaborators versions');  
+            var subPassages = await Passage.find({parent: passage_id, comment: false}).populate('author users sourceList collaborators versions');  
             if(replacing){
-                var subPassages = await Passage.find({parent: replacement._id}).populate('author users sourceList collaborators versions');
+                var subPassages = await Passage.find({parent: replacement._id, comment: false}).populate('author users sourceList collaborators versions');
             }
             // subPassages = subPassages.filter(function(p){
             //     return p.comment ? false : true;
             // });
             //will query for no comments after finding out why it doesnt work.
             subPassages = subPassages.filter(function(p){
-                return ((p.personal && (!req.session.user || p.author._id.toString() != req.session.user._id.toString()))|| p.comment) ? false : true;
+                return ((p.personal && (!req.session.user || p.author._id.toString() != req.session.user._id.toString())) || p.comment) ? false : true;
             });
         }
     }
@@ -4129,11 +4129,14 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
         //     }
         // }
         //can only add to private or personal if on the userlist or is a forum
-        if(!parent.forum && !scripts.isPassageUser(user, parent) && (!parent.public || parent.personal)){
-            return res.send("Must be on userlist.");
+        //or is a comment
+        if(!comments && !parent.forum && !scripts.isPassageUser(user, parent) && (!parent.public || parent.personal)){
+            return "Must be on userlist.";
+            // return res.send("Must be on userlist.");
         }
         else if(parent.public_daemon == 2 || parent.default_daemon){
-            return res.send("Not allowed.");
+            // return res.send("Not allowed.");
+            return "Not allowed."
         }
     }
     var lang = 'rich';
@@ -4195,6 +4198,9 @@ app.post('/create_initial_passage/', async (req, res) => {
     let user = req.session.user || null;
     //create passage
     var newPassage = await createPassage(user, req.body.chief.toString(), req.body.subforums, req.body.comments);
+    if(newPassage == 'Not allowed.' || newPassage == 'Must be on userlist.'){
+        return res.send(newPassage);
+    }
     //update passage
     var formData = req.body;
     var repost = req.body.repost == 'true' ? true : false;
@@ -4237,8 +4243,11 @@ app.post('/create_initial_passage/', async (req, res) => {
     if(req.body.comments == 'true'){
         passage.comment = true;
         passage.forum = true;
+        passage.label = "Comment";
     }
-    passage.label = formData.label;
+    if(req.body.comments != 'true'){
+        passage.label = formData.label;
+    }
     if(!labelOptions.includes(passage.label)){
         return res.send("Not an option.");
     }

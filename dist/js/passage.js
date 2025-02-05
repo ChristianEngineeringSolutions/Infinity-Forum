@@ -367,6 +367,7 @@ $(function(){
         $('#passage_form').show();
         if($('#is-root').length > 0){
             var isRoot = $('#is-root').val();
+            var whichPage = $('#which-page').val();
             var parentLabel = $("#parent-label").val();
             var parentPublic = $("#parent-public").val();
             if(isRoot == 'false'){
@@ -374,6 +375,10 @@ $(function(){
 
                 }else{
                     $('#editor-label').val(parentLabel).change();
+                    if(whichPage == 'comments'){
+                        $('#editor-label').hide();
+                        $('#editor-label-color').hide();
+                    }
                 }
             }
         }
