@@ -1,10 +1,10 @@
 # Engineering Solutions for the People
 
-Infinity-Forum (IF) is a Not for Profit Organization specializing in collaborative solutions development for helping others.
+Infinity-Forum (IF) is an Organization specializing in collaborative solutions development for helping others.
 
 # Our Technology
 
-Our Technology (Sasame) is Open-Source and Free, one may use our services to both learn and solve problems with the goal of helping others.
+Our Technology is Open-Source and Free, one may use our services to both learn and solve problems with the goal of helping others.
 
 # Features
 
