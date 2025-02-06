@@ -418,6 +418,7 @@ async function rewardUsers(){
                 currency: "usd",
                 destination: user.stripeAccountId,
             });
+            console.log("Transfer complete.");
         }
         catch(err){
             console.log(err);
@@ -425,7 +426,6 @@ async function rewardUsers(){
     }
     console.log("Users paid");
 }
-
 //get percentage of total stars
 async function percentStars(user_stars){
     let final = user_stars / (await totalStars());
