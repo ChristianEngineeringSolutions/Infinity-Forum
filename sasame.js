@@ -418,7 +418,6 @@ async function rewardUsers(){
                 currency: "usd",
                 destination: user.stripeAccountId,
             });
-            console.log("Transfer complete.");
         }
         catch(err){
             console.log(err);
