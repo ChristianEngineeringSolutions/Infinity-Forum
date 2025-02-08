@@ -2272,6 +2272,7 @@ app.get('/donate', async function(req, res){
     var stars = await totalStars();
     res.render('donate', {
         passage: {id: 'root'}, usd: ((await scripts.getMaxToGiveOut())/100), stars: stars,
+        totalUSD: usd/100,
         donateLink: process.env.STRIPE_DONATE_LINK,
         subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK
     });
