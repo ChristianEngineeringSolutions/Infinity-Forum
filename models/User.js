@@ -100,7 +100,19 @@ const userSchema = mongoose.Schema({
       default: false
     },
     recoveryToken: String,
-    recoveryExp: Date
+    recoveryExp: Date,
+    amountEarned: {
+        type: Number,
+        default: 0
+    },
+    amountEarnedThisYear: {
+        type: Number,
+        default: 0
+    },
+    paymentsLocked: {
+      type: Boolean,
+      default: false
+    },
 
 });
 userSchema.plugin(mongoosePaginate);

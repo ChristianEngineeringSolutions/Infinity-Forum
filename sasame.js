@@ -396,6 +396,15 @@ cron.schedule('0 12 1 * *', async () => {
     await rewardUsers();
     console.log('Monthly Cron ran at 12pm.');
 });
+//remove payment locks and reset amountEarnedThisYear
+cron.schedule('0 0 1 1 *', async () => {
+    var users = await User.find({});
+    for(const user of users){
+        user.paymentsLocked = false;
+        user.amountEarnedThisYear = 0;
+        await user.save();
+    }
+});
 function monthDiff(d1, d2) {
     var months;
     months = (d2.getFullYear() - d1.getFullYear()) * 12;
@@ -409,22 +418,39 @@ async function rewardUsers(){
     var usd = await scripts.getMaxToGiveOut();
     var users = await User.find({stripeOnboardingComplete:true});
     for(const user of users){
-        //appropriate percentage based on stars
-        //users get same allotment as they have percentage of stars
-        let userUSD = parseInt((await percentStars(user.starsGiven)) * usd);
-        try{
-            const transfer = await stripe.transfers.create({
-                amount: userUSD,
-                currency: "usd",
-                destination: user.stripeAccountId,
-            });
-        }
-        catch(err){
-            console.log(err);
+        if(!user.paymentsLocked){
+            //appropriate percentage based on stars
+            //users get same allotment as they have percentage of stars
+            let userUSD = parseInt((await percentStars(user.starsGiven)) * usd);
+            try{
+                if(user.amountEarnedThisYear + (userUSD/100) > 600){
+                    userUSD = 600 - user.amountEarnedThisYear;
+                }
+                const transfer = await stripe.transfers.create({
+                    amount: userUSD,
+                    currency: "usd",
+                    destination: user.stripeAccountId,
+                });
+                if(user.amountEarnedThisYear + (userUSD/100) > 600){
+                    user.amountEarned += 600 - user.amountEarnedThisYear;
+                    user.amountEarnedThisYear += 600 - user.amountEarnedThisYear;
+                    user.paymentsLocked = true;
+                }else{
+                    user.amountEarned += userUSD / 100;
+                    user.amountEarnedThisYear += userUSD / 100;
+                }
+            }
+            catch(err){
+                console.log(err);
+            }
         }
     }
     console.log("Users paid");
 }
+// for testing
+// (async function(){
+//     await rewardUsers();
+// })();
 //get percentage of total stars
 async function percentStars(user_stars){
     let final = user_stars / (await totalStars());
