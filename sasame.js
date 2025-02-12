@@ -1897,6 +1897,9 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     else if(comments){
         var comments = await Passage.paginate({comment:true, parent:passage._id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
         passage.passages = comments.docs;
+        for(var i = 0; i < passage.passages.length; ++i){
+            passage.passages[i] = await getPassage(passage.passages[i]);
+        }
     }else{
         //remove subforums from passages
         passage.passages = passage.passages.filter(function(value, index, array){
@@ -4222,8 +4225,12 @@ app.post('/create_initial_passage/', async (req, res) => {
         return res.send("You must log in to create a passage.");
     }
     let user = req.session.user || null;
+    var chief = req.body.chief;
+    if(req.body['post-top'] && req.body['post-top'] == 'on'){
+        chief = 'root';
+    }
     //create passage
-    var newPassage = await createPassage(user, req.body.chief.toString(), req.body.subforums, req.body.comments);
+    var newPassage = await createPassage(user, chief.toString(), req.body.subforums, req.body.comments);
     if(newPassage == 'Not allowed.' || newPassage == 'Must be on userlist.'){
         return res.send(newPassage);
     }
@@ -4250,10 +4257,6 @@ app.post('/create_initial_passage/', async (req, res) => {
         case 'personal':
             passage.personal = true;
             break;
-    }
-    var chief = formData.chief;
-    if(req.body['post-top'] && req.body['post-top'] == 'on'){
-        chief = 'root';
     }
     var parent = null;
     if(chief !== 'root'){
