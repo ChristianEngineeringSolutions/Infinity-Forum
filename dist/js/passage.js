@@ -955,6 +955,7 @@ $(function(){
         });
     });
     $(document).on('click', '[id^=repost-]', function(){
+        var whichPage = $('#which-page').val(); 
         var id = $(this).attr('id').split('-').at(-1);
         popup("Repost", $('#repost-editor').val());
         if($('.popup').css('position') == 'absolute'){
@@ -970,6 +971,12 @@ $(function(){
             $('#post-top-div').remove();
             $('<input id="post-top-hidden">').attr('type','hidden').appendTo('#passage_form');
             $('#post-top-hidden').val('true');
+        }
+        if(whichPage == 'comments'){
+            $('#editor-label').hide();
+            $('#editor-label-color').hide();
+        }else{
+            $('#editor-label').val('Social').change();
         }
         summonQuill();
     });
@@ -1224,7 +1231,7 @@ $(function(){
                     if(chief == 'root'){
                         $('#passage_wrapper').prepend(data);
                     }
-                    else if($('#yes-comments').val() == 'true'){
+                    else if($('#yes-comments').val() == 'true' && formData.get('post-top') != 'on'){
                         $(data).insertAfter('.passage:first');
                     }
                     else{
