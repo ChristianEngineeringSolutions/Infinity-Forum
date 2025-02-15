@@ -36,6 +36,7 @@
     "jquery-modal": "^0.9.2",
     "jquery-ui-dist": "^1.12.1",
     "limit": "^0.0.1",
+    "link-preview-js": "^3.0.14",
     "mongodb": "6.8",
     "mongodb-backup": "^0.2.0",
     "mongodb-restore": "^0.1.0",

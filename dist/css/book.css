@@ -470,7 +470,7 @@ hr{
     cursor: pointer;
     opacity: 0.9;
 }
-.passage_title{
+.passage_title, .editor-preview{
     white-space: pre-wrap;
     /*padding-left: 40px;*/
     padding-right: 40px;
@@ -1095,4 +1095,8 @@ ion-icon{
 	font-size: 60%;
 	color: #fff;
 	cursor: pointer;
+}
+.image-preview{
+    border: 1px solid black;
+/*    width: 50%;*/
 }

@@ -49,7 +49,8 @@
             <!-- <code-input template="code-input"lang="<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>"class="display_code" id="display_code_<%=passage._id%>" value="<%=passage.code || ''%>"></code-input> -->
             <textarea style="display:none;"class="passage_code" name="code" id="passage_code_<%=passage._id%>" cols="30" rows="10" autocomplete="off"><%=passage.code%></textarea>
         </div>
-
+    <br>
+    <input id="editor-preview-<%=passage._id%>"class="editor-preview" value="<%=passage.previewLink%>" type="text"name="editor-preview"placeholder="Image Preview Link (Optional)" autocomplete="off">
     <!-- Upload Directory -->
     <%/*%>
     <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
