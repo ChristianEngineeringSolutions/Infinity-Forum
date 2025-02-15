@@ -223,6 +223,10 @@ const passageSchema = mongoose.Schema({
     }, //subforum or not
     //date last updated
     updated: {type: Date, default: Date.now},
+    previewLink: {
+        type: String,
+        default: null,
+    },
     stars: {
         type: Number,
         default: 0

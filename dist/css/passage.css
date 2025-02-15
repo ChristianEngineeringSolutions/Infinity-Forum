@@ -121,7 +121,7 @@
     word-wrap: break-word;
 /*    border: 1px solid rgba(255, 255, 255, 0.23);*/
 }
-.uploadedImage{
+.uploadedImage, .preview-image{
     max-width: 500px;
 }
 .bottom-hr{
@@ -270,7 +270,7 @@
     cursor: pointer;
     color: white;
 }
-.passage_title, .passage_file, .passage_plus_description, .passage_ext, .passage_input{
+.passage_title, .editor-preview, .passage_file, .passage_plus_description, .passage_ext, .passage_input{
     all: revert;
     display: block;
     width: 99%;

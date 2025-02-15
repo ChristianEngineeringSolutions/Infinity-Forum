@@ -17,6 +17,7 @@ const { promisify } = require('util');
 const request = promisify(require('request'));
 const browser = require('browser-detect');
 var ffmpeg = require('fluent-ffmpeg');
+const linkPreview = require('link-preview-js');
 const axios = require("axios"); //you can use any http client
 // const tf = require("@tensorflow/tfjs-node");
 // const nsfw = require("nsfwjs");
@@ -4313,6 +4314,7 @@ app.post('/create_initial_passage/', async (req, res) => {
     passage.bibliography = formData.bibliography;
     passage.lang = formData.lang;
     passage.fileStreamPath = formData.filestreampath;
+    passage.previewLink = formData['editor-preview'];
     if(parent != null){
         if(parent.sameUsers){
             console.log("Same users");
@@ -4880,7 +4882,8 @@ app.post('/update_passage/', async (req, res) => {
             bestOfEntire: passage.bestOfEntire,
             bestOfContent: passage.bestOfContent,
             public: passage.public,
-            forum: passage.forum
+            forum: passage.forum,
+            previewLink: passage.previewLink
         });
         //now add to versions of new passage
         passage.versions.push(oldVersion);
@@ -4896,6 +4899,7 @@ app.post('/update_passage/', async (req, res) => {
     passage.bibliography = formData.bibliography;
     passage.lang = formData.lang;
     passage.fileStreamPath = formData.filestreampath;
+    passage.previewLink = formData['editor-preview'];
     //no longer synthetic if it has been edited
     passage.synthetic = false;
     passage.updated = Date.now();
@@ -4912,7 +4916,7 @@ app.post('/update_passage/', async (req, res) => {
     if(subforums == 'true'){
         console.log(3);
     }
-    console.log("INFO: " + subforums);
+    // console.log("INFO: " + subforums);
     //Only for private passages
     if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         var passageOrder = [];
@@ -4939,13 +4943,44 @@ app.post('/update_passage/', async (req, res) => {
         //also update file and server
         // updateFile(passage.fileStreamPath, passage.code);
     }
-    console.log('OKKKKKKKKKKKKKKKKKK');
     passage = await getPassage(passage);
-    console.log('flair'+passage.usedIn);
-    console.log("WHAAAAAAAT");
     var subPassage = formData.parent == 'root' ? false : true;
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
+});
+app.get('/preview-link', async (req, res) => {
+  const url = req.query.url;
+
+  if (!url) {
+    return res.status(400).send('Please provide a URL in the "url" query parameter.');
+  }
+  console.log("OKAY THIS");
+
+  try {
+    const data = await linkPreview.getLinkPreview(url);
+
+    // Check if there are any images in the preview data
+    if (data.images && data.images.length > 0) {
+      // Choose the image you want to display (e.g., the first one)
+        const previewImageUrl = data.images[0];
+        var response = { 
+        imageUrl: previewImageUrl,
+        url: data.siteName,
+        description: data.title,
+        link: url
+        };
+        console.log(JSON.stringify(response));
+        res.json(response); //respond with json object
+      // Or send the image directly (see below)
+
+    } else {
+        res.json({ message: "No image found for this URL."});
+    }
+
+  } catch (error) {
+    console.error('Error fetching link preview:', error);
+    res.status(500).json({ error: 'Error fetching link preview.' }); // Respond with JSON error
+  }
 });
 app.post('/watch', async (req, res) => {
     console.log('test');

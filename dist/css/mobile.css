@@ -130,7 +130,7 @@
     #sort-select-div, #label-select-div{
       width: 97%;
      }
-     .uploadedImage{
+     .uploadedImage, .preview-image{
         max-width: 250px;
     }
 }
@@ -332,7 +332,7 @@
 }
 /* Small Phones */
 @media screen and (max-width: 550px){
-     .uploadedImage{
+     .uploadedImage, .preview-image{
         max-width: 250px;
     }
     #parent_title{
