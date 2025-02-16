@@ -947,7 +947,7 @@ $(function(){
             url: '/single_star/',
             data: {
                 _id: $(this).attr('id').split('-').at(-1),
-                on: $(this).css('color') == 'white' ? true : false
+                on: $(this).css('color') == 'rgb(255, 215, 0)' ? true : false
             },
             success: function(data){
                 thisPassage(thiz, '-').replaceWith(data);

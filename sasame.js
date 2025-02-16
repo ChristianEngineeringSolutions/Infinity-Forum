@@ -552,6 +552,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
             bonus += similarity > 0.1 ? similarity : 0;
         }
     }
+    bonus = bonus * amount;
     // if(lastSource != null){
     //     bonus = passageSimilarity(passage, lastSource);
     // }else{
@@ -562,7 +563,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     // }
     //add stars to passage and sources
     passage.stars += amount + bonus;
-    //star all sub passages (content is displayed in parent)
+    //if bubbling star all sub passages (content is displayed in parent)
     if(passage.bubbling && passage.passages && !passage.public){
         for(const p of passage.passages){
             //also star sources for each sub passage
@@ -4510,7 +4511,7 @@ async function singleStarSources(user, sources, reverse=false){
         //check if starred already
         var recordSingle = await Star.findOne({user: user._id, passage:source, single:true, system:false});
         var recordSingleSystem = await Star.findOne({user: user._id, passage:source, single:true, system:true});
-        //unstar if no previous record of being starred
+        //unstar if no previous record of being directly starred
         if(reverse && recordSingle == null){
             await Star.deleteOne({user: user, passage: source._id, single: true});
             source.stars -= 1;
@@ -4535,36 +4536,40 @@ async function singleStarSources(user, sources, reverse=false){
         await source.save();
     }
 }
-app.post('/single_star/', async (req, res) => {
-    if(req.session && req.session.user){
-        var passage = await Passage.findOne({_id: req.body._id});
-        var user = req.session.user._id.toString();
-        var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
-        if(req.body.on && !passage.starrers.includes(user)){
-            //star mirror best and bestof and repost
-            //and add to sources
-            if(passage.showBestOf){
-                var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
-                if(best != null){
-                    sources.push(best);
-                }
+async function singleStarPassage(req, passage, reverse=false, isSub=false){
+    var user = req.session.user._id.toString();
+    var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+    //check if starred already
+    var recordSingle = await Star.findOne({user: user._id, passage:passage, single:true, system:false});
+    var recordSingleSystem = await Star.findOne({user: user._id, passage:passage, single:true, system:true});
+    if(!reverse){
+        //star mirror best and bestof and repost
+        //and add to sources
+        if(passage.showBestOf){
+            var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+            if(best != null){
+                sources.push(best);
             }
-            else{
-                try{
-                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
-                    if(mirror != null)
-                    sources.push(mirror);
-                }
-                catch(e){
-                }
-                try{
-                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
-                    if(bestOf != null)
-                        sources.push(bestOf);
-                }
-                catch(e){
-                }
+        }
+        else{
+            try{
+                var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
+                if(mirror != null)
+                sources.push(mirror);
             }
+            catch(e){
+            }
+            try{
+                var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
+                if(bestOf != null)
+                    sources.push(bestOf);
+            }
+            catch(e){
+            }
+        }
+        //star if hasn't been starred already
+        if((recordSingleSystem == null && recordSingle == null) || !isSub){
+            var system = isSub ? true : false;
             //star each source recursively
             var star = await Star.create({
                 user: req.session.user._id,
@@ -4572,14 +4577,25 @@ app.post('/single_star/', async (req, res) => {
                 amount: 1,
                 sources: sources,
                 single: true,
-                system: false
+                system: system
             });
             await singleStarSources(user, sources);
             passage.stars += 1;
             passage.starrers.push(user);
         }
-        else{
-            if(passage.starrers.includes(user)){
+        //if bubbling star all sub passages (content is displayed in parent)
+        if(passage.bubbling && passage.passages && !passage.public){
+            for(const p of passage.passages){
+                //also star sources for each sub passage
+                passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                await singleStarPassage(req, p, false, true);
+            }
+        }
+    }
+    else{
+        if(passage.starrers.includes(user)){
+            //unstar if no previous record of being directly starred
+            if(recordSingle == null){
                 var record = await Star.findOne({user:req.session.user._id, passage: passage._id});
                 await singleStarSources(user, sources, true);
                 passage.stars -= 1;
@@ -4588,10 +4604,39 @@ app.post('/single_star/', async (req, res) => {
                 });
                 await Star.deleteOne({user: user, passage: passage._id, single: true});
             }
+
+            //if bubbling unstar all sub passages (content is displayed in parent)
+            if(passage.bubbling && passage.passages && !passage.public){
+                for(const p of passage.passages){
+                    //also star sources for each sub passage
+                    passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                    await singleStarPassage(req, p, true, true);
+                }
+            }
         }
-        passage.markModified("starrers");
-        await passage.save();
-        passage = await getPassage(passage);
+    }
+    passage.markModified("starrers");
+    await passage.save();
+    passage = await getPassage(passage);
+    return passage;
+}
+app.post('/single_star/', async (req, res) => {
+    var user = req.session.user._id.toString();
+    if(req.session && req.session.user){
+        var p = await Passage.findOne({_id: req.body._id});
+        console.log("ON:"+req.body.on);
+        console.log(p.starrers.includes(user));
+        if(req.body.on == 'false' && !p.starrers.includes(user)){
+            console.log("NOO");
+            var passage = await singleStarPassage(req, p);
+        }
+        else if(req.body.on == 'true'){
+            console.log("YES robotics");
+            var passage = await singleStarPassage(req, p, true);
+        }
+        else{
+            console.log("WHAT");
+        }
         return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
     }
     else{
