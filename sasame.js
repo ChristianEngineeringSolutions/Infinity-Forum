@@ -642,31 +642,36 @@ async function starSources(passage, top, authors=[], starredPassages=[], amount,
             //also give author stars once per author
             if(sourceAuthor._id.toString() != req.session.user._id.toString() 
                 && sourceAuthor._id.toString() != passage.author._id.toString()
-                && !source.collaborators.includes(req.session.user._id.toString())
                 /*&& !authors.includes(sourceAuthor._id)*/){
                 bonus = passageSimilarity(top, source);
                 bonus = 0; //bonuses are to reward users for citing
                 source.stars += amount + bonus;
-                if(!authors.includes(sourceAuthor._id)){
-                    sourceAuthor.stars += amount + bonus/(source.collaborators.length + 1);
-                    await sourceAuthor.save();
+                //dont give author stars if starrer is a collaborator
+                if(!source.collaborators.includes(req.session.user._id.toString())){
+                    if(!authors.includes(sourceAuthor._id)){
+                        sourceAuthor.stars += amount + bonus/(source.collaborators.length + 1);
+                        await sourceAuthor.save();
+                    }
                 }
                 authors.push(sourceAuthor._id);
                 await source.save();
-                //give stars to collaborators if applicable
-                //split stars with collaborators
-                if(source.collaborators.length > 0){
-                    for(const collaborator in source.collaborators){
-                        if(collaborator == passage.author.email){
-                            //we already starred the author
-                            continue;
+                //dont give collaborators stars if starrer is a collaborator
+                if(!source.collaborators.includes(req.session.user._id.toString())){
+                    //give stars to collaborators if applicable
+                    //split stars with collaborators
+                    if(source.collaborators.length > 0){
+                        for(const collaborator in source.collaborators){
+                            if(collaborator == passage.author.email){
+                                //we already starred the author
+                                continue;
+                            }
+                            let collaber = await User.findOne({email:collaborator});
+                            if(collaber != null){
+                                collaber.stars += (amount + bonus)/(source.collaborators.length + 1);
+                                await collaber.save();
+                            }
                         }
-                        let collaber = await User.findOne({email:collaborator});
-                        if(collaber != null){
-                            collaber.stars += (amount + bonus)/(source.collaborators.length + 1);
-                            await collaber.save();
-                        }
-                    }
+                    }   
                 }
             }
             starredPassages.push(source._id.toString());
@@ -1615,7 +1620,6 @@ app.get('/forum', async (req, res) => {
     // fillForum();
 });
 async function getPassage(passage, small=true){
-    console.log('+++++'+passage.sourceList.length);
     passage.originalSourceList = passage.sourceList.slice();
     // var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
@@ -1747,9 +1751,7 @@ async function getPassage(passage, small=true){
     }else{
         passage.repostFixed = false;
     }
-    console.log('FRUIT:'+passage.sourceList.length);
     passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
-    console.log('***'+passage.sourceList.length);
     return passage;
 }
 async function getBigPassage(req, res, params=false, subforums=false, comments=false){
@@ -2854,12 +2856,19 @@ app.post('/add_user', async (req, res) => {
     }
 });
 app.post('/add_collaborator', async (req, res) => {
+    console.log("HEEEELLLLLOOOO");
     var passage = await Passage.findOne({_id: req.body.passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         var collaborator = await User.findOne({username:req.body.username});
-        if(!passage.collaborators.includes(collaborator._id.toString())){
+        console.log("HALT");
+        console.log(collaborator._id.toString());
+        console.log(req.session.user._id.toString());
+        console.log(collaborator._id.toString() != req.session.user._id.toString());
+        if(!passage.collaborators.includes(collaborator._id.toString()) && collaborator._id.toString() != req.session.user._id.toString()){
             passage.collaborators.push(collaborator._id.toString());
             passage.markModified('collaborators');
+        }else{
+            return res.send("Not allowed. Can't add author or user already added.");
         }
         //if possible add user
         // let collabUser = await User.findOne({email: req.body.email});
