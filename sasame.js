@@ -573,7 +573,7 @@ async function starPassage(req, amount, passageID, userID, deplete=true){
     }
     await starMessages(passage._id, amount);
     //you have to star someone elses passage to get stars
-    if(passage.author._id.toString() != req.session.user._id.toString()){
+    if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
         user.starsGiven += amount;
         if(passage.collaborators.length > 0){
             passage.author.stars += (amount + bonus)/(passage.collaborators.length + 1);
@@ -642,15 +642,32 @@ async function starSources(passage, top, authors=[], starredPassages=[], amount,
             //also give author stars once per author
             if(sourceAuthor._id.toString() != req.session.user._id.toString() 
                 && sourceAuthor._id.toString() != passage.author._id.toString()
+                && !source.collaborators.includes(req.session.user._id.toString())
                 /*&& !authors.includes(sourceAuthor._id)*/){
                 bonus = passageSimilarity(top, source);
+                bonus = 0; //bonuses are to reward users for citing
                 source.stars += amount + bonus;
                 if(!authors.includes(sourceAuthor._id)){
-                    sourceAuthor.stars += amount + bonus;
+                    sourceAuthor.stars += amount + bonus/(source.collaborators.length + 1);
                     await sourceAuthor.save();
                 }
                 authors.push(sourceAuthor._id);
                 await source.save();
+                //give stars to collaborators if applicable
+                //split stars with collaborators
+                if(source.collaborators.length > 0){
+                    for(const collaborator in source.collaborators){
+                        if(collaborator == passage.author.email){
+                            //we already starred the author
+                            continue;
+                        }
+                        let collaber = await User.findOne({email:collaborator});
+                        if(collaber != null){
+                            collaber.stars += (amount + bonus)/(source.collaborators.length + 1);
+                            await collaber.save();
+                        }
+                    }
+                }
             }
             starredPassages.push(source._id.toString());
         }
@@ -4631,7 +4648,7 @@ app.post('/single_star/', async (req, res) => {
             var passage = await singleStarPassage(req, p);
         }
         else if(req.body.on == 'true'){
-            console.log("YES robotics");
+            console.log("YES");
             var passage = await singleStarPassage(req, p, true);
         }
         else{
