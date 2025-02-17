@@ -847,7 +847,8 @@ app.get("/profile/:username?/:_id?/", async (req, res) => {
             $in: [profile]
         },
         deleted: false, 
-        personal: false
+        personal: false,
+        versionOf: null
     };
     //if it's their profile show personal passages
     // if(req.session.user && profile._id.toString() == req.session.user._id.toString()){
