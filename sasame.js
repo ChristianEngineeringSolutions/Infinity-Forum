@@ -416,8 +416,10 @@ function monthDiff(d1, d2) {
 //Get total star count and pay out users
 async function rewardUsers(){
     const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    var usd = await scripts.getMaxToGiveOut();
     var users = await User.find({stripeOnboardingComplete:true});
+    var usd = await scripts.getMaxToGiveOut();
+    var cut;
+    var totalCut = 0;
     for(const user of users){
         // if(!user.paymentsLocked){
             //appropriate percentage based on stars
@@ -427,11 +429,14 @@ async function rewardUsers(){
                 // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                 //     userUSD = 600 - user.amountEarnedThisYear;
                 // }
+                cut = (userUSD*0.05);
                 const transfer = await stripe.transfers.create({
-                    amount: userUSD,
+                    //take 5%
+                    amount: Math.floor(userUSD - (cut)),
                     currency: "usd",
                     destination: user.stripeAccountId,
                 });
+                totalCut += cut;
                 // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                 //     user.amountEarned += 600 - user.amountEarnedThisYear;
                 //     user.amountEarnedThisYear += 600 - user.amountEarnedThisYear;
@@ -447,6 +452,11 @@ async function rewardUsers(){
         // }
     }
     console.log("Users paid");
+    //pay the platform the leftover money
+    const payout = await stripe.payouts.create({
+      amount: Math.floor(totalCut),
+      currency: 'usd',
+    });
 }
 // for testing
 // (async function(){
