@@ -3469,7 +3469,10 @@ async function getRecursiveSpecials(passage){
         return null;
     }
     else{
-        passage.special = special;
+        //because this is sometimes set by getPassage
+        if(typeof passage.special == 'undefined'){
+            passage.special = special;
+        }
         await getRecursiveSpecials(special);
     }
 }
