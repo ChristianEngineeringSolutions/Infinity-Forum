@@ -2835,12 +2835,14 @@ app.get('/leaderboard', async (req, res) => {
         return getRemotePage(req, res);
     }
     var page = req.query.page || 1;
+    var limit = DOCS_PER_PAGE * 2;
+    // limit = 2;
     // let users = await User.find().sort('-starsGiven');
-    let users = await User.paginate({}, {sort: '-starsGiven _id', page: page, limit: 20});
+    let users = await User.paginate({}, {sort: '-starsGiven _id', page: page, limit: limit});
     users = users.docs;
     var i = 1;
     for(const user of users){
-        user.rank = i + ((page-1)*20);
+        user.rank = i + ((page-1)*limit);
         ++i;
     }
     if(page == 1){
@@ -4105,7 +4107,11 @@ app.post('/paginate', async function(req, res) {
             else{
                 var rank = false;
             }
-            let users = await User.paginate(find, {sort: "-starsGiven", page: page, limit: DOCS_PER_PAGE*2});
+            console.log("LEADERBOARD PAGE:"+page);
+            var limit = DOCS_PER_PAGE * 2;
+            // limit = 2;
+            let users = await User.paginate(find, {sort: "-starsGiven, _id", page: page, limit: limit});
+            console.log(users.docs.length);
             res.render('leaders', {users: users.docs, page: page, rank: rank});
         }
 

@@ -1093,7 +1093,7 @@ $(function(){
             }
             $.ajax({
                 type: 'post',
-                url: '/paginate/',
+                url: '/paginate',
                 // url: DOMAIN + '/paginate/' + fromOtro,
                 data: {
                     page: page,
