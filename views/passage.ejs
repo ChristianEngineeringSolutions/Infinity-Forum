@@ -50,7 +50,7 @@
             <div class="passage_source_<%=passage._id%>"><a target="_blank"href="<%=passage.sourceLink%>">External Source</a></div>
         <%}%>
         <div>
-            Collaborators:
+            <b>Collaborators:</b>
             <%if(passage.collaborators && passage.collaborators.length > 0){passage.collaborators.forEach(function(collaber, i) { %>
                 <a target="__blank"href="/profile/<%=collaber.username%>/<%=collaber._id%>"><%=collaber.name%></a>
                 ,
@@ -60,10 +60,10 @@
         </div>
         <br>
         <%if((!passage.sourceList || passage.sourceList.length < 1) && (passage.sourceLink == null || passage.sourceLink.length < 1)){%>
-            <div>No Sources</div>
+            <div><b>No Sources</b></div>
             <div id="sourcelist_<%=passage._id%>"></div>
         <%}else{%>
-        Sources:
+        <b>Sources:</b>
         <div id="sourcelist_<%=passage._id%>">
             <div id="recursive-sources-<%=passage._id%>">
                 <%passage.sourceList.forEach(function(source) { %>
@@ -85,7 +85,7 @@
         <%}%>
         <br>
         <div>
-            Used In:
+            <b>Used In:</b>
             <% if (!passage.usedIn || passage.usedIn.length === 0) { %>
                 No Passages <br>
             <% } else { %>
@@ -97,12 +97,15 @@
         <!-- List collaborators and allow them to be added (permanent) -->
 
         <!-- Show Additional Source info -->
-        <%if(passage.bibliography != null){%>
-            <p><%=passage.bibliography%></p>
+        <%if(passage.bibliography != null && passage.bibliography != ''){%>
+            <p><b>Additional Source Info:</b></p>
+            <%-passage.bibliography.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\n/g, "<br>")%>
+            <br>
         <%}%>
         <%if(passage.author != null && passage.author){%>
             <%if(passage.author && user && (passage.author._id == user._id || user.admin)){%>
-                Versions:
+                <br>
+                <b>Versions:</b>
                 <%if(passage.versions.length == 0){ %>
                     No Versions
                 <%}%>

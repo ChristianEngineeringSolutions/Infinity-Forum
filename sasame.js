@@ -1775,7 +1775,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage_id = req.params.passage_id;
     }
     var page = req.query.page || req.params.page || 1;
-    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums collaborators');
+    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums collaborators versions');
     if(passage == null){
         return res.redirect('/');
     }
