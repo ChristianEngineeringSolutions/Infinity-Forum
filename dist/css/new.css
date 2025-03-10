@@ -260,7 +260,7 @@ a {
     cursor: pointer;
 }
 a:hover {
-    color: #fff;
+    color: lightgrey;
 }
 .link {
     text-decoration:none;
