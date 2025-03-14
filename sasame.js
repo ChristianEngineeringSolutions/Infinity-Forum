@@ -5039,16 +5039,34 @@ app.post('/update_passage/', async (req, res) => {
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
 });
+function removeHTMLTags(str) {
+  return str.replace(/<[^>]*>/g, ' ');
+}
 app.get('/preview-link', async (req, res) => {
-  const url = req.query.url;
-
-  if (!url) {
+  const text = req.query.url;
+  // console.log(removeHTMLTags(text));
+  if (!text) {
     return res.status(400).send('Please provide a URL in the "url" query parameter.');
   }
   console.log("OKAY THIS");
 
   try {
-    const data = await linkPreview.getLinkPreview(url);
+    const dns = require("node:dns");
+    const data = await linkPreview.getLinkPreview(removeHTMLTags(text), {
+        resolveDNSHost: async (url) => {
+            return new Promise((resolve, reject) => {
+              const hostname = new URL(url).hostname;
+              dns.lookup(hostname, (err, address, family) => {
+                if (err) {
+                  reject(err);
+                  return;
+                }
+
+                resolve(address); // if address resolves to localhost or '127.0.0.1' library will throw an error
+              });
+            });
+        }
+    });
 
     // Check if there are any images in the preview data
     if (data.images && data.images.length > 0) {
@@ -5058,7 +5076,7 @@ app.get('/preview-link', async (req, res) => {
         imageUrl: previewImageUrl,
         url: data.siteName,
         description: data.title,
-        link: url
+        link: data.url
         };
         console.log(JSON.stringify(response));
         res.json(response); //respond with json object
