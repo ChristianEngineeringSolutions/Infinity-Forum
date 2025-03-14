@@ -28,7 +28,7 @@ function analyzeImages() {
   $('.preview-image:not(.image-loaded)').each(function(){
     var thiz = $(this);
     var _id = thiz.attr('id').split('-').at(-1);
-    if(isValidHttpUrl(thiz.data('url'))){
+    // if(isValidHttpUrl(thiz.data('url'))){
       fetch(`/preview-link?url=${encodeURIComponent(thiz.data('url'))}`)
       .then(response => response.json())
       .then(data => {
@@ -49,7 +49,7 @@ function analyzeImages() {
       .catch(error => {
         console.error('Error:', error);
       });
-    }
+    // }
   });
   if($('#safe-mode').val() == 'true'){
     $('.uploadedImage:not(.nsfw-checked)').each(function() {

@@ -43,7 +43,7 @@
         <%}%>
         <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-content + showMore%></div>
         <div class="image-preview"id="image-preview-<%=passage._id%>"style="display:none;">
-            <img class="preview-image"data-url="<%=passage.previewLink%>"id="preview-image-<%=passage._id%>" src="" alt="Preview">
+            <img class="preview-image"data-url="<%=passage.content%>"id="preview-image-<%=passage._id%>" src="" alt="Preview">
             <a style="display:block;"target="__blank"id="preview-link-url-<%=passage._id%>"></a>
             <div id="preview-link-description-<%=passage._id%>"></div>
         </div>

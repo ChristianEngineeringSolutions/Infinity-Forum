@@ -908,6 +908,7 @@ $(function(){
                 thisPassage(thiz).replaceWith(data);
                 syntaxHighlight();
                 $('#loading').hide();
+                analyzeImages();
             },
             error: function(a, b, c){
                 alert(JSON.stringify(a) + b + c);
