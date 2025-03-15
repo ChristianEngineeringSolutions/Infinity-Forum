@@ -42,6 +42,22 @@
             <%showMore = '';%>
         <%}%>
         <div class="detail_description" name="content" class="display_data_<%=passage._id%>"id="passage_detail_content_<%=passage._id%>"><%-content + showMore%></div>
+        <%if(passage.yt && passage.yt.length > 1){%>
+            <%var regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;%>
+            <%var embed = '';%>
+            <%var match = passage.yt.match(regExp);%>
+            <%if (match && match[2].length == 11) {%>
+              <%embed = match[2];%>
+            <%} else {%>
+              <%//error%>
+            <%}%>
+            <div id="">
+                <iframe width="560" height="315"
+                src="https://www.youtube.com/embed/<%=embed%>"
+                frameborder="0" allowfullscreen></iframe>
+            </div>
+            <br>
+        <%}%>
         <div class="image-preview"id="image-preview-<%=passage._id%>"style="display:none;">
             <img class="preview-image"data-url="<%=passage.content%>"id="preview-image-<%=passage._id%>" src="" alt="Preview">
             <a style="display:block;"target="__blank"id="preview-link-url-<%=passage._id%>"></a>

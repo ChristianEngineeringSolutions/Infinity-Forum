@@ -21,7 +21,7 @@
     .tablet-hide{
         display: none;
     }
-    home_link{
+    #home_link{
         font-size: 1.2em !important;
         /* margin-top: -250px; */
         /* float: left; */
@@ -58,6 +58,9 @@
 }
 /* Tablets portrait*/
 @media screen and (max-width: 820px){
+    .passage_delete{
+        display: none;
+    }
     .tablet-hide{
         display: none;
     }
@@ -88,7 +91,7 @@
     #header{
         display: block;
     }
-    home_link{
+    #home_link{
         font-size: 1.2em !important;
         /* margin-top: -250px; */
         /* float: left; */
@@ -223,9 +226,9 @@
         margin-left: 0px;;
         width: 100%;
     }  
-    .passage_delete{
+    /*.passage_delete{
         display: none;
-    }
+    }*/
     .detail-div{
         /* clear:both; */
     }

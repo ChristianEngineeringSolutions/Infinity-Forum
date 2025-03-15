@@ -270,7 +270,7 @@
     cursor: pointer;
     color: white;
 }
-.passage_title, .editor-preview, .passage_file, .passage_plus_description, .passage_ext, .passage_input{
+.passage_title, .editor-preview, .passage_file, .passage_plus_description, .passage_ext, .passage_input, .passage-yt{
     all: revert;
     display: block;
     width: 99%;
@@ -279,6 +279,9 @@
     margin-bottom: 10px;
     padding-left: 10px;
     padding-right: 0px;
+}
+.yt-dropdown, [class^=yt-dropdown-]{
+    display: none;
 }
 .hljs{
     /* background: transparent; */

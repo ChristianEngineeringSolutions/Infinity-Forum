@@ -4287,6 +4287,7 @@ app.post('/create_initial_passage/', async (req, res) => {
     var repost = req.body.repost == 'true' ? true : false;
     var repostID = req.body['repost-id'];
     var passage = await Passage.findOne({_id: newPassage._id}).populate('author users sourceList collaborators versions');
+    passage.yt = formData.yt;
     if(repost){
         var reposted = await Passage.findOne({_id:repostID});
         passage.repost = repostID;
@@ -4974,12 +4975,14 @@ app.post('/update_passage/', async (req, res) => {
             bestOfContent: passage.bestOfContent,
             public: passage.public,
             forum: passage.forum,
-            previewLink: passage.previewLink
+            previewLink: passage.previewLink,
+            yt: passage.yt
         });
         //now add to versions of new passage
         passage.versions.push(oldVersion);
     }
     // console.log('test');
+    passage.yt = formData.yt;
     passage.html = formData.html;
     passage.css = formData.css;
     passage.javascript = formData.js;
@@ -5048,8 +5051,6 @@ app.get('/preview-link', async (req, res) => {
   if (!text) {
     return res.status(400).send('Please provide a URL in the "url" query parameter.');
   }
-  console.log("OKAY THIS");
-
   try {
     const dns = require("node:dns");
     const data = await linkPreview.getLinkPreview(removeHTMLTags(text), {

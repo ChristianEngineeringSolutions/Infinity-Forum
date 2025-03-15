@@ -1150,6 +1150,13 @@ $(function(){
         // $('.blocker').click();
         // $('#side_panel').scrollTop(0);
     });
+    $(document).on('click', '#yt-drop', function(){
+        $('.yt-dropdown').slideToggle();
+    });
+    $(document).on('click', '[id^=yt-drop-]', function(){
+        var _id = $(this).attr('id').split('-').at(-1);
+        $('.yt-dropdown-' + _id).slideToggle();
+    });
     $(document).on('click', '.add-source', function(){
         var _id = $(this).attr('id').split('-').at(-1);
         $('.new-sources:not(#new-sources-'+_id+')').hide();
