@@ -172,7 +172,7 @@ module.exports = {
         else{
             console.log('false');
         }
-        let ret = await Passage.findOne({_id: copy._id}).populate('author users sourceList');
+        let ret = await Passage.findOne({_id: copy._id}).populate('parent author users sourceList subforums collaborators versions mirror bestOf best');
         return ret;
         // res.render('passage', {passage: copy, sub: true});
     },

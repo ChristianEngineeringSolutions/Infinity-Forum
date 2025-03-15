@@ -132,7 +132,7 @@ async function mongoSnap(path, restore = false) {
 //       credentials: true
 //     }
   // });
-app.use(express.urlencoded({ extended: false, limit: '1gb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(compression());
 app.use(cors());
 app.use(helmet());
@@ -268,9 +268,9 @@ scripts.getMaxToGiveOut = async function(){
 scripts.getBest = async function(passage){
     return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
 };
-scripts.getPassage = async function(passage){
-    return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
-};
+// scripts.getPassage = async function(passage){
+//     return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
+// };
 app.use(cookieParser());
 app.use(session);
 io.use(sharedsession(session, {
@@ -1459,7 +1459,7 @@ async function getPassageLocation(passage, train){
 async function returnPassageLocation(passage){
     var location = (await getPassageLocation(passage)).join('/');
     // return passage.parent ? passage.parent.title + passage.parent.parent.title : '';
-    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + (passage.parent.title == '' ? 'Untitled' : passage.parent.title) + '/' + passage.parent._id) : '/posts') +'">' + location + '</a>';
+    return '<a style="word-wrap:break-word;"href="'+(passage.parent ? ('/passage/' + (passage.parent.title == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)) + '/' + passage.parent._id) : '/posts') +'">' + location + '</a>';
 }
 async function modifyArrayAsync(array, asyncFn) {
   const promises = array.map(async (item) => {
@@ -1486,7 +1486,7 @@ app.get('/posts', async (req, res) => {
             deleted: false,
             personal: false,
             versionOf: null
-        }).populate('author users sourceList parent collaborators versions').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
+        }).populate('author users sourceList parent collaborators versions mirror').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
         // for(const passage of passages){
         //     // return await getPassage(passage._id);
         //     // passages[passage] = bubbleUpAll(passage);
@@ -1684,25 +1684,29 @@ async function getPassage(passage, small=true){
     if(replacing){
         passage.passages = replacement.passages;
     }
-    if(replacing && passage.mirrorEntire && passage.mirror != null){
+    if(replacing && (passage.mirror != null || passage.bestOf != null)){
         passage.lang = replacement.lang;
-        passage.title = replacement.title;
         passage.content = replacement.content;
         passage.code = replacement.code;
         passage.html = replacement.html;
         passage.css = replacement.css;
         passage.javascript = replacement.javascript;
+        passage.filename = replacement.filename;
+        passage.mimeType = replacement.mimeType;
+        passage.passages = replacement.passages;
+        passage.bubbling = replacement.bubbling;
     }
-    console.log(passage.bestOfEntire);
-    if(replacing && passage.bestOfEntire && passage.bestOf != null){
-        console.log("Best best");
-        passage.lang = replacement.lang;
+    if(passage.mirrorEntire && passage.mirror != null){
         passage.title = replacement.title;
-        passage.content = replacement.content;
-        passage.code = replacement.code;
-        passage.html = replacement.html;
-        passage.css = replacement.css;
-        passage.javascript = replacement.javascript;
+    }
+    if(passage.bestOfEntire && replacement != null){
+        passage.title = replacement.title;
+    }
+    if(replacing && passage.mirror != null){
+        passage.isMirrored = true;
+    }
+    if(replacing && passage.bestOf != null){
+        passage.isBestOf = true;
     }
     passage = await bubbleUpAll(passage);
     if(replacing){
@@ -1775,7 +1779,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage_id = req.params.passage_id;
     }
     var page = req.query.page || req.params.page || 1;
-    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums collaborators versions');
+    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums collaborators versions mirror bestOf best');
     if(passage == null){
         return res.redirect('/');
     }
@@ -1827,23 +1831,27 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     if(replacing){
         passage.passages = replacement.passages;
     }
-    if(replacing && passage.mirrorEntire && passage.mirror != null){
+    if(replacing && (passage.mirror != null || passage.bestOf != null)){
         passage.lang = replacement.lang;
-        passage.title = replacement.title;
         passage.content = replacement.content;
         passage.code = replacement.code;
         passage.html = replacement.html;
         passage.css = replacement.css;
         passage.javascript = replacement.javascript;
+        passage.filename = replacement.filename;
+        passage.mimeType = replacement.mimeType;
     }
-    if(replacing && passage.bestOfEntire && passage.bestOf != null){
-        passage.lang = replacement.lang;
+    if(passage.mirrorEntire && passage.mirror != null){
         passage.title = replacement.title;
-        passage.content = replacement.content;
-        passage.code = replacement.code;
-        passage.html = replacement.html;
-        passage.css = replacement.css;
-        passage.javascript = replacement.javascript;
+    }
+    if(passage.bestOfEntire && passage.bestOf != null){
+        passage.title = replacement.title;
+    }
+    if(replacing && passage.mirror != null){
+        passage.isMirrored = true;
+    }
+    if(replacing && passage.bestOf != null){
+        passage.isBestOf = true;
     }
     passage = await getPassage(passage, false);
     if(replacing){
@@ -1853,10 +1861,10 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     console.log(passage.sourceList.length);
     if(passage.public == true && !passage.forum){
         // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-        var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
-        if(replacing){
-            var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
-        }
+        var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
+        // if(replacing){
+        //     var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
+        // }
         subPassages = subPassages.docs;
     }
     else{
@@ -1864,18 +1872,18 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
             passage.showIframe = true;
         }
         if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
-            if(replacing){
-                var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions'});
-            }
+            var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
+            // if(replacing){
+            //     var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
+            // }
             subPassages = subPassages.docs;
         }
         else{ 
             //private passages
-            var subPassages = await Passage.find({parent: passage_id, comment: false}).populate('author users sourceList collaborators versions');  
-            if(replacing){
-                var subPassages = await Passage.find({parent: replacement._id, comment: false}).populate('author users sourceList collaborators versions');
-            }
+            var subPassages = await Passage.find({parent: passage_id, comment: false}).populate('author users sourceList collaborators versions mirror bestOf best');  
+            // if(replacing){
+            //     var subPassages = await Passage.find({parent: replacement._id, comment: false}).populate('author users sourceList collaborators versions mirror bestOf best');
+            // }
             // subPassages = subPassages.filter(function(p){
             //     return p.comment ? false : true;
             // });
@@ -2219,6 +2227,8 @@ async function getRecursiveSourceList(sourceList, sources=[], passage){
             sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage);
         }
     }
+    console.log(sources);
+    sources = sources.filter(i => i);
     sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
     return sources;
 }
