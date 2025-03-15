@@ -50,13 +50,18 @@
             <textarea style="display:none;"class="passage_code" name="code" id="passage_code_<%=passage._id%>" cols="30" rows="10" autocomplete="off"><%=passage.code%></textarea>
         </div>
     <br>
+    <div style="text-align: left;">
+        <a id="yt-drop-<%=passage._id%>%>">Embed Youtube Video</a>
+        <br class="yt-dropdown-<%=passage._id%>"><br class="yt-dropdown-<%=passage._id%>">
+        <input autocomplete="off" class="yt-dropdown-<%=passage._id%> passage-yt" id="passage-yt-<%=passage._id%>"type="text"name="yt"placeholder="Link to Video"value="<%=passage.yt%>">
+    </div>
     <!-- Upload Directory -->
     <%/*%>
-    <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
+    <input style="margin-left:0px;padding-left:0px;" id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" webkitdirectory mozdirectory msdirectory odirectory directory />
     <%*/%>
-    <input id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" multiple/>
+    <input style="margin-left:0px;padding-left:0px;" id="passage_file_<%=passage._id%>"class="passage_file" name="file" type="file" autocomplete="off" multiple/>
     <%if(passage.filename){%>
-        <span id="remove-file-<%=passage._id%>"style="cursor:pointer;">Remove Files</span>
+        <span id="remove-file-<%=passage._id%>"style="cursor:pointer;"><a>Remove Files</a></span>
     <%}%>
     <div style="display:none;"id="passage_thumbnail_<%=passage._id%>">
         <img id="thumbnail_image_<%=passage._id%>"src="" alt="">

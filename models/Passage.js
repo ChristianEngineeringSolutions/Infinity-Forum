@@ -212,6 +212,7 @@ const passageSchema = mongoose.Schema({
     date: {type: Date, default: Date.now},
     parentTracker: Number, //For Forum,
     tracker: Number,
+    yt: String,
     forumType: String, //category, subcat, subforum
     stickied: {
         type: Boolean,
