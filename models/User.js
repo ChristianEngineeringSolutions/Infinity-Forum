@@ -11,7 +11,7 @@ const userSchema = mongoose.Schema({
     },
     safeMode: {
       type: Boolean,
-      default: true
+      default: false
     },
     email: {
         type: String,

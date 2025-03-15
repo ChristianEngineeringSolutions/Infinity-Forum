@@ -8,7 +8,7 @@
 }) %>
 <%-include('menu')%>
 <%-include('sidebar')%>
-<input type="hidden" id="safe-mode"value="<%=user ? user.safeMode : 'true'%>"name="">
+<input type="hidden" id="safe-mode"value="<%=user ? user.safeMode : 'false'%>"name="">
 <input type="hidden" id="is-root"value="<%=passage.id == 'root' ? 'true' : 'false'%>"name="">
 <input type="hidden" id="parent-label"value="<%=passage.id == 'root' ? 'project' : passage.label%>"name="">
 <input type="hidden" id="parent-public"value="<%=passage.public%>"name="">
