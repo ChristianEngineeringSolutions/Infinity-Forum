@@ -1,6 +1,6 @@
 distractionFree = false;
 $(function(){
-    $(document).on('click', '#bookmarks_icon', function(){
+    $(document).on('click', '#bookmarks_icon, #bookmarks-fa', function(){
         $('#left-side-panel').hide();
         $('#right_side_select').val('bookmarks').change();
         $('#side_panel').toggle();
@@ -175,7 +175,7 @@ $(function(){
         }
         var container = $("#side_panel");
         // console.log(e.target.id);
-        if(container.is(':visible') && e.target.id != 'show_brief' && e.target.id != 'bookmarks_icon' && e.target.id != 'ppe_search_icon' && (e.target.id.length > 0 && !$('#' + e.target.id).hasClass('b-bar'))){
+        if(container.is(':visible') && e.target.id != 'show_brief' && e.target.id != 'bookmarks_icon' && e.target.id != 'ppe_search_icon' && e.target.id != 'bookmarks-fa' && (e.target.id.length > 0 && !$('#' + e.target.id).hasClass('b-bar'))){
             // if the target of the click isn't the container nor a descendant of the container
             if (!container.is(e.target) && container.has(e.target).length === 0) 
             {
