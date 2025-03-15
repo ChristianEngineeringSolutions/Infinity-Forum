@@ -620,18 +620,18 @@ $(function(){
             }
         });
     });
-    $(document).on('click', '[id^="passage_comments_"]', function(e){
-        var _id = getPassageId(this);
-        let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
-        flashIcon($('#passage_comments_' + _id), 'green');
-        if($('#passage_private_'+_id).length > 0){
-            window.location.href = '/comments/' + title + '/' + _id;
-        }
-        else{
-            $('#passage_more_' + _id).click();
-        }
+    // $(document).on('click', '[id^="passage_comments_"]', function(e){
+    //     var _id = getPassageId(this);
+    //     let title = getPassageTitle(_id) == '' ? 'Untitled' : getPassageTitle(_id);
+    //     flashIcon($('#passage_comments_' + _id), 'green');
+    //     if($('#passage_private_'+_id).length > 0){
+    //         window.location.href = '/comments/' + title + '/' + _id;
+    //     }
+    //     else{
+    //         $('#passage_more_' + _id).click();
+    //     }
 
-    });
+    // });
     $(document).on('click', '[id^="passage_download_"]', function(e){
         var _id = getPassageId(this);
         var thiz = $(this);

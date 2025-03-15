@@ -121,7 +121,13 @@
         <li class="passage_option"><a class="hard-link"href="/passage/<%=passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)%>/<%=passage.id%>">Details</a></li>
         <%}%>
         <%if((typeof comments == 'undefined' || !comments) && !passage.public && !passage.forum){%>
-            <li id="passage_comments_<%=passage.id%>" class="passage_option">Comments</li>
+            <% var commentsLink = ''; %>
+            <%if(passage.public){%>
+                <%commentsLink = '/passage/' + (passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)) + '/' + passage._id;%>
+            <%}else{%>
+                <%commentsLink = '/comments/' + (passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)) + '/' + passage._id;%>
+            <%}%>
+            <li id="passage_comments_<%=passage.id%>" class="passage_option"><a class="hard-link" href="<%-commentsLink%>">Comments</a></li>
         <%}%>
         <%if(user){%>
             <li id="passage_expand_<%=passage._id%>" class="passage_option passage_option_expand">Options</li>
