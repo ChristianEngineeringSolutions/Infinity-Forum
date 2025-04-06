@@ -23,6 +23,7 @@ const axios = require("axios"); //you can use any http client
 // const nsfw = require("nsfwjs");
 var fs = require('fs'); 
 const fsp = require('fs').promises;
+const jwt = require('jsonwebtoken');
 //for daemons access to help code
 function DAEMONLIBS(passage, USERID){
     return `
@@ -73,15 +74,23 @@ const Visitor = require('./models/Visitor');
 const Follower = require('./models/Follower');
 const Notification = require('./models/Notification');
 const Star = require('./models/Star');
+const JTI = require('./models/JTI');
 // Controllers
 const passageController = require('./controllers/passageController');
 // Routes
 // const passageRoutes = require('./routes/passage');
 
+const { google } = require('googleapis');
 var fs = require('fs'); 
+const { Storage } = require('@google-cloud/storage');
+const storage = new Storage();
+const async = require('async');
+const pLimit = await import('p-limit');
+const pRetry = await import('p-retry');
 var path = require('path');
 const { exec } = require('child_process');
 const { v4 } = require('uuid');
+const magic = require('magic-number'); // For magic number detection
 
 const FormData = require('form-data');
 
@@ -132,7 +141,7 @@ async function mongoSnap(path, restore = false) {
 //       credentials: true
 //     }
   // });
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '512mb' }));
 app.use(compression());
 app.use(cors());
 app.use(helmet());
@@ -171,7 +180,7 @@ app.use(bodyParser.json({
     }
   }));
   
-app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+// app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 const MongoStore  = require('connect-mongo');
 
@@ -3710,25 +3719,371 @@ app.post('/login', async function(req, res) {
         return res.redirect('/loginform');
     }
 });
+
+// Rate limiting and retry configuration
+
+// const uploadLimit = pLimit(10); // Limit concurrent uploads
+// const uploadRateLimit = 100; // Requests per second
+// let uploadRequestCount = 0;
+// let lastUploadRequestTime = Date.now();
+// const uploadRetryOptions = {
+//     retries: 5, // Number of retries
+//     minTimeout: 1000, // Initial delay (1 second)
+//     maxTimeout: 10000, // Maximum delay (10 seconds)
+//     factor: 2, // Exponential factor (doubles the delay each retry)
+//     randomize: true, // Add random jitter to avoid thundering herd
+// };
+
+// async function uploadFileToGCS(filePath, bucketName, fileName) {
+//     const pRetryModule = await import('p-retry');
+//     const pRetry = pRetryModule.default;
+//     const uploadFunction = async () => {
+//         await storage.bucket(bucketName).upload(filePath, {
+//             destination: fileName,
+//         });
+//         console.log(`${filePath} uploaded to ${bucketName}/${fileName}`);
+//     };
+
+//     return pRetry(uploadFunction, uploadRetryOptions);
+// }
+
+// async function uploadWithRateLimit(filePath, bucketName, fileName) {
+//     const pLimitModule = await import('p-limit');
+//     const uploadLimit = pLimitModule.default(10); // Access the default export
+//     const now = Date.now();
+//     if (uploadRequestCount >= uploadRateLimit && now - lastUploadRequestTime < 1000) {
+//         await new Promise(resolve => setTimeout(resolve, 1000 - (now - lastUploadRequestTime)));
+//     }
+//     await uploadLimit(() => uploadFileToGCS(filePath, bucketName, fileName));
+//     uploadRequestCount++;
+//     lastUploadRequestTime = Date.now();
+// }
+
+// async function uploadDirectoryToGCS(directoryPath, bucketName) {
+//     const files = await fs.readdir(directoryPath);
+//     const uploadTasks = files.map(async file => {
+//         const filePath = path.join(directoryPath, file);
+//         const fileStats = await fs.stat(filePath);
+//         if (fileStats.isFile()) {
+//             return { filePath: filePath, fileName: file };
+//         } else {
+//             return null;
+//         }
+//     });
+
+//     const resolvedFiles = (await Promise.all(uploadTasks)).filter(file => file !== null);
+
+//     const uploadQueue = async.queue(async (file, callback) => {
+//         try {
+//             await uploadWithRateLimit(file.filePath, bucketName, file.fileName);
+//             callback();
+//         } catch (error) {
+//             console.error('Upload error:', error);
+//             callback(error);
+//         }
+//     }, 20);
+
+//     uploadQueue.drain = () => {
+//         console.log('All uploads complete.');
+//     };
+
+//     resolvedFiles.forEach(file => {
+//         uploadQueue.push(file);
+//     });
+// }
+
+// app.get('/upload-to-gcs', async (req, res) => {
+//     if (!req.session.user || !req.session.user.admin) {
+//         return res.redirect('/');
+//     } else {
+//         try {
+//             const folderPath1 = path.join(__dirname, 'dump');
+//             const folderPath2 = path.join(__dirname, 'dist/uploads');
+//             const folderPath3 = path.join(__dirname, 'protected');
+//             const bucketName = 'infinity-forum-backup';
+
+//             await uploadDirectoryToGCS(folderPath1, bucketName);
+//             await uploadDirectoryToGCS(folderPath2, bucketName);
+//             await uploadDirectoryToGCS(folderPath3, bucketName);
+
+//             return res.send('Folders uploaded.');
+//         } catch (error) {
+//             console.error('Error uploading to GCS:', error);
+//             res.status(500).send('Upload failed. ' + error);
+//         }
+//     }
+// });
+
+
+async function getContentType(filePath) {
+  try {
+    const ext = path.extname(filePath).toLowerCase();
+
+    // MIME types based on file extensions
+    const extToMime = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.txt': 'text/plain',
+      '.pdf': 'application/pdf',
+      '.zip': 'application/zip',
+      '.mp3': 'audio/mpeg',
+      '.mp4': 'video/mp4',
+      // Add more extensions as needed
+    };
+
+    if (extToMime[ext]) {
+      return extToMime[ext];
+    }
+
+    // Magic number detection (for more accurate MIME type)
+    const buffer = await fs.readFile(filePath);
+    const mime = magic(buffer);
+
+    if (mime) {
+      return mime;
+    }
+
+    return 'application/octet-stream'; // Default if MIME type cannot be determined
+  } catch (error) {
+    console.error('Error determining content type:', error);
+    return 'application/octet-stream'; // Default on error
+  }
+}
+
+// async function uploadDirectoryToGCS(directoryPath, token) {
+//     try {
+//         // Get all files in the directory
+//         const files = await fs.readdir(directoryPath);
+
+//         for (const file of files) {
+//             const filePath = path.join(directoryPath, file);
+//             const fileStats = await fs.stat(filePath);
+
+//             if (fileStats.isFile()) {
+//                 const fileContent = await fs.readFile(filePath);
+//                 const contentType = await getContentType(filePath);
+//                 // Get signed URL
+//                 const uploadUrlResponse = await axios.post(
+//                     'https://drive-upload-767073100741.us-central1.run.app/generate-upload-url',
+//                     { fileName: file, contentType: contentType },
+//                     { headers: { Authorization: `Bearer ${token}` } }
+//                 );
+
+//                 const uploadUrl = uploadUrlResponse.data.uploadUrl;
+
+//                 const secondJWT = uploadUrlResponse.data.secondJWT;
+
+//                 const decoded = jwt.verify(secondJWT, process.env.JWT_SECRET, {
+//                     clockTimestamp: Math.floor(Date.now() / 1000)
+//                 });
+//                 //check decoded.jti against the database for repeats
+//                 //...
+//                 var newJTI = await JTI.create({
+//                     JTI: decoded.jti
+//                 });
+//                 var previewJTIs = await JTI.find({JTI: decoded.jti});
+//                 if(previewJTIs.length > 1){
+//                     //this is an old JTI
+//                     console.error("Attempting to use an old JTI.");
+//                 }
+//                 else{
+//                     // Upload file to GCS
+//                     await axios.put(uploadUrl, fileContent, {
+//                         headers: { 'Content-Type': contentType },
+//                     });
+
+//                     console.log(`Uploaded ${file} to GCS successfully.`);
+//                 }
+//             }
+//         }
+//     } catch (error) {
+//         console.error('Error uploading files from directory:', error);
+//         throw error;
+//     }
+// }
+
+// // Example Usage
+// async function mainGCSUploadFunction(directoryToUpload, userToken) {
+//     try {
+//         await uploadDirectoryToGCS(directoryToUpload, userToken);
+//     } catch (error) {
+//         console.log('Upload Failed');
+//     }
+// }
+
+// app.get('/upload-to-gcs', async (req, res) => {
+//     if (!req.session.user || !req.session.user.admin) {
+//         return res.redirect('/');
+//     } else {
+//         try {
+//             const folderPath1 = path.join(__dirname, 'dump');
+//             const folderPath2 = path.join(__dirname, 'dist/uploads');
+//             const folderPath3 = path.join(__dirname, 'protected');
+//             const bucketName = 'infinity-forum-backup';
+//             const now = Math.floor(Date.now() / 1000); // Current Unix timestamp
+//             const jti = Math.random().toString(36).substring(2, 15); // Generate unique JWT ID
+//             const token = jwt.sign({ userId: req.session.user._id, jti: jti }, process.env.JWT_SECRET, {
+//                 expiresIn: '15m', // Short expiration
+//                 notBefore: now, // Token is not valid before the current time
+//             }); // Replace with your secret key
+
+//             await mainGCSUploadFunction('./'+folderPath1, token);
+//             await mainGCSUploadFunction('./'+folderPath2, token);
+//             await mainGCSUploadFunction('./'+folderPath3, token);
+
+//             return res.send('Folders uploaded.');
+//         } catch (error) {
+//             console.error('Error uploading to GCS:', error);
+//             res.status(500).send('Upload failed. ' + error);
+//         }
+//     }
+// });
+
+async function uploadFileWithRetry(uploadUrl, fileContent, contentType) {
+    const operation = async () => {
+        const response = await axios.put(uploadUrl, fileContent, {
+            headers: { 'Content-Type': contentType },
+        });
+        if (response.status >= 200 && response.status < 300) {
+            return response;
+        } else {
+            throw new Error(`Upload failed with status ${response.status}`);
+        }
+    };
+
+    return pRetry(operation, {
+        retries: 3, // Adjust the number of retries as needed
+        onFailedAttempt: error => {
+            console.log(`Attempt ${error.attemptNumber} failed. Retrying...`);
+        },
+    });
+}
+
+async function uploadSingleFileToGCS(filePath, token, limit) {
+    try {
+        const file = path.basename(filePath);
+        const fileContent = await fs.readFile(filePath);
+        const contentType = await getContentType(filePath);
+
+        const uploadUrlResponse = await axios.post(
+            'https://drive-upload-767073100741.us-central1.run.app/generate-upload-url',
+            { fileName: file, contentType: contentType },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const uploadUrl = uploadUrlResponse.data.uploadUrl;
+        const secondJWT = uploadUrlResponse.data.secondJWT;
+
+        const secretKey = process.env.JWT_SECRET; // Make sure secretKey is defined
+
+        const decoded = jwt.verify(secondJWT, secretKey, {
+            clockTimestamp: Math.floor(Date.now() / 1000)
+        });
+
+        const existingJTI = await JTI.findOne({ JTI: decoded.jti });
+        if (existingJTI) {
+            console.error(`Attempting to use an old JTI: ${decoded.jti}`);
+            return;
+        }
+
+        await JTI.create({ JTI: decoded.jti });
+
+        await uploadFileWithRetry(uploadUrl, fileContent, contentType);
+        console.log(`Uploaded ${file} to GCS successfully.`);
+
+    } catch (error) {
+        console.error(`Error uploading ${path.basename(filePath)}:`, error);
+    }
+}
+
+async function uploadDirectoryToGCS(directoryPath, token) {
+    try {
+        const files = await fs.readdir(directoryPath);
+        const limit = pLimit(5); // Limit concurrency to 5 (adjust as needed)
+
+        const uploadPromises = files.map(async (file) => {
+            const filePath = path.join(directoryPath, file);
+            const fileStats = await fs.stat(filePath);
+            if (fileStats.isFile()) {
+                return limit(() => uploadSingleFileToGCS(filePath, token, limit));
+            }
+        });
+
+        await Promise.all(uploadPromises);
+        console.log(`Finished processing directory: ${directoryPath}`);
+
+    } catch (error) {
+        console.error('Error uploading files from directory:', error);
+        throw error;
+    }
+}
+
+// Example Usage
+async function mainGCSUploadFunction(directoryToUpload, userToken) {
+    try {
+        await uploadDirectoryToGCS(directoryToUpload, userToken);
+    } catch (error) {
+        console.log('Upload Failed');
+    }
+}
+
+const express = require('express');
+const app = express();
+const port = 3000; // Or your existing port
+
+app.get('/upload-to-gcs', async (req, res) => {
+    if (!req.session.user || !req.session.user.admin) {
+        return res.redirect('/');
+    } else {
+        try {
+            const folderPath1 = path.join(__dirname, 'dump');
+            const folderPath2 = path.join(__dirname, 'dist/uploads');
+            const folderPath3 = path.join(__dirname, 'protected');
+            const now = Math.floor(Date.now() / 1000);
+            const jti = Math.random().toString(36).substring(2, 15);
+            const secret = await getJwtSecret();
+            const token = jwt.sign({ userId: req.session.user._id, jti: jti }, secret, {
+                expiresIn: '15m',
+                notBefore: now,
+            });
+
+            await mainGCSUploadFunction('./' + folderPath1, token);
+            await mainGCSUploadFunction('./' + folderPath2, token);
+            await mainGCSUploadFunction('./' + folderPath3, token);
+
+            return res.send('Folders upload process initiated.');
+        } catch (error) {
+            console.error('Error uploading to GCS:', error);
+            res.status(500).send('Upload failed. ' + error);
+        }
+    }
+});
+
 app.get('/dbbackup.zip', async (req, res) => {
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');
     }
     exec("mongodump", async function(){
-        var directory1 = __dirname + '/dump';
-        var AdmZip = require("adm-zip");
-        const fsp = require('fs').promises;
-        var zip1 = new AdmZip();
-        var zip2 = new AdmZip();
-        //compress /dump and /dist/uploads then send
-        const files = await readdir(directory1);
-        for(const file of files){
-            console.log(file);
-            zip1.addLocalFolder(__dirname + '/dump/' + file);
-        }
-        return res.send(zip1.toBuffer());
+        // var directory1 = __dirname + '/dump';
+        // var AdmZip = require("adm-zip");
+        // const fsp = require('fs').promises;
+        // var zip1 = new AdmZip();
+        // var zip2 = new AdmZip();
+        // //compress /dump and /dist/uploads then send
+        // const files = await readdir(directory1);
+        // for(const file of files){
+        //     console.log(file);
+        //     zip1.addLocalFolder(__dirname + '/dump/' + file);
+        // }
+        // return res.send(zip1.toBuffer());
+        return res.send('Database backed up in /dump');
     });
 });
+function getZip(which){
+
+}
 app.get('/uploadsbackup.zip', async (req, res) => {
     if(!req.session.user || !req.session.user.admin){
         return res.redirect('/');

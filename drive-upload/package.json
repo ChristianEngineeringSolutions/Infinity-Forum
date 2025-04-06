@@ -1,0 +1,12 @@
+{
+  "name": "upload-service",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.17.1",
+    "googleapis": "^87.0.0",
+    "express-fileupload": "^1.2.1",
+    "adm-zip": "^0.5.14",
+    "jsonwebtoken": "^9.0.2",
+    "@google-cloud/storage": "^7.15.2"
+  }
+}
