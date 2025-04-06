@@ -26,13 +26,16 @@
                 <%}%>
                  <div id="page_title"><%= "Admin Panel: " + decodeURIComponent(passageTitle)   || "Admin Panel"%></div>
                  <div style="margin-left:97px;margin-bottom:10px;">
-                    <a href="/dbbackup.zip">Backup and Download Database</a>
+                    <a href="/dbbackup.zip">Backup Database</a>
                  </div>
                  <div style="margin-left:97px;margin-bottom:10px;">
                     <a href="/uploadsbackup.zip">Download Uploads</a>
                  </div>
                  <div style="margin-left:97px;margin-bottom:10px;">
                     <a href="/protectedbackup.zip">Download Protected</a>
+                 </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <a href="/upload-to-gcs">Send to Google Cloud Storage (backup first)</a>
                  </div>
                  <div style="margin-left:97px;margin-bottom:10px;">
                     <form style="border: 1px solid white;width:fit-content;padding:10px"action="/restoredatabase" method="POST" enctype="multipart/form-data">
