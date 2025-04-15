@@ -13,6 +13,10 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    //has medium size alternate image
+    medium: [Boolean],
+    //use original filepath if false, orig or medium if true
+    compressed: [Boolean],
     sameUsers: {
         type: Boolean,
         default: false
