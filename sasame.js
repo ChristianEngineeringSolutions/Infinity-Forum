@@ -5409,11 +5409,28 @@ async function uploadFile(req, res, passage) {
                 try {
                     if (mimeType.split('/')[0] === 'image') {
                         await new Promise((resolveCompress) => {
-                            exec('python3 compress.py ' + partialpath + '/' + uploadTitle + ' ' + 
+                            exec('python3 compress.py "' + partialpath + '/' + uploadTitle + '" ' + 
                                  mimeType.split('/')[1] + ' ' + passage._id,
                                 (err, stdout, stderr) => {
                                     console.log(err + stdout + stderr);
                                     console.log("=Ok actually finished compressing img");
+                                    var filepath = partialpath + '/' + uploadTitle;
+                                    //change filename extension and mimetype if neccesary (converted png to jpg)
+                                    if(stdout.includes("pngconvert " + filepath)){
+                                        var pf = passage.filename[index].split('.'); //test.png
+                                        passage.filename[index] = pf.slice(0, pf.length - 1).join('.') + '.jpg'; //test.jpg
+                                    }
+                                    //update database with medium if applicable
+                                    if(stdout.includes("medium " + filepath)){
+                                        passage.medium[index] = 'true';
+                                    }else{
+                                        passage.medium[index] = 'false';
+                                    }
+                                    //if error set compressed to false and use original filepath (no appendage)
+                                    if(stdout.includes("error " + filepath)){
+                                        passage.compressed[index] = 'false';
+                                    }
+                                    await passage.save();
                                     resolveCompress();
                                 }
                             );
