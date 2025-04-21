@@ -15,6 +15,11 @@
 <%-include('sidebar')%>
 <%- include('member_box') %>
 <input id="is-forum"value="true"type="hidden" name="">
+<%if(user){%>
+	<input id="logged-in"value="true"type="hidden" name="">
+<%}else{%>
+	<input id="logged-in"value="false"type="hidden" name="">
+<%}%>
 <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage: {}, page: 'forum', whichPage: 'forum'})%>'/>
 <input id="last_search"type="hidden" name=""autocomplete="off">
 <br><br>

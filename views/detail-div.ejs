@@ -102,9 +102,21 @@
             createVideoFromImages(images, 1 * 1000, "vid-img-<%=passage._id%>-loading");
         </script>
         <%}%>
+        <%function addToFilePath(filepath, what){%>
+            <%var splitPath = filepath.split('.');%>
+            <%var firstPart = splitPath.slice(0, -1).join('.');%>
+            <%var ext = splitPath.at(-1);%>
+            <%return firstPart + what + '.' + ext;%>
+        <%}%>
         <%for(var i = 0; i < passage.filename.length; ++i){%>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
-                <img class="passage-file-<%=passage._id%> uploadedImage"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
+                <%var filename = '';%>
+                <%if(passage.medium[i] == 'true'){%>
+                    <%filename = addToFilePath(passage.filename[i], '_medium');%>
+                <%}else{%>
+                    <%filename = addToFilePath(passage.filename[i], '_orig');%>
+                <%}%>
+                <img class="passage-file-<%=passage._id%> uploadedImage"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=filename%>" alt="">
            <%}if(passage.isSVG){%>
                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}if(passage.mimeType[i] == 'model'){%>
@@ -212,7 +224,8 @@
         Download(s):
         <br>
         <%for(file of passage.filename){%>
-            <a target="_blank"href="/uploads/<%=file%>"><%=file%></a><br>
+            <%var filename = addToFilePath(file, '_orig');%>
+            <a target="_blank"href="/uploads/<%=filename%>"><%=filename%></a><br>
         <%}%>
     <%}%>
     <input id="passage_title_<%=passage._id%>"class="passage_title" value="<%=passage.title%>" type="hidden"name="title"placeholder="Title">
