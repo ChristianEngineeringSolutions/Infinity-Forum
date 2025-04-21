@@ -4343,18 +4343,7 @@ async function deletePassage(passage){
             }
         });
         if(passages.length == 1){
-            var where = passage.personal ? 'protected': 'uploads';
-            fs.unlink('dist/'+where+'/'+filename, function(err){
-                if (err && err.code == 'ENOENT') {
-                    // file doens't exist
-                    console.info("File doesn't exist, won't remove it.");
-                } else if (err) {
-                    // other errors, e.g. maybe we don't have enough permission
-                    console.error("Error occurred while trying to remove file");
-                } else {
-                    console.info(`removed upload for deleted passage`);
-                }
-            });
+            await deleteOldUploads(passage);
         }
     }
     var passages = await Passage.find({parent:passage._id});
@@ -5336,6 +5325,7 @@ async function uploadProfilePhoto(req, res){
 async function deleteOldUploads(passage){
     const Passage = require('./models/Passage');
     var where = passage.personal ? 'protected' : 'uploads';
+    var index = 0;
     for(const f of passage.filename){
         console.log(f);
         var passages = await Passage.find({
@@ -5353,10 +5343,32 @@ async function deleteOldUploads(passage){
             console.log("FILEPATH TO UNLINK:" + passage.filename);
             try{
                 if(passage.filename.length > 0){
-                    await fsp.unlink(path);
+                    // await fsp.unlink(path); //deprecated
+                    var splitPath = path.split('.');
+                    var firstPart = splitPath.slice(0, -1).join('.');
+                    var ext = splitPath.at(-1);
+                    var orig = firstPart + '_orig.' + ext;
+                    var medium = firstPart + '_medium.' + ext;
+                    //unlink _orig
+                    await fsp.unlink(orig);
+                    console.log("Removed original version of upload.");
+                    //unlink _medium
+                    if(passage.medium[index] == true){
+                        console.log("MEDIUM INDEX EXISTED");
+                        await fsp.unlink(medium);
+                        console.log("Removed medium version of upload.");
+                    }
+                    else{
+                        console.log("MEDIUM INDEX NOT EXISTS: " + (passage.medium[index] == 'true') + (passage.medium[index] == true));
+                    }
                     console.info(`removed old upload`);
                     var filteredArray = passage.filename.filter(e => e !== f)
                     passage.filename = filteredArray;
+                    passage.mimeType.splice(index, 1);
+                    passage.medium.splice(index, 1);
+                    passage.compressed.splice(index, 1);
+                    passage.markModified('medium');
+                    passage.markModified('compressed');
                 }
             }
             catch(e){
@@ -5366,6 +5378,7 @@ async function deleteOldUploads(passage){
                 passage.filename = [];
             }
         }
+        ++index;
     }
     await passage.save();
 }
@@ -5411,25 +5424,36 @@ async function uploadFile(req, res, passage) {
                         await new Promise((resolveCompress) => {
                             exec('python3 compress.py "' + partialpath + '/' + uploadTitle + '" ' + 
                                  mimeType.split('/')[1] + ' ' + passage._id,
-                                (err, stdout, stderr) => {
-                                    console.log(err + stdout + stderr);
+                                async (err, stdout, stderr) => {
+                                    console.log(err);
+                                    console.log(stdout);
+                                    console.log(stderr);
                                     console.log("=Ok actually finished compressing img");
                                     var filepath = partialpath + '/' + uploadTitle;
                                     //change filename extension and mimetype if neccesary (converted png to jpg)
-                                    if(stdout.includes("pngconvert " + filepath)){
+                                    if(stdout.includes("pngconvert " + __dirname + '/' +  filepath)){
                                         var pf = passage.filename[index].split('.'); //test.png
-                                        passage.filename[index] = pf.slice(0, pf.length - 1).join('.') + '.jpg'; //test.jpg
+                                        passage.filename[index] = pf.slice(0, -1).join('.') + '.jpg'; //test.jpg
+                                        console.log(passage.filename[index]);
                                     }
                                     //update database with medium if applicable
-                                    if(stdout.includes("medium " + filepath)){
+                                    if(stdout.includes("medium " + __dirname + '/' + filepath)){
+                                        console.log("PASSAGE.MEDIUM=TRUE");
                                         passage.medium[index] = 'true';
                                     }else{
                                         passage.medium[index] = 'false';
                                     }
+                                    console.log("NODEJS FILEPATH: " + "medium " + __dirname + '/' + filepath);
+                                    console.log(stdout.includes("medium " + __dirname + '/' + filepath));
+                                    console.log(stdout.includes("medium"));
                                     //if error set compressed to false and use original filepath (no appendage)
                                     if(stdout.includes("error " + filepath)){
                                         passage.compressed[index] = 'false';
+                                    }else{
+                                        passage.compressed[index] = 'true';
                                     }
+                                    passage.markModified('compressed');
+                                    passage.markModified('medium');
                                     await passage.save();
                                     resolveCompress();
                                 }

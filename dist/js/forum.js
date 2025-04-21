@@ -138,7 +138,7 @@
 							//console.log("length: " +old.length + "\nCurrent: " + current + "\nData: " + old);
 							block = false;
 							nav();
-							if (page == 'cat' || page == 'thread') {
+							if ((page == 'cat' || page == 'thread') && $('#logged-in').val() == 'true') {
 								$('#forum-pages').html('<button id="forum-post">New Post</button>');
 							} else {
 								$('#forum-pages').html('');
