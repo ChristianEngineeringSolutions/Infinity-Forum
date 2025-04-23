@@ -5567,6 +5567,74 @@ async function uploadFile(req, res, passage) {
     await passage.save();
     console.log(passage.filename + "TEST");
 }
+//One time code to compress all images on the site
+// (async function(){
+//     await updateImagesToUseSizeFlags();
+// })();
+//only for .png, .jpg, and .jpeg
+async function updateImagesToUseSizeFlags(){
+    var passages = await Passage.find({});
+    for(const passage of passages){
+        console.log("passage");
+        const where = passage.personal ? 'protected' : 'uploads';
+        const fullpath = where === 'protected' ? './' + where : './dist/' + where;
+        const partialpath = where === 'protected' ? where : 'dist/' + where;
+        const simplepath = where;
+        let index = 0;
+        for(const f of passage.filename){
+            //dont update unless it's these
+            if(!['jpg', 'jpeg', 'png', 'webp'].includes(f.split('.').at(-1))){
+                continue;
+            }
+            const uploadTitle = f;
+            await new Promise((resolveCompress) => {
+                exec('python3 compress.py "' + partialpath + '/' + uploadTitle + '"',
+                    async (err, stdout, stderr) => {
+                        console.log(err);
+                        console.log(stdout);
+                        console.log(stderr);
+                        console.log("=Ok actually finished compressing img");
+                        var filepath = partialpath + '/' + uploadTitle;
+                        //change filename extension and mimetype if neccesary (converted png to jpg)
+                        if(stdout.includes("pngconvert " + __dirname + '/' +  filepath)){
+                            var pf = passage.filename[index].split('.'); //test.png
+                            passage.filename[index] = pf.slice(0, -1).join('.') + '.jpg'; //test.jpg
+                            console.log(passage.filename[index]);
+                        }
+                        //update database with medium if applicable
+                        if(stdout.includes("medium " + __dirname + '/' + filepath)){
+                            console.log("PASSAGE.MEDIUM=TRUE");
+                            passage.medium[index] = 'true';
+                        }else{
+                            passage.medium[index] = 'false';
+                        }
+                        console.log("NODEJS FILEPATH: " + "medium " + __dirname + '/' + filepath);
+                        console.log(stdout.includes("medium " + __dirname + '/' + filepath));
+                        console.log(stdout.includes("medium"));
+                        //if error set compressed to false and use original filepath (no appendage)
+                        if(stdout.includes("error " + filepath)){
+                            passage.compressed[index] = 'false';
+                        }else{
+                            passage.compressed[index] = 'true';
+                            try{
+                                await fsp.unlink(__dirname + '/' + filepath);
+                            }
+                            catch(e){
+                                console.log("No file to unlink.");
+                            }
+                        }
+                        passage.markModified('compressed');
+                        passage.markModified('medium');
+                        await passage.save();
+                        resolveCompress();
+                    }
+                );
+            });
+            ++index;
+        }
+    }
+    console.log("All done updating images.");
+}
 app.get('/verify/:user_id/:token', function (req, res) {
     var user_id = req.params.user_id;
     var token = req.params.token;
