@@ -338,6 +338,115 @@ app.use(async function(req, res, next) {
 // app.all('*', async (req, res) => {
 //     res.render('construction');
 // });
+const isAdminLoggedIn = (req, res, next) => {
+  if (req.session.user && req.session.user.admin === true) {
+    req.isAdmin = true; // Set a flag for the next middleware
+    return next();
+  }
+  req.isAdmin = false;
+  next();
+};
+
+const enforceUnderConstruction = (req, res, next) => {
+  const allowedPaths = [
+    '/loginform',
+    '/jquery-ui.min.js',
+    '/jquery-ui.css',
+    '/jquery.modal.min.js',
+    '/jquery.modal.js',
+    '/jquery.modal.min.css',
+    '/data.json',
+    '/ionicons.esm.js',
+    '/ionicons.js',
+    '/p-9c97a69a.js',
+    '/p-c1aa32dd.entry.js',
+    '/p-85f22907.js',
+    '/quill.snow.css',
+    '/quill.min.js',
+    '/highlight.css',
+    '/highlight.js',
+    '/caret-down.svg',
+    '/jquery.min.js',
+    '/under-construction',
+    '/get_bookmarks',
+    '/get_daemons'
+  ];
+
+  // Allow all requests from admins
+  if (req.isAdmin) {
+    return next();
+  }
+
+  // For non-admins, enforce under construction for non-allowed GET requests
+  if (req.method === 'GET' && !allowedPaths.includes(req.path)) {
+    return res.redirect(302, '/under-construction'); // Redirect to the under construction page
+  }
+
+  next(); // Allowed GET path or a non-GET request for non-admins
+};
+
+const sendUnderConstruction = (req, res) => {
+  return res.status(503).send('<h1>Under Construction</h1><p>We are currently working on the site. Please check back later.</p>');
+};
+
+// Apply isAdminLoggedIn first to set the isAdmin flag
+app.use(isAdminLoggedIn);
+
+// Apply the under construction enforcement
+app.use(enforceUnderConstruction);
+
+// Route for the under construction page itself
+app.get('/under-construction', sendUnderConstruction);
+
+// --- Routes that must work under construction ---
+app.get('/loginform', function(req, res){
+    res.render('login_register', {scripts: scripts});
+  });
+app.get('/get_bookmarks', async (req, res) => {
+    // let bookmarks = [];
+    // if(req.session.user){
+    //     let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
+    //     bookmarks = user.bookmarks;
+    // }
+    // for(const bookmark of bookmarks){
+    //     bookmarks[bookmark] = bubbleUpAll(bookmark);
+    // }
+    var bookmarks = await Bookmark.find({user: req.session.user}).sort('-_id').populate('passage');
+    // for(const bookmark of bookmarks){
+    //     bookmarks[bookmark].passage = bubbleUpAll(bookmark.passage);
+    // }
+    for(const bookmark of bookmarks){
+        try{
+        if(bookmark.passage != null){
+            if(bookmark.passage.mirror != null){
+                if(bookmark.passage.mirrorEntire){
+                    var mirror = await Passage.findOne({_id:bookmark.passage.mirror._id});
+                    bookmark.passage.title = mirror.title;
+                }
+            }
+            if(bookmark.passage.bestOf != null){
+                if(bookmark.passage.bestOfEntire){
+                    var mirror = await Passage.findOne({parent:bookmark.passage.bestOf._id}).sort('-stars');
+                    bookmark.passage.title = mirror.title;
+                }
+            }
+        }
+        }catch(e){
+            console.log(e);
+        }
+    }
+    res.render('bookmarks', {bookmarks: bookmarks});
+});
+app.get('/get_daemons', async (req, res) => {
+    let daemons = [];
+    if(req.session.user){
+        let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
+        daemons = user.daemons;
+    }
+    let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
+    daemons = daemons.concat(defaults);
+    res.render('daemons', {daemons: daemons});
+});
 //Serving Files
 app.get('/jquery.min.js', function(req, res) {
     res.sendFile(__dirname + '/node_modules/jquery/dist/jquery.min.js');
@@ -390,6 +499,12 @@ app.get('/highlight.js', function(req, res) {
 app.get('/caret-down.svg', function(req, res) {
     res.send(__dirname + '/node_modules/ionicons/dist/svg/caret-down.svg');
 });
+
+
+// --- THEN, THE CATCH-ALL UNDER CONSTRUCTION ROUTE ---
+// app.get('*', sendUnderConstruction);
+
+// ... your other routes (e.g., POST for login, etc.) ...
 
 
 //CRON
@@ -971,9 +1086,6 @@ app.get('/notifications', async (req, res) => {
             notifications: notifications
         });
 });
-app.get('/loginform', function(req, res){
-    res.render('login_register', {scripts: scripts});
-  });
 app.post('/get_username_number', async function(req, res){
     let name = req.body.name;
     let number = await User.countDocuments({name:name.trim()}) + 1;
@@ -2745,51 +2857,6 @@ app.post('/transfer_bookmark', async (req, res) => {
         var title = passage.title == '' ? 'Untitled' : passage.title;
         return res.send('<div data-token="'+passage._id+'"data-title="'+title+'"class="new-source">"'+title+'" Added to Sourcelist.</div>');
     }
-});
-app.get('/get_bookmarks', async (req, res) => {
-    // let bookmarks = [];
-    // if(req.session.user){
-    //     let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
-    //     bookmarks = user.bookmarks;
-    // }
-    // for(const bookmark of bookmarks){
-    //     bookmarks[bookmark] = bubbleUpAll(bookmark);
-    // }
-    var bookmarks = await Bookmark.find({user: req.session.user}).sort('-_id').populate('passage');
-    // for(const bookmark of bookmarks){
-    //     bookmarks[bookmark].passage = bubbleUpAll(bookmark.passage);
-    // }
-    for(const bookmark of bookmarks){
-        try{
-        if(bookmark.passage != null){
-            if(bookmark.passage.mirror != null){
-                if(bookmark.passage.mirrorEntire){
-                    var mirror = await Passage.findOne({_id:bookmark.passage.mirror._id});
-                    bookmark.passage.title = mirror.title;
-                }
-            }
-            if(bookmark.passage.bestOf != null){
-                if(bookmark.passage.bestOfEntire){
-                    var mirror = await Passage.findOne({parent:bookmark.passage.bestOf._id}).sort('-stars');
-                    bookmark.passage.title = mirror.title;
-                }
-            }
-        }
-        }catch(e){
-            console.log(e);
-        }
-    }
-    res.render('bookmarks', {bookmarks: bookmarks});
-});
-app.get('/get_daemons', async (req, res) => {
-    let daemons = [];
-    if(req.session.user){
-        let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
-        daemons = user.daemons;
-    }
-    let defaults = await Passage.find({default_daemon: true}).populate('author users sourceList');
-    daemons = daemons.concat(defaults);
-    res.render('daemons', {daemons: daemons});
 });
 app.post('/add_daemon', async (req, res) => {
     if(req.session.user){
