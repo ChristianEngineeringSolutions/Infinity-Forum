@@ -4083,40 +4083,45 @@ async function accessSecret(secretName) {
 });
     });
     app.post('/restoreuploads', async (req, res) => {
-        if (!req.files || Object.keys(req.files).length === 0 || !req.files.file) {
-            return res.status(400).send('No files were uploaded.');
-        }
-
-        const fileToUpload = req.files.file;
-        const uploadPath = path.join(__dirname, 'tmp', 'uploads.zip');
-        const extractPath = path.join(__dirname, 'dist', 'uploads');
-
         try {
+            // Check if files were uploaded
+            if (!req.files || Object.keys(req.files).length === 0 || !req.files.file) {
+                return res.status(400).send('No files were uploaded.');
+            }
+            
+            const fileToUpload = req.files.file;
+            const uploadPath = path.join(__dirname, 'tmp', 'uploads.zip');
+            const extractPath = path.join(__dirname, 'dist', 'uploads');
+            
             // Ensure the destination directory exists
-            await fs.mkdir(extractPath, { recursive: true });
-
+            // await fs.mkdir(extractPath, { recursive: true });
+            
+            // Move the file
             await new Promise((resolve, reject) => {
-                fileToUpload.mv(uploadPath, async (err) => {
+                fileToUpload.mv(uploadPath, (err) => {
                     if (err) {
                         console.error("Error moving uploaded file:", err);
                         reject(err);
-                        return res.status(500).send("Error uploading file.");
-                    }
-                    resolve();
-                    try {
-                        const zip1 = new AdmZip(uploadPath);
-                        zip1.extractAllTo(extractPath);
-                        await fsp.unlink(uploadPath);
-                        return res.send("Uploads restored.");
-                    } catch (zipError) {
-                        console.error("Error processing ZIP file:", zipError);
-                        return res.status(500).send("Error processing ZIP file.");
+                    } else {
+                        resolve();
                     }
                 });
             });
+            
+            // Process the ZIP file
+            const zip1 = new AdmZip(uploadPath);
+            zip1.extractAllTo(extractPath);
+            await fsp.unlink(uploadPath);
+            
+            // Send response after all operations are complete
+            res.send("Uploads restored.");
+            
         } catch (error) {
-            console.error("Overall error:", error);
-            return res.status(500).send("An error occurred during the upload and restore process.");
+            console.error("Error processing request:", error);
+            // Only send response if one hasn't been sent already
+            if (!res.headersSent) {
+                res.status(500).send("An error occurred during the upload and restore process.");
+            }
         }
     });
     app.post('/restoreprotected', async (req, res) => {
