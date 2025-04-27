@@ -69,7 +69,7 @@
 let client;
 
 async function accessSecret(secretName) {
-  if (process.env.REMOTE == false) {
+  if (process.env.REMOTE == 'true') {
     if (!client) {
       client = new SecretManagerServiceClient();
     }
@@ -117,7 +117,7 @@ async function accessSecret(secretName) {
     const readdir = promisify(fs.readdir);
     //pagination for home and profile
     const DOCS_PER_PAGE = 10; // Documents per Page Limit (Pagination)
-
+    
     // Database Connection Setup
     mongoose.connect((await accessSecret("MONGODB_CONNECTION_URL")), {
         useNewUrlParser: true,
@@ -4055,17 +4055,41 @@ async function accessSecret(secretName) {
         });
     });
     app.post('/restoreuploads', async (req, res) => {
-        var AdmZip = require("adm-zip");
-        const fsp = require('fs').promises;
-        var files = req.files;
-        // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-        var fileToUpload = req.files.file;
-        fileToUpload.mv('./tmp/uploads.zip', async function(err) {
-            var zip1 = new AdmZip(__dirname + '/tmp/uploads.zip');
-            zip1.extractAllTo(__dirname + '/dist/uploads/');
-            await fsp.unlink(__dirname + "/tmp/uploads.zip");
-            return res.send("Uploads restored.");
-        });
+        if (!req.files || Object.keys(req.files).length === 0 || !req.files.file) {
+            return res.status(400).send('No files were uploaded.');
+        }
+
+        const fileToUpload = req.files.file;
+        const uploadPath = path.join(__dirname, 'tmp', 'uploads.zip');
+        const extractPath = path.join(__dirname, 'dist', 'uploads');
+
+        try {
+            // Ensure the destination directory exists
+            await fs.mkdir(extractPath, { recursive: true });
+
+            await new Promise((resolve, reject) => {
+                fileToUpload.mv(uploadPath, async (err) => {
+                    if (err) {
+                        console.error("Error moving uploaded file:", err);
+                        reject(err);
+                        return res.status(500).send("Error uploading file.");
+                    }
+                    resolve();
+                    try {
+                        const zip1 = new AdmZip(uploadPath);
+                        zip1.extractAllTo(extractPath);
+                        await fsp.unlink(uploadPath);
+                        return res.send("Uploads restored.");
+                    } catch (zipError) {
+                        console.error("Error processing ZIP file:", zipError);
+                        return res.status(500).send("Error processing ZIP file.");
+                    }
+                });
+            });
+        } catch (error) {
+            console.error("Overall error:", error);
+            return res.status(500).send("An error occurred during the upload and restore process.");
+        }
     });
     app.post('/restoreprotected', async (req, res) => {
         var AdmZip = require("adm-zip");
