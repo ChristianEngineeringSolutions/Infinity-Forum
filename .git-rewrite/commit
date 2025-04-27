@@ -1,0 +1,6 @@
+tree 13c0e47d0dba8f7522069d5c3af8601d61f74bbb
+parent b26963226a299c65a6c1008dc3b17d2bcc33ce22
+author Uriah Sanders <uriahsanders@christianengineeringsolutions> 1674783490 -0800
+committer Uriah Sanders <uriahsanders@christianengineeringsolutions> 1674783490 -0800
+
+Removing legacy code. Did updates to packages etc. few commits ago. Working on permissions. Start of basic leaderboard.

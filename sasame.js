@@ -4083,6 +4083,7 @@ async function accessSecret(secretName) {
 });
     });
     app.post('/restoreuploads', async (req, res) => {
+	var AdmZip = require("adm-zip");
         if (!req.files || Object.keys(req.files).length === 0 || !req.files.file) {
             return res.status(400).send('No files were uploaded.');
         }
@@ -4093,7 +4094,7 @@ async function accessSecret(secretName) {
 
         try {
             // Ensure the destination directory exists
-            await fs.mkdir(extractPath, { recursive: true });
+            //await fs.mkdir(extractPath, { recursive: true });
 
             await new Promise((resolve, reject) => {
                 fileToUpload.mv(uploadPath, async (err) => {
