@@ -5713,7 +5713,7 @@ async function accessSecret(secretName) {
     }
     //One time code to compress all images on the site
     (async function(){
-        await updateImagesToUseSizeFlags();
+        //await updateImagesToUseSizeFlags();
     })();
     //only for .png, .jpg, and .jpeg
     async function updateImagesToUseSizeFlags(){

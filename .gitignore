@@ -10,3 +10,4 @@ protected/*
 .env
 restart.sh
 collections.tar
+tmp/*
