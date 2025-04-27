@@ -69,7 +69,7 @@
 let client;
 
 async function accessSecret(secretName) {
-  if (process.env.REMOTE == false) {
+  if (process.env.REMOTE == 'true') {
     if (!client) {
       client = new SecretManagerServiceClient();
     }
@@ -4043,16 +4043,44 @@ async function accessSecret(secretName) {
         var files = req.files;
         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
         var fileToUpload = req.files.file;
-        fileToUpload.mv('./tmp/db.zip', async function(err) {
-            var zip1 = new AdmZip(__dirname + '/tmp/db.zip');
-            zip1.extractAllTo(__dirname + '/dump/sasame/');
-            await fsp.rename(__dirname + "/dump/sasame/system.version.bson", __dirname + "/dump/admin/system.version.bson");
-            await fsp.rename(__dirname + "/dump/sasame/system.version.metadata.json", __dirname + "/dump/admin/system.version.metadata.json");
-            await fsp.unlink(__dirname + "/tmp/db.zip");
-            exec("mongorestore", async function(){
-               return res.send("Database restored."); 
-            });
+	    fileToUpload.mv('./tmp/db.zip', async function(err) {
+    if (err) {
+        console.error("Error moving uploaded file:", err);
+        return res.status(500).send("Error uploading and processing file.");
+    }
+
+    try {
+        const zip1 = new AdmZip(__dirname + '/tmp/db.zip');
+        zip1.extractAllTo(__dirname + '/dump/sasame/');
+        await fsp.rename(__dirname + "/dump/sasame/system.version.bson", __dirname + "/dump/admin/system.version.bson");
+        await fsp.rename(__dirname + "/dump/sasame/system.version.metadata.json", __dirname + "/dump/admin/system.version.metadata.json");
+        await fsp.unlink(__dirname + "/tmp/db.zip");
+	var pwd = await accessSecret("MONGO_PASSWORD");
+	let mongorestore;
+	if (process.env.REMOTE == 'true') {
+	    mongorestore = `mongorestore --username ${process.env.MONGO_USER} --password '${req.body.password}'`;
+	} else {
+	    mongorestore = 'mongorestore';
+	}
+        exec(`${mongorestore} --authenticationDatabase admin`, async function(error, stdout, stderr) {
+            if (error) {
+                console.error("Error during mongorestore:", error);
+                return res.status(500).send("Error restoring database.");
+            }
+            console.log("mongorestore stdout:", stdout);
+            console.error("mongorestore stderr:", stderr);
+            return res.send("Database restored.");
         });
+    } catch (error) {
+        console.error("Error processing ZIP file:", error);
+        // Handle the AdmZip or file system errors
+        if (error.message === 'Invalid filename') {
+            return res.status(400).send("Invalid ZIP file provided.");
+        } else {
+            return res.status(500).send("Error processing ZIP file.");
+        }
+    }
+});
     });
     app.post('/restoreuploads', async (req, res) => {
         var AdmZip = require("adm-zip");
@@ -5660,9 +5688,9 @@ async function accessSecret(secretName) {
         console.log(passage.filename + "TEST");
     }
     //One time code to compress all images on the site
-    // (async function(){
-    //     await updateImagesToUseSizeFlags();
-    // })();
+    (async function(){
+        await updateImagesToUseSizeFlags();
+    })();
     //only for .png, .jpg, and .jpeg
     async function updateImagesToUseSizeFlags(){
         var passages = await Passage.find({});
