@@ -6,17 +6,25 @@ const { v4 } = require('uuid');
 const passageSchema = mongoose.Schema({
     author: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        default: null
     },
     //author is first user
     users: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        default: []
     }],
     //has medium size alternate image
-    medium: [Boolean],
+    medium: {
+        type: [String],
+        default: []
+    },
     //use original filepath if false, orig or medium if true
-    compressed: [Boolean],
+    compressed: {
+        type: [String],
+        default: []
+    },
     sameUsers: {
         type: Boolean,
         default: false
@@ -32,23 +40,28 @@ const passageSchema = mongoose.Schema({
     //who wants notifications
     watching: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        default: []
     }],
     starrers: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        default: []
     }],
     interactions: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Interaction'
+        ref: 'Interaction',
+        default: []
     }],
     versions: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
     versionOf: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: null
     },
     uuid: {
         type: String,
@@ -73,7 +86,10 @@ const passageSchema = mongoose.Schema({
         default: false
     },
     //to help user apps (store JSON)
-    metadata: String,
+    metadata: {
+        type: String,
+        default: ''
+    },
     html: {
         type: String,
         default: ''
@@ -91,14 +107,20 @@ const passageSchema = mongoose.Schema({
         default: ``
     }, //included libs for JS, for starting synthetic passages
     //for daemons:
-    param: String,
+    param: {
+        type: String,
+        default: ''
+    },
     //to replace html/css/javascript
     code: {
         type: String,
         default: ''
         // index: true
     },
-    bibliography: String,
+    bibliography: {
+        type: String,
+        default: ''
+    },
     //can be enabled by default in passage settings
     distraction_free: {
         type: Boolean,
@@ -138,7 +160,10 @@ const passageSchema = mongoose.Schema({
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Tag'
     // }],
-    tags: String, //["tag1", "tag2", "tag3", ...]
+    tags: {
+        type: String,
+        default: ''
+    }, //["tag1", "tag2", "tag3", ...]
     /**
      * {
      *  "tag1": {
@@ -150,14 +175,19 @@ const passageSchema = mongoose.Schema({
     // From original to previous passage source
     sourceList : [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
     //Send them to the server with the sources if they are external
-    sourceLink: String,
+    sourceLink: {
+        type: String,
+        default: ''
+    },
     //for keeping track of contributors peer to peer or from local pushes
     collaborators: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        default: []
     }],
     content: {
         type: String,
@@ -180,44 +210,69 @@ const passageSchema = mongoose.Schema({
     //parent passage the passage belongs to
     parent: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: null
     },
     // sub passages under this passage
     passages: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
     comments: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
     subforums: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
     // daemons to be used as functions in passage
     daemons: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
     alternates: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
     // 
     input: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: []
     }],
-    output: String,
+    output: {
+        type: String,
+        default: ''
+    },
     //result of evaluating the output
-    final: String,
+    final: {
+        type: String,
+        default: ''
+    },
     //date of creation
     date: {type: Date, default: Date.now},
-    parentTracker: Number, //For Forum,
-    tracker: Number,
-    yt: String,
-    forumType: String, //category, subcat, subforum
+    parentTracker: {
+        type: Number,
+        default: 0
+    }, //For Forum,
+    tracker: {
+        type: Number,
+        default: 0
+    },
+    yt: {
+        type: String,
+        default: ''
+    },
+    forumType: {
+        type: String,
+        default: ''
+    }, //category, subcat, subforum
     stickied: {
         type: Boolean,
         default: false
@@ -244,10 +299,22 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     }, //content warning
-    filename: [String], // associated file
-    filenames: [String], //If we go with file upload multiple
-    thumbnail: String, //For models, vids, etc.
-    mimeType: [String],
+    filename: {
+        type: [String],
+        default: []
+    }, // associated file
+    filenames: {
+        type: [String],
+        default: []
+    }, //If we go with file upload multiple
+    thumbnail: {
+        type: String,
+        default: ''
+    }, //For models, vids, etc.
+    mimeType: {
+        type: [String],
+        default: []
+    },
     deleted: {
         type: Boolean,
         default: false
@@ -298,7 +365,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    license: String,
+    license: {
+        type: String,
+        default: ''
+    },
     isPorn: {
         type: [Number],
         default: [0]
@@ -313,19 +383,23 @@ const passageSchema = mongoose.Schema({
     },
     mirror: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: null
     },
     best: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: null
     },
     repost: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: null
     },
     bestOf: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
+        ref: 'Passage',
+        default: null
     },
     mirrorContent: {
         type: Boolean,
@@ -343,8 +417,8 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     }
-
 });
+
 var autoPopulateChildren = function(next) {
     this.populate('passages');
     this.populate('author');
@@ -362,3 +436,10 @@ passageSchema
 passageSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Passage', passageSchema, 'Passages');
+
+const currentSchemaKeysArray = Object.keys(passageSchema.paths);
+
+module.exports = {
+  Passage: mongoose.model('Passage', passageSchema, 'Passages'),
+  PassageSchema: passageSchema
+};

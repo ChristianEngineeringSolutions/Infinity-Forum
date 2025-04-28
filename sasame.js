@@ -83,8 +83,8 @@ async function accessSecret(secretName) {
 }
 
     // Models
-    const User = require('./models/User');
-    const Passage = require('./models/Passage');
+    const {User, UserSchema} = require('./models/User');
+    const { Passage, PassageSchema } = require('./models/Passage');
     const Interaction = require('./models/Interaction');
     const Category = require('./models/Category');
     const Subcat = require('./models/Subcat');
@@ -5543,6 +5543,31 @@ async function accessSecret(secretName) {
             fileToUpload = [fileToUpload];
         }
 
+        //Check file sizes
+        for(const file of fileToUpload){
+            const mimeType = file.mimetype;
+            // Check if the file is an image and its size exceeds 20MB (20 * 1024 * 1024 bytes)
+            if (mimeType.startsWith('image/') && file.size > 20 * 1024 * 1024) {
+                console.log(`Image "${file.name}" exceeds the 20MB limit.`);
+                // You should handle this error appropriately, e.g., send an error response to the client
+                return res.send(`Image "${file.name}" is too large (max 20MB).`);
+            }
+            // Check if the file is an image and its size exceeds 250MB (250 * 1024 * 1024 bytes)
+            if (mimeType.startsWith('video/') && file.size > 250 * 1024 * 1024) {
+                console.log(`Video "${file.name}" exceeds the 250MB limit.`);
+                // You should handle this error appropriately, e.g., send an error response to the client
+                return res.send(`Video "${file.name}" is too large (max 250MB).`);
+            }
+            else{
+                // File has 250MB (250 * 1024 * 1024 bytes) limit
+                if (file.size > 250 * 1024 * 1024) {
+                    console.log(`File "${file.name}" exceeds the 250MB limit.`);
+                    // You should handle this error appropriately, e.g., send an error response to the client
+                    return res.send(`File "${file.name}" is too large (max 250MB).`);
+                }
+            }
+        }
+
         // Process files sequentially using for...of loop
         let index = 0;
         for (const file of fileToUpload) {
@@ -5574,36 +5599,7 @@ async function accessSecret(secretName) {
                                 exec('python3 compress.py "' + partialpath + '/' + uploadTitle + '" ' + 
                                      mimeType.split('/')[1] + ' ' + passage._id,
                                     async (err, stdout, stderr) => {
-                                        console.log(err);
-                                        console.log(stdout);
-                                        console.log(stderr);
-                                        console.log("=Ok actually finished compressing img");
-                                        var filepath = partialpath + '/' + uploadTitle;
-                                        //change filename extension and mimetype if neccesary (converted png to jpg)
-                                        if(stdout.includes("pngconvert " + __dirname + '/' +  filepath)){
-                                            var pf = passage.filename[index].split('.'); //test.png
-                                            passage.filename[index] = pf.slice(0, -1).join('.') + '.jpg'; //test.jpg
-                                            console.log(passage.filename[index]);
-                                        }
-                                        //update database with medium if applicable
-                                        if(stdout.includes("medium " + __dirname + '/' + filepath)){
-                                            console.log("PASSAGE.MEDIUM=TRUE");
-                                            passage.medium[index] = 'true';
-                                        }else{
-                                            passage.medium[index] = 'false';
-                                        }
-                                        console.log("NODEJS FILEPATH: " + "medium " + __dirname + '/' + filepath);
-                                        console.log(stdout.includes("medium " + __dirname + '/' + filepath));
-                                        console.log(stdout.includes("medium"));
-                                        //if error set compressed to false and use original filepath (no appendage)
-                                        if(stdout.includes("error " + filepath)){
-                                            passage.compressed[index] = 'false';
-                                        }else{
-                                            passage.compressed[index] = 'true';
-                                        }
-                                        passage.markModified('compressed');
-                                        passage.markModified('medium');
-                                        await passage.save();
+                                        await handleCompression(err, stdout, stderr, passage, partialpath, uploadTitle, index);
                                         resolveCompress();
                                     }
                                 );
@@ -5720,6 +5716,46 @@ async function accessSecret(secretName) {
     (async function(){
         //await updateImagesToUseSizeFlags();
     })();
+    async function handleCompression(err, stdout, stderr, passage, partialpath, uploadTitle, index){
+        console.log(err);
+        console.log(stdout);
+        console.log(stderr);
+        console.log("=Ok actually finished compressing img");
+        passage.medium = passage.medium || [];
+        passage.compressed = passage.compressed || [];
+        var filepath = partialpath + '/' + uploadTitle;
+        //change filename extension and mimetype if neccesary (converted png to jpg)
+        if(stdout.includes("pngconvert " + __dirname + '/' +  filepath)){
+            var pf = passage.filename[index].split('.'); //test.png
+            passage.filename[index] = pf.slice(0, -1).join('.') + '.jpg'; //test.jpg
+            console.log(passage.filename[index]);
+        }
+        //update database with medium if applicable
+        if(stdout.includes("medium " + __dirname + '/' + filepath)){
+            console.log("PASSAGE.MEDIUM=TRUE");
+            passage.medium[index] = 'true';
+        }else{
+            passage.medium[index] = 'false';
+        }
+        console.log("NODEJS FILEPATH: " + "medium " + __dirname + '/' + filepath);
+        console.log(stdout.includes("medium " + __dirname + '/' + filepath));
+        console.log(stdout.includes("medium"));
+        //if error set compressed to false and use original filepath (no appendage)
+        if(stdout.includes("error " + filepath)){
+            passage.compressed[index] = 'false';
+        }else{
+            passage.compressed[index] = 'true';
+            try{
+                await fsp.unlink(__dirname + '/' + filepath);
+            }
+            catch(e){
+                console.log("No file to unlink.");
+            }
+        }
+        passage.markModified('compressed');
+        passage.markModified('medium');
+        await passage.save();
+    }
     //only for .png, .jpg, and .jpeg
     async function updateImagesToUseSizeFlags(){
         var passages = await Passage.find({});
@@ -5739,42 +5775,7 @@ async function accessSecret(secretName) {
                 await new Promise((resolveCompress) => {
                     exec('python3 compress.py "' + partialpath + '/' + uploadTitle + '"',
                         async (err, stdout, stderr) => {
-                            console.log(err);
-                            console.log(stdout);
-                            console.log(stderr);
-                            console.log("=Ok actually finished compressing img");
-                            var filepath = partialpath + '/' + uploadTitle;
-                            //change filename extension and mimetype if neccesary (converted png to jpg)
-                            if(stdout.includes("pngconvert " + __dirname + '/' +  filepath)){
-                                var pf = passage.filename[index].split('.'); //test.png
-                                passage.filename[index] = pf.slice(0, -1).join('.') + '.jpg'; //test.jpg
-                                console.log(passage.filename[index]);
-                            }
-                            //update database with medium if applicable
-                            if(stdout.includes("medium " + __dirname + '/' + filepath)){
-                                console.log("PASSAGE.MEDIUM=TRUE");
-                                passage.medium[index] = 'true';
-                            }else{
-                                passage.medium[index] = 'false';
-                            }
-                            console.log("NODEJS FILEPATH: " + "medium " + __dirname + '/' + filepath);
-                            console.log(stdout.includes("medium " + __dirname + '/' + filepath));
-                            console.log(stdout.includes("medium"));
-                            //if error set compressed to false and use original filepath (no appendage)
-                            if(stdout.includes("error " + filepath)){
-                                passage.compressed[index] = 'false';
-                            }else{
-                                passage.compressed[index] = 'true';
-                                try{
-                                    await fsp.unlink(__dirname + '/' + filepath);
-                                }
-                                catch(e){
-                                    console.log("No file to unlink.");
-                                }
-                            }
-                            passage.markModified('compressed');
-                            passage.markModified('medium');
-                            await passage.save();
+                            await handleCompression(err, stdout, stderr, passage, partialpath, uploadTitle, index);
                             resolveCompress();
                         }
                     );
@@ -5784,6 +5785,53 @@ async function accessSecret(secretName) {
         }
         console.log("All done updating images.");
     }
+    //okay so we have two issues
+    //1.The out of memory error means we have to create _medium files for each _orig without a medium if the size is over 500px width
+    //2.we need to update medium=true for all passages with a _medium file; and give defaults for other new fields
+    //3.Create a function that updates all fields with a default value
+    //create a _medium file for every _orig file
+    async function createMediumFilesForOrig(){
+        var where = 'uploads';
+        const fullpath = where === 'protected' ? './' + where : './dist/' + where;
+        const partialpath = where === 'protected' ? where : 'dist/' + where;
+        const simplepath = where;
+        var files = await fsp.readdir('./dist/uploads');
+        console.log(files);
+        for(const file of files){
+            var tag = file.split('_').at(-1);
+            if(tag == 'orig'){
+                var mediums = [];
+                var index = 0;
+                for(const f of files){
+                    var t = f.split('_').at(-1);
+                    if(t == 'medium'){
+                        mediums.push('medium');
+                    }
+                    //if on last iteration
+                    if(index === files.length - 1){
+                        if(mediums.length === 0){
+                            //there is no medium file for this _orig
+                            //run it through compress.py
+                            //get passage for file and update its params
+                            await new Promise((resolveCompress) => {
+                                exec('python3 compress.py "' + partialpath + '/' + file + '"',
+                                    async (err, stdout, stderr) => {
+                                        await handleCompression(err, stdout, stderr, passage, partialpath, uploadTitle, index);
+                                        resolveCompress();
+                                    }
+                                );
+                            });
+                        }
+                    }
+                    ++index;
+                }
+            }
+        }
+    };
+    //One time code
+    (async function(){
+        // await createMediumFilesForOrig();
+    })();
     app.get('/verify/:user_id/:token', function (req, res) {
         var user_id = req.params.user_id;
         var token = req.params.token;
