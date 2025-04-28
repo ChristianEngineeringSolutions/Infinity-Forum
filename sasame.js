@@ -3870,8 +3870,6 @@ async function accessSecret(secretName) {
         }
 
         // Magic number detection (for more accurate MIME type)
-        // Since 'magic' function is used in your code but not defined,
-        // you'll need to implement or import the appropriate library
         try {
           const buffer = await fsp.readFile(filePath);
           const mime = magic(buffer);  // You'll need to ensure 'magic' is properly defined/imported
@@ -3891,16 +3889,13 @@ async function accessSecret(secretName) {
     }
 
     // Helper function to upload a file with retry logic
-    async function uploadFileWithRetry(filePath, fileName, gcsFolder, bucketName) {
+    async function uploadFileWithRetry(filePath, gcsFilePath, bucketName) {
       const { default: pRetry } = await import('p-retry');
       
       const operation = async () => {
         try {
           const contentType = await getContentType(filePath);
           const fileContent = await fs.readFile(filePath);
-          
-          // Create full GCS path with folder
-          const gcsFilePath = `${gcsFolder}/${fileName}`;
           
           // Upload directly to GCS using the Storage client
           await storage.bucket(bucketName).file(gcsFilePath).save(fileContent, {
@@ -3910,50 +3905,66 @@ async function accessSecret(secretName) {
             }
           });
           
-          console.log(`Uploaded ${fileName} to GCS path ${gcsFilePath} successfully.`);
+          console.log(`Uploaded to GCS path ${gcsFilePath} successfully.`);
           return true;
         } catch (error) {
-          console.error(`Error during upload attempt for ${fileName}:`, error);
+          console.error(`Error during upload attempt for ${gcsFilePath}:`, error);
           throw error; // Throw to trigger retry
         }
       };
       
       return pRetry(operation, { 
         retries: 3, 
-        onFailedAttempt: error => console.log(`Attempt ${error.attemptNumber} failed for ${fileName}. Retrying...`) 
+        onFailedAttempt: error => console.log(`Attempt ${error.attemptNumber} failed for ${gcsFilePath}. Retrying...`) 
       });
     }
 
-    // Process a batch of files with concurrency limit
-    async function processFileUploadBatch(fileBatch, directoryPath, gcsFolder, bucketName) {
+    // Function to recursively process a directory and its subdirectories
+    async function processDirectory(localDirPath, gcsFolderBase, bucketName, basePath = '') {
       const { default: pLimit } = await import('p-limit');
-      const limit = pLimit(5); // Concurrency limit - adjust as needed
-      const uploadPromises = [];
-
-      for (const fileName of fileBatch) {
-        const filePath = path.join(directoryPath, fileName);
+      const limit = pLimit(5); // Concurrency limit
+      
+      try {
+        // Read the contents of the directory
+        const entries = await fs.readdir(path.join(localDirPath, basePath), { withFileTypes: true });
+        const uploadPromises = [];
         
-        uploadPromises.push(limit(async () => {
-          try {
-            // Check if it's a regular file before attempting to upload
-            const stats = await fs.stat(filePath);
-            if (!stats.isFile()) {
-              console.log(`Skipping ${fileName} as it's not a regular file.`);
-              return;
-            }
+        // Process each entry (file or directory)
+        for (const entry of entries) {
+          const entryRelativePath = path.join(basePath, entry.name);
+          const entryFullPath = path.join(localDirPath, entryRelativePath);
+          
+          if (entry.isDirectory()) {
+            // Create the corresponding GCS subfolder
+            const gcsSubfolderPath = `${gcsFolderBase}/${entryRelativePath}`;
+            await createGcsFolder(gcsSubfolderPath, bucketName);
             
-            // Upload file with retry
-            await uploadFileWithRetry(filePath, fileName, gcsFolder, bucketName);
-          } catch (error) {
-            console.error(`Error processing file ${fileName}:`, error);
+            // Recursively process subdirectory
+            await processDirectory(localDirPath, gcsFolderBase, bucketName, entryRelativePath);
+          } else if (entry.isFile()) {
+            // Upload file with limited concurrency
+            uploadPromises.push(limit(async () => {
+              try {
+                // Determine the GCS path for this file
+                const gcsFilePath = `${gcsFolderBase}/${entryRelativePath}`;
+                await uploadFileWithRetry(entryFullPath, gcsFilePath, bucketName);
+              } catch (error) {
+                console.error(`Error processing file ${entryRelativePath}:`, error);
+              }
+            }));
           }
-        }));
+        }
+        
+        // Wait for all file uploads at this level to complete
+        await Promise.all(uploadPromises);
+        
+      } catch (error) {
+        console.error(`Error processing directory ${path.join(localDirPath, basePath)}:`, error);
+        throw error;
       }
-
-      await Promise.all(uploadPromises); // Wait for all uploads in the batch to complete
     }
 
-    // Main function to upload files from a directory to GCS
+    // Main function to upload a directory and all its subdirectories to GCS
     async function uploadDirectoryToGCS(directoryPath, bucketName) {
       try {
         // Get directory name from path
@@ -3961,29 +3972,17 @@ async function accessSecret(secretName) {
         
         // Create GCS folder with directory name and timestamp
         const timestamp = getFormattedDateTime();
-        const gcsFolder = `${dirName}_${timestamp}`;
+        const gcsFolderBase = `${dirName}_${timestamp}`;
         
-        // Create the GCS folder before uploading files
-        await createGcsFolder(gcsFolder, bucketName);
+        // Create the root GCS folder
+        await createGcsFolder(gcsFolderBase, bucketName);
         
-        console.log(`Starting upload of ${directoryPath} to GCS folder: ${gcsFolder}`);
+        console.log(`Starting upload of ${directoryPath} to GCS folder: ${gcsFolderBase}`);
         
-        const files = await fs.readdir(directoryPath);
-        const batchSize = 100;
-        const numBatches = Math.ceil(files.length / batchSize);
-        const allBatchPromises = []; // Array to hold promises for all batches
+        // Process the directory and all its subdirectories
+        await processDirectory(directoryPath, gcsFolderBase, bucketName);
         
-        for (let i = 0; i < numBatches; i++) {
-          const startIndex = i * batchSize;
-          const endIndex = Math.min((i + 1) * batchSize, files.length);
-          const fileBatch = files.slice(startIndex, endIndex);
-          
-          // Process each batch
-          allBatchPromises.push(processFileUploadBatch(fileBatch, directoryPath, gcsFolder, bucketName));
-        }
-        
-        await Promise.all(allBatchPromises); // Wait for all batches to complete
-        console.log(`Finished processing directory: ${directoryPath} to GCS folder: ${gcsFolder}`);
+        console.log(`Finished processing directory: ${directoryPath} to GCS folder: ${gcsFolderBase}`);
         return true;
       } catch (error) {
         console.error('Error uploading files from directory:', error);
