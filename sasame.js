@@ -3812,8 +3812,42 @@ async function accessSecret(secretName) {
         }
     });
 
+    // Helper function to get a formatted date/time string for folder names
+    function getFormattedDateTime() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+
+    // Create a folder in Google Cloud Storage
+    async function createGcsFolder(folderPath, bucketName) {
+      try {
+        // In GCS, folders are simulated by creating a 0-byte object with a trailing slash
+        const folderObject = storage.bucket(bucketName).file(`${folderPath}/`);
+        
+        // Check if folder already exists
+        const [exists] = await folderObject.exists();
+        if (!exists) {
+          // Create the folder by writing an empty file with folder metadata
+          await folderObject.save('', {
+            metadata: {
+              contentType: 'application/x-directory'
+            }
+          });
+          console.log(`Created GCS folder: ${folderPath}/`);
+        } else {
+          console.log(`GCS folder already exists: ${folderPath}/`);
+        }
+        
+        return true;
+      } catch (error) {
+        console.error(`Error creating GCS folder ${folderPath}:`, error);
+        throw error;
+      }
+    }
+
+    // Helper function to determine content type based on file extension
     async function getContentType(filePath) {
-        const fsp = require('fs').promises;
+      const fsp = require('fs').promises;
       try {
         const ext = path.extname(filePath).toLowerCase();
 
@@ -3836,11 +3870,17 @@ async function accessSecret(secretName) {
         }
 
         // Magic number detection (for more accurate MIME type)
-        const buffer = await fsp.readFile(filePath);
-        const mime = magic(buffer);
+        // Since 'magic' function is used in your code but not defined,
+        // you'll need to implement or import the appropriate library
+        try {
+          const buffer = await fsp.readFile(filePath);
+          const mime = magic(buffer);  // You'll need to ensure 'magic' is properly defined/imported
 
-        if (mime) {
-          return mime;
+          if (mime) {
+            return mime;
+          }
+        } catch (magicError) {
+          console.error('Error with magic number detection:', magicError);
         }
 
         return 'application/octet-stream'; // Default if MIME type cannot be determined
@@ -3850,138 +3890,138 @@ async function accessSecret(secretName) {
       }
     }
 
-
-    async function uploadFileWithRetry(uploadUrl, fileContent, contentType) {
-        const { default: pRetry } = await import('p-retry');
-        const operation = async () => {
-            const response = await axios.put(uploadUrl, fileContent, { headers: { 'Content-Type': contentType } });
-            if (response.status >= 200 && response.status < 300) return response;
-            throw new Error(`Upload failed with status ${response.status}`);
-        };
-        return pRetry(operation, { retries: 3, onFailedAttempt: error => console.log(`Attempt ${error.attemptNumber} failed. Retrying...`) });
-    }
-
-    async function processFileUploadBatch(uploadInfoBatch, directoryPath) {
-        const fsp = require('fs').promises;
-        // const pLimit = await import('p-limit'); 
-        const { default: pLimit } = await import('p-limit');
-        const limit = pLimit(5); // Reintroduce concurrency limit (adjust as needed)
-        const uploadPromises = [];
-
-        for (const item of uploadInfoBatch) {
-            const { uploadUrl, secondJWT, fileName } = item;
-            const filePath = path.join(directoryPath, fileName);
-
-            uploadPromises.push(limit(async () => { // Wrap the upload logic with the concurrency limit
-                try {
-                    const secretKey = await getJwtSecret();
-                    const decodedSecondJWT = jwt.verify(secondJWT, secretKey, { clockTimestamp: Math.floor(Date.now() / 1000) });
-
-                    const existingJTI = await JTI.findOne({ JTI: decodedSecondJWT.jti });
-                    if (existingJTI) {
-                        console.warn(`Attempting to reuse JTI: ${decodedSecondJWT.jti} for file: ${fileName}`);
-                        return; // Skip this file
-                    }
-
-                    await JTI.create({ JTI: decodedSecondJWT.jti });
-                    const fileContent = await fsp.readFile(filePath);
-                    const contentType = await getContentType(filePath);
-                    await uploadFileWithRetry(uploadUrl, fileContent, contentType);
-                    console.log(`Uploaded ${fileName} to GCS successfully.`);
-
-                } catch (error) {
-                    console.error(`Error processing upload for ${fileName}:`, error);
-                }
-            }));
-        }
-
-        await Promise.all(uploadPromises); // Wait for all uploads in the batch to complete
-    }
-
-    async function uploadDirectoryToGCS(directoryPath, backupToken) {
+    // Helper function to upload a file with retry logic
+    async function uploadFileWithRetry(filePath, fileName, gcsFolder, bucketName) {
+      const { default: pRetry } = await import('p-retry');
+      
+      const operation = async () => {
         try {
-            const fsp = require('fs').promises;
-            const files = await fsp.readdir(directoryPath);
-            const batchSize = 100;
-            const numBatches = Math.ceil(files.length / batchSize);
-            const allBatchPromises = []; // Array to hold promises for all batches
-
-            for (let i = 0; i < numBatches; i++) {
-                const startIndex = i * batchSize;
-                const endIndex = Math.min((i + 1) * batchSize, files.length);
-                const fileBatch = await Promise.all(files.slice(startIndex, endIndex).map(async file => ({
-                    fileName: file,
-                    contentType: await getContentType(path.join(directoryPath, file)),
-                })));
-
-                const uploadInfoResponse = await axios.post(
-                    'https://drive-upload-767073100741.us-central1.run.app/generate-bulk-upload-urls',
-                    { files: fileBatch },
-                    { headers: { Authorization: `Bearer ${backupToken}` } }
-                );
-                allBatchPromises.push(processFileUploadBatch(uploadInfoResponse.data, directoryPath));
+          const contentType = await getContentType(filePath);
+          const fileContent = await fs.readFile(filePath);
+          
+          // Create full GCS path with folder
+          const gcsFilePath = `${gcsFolder}/${fileName}`;
+          
+          // Upload directly to GCS using the Storage client
+          await storage.bucket(bucketName).file(gcsFilePath).save(fileContent, {
+            contentType: contentType,
+            metadata: {
+              contentType: contentType
             }
-
-            await Promise.all(allBatchPromises); // Wait for all batches to complete
-            console.log(`Finished processing directory: ${directoryPath}`);
-
+          });
+          
+          console.log(`Uploaded ${fileName} to GCS path ${gcsFilePath} successfully.`);
+          return true;
         } catch (error) {
-            console.error('Error uploading files from directory:', error);
-            throw error;
+          console.error(`Error during upload attempt for ${fileName}:`, error);
+          throw error; // Throw to trigger retry
         }
+      };
+      
+      return pRetry(operation, { 
+        retries: 3, 
+        onFailedAttempt: error => console.log(`Attempt ${error.attemptNumber} failed for ${fileName}. Retrying...`) 
+      });
     }
 
-    async function mainGCSUploadFunction(directoryToUpload, userToken) {
-        try {
-            await uploadDirectoryToGCS(directoryToUpload, userToken); // Await the directory upload
-        } catch (error) {
-            console.log(`Upload Failed for directory: ${directoryToUpload}`);
-            throw error; // Re-throw to be caught in the main route
-        }
+    // Process a batch of files with concurrency limit
+    async function processFileUploadBatch(fileBatch, directoryPath, gcsFolder, bucketName) {
+      const { default: pLimit } = await import('p-limit');
+      const limit = pLimit(5); // Concurrency limit - adjust as needed
+      const uploadPromises = [];
+
+      for (const fileName of fileBatch) {
+        const filePath = path.join(directoryPath, fileName);
+        
+        uploadPromises.push(limit(async () => {
+          try {
+            // Check if it's a regular file before attempting to upload
+            const stats = await fs.stat(filePath);
+            if (!stats.isFile()) {
+              console.log(`Skipping ${fileName} as it's not a regular file.`);
+              return;
+            }
+            
+            // Upload file with retry
+            await uploadFileWithRetry(filePath, fileName, gcsFolder, bucketName);
+          } catch (error) {
+            console.error(`Error processing file ${fileName}:`, error);
+          }
+        }));
+      }
+
+      await Promise.all(uploadPromises); // Wait for all uploads in the batch to complete
     }
 
+    // Main function to upload files from a directory to GCS
+    async function uploadDirectoryToGCS(directoryPath, bucketName) {
+      try {
+        // Get directory name from path
+        const dirName = path.basename(directoryPath);
+        
+        // Create GCS folder with directory name and timestamp
+        const timestamp = getFormattedDateTime();
+        const gcsFolder = `${dirName}_${timestamp}`;
+        
+        // Create the GCS folder before uploading files
+        await createGcsFolder(gcsFolder, bucketName);
+        
+        console.log(`Starting upload of ${directoryPath} to GCS folder: ${gcsFolder}`);
+        
+        const files = await fs.readdir(directoryPath);
+        const batchSize = 100;
+        const numBatches = Math.ceil(files.length / batchSize);
+        const allBatchPromises = []; // Array to hold promises for all batches
+        
+        for (let i = 0; i < numBatches; i++) {
+          const startIndex = i * batchSize;
+          const endIndex = Math.min((i + 1) * batchSize, files.length);
+          const fileBatch = files.slice(startIndex, endIndex);
+          
+          // Process each batch
+          allBatchPromises.push(processFileUploadBatch(fileBatch, directoryPath, gcsFolder, bucketName));
+        }
+        
+        await Promise.all(allBatchPromises); // Wait for all batches to complete
+        console.log(`Finished processing directory: ${directoryPath} to GCS folder: ${gcsFolder}`);
+        return true;
+      } catch (error) {
+        console.error('Error uploading files from directory:', error);
+        throw error;
+      }
+    }
+
+    // Route to trigger the GCS upload process
     app.get('/upload-to-gcs', async (req, res) => {
-        if (!req.session.user || !req.session.user.admin) {
-            return res.redirect('/');
-        } else {
-            const secret = (await getJwtSecret()).trim();
-            const now = Math.floor(Date.now() / 1000);
-            const jti = Math.random().toString(36).substring(2, 15);
-            const notBefore = now - (60 * 5);
-            const backupToken = jwt.sign({ userId: req.session.user._id, jti: jti, type: 'backup' }, secret, {
-                    expiresIn: '1h',
-                    notBefore: -1*(60 * 5),
-                });
-            const decodedTokenServer = jwt.decode(backupToken);
-            try {
-                const folderPath1 = path.join(__dirname, 'dump');
-                const folderPath2 = path.join(__dirname, 'dist/uploads');
-
-
-                // For testing:
-                // const decodedBackupToken = jwt.verify(backupToken, secret, {clockTimestamp: Math.floor(Date.now() / 1000)});
-                // return res.send(decodedBackupToken.type);
-
-
-                // const folderPath3 = path.join(__dirname, 'protected');
-                await JTI.create({ JTI: jti });
-
-                await Promise.all([ // Wait for all directory uploads to complete
-                    mainGCSUploadFunction(folderPath1, backupToken),
-                    mainGCSUploadFunction(folderPath2, backupToken),
-                    // mainGCSUploadFunction(folderPath3, backupToken),
-                ]);
-
-                return res.send('Backup process completed.'); // Change the message
-            } catch (error) {
-                console.error('Error uploading to GCS:', error);
-                res.status(500).send('Upload failed. ' + secret.length + ';' + backupToken + ';' + 'UTC nbf:' + notBefore + ';' + "Server decoded nbf:" + decodedTokenServer.nbf + ';' + error);
-            }
+      if (!req.session.user || !req.session.user.admin) {
+        return res.redirect('/');
+      } else {
+        try {
+          const bucketName = 'infinity-forum-backup';
+          
+          const folderPath1 = path.join(__dirname, 'dump');
+          const folderPath2 = path.join(__dirname, 'dist/uploads');
+          const folderPath3 = path.join(__dirname, 'protected');
+          
+          // Upload directories in parallel
+          await Promise.all([
+            uploadDirectoryToGCS(folderPath1, bucketName),
+            uploadDirectoryToGCS(folderPath2, bucketName),
+            uploadDirectoryToGCS(folderPath3, bucketName)
+          ]);
+          
+          return res.send('Backup process completed successfully.');
+        } catch (error) {
+          console.error('Error uploading to GCS:', error);
+          res.status(500).send('Upload failed: ' + error.message);
         }
+      }
     });
-    async function getJwtSecret() {
-        return await accessSecret("JWT_SECRET");
-    }
+
+    const port = process.env.PORT || 8080;
+    app.listen(port, () => {
+      console.log(`Server listening on port ${port}`);
+    });
     app.get('/dbbackup.zip', async (req, res) => {
         if(!req.session.user || !req.session.user.admin){
             return res.redirect('/');
