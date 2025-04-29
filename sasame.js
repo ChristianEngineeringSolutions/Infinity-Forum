@@ -703,7 +703,7 @@ async function accessSecret(secretName) {
         var star = await Star.create({
             user: userID,
             passage: passage._id,
-            amount: 1,
+            amount: amount,
             sources: sources,
             single: false,
             system: null //not relevant since we cant unstar these so just make it null
@@ -6482,9 +6482,6 @@ async function accessSecret(secretName) {
                 console.log('Exit code:', code);
                 console.log('Program output:', output);
                 });
-            //restart.sh (Server file)
-            //echo "password" | sudo pm2 reload sasame
-            // echo "password" | sudo systemctl restart nginx
 
             }
         });
