@@ -44,7 +44,7 @@ if [ "$COUNT" -lt "$MAX_CALLS" ]; then
   echo "$CURRENT_TIME" >> "$LOCK_FILE"
   
   # Restart nginx
-  sudo /usr/bin/systemctl restart nginx
+  sudo /usr/bin/systemctl reload nginx
   RESTART_EXIT_CODE=$?
   echo "DEBUG: Nginx restart exit code: $RESTART_EXIT_CODE"
 else
