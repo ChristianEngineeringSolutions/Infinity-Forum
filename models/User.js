@@ -13,6 +13,10 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+    test: {
+      type: Boolean,
+      default: false
+    },
     email: {
         type: String,
         unique: true,
@@ -29,9 +33,18 @@ const userSchema = mongoose.Schema({
         type: String,
         required: true,
       },
-    name: String,
-    thumbnail: String,
-    about: String,
+    name: {
+      type: String,
+      default: ''
+    },
+    thumbnail: {
+      type: String,
+      default: ''
+    },
+    about: {
+      type: String,
+      default: ''
+    },
     developer: {
       type: Boolean,
       default: false
@@ -56,7 +69,10 @@ const userSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
-    token: String,
+    token: {
+      type: String,
+      default: ''
+    },
     deleted: {
         type: Boolean,
         default: false
@@ -69,7 +85,6 @@ const userSchema = mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Passage'
     }],
-    // Background scripts
     daemons: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Passage'
@@ -94,13 +109,19 @@ const userSchema = mongoose.Schema({
     room: {
       type: String,
       default: 'root'
-    }, //handle sockets by passage
+    },
     stripeOnboardingComplete: {
       type: Boolean,
       default: false
     },
-    recoveryToken: String,
-    recoveryExp: Date,
+    recoveryToken: {
+      type: String,
+      default: ''
+    },
+    recoveryExp: {
+      type: Date,
+      default: null
+    },
     amountEarned: {
         type: Number,
         default: 0
@@ -113,7 +134,10 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
-
 });
+
 userSchema.plugin(mongoosePaginate);
-module.exports = mongoose.model('User', userSchema, 'Users');
+module.exports = {
+  User: mongoose.model('User', userSchema, 'Users'),
+  UserSchema: userSchema
+};
