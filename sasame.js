@@ -3895,7 +3895,7 @@ async function accessSecret(secretName) {
       const operation = async () => {
         try {
           const contentType = await getContentType(filePath);
-          const fileContent = await fs.readFile(filePath);
+          const fileContent = await fsp.readFile(filePath);
           
           // Upload directly to GCS using the Storage client
           await storage.bucket(bucketName).file(gcsFilePath).save(fileContent, {
@@ -3926,7 +3926,7 @@ async function accessSecret(secretName) {
       
       try {
         // Read the contents of the directory
-        const entries = await fs.readdir(path.join(localDirPath, basePath), { withFileTypes: true });
+        const entries = await fsp.readdir(path.join(localDirPath, basePath), { withFileTypes: true });
         const uploadPromises = [];
         
         // Process each entry (file or directory)
@@ -6290,7 +6290,7 @@ async function accessSecret(secretName) {
                 console.log('Program output:', output);
                 });
             //restart.sh (Server file)
-            //echo "password" | sudo pm2 restart sasame
+            //echo "password" | sudo pm2 reload sasame
             // echo "password" | sudo systemctl restart nginx
 
             }
