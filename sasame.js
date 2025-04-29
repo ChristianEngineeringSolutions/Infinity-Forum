@@ -6477,7 +6477,7 @@ async function accessSecret(secretName) {
             //happens after write on dev
             if(process.env.REMOTE){
                 var shell = require('shelljs');
-                    var bash = 'sh ' + __dirname + 'restart.sh';
+                    var bash = 'bash ' + __dirname + 'restart.sh';
                 shell.exec(bash, function(code, output) {
                 console.log('Exit code:', code);
                 console.log('Program output:', output);
