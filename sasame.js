@@ -291,7 +291,7 @@ async function accessSecret(secretName) {
         else if(maxToGiveOut < usd){
             usd = maxToGiveOut;
         }
-        return usd;
+        return 0.20 * usd; //give out in 20% increments
     }
     scripts.getBest = async function(passage){
         return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
@@ -567,8 +567,8 @@ async function accessSecret(secretName) {
         for(const user of users){
             // if(!user.paymentsLocked){
                 //appropriate percentage based on stars
-                //users get same allotment as they have percentage of stars
-                let userUSD = parseInt((await percentStars(user.starsGiven)) * usd);
+                //users get same allotment as they have percentage of stars given
+                let userUSD = parseInt((await percentStarsGiven(user.starsGiven)) * usd);
                 try{
                     // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                     //     userUSD = 600 - user.amountEarnedThisYear;
@@ -607,8 +607,8 @@ async function accessSecret(secretName) {
     //     await rewardUsers();
     // })();
     //get percentage of total stars
-    async function percentStars(user_stars){
-        let final = user_stars / (await totalStars());
+    async function percentStarsGiven(user_stars){
+        let final = user_stars / (await totalStarsGiven());
         return final;
     }
     //get percentage of total usd
@@ -633,7 +633,7 @@ async function accessSecret(secretName) {
         }
         return usd;
     }
-    async function totalStars(){
+    async function totalStarsGiven(){
         let users = await User.find({stripeOnboardingComplete: true});
         if(users == false){
             return 0;
@@ -690,8 +690,11 @@ async function accessSecret(secretName) {
     }
     async function starPassage(req, amount, passageID, userID, deplete=true){
         let user = await User.findOne({_id: userID});
+        if(isNaN(amount) || amount == 0){
+            return 'Please enter a number greater than 0.';
+        }
         //infinite stars on a local sasame
-        if(user.stars < amount && process.env.REMOTE == 'true'){
+        if(user.stars < amount && process.env.REMOTE == 'false'){
             return "Not enough stars.";
         }
         if(deplete){
@@ -725,13 +728,13 @@ async function accessSecret(secretName) {
                     console.log("working, " + starrer.name);
                     //give the starrer 1% of each entry
                     let subtotal = 0.01 * loggedStar.amount * amount;
-                    starrer.stars += subtotal;
                     totalForStarrer += subtotal;
                     console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
                 }
                 sourceLog.push(source);
             }
             // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+            starrer.stars += totalForStarrer;
             await starrer.save();
         }
         //log the amount starred
@@ -1065,7 +1068,7 @@ async function accessSecret(secretName) {
             bookmarks = getBookmarks(req.session.user);
         }
         var usd = 0;
-        usd = parseInt((await percentStars(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
+        usd = parseInt((await percentStarsGiven(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
         if(isNaN(usd)){
             usd = 0;
         }
@@ -2501,7 +2504,7 @@ async function accessSecret(secretName) {
             return getRemotePage(req, res);
         }
         var usd = await totalUSD();
-        var stars = await totalStars();
+        var stars = await totalStarsGiven();
         res.render('donate', {
             passage: {id: 'root'}, usd: ((await scripts.getMaxToGiveOut())/100), stars: stars,
             totalUSD: usd/100,
@@ -3265,7 +3268,13 @@ async function accessSecret(secretName) {
             if(user){
                 var totalAmount = await totalUSD();
                 var amountToAdd = 0;
-                amountToAdd = (await percentUSD(parseInt(amount))) * (await totalStars());
+                var totalStarsGiven = await totalStarsGiven();
+                var percentUSD = await percentUSD(parseInt(amount));
+                //percentUSD returns 1 if its value is 0
+                amountToAdd = percentUSD * totalStarsGiven;
+                if(totalStarsGiven == 0){
+                    amountToAdd = 100;
+                }
                 user.stars += amountToAdd;
                 await user.save();
             }
@@ -3282,7 +3291,7 @@ async function accessSecret(secretName) {
                 subscriber.subscribed = true;
                 subscriber.lastSubscribed = new Date();
                 let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-                subscriber.stars += (await percentUSD(80 * 100 * monthsSubscribed)) * (await totalStars());
+                subscriber.stars += (await percentUSD(80 * 100 * monthsSubscribed)) * (await totalStarsGiven());
                 await subscriber.save();
             }
         }
@@ -3366,7 +3375,7 @@ async function accessSecret(secretName) {
         response.status(200).end();
       });
       function getStarsFromUSD(usd){
-        return percentUSD(usd) * totalStars();
+        return percentUSD(usd) * totalStarsGiven();
       }
     app.post('/unsubscribe', async function(req, res){
         if(req.session.user){
@@ -5137,14 +5146,24 @@ async function accessSecret(secretName) {
                 sessionUser.stars -= parseInt(amount);
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
                 await sessionUser.save();
-                passage = await getPassage(passage);
+                if(typeof passage === 'object' && passage !== null){
+                    passage = await getPassage(passage);
+                }
+                else{
+                    return res.send(passage);
+                }
                 passage.location = await returnPassageLocation(passage);
                 return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
             }
             else if(process.env.REMOTE == 'false'){
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
                 await sessionUser.save();
-                passage = await getPassage(passage);
+                if(typeof passage === 'object' && passage !== null){
+                    passage = await getPassage(passage);
+                }
+                else{
+                    return res.send(passage);
+                }
                 passage.location = await returnPassageLocation(passage);
                 return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
             }

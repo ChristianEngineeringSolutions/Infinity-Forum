@@ -922,6 +922,17 @@ $(function(){
         var thiz = $(this);
         var passage_id = $(this).attr('id').split('_').at(-1);
         var amount = $('#star_number_' + passage_id).val();
+        amount = parseInt(amount, 10);
+        if (isNaN(amount) || amount < 1) {
+          alert('Please enter a valid quantity greater than 0.');
+          return;
+        }
+        var data = {
+                passage_id: passage_id,
+                amount: amount,
+                parent: $('#chief_passage_id').val()
+            };
+        // alert(JSON.stringify(data));
         $.ajax({
             url: '/star_passage/',
             // url: DOMAIN + '/star_passage/' + fromOtro,
@@ -932,11 +943,16 @@ $(function(){
                 parent: $('#chief_passage_id').val()
             },
             success: function(data){
-                if(data[0] == 'N'){
-                    thisPassage(thiz).prepend(data);
+                if(data == 'Not enough stars.' || data == 'Please enter a number greater than 0.'){
+                    alert(data);
                 }
                 else{
-                    thisPassage(thiz).replaceWith(data);
+                    if(data[0] == 'N'){
+                        thisPassage(thiz).prepend(data);
+                    }
+                    else{
+                        thisPassage(thiz).replaceWith(data);
+                    }
                 }
             }
         });
