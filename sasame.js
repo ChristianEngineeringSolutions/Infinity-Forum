@@ -697,8 +697,43 @@ async function accessSecret(secretName) {
         if(deplete){
             user.stars -= amount;
         }
+        if(passageID.includes('_')){
+            passageID = passageID.split('_').at(-1);
+        }
         let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
         var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+        //Give starring user stars for each logged stars at 1% rate
+        var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources');
+        var totalForStarrer = 0;
+        for(const loggedStar of loggedStars){
+            var starrer = loggedStar.user;
+            var sourceLog = [];
+            if(req.session.user._id.toString() != starrer._id.toString()){
+                totalForStarrer = 0.01 * loggedStar.amount * amount;
+                console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
+            }
+            // console.log("Logged sources: " + loggedStar.sources);
+            for(const source of loggedStar.sources){
+                //if the author of the passage is not the one who did the starring
+                // console.log(source.author._id.toString() != starrer._id.toString());
+                //only give each starrer each source one time &&
+                //a starrer will not get back stars from their own passages &&
+                //you dont get stars back when starring a passage, only when others star it
+                if(!sourceLog.includes(source) && 
+                    source.author._id.toString() != starrer._id.toString() && 
+                    req.session.user._id.toString() != starrer._id.toString()){
+                    console.log("working, " + starrer.name);
+                    //give the starrer 1% of each entry
+                    let subtotal = 0.01 * loggedStar.amount * amount;
+                    starrer.stars += subtotal;
+                    totalForStarrer += subtotal;
+                    console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                }
+                sourceLog.push(source);
+            }
+            // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+            await starrer.save();
+        }
         //log the amount starred
         var star = await Star.create({
             user: userID,
@@ -2350,7 +2385,7 @@ async function accessSecret(secretName) {
             // sourcePassage = await getPassage(sourcePassage);
             if(sourcePassage != null){
                 var special = null;
-                console.log(sourcePassage._id);
+                // console.log(sourcePassage._id);
                 if(sources.includes(sourcePassage)){
                     console.log('flaiys');
                     continue;
@@ -2379,7 +2414,7 @@ async function accessSecret(secretName) {
                 sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage);
             }
         }
-        console.log(sources);
+        // console.log(sources);
         sources = sources.filter(i => i);
         sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
         return sources;
