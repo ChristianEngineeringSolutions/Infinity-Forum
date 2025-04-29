@@ -4017,6 +4017,189 @@ async function accessSecret(secretName) {
       }
     });
 
+    /**
+     * Downloads the most recent backup of a specified folder type from GCS
+     * @param {string} bucketName - The name of the GCS bucket
+     * @param {string} folderType - One of 'uploads', 'protected', or 'dump'
+     * @param {string} localBaseDir - Base local directory (usually __dirname)
+     * @param {boolean} deleteExisting - Whether to delete existing files before downloading
+     * @returns {Promise<void>}
+     */
+    async function downloadMostRecentBackup(bucketName, folderType, localBaseDir, deleteExisting = false) {
+      try {
+        // Validate folder type
+        if (!['uploads', 'protected', 'dump'].includes(folderType)) {
+          throw new Error(`Invalid folder type: ${folderType}. Must be one of 'uploads', 'protected', or 'dump'`);
+        }
+        
+        // Map local directories based on folder type
+        const folderPaths = {
+          'uploads': path.join(localBaseDir, 'dist/uploads'),
+          'protected': path.join(localBaseDir, 'protected'),
+          'dump': path.join(localBaseDir, 'dump')
+        };
+        
+        const localDirectory = folderPaths[folderType];
+        
+        // Initialize the Google Cloud Storage client
+        const storage = new Storage();
+        
+        // Get a reference to the bucket
+        const bucket = storage.bucket(bucketName);
+        
+        // List all folders starting with the folderType
+        const [files] = await bucket.getFiles({ prefix: `${folderType}_` });
+        
+        // Extract unique folder names
+        const folderNames = new Set();
+        files.forEach(file => {
+          const folderName = file.name.split('/')[0];
+          if (folderName.startsWith(`${folderType}_`)) {
+            folderNames.add(folderName);
+          }
+        });
+        
+        // Convert to array and sort chronologically (newest first)
+        const sortedFolders = Array.from(folderNames).sort().reverse();
+        
+        if (sortedFolders.length === 0) {
+          console.log(`No backup folders found starting with "${folderType}_"`);
+          return;
+        }
+        
+        // Get the most recent folder
+        const mostRecentFolder = sortedFolders[0];
+        console.log(`Most recent backup folder: ${mostRecentFolder}`);
+        
+        // Get all files in the most recent folder
+        const [folderFiles] = await bucket.getFiles({ prefix: `${mostRecentFolder}/` });
+        
+        // Delete existing directory if requested
+        if (deleteExisting) {
+          try {
+            console.log(`Deleting existing directory: ${localDirectory}`);
+            await fsp.rm(localDirectory, { recursive: true, force: true });
+          } catch (err) {
+            // If directory doesn't exist, that's fine
+            if (err.code !== 'ENOENT') {
+              console.warn(`Warning: Could not delete directory: ${err.message}`);
+            }
+          }
+        }
+        
+        // Make sure the local directory exists
+        await fsp.mkdir(localDirectory, { recursive: true });
+        
+        // Download each file
+        console.log(`Downloading ${folderFiles.length} files to ${localDirectory}...`);
+        
+        // Set to track directories we've already created
+        const createdDirs = new Set();
+        createdDirs.add(localDirectory);
+        
+        for (const file of folderFiles) {
+          // Skip the folder placeholder object (ends with '/')
+          if (file.name.endsWith('/')) continue;
+          
+          // Get the file path without the folder prefix
+          const relativePath = file.name.replace(`${mostRecentFolder}/`, '');
+          const localFilePath = path.join(localDirectory, relativePath);
+          
+          // Create subdirectories if needed
+          const dir = path.dirname(localFilePath);
+          if (!createdDirs.has(dir)) {
+            await fsp.mkdir(dir, { recursive: true });
+            createdDirs.add(dir);
+          }
+          
+          // Download the file
+          await file.download({ destination: localFilePath });
+          console.log(`Downloaded: ${relativePath}`);
+        }
+        
+        console.log(`Download completed successfully for ${folderType}!`);
+        
+      } catch (error) {
+        console.error(`Error downloading ${folderType} from GCS:`, error);
+        throw error;
+      }
+    }
+
+    /**
+     * Download multiple folder types
+     * @param {string} bucketName - The name of the GCS bucket
+     * @param {Array<string>} folderTypes - Array of folder types to download ('uploads', 'protected', 'dump')
+     * @param {string} localBaseDir - Base local directory
+     * @param {boolean} deleteExisting - Whether to delete existing files before downloading
+     * @returns {Promise<void>}
+     */
+    async function downloadMultipleFolders(bucketName, folderTypes, localBaseDir, deleteExisting = false) {
+      for (const folderType of folderTypes) {
+        console.log(`\n==== Processing ${folderType} ====`);
+        await downloadMostRecentBackup(bucketName, folderType, localBaseDir, deleteExisting);
+      }
+      console.log('\nAll requested folders have been processed!');
+    }
+
+    // Example usage
+    // const bucketName = 'infinity-forum-backup';
+    // const localBaseDir = __dirname; // Or path.resolve('/your/base/path')
+
+    // can also use await for these examples
+    // Download a single folder type
+    // downloadMostRecentBackup(bucketName, 'uploads', localBaseDir, true)
+    //   .then(() => console.log('Process completed'))
+    //   .catch(err => console.error('Process failed:', err));
+
+    // Download all folder types
+    // downloadMultipleFolders(bucketName, ['uploads', 'protected', 'dump'], localBaseDir, true)
+    //   .then(() => console.log('All processes completed'))
+    //   .catch(err => console.error('Process failed:', err));
+
+    // Command line usage
+    // async function main() {
+    //   // Get command line arguments
+    //   const args = process.argv.slice(2);
+      
+    //   if (args.length === 0) {
+    //     console.log('Usage: node gcs-download.js <folder_type> [delete_existing]');
+    //     console.log('  folder_type: "uploads", "protected", "dump", or "all"');
+    //     console.log('  delete_existing: "true" or "false" (default: false)');
+    //     console.log('\nExamples:');
+    //     console.log('  node gcs-download.js uploads true');
+    //     console.log('  node gcs-download.js all false');
+    //     return;
+    //   }
+      
+    //   const folderType = args[0].toLowerCase();
+    //   const deleteExisting = args[1] === 'true';
+      
+    //   if (folderType === 'all') {
+    //     await downloadMultipleFolders(bucketName, ['uploads', 'protected', 'dump'], localBaseDir, deleteExisting);
+    //   } else if (['uploads', 'protected', 'dump'].includes(folderType)) {
+    //     await downloadMostRecentBackup(bucketName, folderType, localBaseDir, deleteExisting);
+    //   } else {
+    //     console.error(`Invalid folder type: ${folderType}. Must be one of 'uploads', 'protected', 'dump', or 'all'`);
+    //     process.exit(1);
+    //   }
+    // }
+
+    // // Run if executed directly
+    // if (require.main === module) {
+    //   main()
+    //     .then(() => console.log('Process completed successfully'))
+    //     .catch(err => {
+    //       console.error('Process failed:', err);
+    //       process.exit(1);
+    //     });
+    // }
+
+    // // Export functions for use in other modules
+    // module.exports = {
+    //   downloadMostRecentBackup,
+    //   downloadMultipleFolders
+    // };
+
     const port = process.env.PORT || 8080;
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);
