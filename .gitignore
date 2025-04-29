@@ -8,6 +8,5 @@ protected/*
 *.swp
 *.log
 .env
-restart.sh
 collections.tar
 tmp/*
