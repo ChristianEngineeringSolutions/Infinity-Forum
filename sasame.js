@@ -397,7 +397,7 @@ async function accessSecret(secretName) {
       }
 
       // For non-admins, enforce under construction for non-allowed GET requests
-      if (req.method === 'GET' && !allowedPaths.includes(req.path)) {
+      if (process.env.UNDER_CONSTRUCTION == 'true' && req.method === 'GET' && !allowedPaths.includes(req.path)) {
         return res.redirect(302, '/under-construction'); // Redirect to the under construction page
       }
 
@@ -698,6 +698,16 @@ async function accessSecret(secretName) {
             user.stars -= amount;
         }
         let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
+        var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+        //log the amount starred
+        var star = await Star.create({
+            user: userID,
+            passage: passage._id,
+            amount: 1,
+            sources: sources,
+            single: false,
+            system: null //not relevant since we cant unstar these so just make it null
+        });
         var lastSource = await getLastSource(passage);
         var bonus = 0;
         //calculate bonus
