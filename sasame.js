@@ -291,7 +291,7 @@ async function accessSecret(secretName) {
         else if(maxToGiveOut < usd){
             usd = maxToGiveOut;
         }
-        return usd;
+        return 0.20 * usd; //give out in 20% increments
     }
     scripts.getBest = async function(passage){
         return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
@@ -567,8 +567,8 @@ async function accessSecret(secretName) {
         for(const user of users){
             // if(!user.paymentsLocked){
                 //appropriate percentage based on stars
-                //users get same allotment as they have percentage of stars
-                let userUSD = parseInt((await percentStars(user.starsGiven)) * usd);
+                //users get same allotment as they have percentage of stars given
+                let userUSD = parseInt((await percentStarsGiven(user.starsGiven)) * usd);
                 try{
                     // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                     //     userUSD = 600 - user.amountEarnedThisYear;
@@ -607,8 +607,8 @@ async function accessSecret(secretName) {
     //     await rewardUsers();
     // })();
     //get percentage of total stars
-    async function percentStars(user_stars){
-        let final = user_stars / (await totalStars());
+    async function percentStarsGiven(user_stars){
+        let final = user_stars / (await totalStarsGiven());
         return final;
     }
     //get percentage of total usd
@@ -633,7 +633,7 @@ async function accessSecret(secretName) {
         }
         return usd;
     }
-    async function totalStars(){
+    async function totalStarsGiven(){
         let users = await User.find({stripeOnboardingComplete: true});
         if(users == false){
             return 0;
@@ -690,15 +690,53 @@ async function accessSecret(secretName) {
     }
     async function starPassage(req, amount, passageID, userID, deplete=true){
         let user = await User.findOne({_id: userID});
+        if(isNaN(amount) || amount == 0){
+            return 'Please enter a number greater than 0.';
+        }
         //infinite stars on a local sasame
-        if(user.stars < amount && process.env.REMOTE == 'true'){
+        if(user.stars < amount && process.env.REMOTE == 'false'){
             return "Not enough stars.";
         }
         if(deplete){
             user.stars -= amount;
         }
+        if(passageID.includes('_')){
+            passageID = passageID.split('_').at(-1);
+        }
         let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
         var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+        //Give starring user stars for each logged stars at 1% rate
+        var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources');
+        var totalForStarrer = 0;
+        for(const loggedStar of loggedStars){
+            var starrer = loggedStar.user;
+            var sourceLog = [];
+            if(req.session.user._id.toString() != starrer._id.toString()){
+                totalForStarrer = 0.01 * loggedStar.amount * amount;
+                console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
+            }
+            // console.log("Logged sources: " + loggedStar.sources);
+            for(const source of loggedStar.sources){
+                //if the author of the passage is not the one who did the starring
+                // console.log(source.author._id.toString() != starrer._id.toString());
+                //only give each starrer each source one time &&
+                //a starrer will not get back stars from their own passages &&
+                //you dont get stars back when starring a passage, only when others star it
+                if(!sourceLog.includes(source) && 
+                    source.author._id.toString() != starrer._id.toString() && 
+                    req.session.user._id.toString() != starrer._id.toString()){
+                    console.log("working, " + starrer.name);
+                    //give the starrer 1% of each entry
+                    let subtotal = 0.01 * loggedStar.amount * amount;
+                    totalForStarrer += subtotal;
+                    console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                }
+                sourceLog.push(source);
+            }
+            // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+            starrer.stars += totalForStarrer;
+            await starrer.save();
+        }
         //log the amount starred
         var star = await Star.create({
             user: userID,
@@ -1030,7 +1068,7 @@ async function accessSecret(secretName) {
             bookmarks = getBookmarks(req.session.user);
         }
         var usd = 0;
-        usd = parseInt((await percentStars(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
+        usd = parseInt((await percentStarsGiven(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
         if(isNaN(usd)){
             usd = 0;
         }
@@ -2350,7 +2388,7 @@ async function accessSecret(secretName) {
             // sourcePassage = await getPassage(sourcePassage);
             if(sourcePassage != null){
                 var special = null;
-                console.log(sourcePassage._id);
+                // console.log(sourcePassage._id);
                 if(sources.includes(sourcePassage)){
                     console.log('flaiys');
                     continue;
@@ -2379,7 +2417,7 @@ async function accessSecret(secretName) {
                 sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage);
             }
         }
-        console.log(sources);
+        // console.log(sources);
         sources = sources.filter(i => i);
         sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
         return sources;
@@ -2466,7 +2504,7 @@ async function accessSecret(secretName) {
             return getRemotePage(req, res);
         }
         var usd = await totalUSD();
-        var stars = await totalStars();
+        var stars = await totalStarsGiven();
         res.render('donate', {
             passage: {id: 'root'}, usd: ((await scripts.getMaxToGiveOut())/100), stars: stars,
             totalUSD: usd/100,
@@ -3230,7 +3268,13 @@ async function accessSecret(secretName) {
             if(user){
                 var totalAmount = await totalUSD();
                 var amountToAdd = 0;
-                amountToAdd = (await percentUSD(parseInt(amount))) * (await totalStars());
+                var totalStarsGiven = await totalStarsGiven();
+                var percentUSD = await percentUSD(parseInt(amount));
+                //percentUSD returns 1 if its value is 0
+                amountToAdd = percentUSD * totalStarsGiven;
+                if(totalStarsGiven == 0){
+                    amountToAdd = 100;
+                }
                 user.stars += amountToAdd;
                 await user.save();
             }
@@ -3247,7 +3291,7 @@ async function accessSecret(secretName) {
                 subscriber.subscribed = true;
                 subscriber.lastSubscribed = new Date();
                 let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-                subscriber.stars += (await percentUSD(80 * 100 * monthsSubscribed)) * (await totalStars());
+                subscriber.stars += (await percentUSD(80 * 100 * monthsSubscribed)) * (await totalStarsGiven());
                 await subscriber.save();
             }
         }
@@ -3331,7 +3375,7 @@ async function accessSecret(secretName) {
         response.status(200).end();
       });
       function getStarsFromUSD(usd){
-        return percentUSD(usd) * totalStars();
+        return percentUSD(usd) * totalStarsGiven();
       }
     app.post('/unsubscribe', async function(req, res){
         if(req.session.user){
@@ -5102,14 +5146,24 @@ async function accessSecret(secretName) {
                 sessionUser.stars -= parseInt(amount);
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
                 await sessionUser.save();
-                passage = await getPassage(passage);
+                if(typeof passage === 'object' && passage !== null){
+                    passage = await getPassage(passage);
+                }
+                else{
+                    return res.send(passage);
+                }
                 passage.location = await returnPassageLocation(passage);
                 return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
             }
             else if(process.env.REMOTE == 'false'){
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
                 await sessionUser.save();
-                passage = await getPassage(passage);
+                if(typeof passage === 'object' && passage !== null){
+                    passage = await getPassage(passage);
+                }
+                else{
+                    return res.send(passage);
+                }
                 passage.location = await returnPassageLocation(passage);
                 return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
             }
@@ -6478,6 +6532,8 @@ async function accessSecret(secretName) {
             //happens after write on dev
             if(process.env.REMOTE){
                 var shell = require('shelljs');
+                //in sudo visudo
+                //user ALL = NOPASSWD: /home/user/Infinity-Forum/restart.sh
                     var bash = 'bash ' + __dirname + 'restart.sh';
                 shell.exec(bash, function(code, output) {
                 console.log('Exit code:', code);

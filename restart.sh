@@ -1,13 +1,13 @@
 #!/bin/bash 
- 
-pm2 stop sasame 
-pm2 delete sasame 
-pm2 kill 
-pm2 start sasame.js 
- 
+
+pm2 stop sasame
+pm2 delete sasame
+pm2 kill
+pm2 start sasame.js
+
 LOCK_DIR="/var/lock/uriahsanders99"
-LOCK_FILE="$LOCK_DIR/nginx_restart_limit.lock" 
-MAX_CALLS=3 
+LOCK_FILE="$LOCK_DIR/nginx_restart_limit.lock"
+MAX_CALLS=3
 TIME_WINDOW=60  # seconds
 
 # Ensure the directory exists
@@ -42,7 +42,7 @@ if [ "$COUNT" -lt "$MAX_CALLS" ]; then
   echo "DEBUG: Under rate limit, restarting nginx"
   # Add current timestamp to log
   echo "$CURRENT_TIME" >> "$LOCK_FILE"
-  
+
   # Restart nginx
   sudo /usr/bin/systemctl reload nginx
   RESTART_EXIT_CODE=$?
