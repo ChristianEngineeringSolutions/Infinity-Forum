@@ -4315,6 +4315,7 @@ async function accessSecret(secretName) {
 });
     });
     app.post('/restoreuploads', async (req, res) => {
+	var AdmZip = require("adm-zip");
         try {
             // Check if files were uploaded
             if (!req.files || Object.keys(req.files).length === 0 || !req.files.file) {
