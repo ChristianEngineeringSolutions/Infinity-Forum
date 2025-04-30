@@ -2505,11 +2505,17 @@ async function accessSecret(secretName) {
         }
         var usd = await totalUSD();
         var stars = await totalStarsGiven();
+        if(req.session.user){
+            var subscriptionQuantity = req.session.user.subscriptionQuantity;
+        }else{
+            var subscriptionQuantity = 0;
+        }
         res.render('donate', {
             passage: {id: 'root'}, usd: ((await scripts.getMaxToGiveOut())/100), stars: stars,
             totalUSD: usd/100,
             donateLink: process.env.STRIPE_DONATE_LINK,
-            subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK
+            subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK,
+            subscriptionQuantity: subscriptionQuantity
         });
     });
     //Search
@@ -3289,9 +3295,9 @@ async function accessSecret(secretName) {
                 var subscriber = await User.findOne({email: email});
                 subscriber.subscriptionID = payload.data.object.subscription;
                 subscriber.subscribed = true;
-                subscriber.lastSubscribed = new Date();
+                // subscriber.lastSubscribed = new Date();
                 let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-                subscriber.stars += (await percentUSD(80 * 100 * monthsSubscribed)) * (await totalStarsGiven());
+                subscriber.stars += (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
                 await subscriber.save();
             }
         }
@@ -3300,6 +3306,7 @@ async function accessSecret(secretName) {
             if(email != null){
                 var subscriber = await User.findOne({email: email});
                 subscriber.subscribed = false;  
+                subscriber.lastSubscribed = new Date();
                 await subscriber.save();
             }
         }
@@ -3378,21 +3385,115 @@ async function accessSecret(secretName) {
         return percentUSD(usd) * totalStarsGiven();
       }
     app.post('/unsubscribe', async function(req, res){
-        if(req.session.user){
-            console.log("here");
-            var user = await User.findOne({_id: req.session.user._id});
-            const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
-            const stripe = require("stripe")(STRIPE_SECRET_KEY);
-            const deleted = await stripe.subscriptions.del(
-                user.subscriptionID
-            );
-            user.subscribed = false;
-            user.subscriptionID = null;
-            await user.save();
-            req.session.user = user;
+        try{
+            if(req.session.user){
+                var user = await User.findOne({_id: req.session.user._id});
+                if(!user.subscribed){
+                    return res.send("You're not subscribed yet!");
+                }else{
+                    const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+                    const stripe = require("stripe")(STRIPE_SECRET_KEY);
+                    const deleted = await stripe.subscriptions.del(
+                        user.subscriptionID
+                    );
+                    user.subscribed = false;
+                    user.subscriptionID = null;
+                    await user.save();
+                    req.session.user = user;
+                }
+            }
+            return res.send("Done.");
         }
-        res.send("Done.");
+        catch(error){
+            return res.send("Error Unsubscribing. Please Contact us.");
+        }
     });
+    app.post('/create-subscription-checkout', async (req, res) => {
+      const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+      const stripe = require("stripe")(STRIPE_SECRET_KEY);
+      const userId = req.session.user._id; // Example: Assuming req.user contains user info
+      const quantity = req.body.quantity;
+      if(isNaN(quantity)){
+        return res.send("Please enter a valid quantity.");
+      }
+      try {
+        if(req.session.user.subscribed){
+            console.log('ID '+req.session.user.subscriptionID);
+            await updateSubscriptionQuantityWithoutCredit(req.session.user.subscriptionID, quantity, req.session.user);
+            return res.send("Updated subscription.");
+          }
+        const userEmail = req.session.user.email;
+        if (!userEmail) {
+          return res.status(400).json({ error: 'User email not found.' });
+        }
+        console.log(userEmail);
+        let customer;
+        const customerList = await stripe.customers.list({ email: userEmail });
+
+        if (customerList.data.length > 0) {
+          customer = customerList.data[0];
+        } else {
+          customer = await stripe.customers.create({
+            email: userEmail,
+            // Add other customer details if needed
+          });
+        }
+
+        const session = await stripe.checkout.sessions.create({
+          customer: customer.id,
+          mode: 'subscription',
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price: process.env.SUBSCRIPTION_PRICE_ID, // Replace with your actual Price ID
+              quantity: quantity,
+            },
+          ],
+          success_url: `${req.headers.origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`, // Adjust your success URL
+          cancel_url: `${req.headers.origin}/subscription-cancel`, // Adjust your cancel URL
+        });
+
+        // Send the session URL back to the client for redirection
+        return res.json({ url: session.url });
+
+      } catch (error) {
+        console.error('Error creating checkout session:', error);
+        return res.status(500).json({ error: 'Failed to create checkout session.' });
+      }
+    });
+    async function updateSubscriptionQuantityWithoutCredit(subscriptionId, newQuantity, user) {
+      const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+      const stripe = require("stripe")(STRIPE_SECRET_KEY);
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+        const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+          proration_behavior: 'none', // Prevent proration and credits
+          items: [{
+            id: subscription.items.data[0].id, // Assuming only one item
+            quantity: newQuantity,
+          }],
+        });
+
+        return updatedSubscription;
+        if(newQuantity == 0 || !user.subscribed){
+            //reset subscription timer
+            user.lastSubscribed = new Date();
+            user.subscribed = true;
+            await user.save();
+        }else{
+
+        }
+      } catch (error) {
+        console.error('Error updating subscription quantity without credit:', error);
+        throw error;
+      }
+    }
+
+    // Example usage:
+    // updateSubscriptionQuantityWithoutCredit('sub_xxxxxxxxxxxxx', 0)
+    //   .then(updatedSubscription => console.log('Subscription updated (no credit):', updatedSubscription))
+    //   .catch(error => console.error(error));
     app.get('/eval/:passage_id', async function(req, res){
         if(req.session.CESCONNECT){
             return getRemotePage(req, res);
