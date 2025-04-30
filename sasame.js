@@ -3240,7 +3240,7 @@ async function accessSecret(secretName) {
         // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
         const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
         const stripe = require("stripe")(STRIPE_SECRET_KEY);
-        const endpointSecret = await accessSecret(STRIPE_ENDPOINT_SECRET_KEY);
+        const endpointSecret = await accessSecret("STRIPE_ENDPOINT_SECRET_KEY");
         const payload = request.body;
       
         console.log("Got payload: " + payload);
@@ -3252,8 +3252,7 @@ async function accessSecret(secretName) {
         } catch (err) {
             console.log(err);
             //console.log(response.status(400).send(`Webhook Error: ${err.message}`));
-            return;
-            // return response.status(400).send(`Webhook Error: ${err.message}`);
+            return response.status(400).send(`Webhook Error: ${err.message}`);
         }
         //if subscription created or ended
         //update subscription data in db
