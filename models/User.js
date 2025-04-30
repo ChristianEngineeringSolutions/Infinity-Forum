@@ -105,6 +105,10 @@ const userSchema = mongoose.Schema({
       type: String,
       default: null
     },
+    subscriptionQuantity: {
+      type: Number,
+      default: 0
+    },
     lastSubscribed: {type: Date, default: null},
     room: {
       type: String,

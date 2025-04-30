@@ -20,14 +20,89 @@
         <%/*%>
         <h2><a target="_blank"href="<%=subscribeLink%>">Subscribe</a></h2>
         <%*/%>
-        <%if(user && user.subscribed){%>
-            <h5 id="cancel-subscription"style="font-weight:normal;color:red;cursor:pointer;">Cancel Active Subscription</h5>
+        <%if(user){%>
+            <h5 id="update-subscription"style="font-weight:normal;color:white;cursor:pointer;">$5 per <input type="number" id="subscriptionQuantity" autocomplete="off"value="<%=(subscriptionQuantity == 0 ? 1 : subscriptionQuantity)%>" min="0">
+            <button id="subscribeButton">Update Subscription</button>
+            <%if(user.subscribed){%>
+                <br>
+                (Currently Subscribed)
+            <%}%>
+            </h5>
         <%}%>
         <!-- <h5>(Subscriber stars are multiplied by the number of months subscribed.)</h5> -->
         <h3 style="margin-top:50px;">All Funds distributed monthly to Users based on merit (contribution points, earned by giving stars to other users).</h3>
         <h3>Platform takes 7-10% for operating costs.</h3>
-        <h3 style="margin-top:30px;">Donors/subscribers recieve an equivalent in stars.</h3>
+        <h3 style="margin-top:30px;">Donors/subscribers recieve an equivalent in stars. Subscribers get a monthly multiplier.</h3>
         <!-- <h5 style="font-weight: normal; color: red;">Get Paid Monthly by Investing Stars in Projects.</h5> -->
         <br><br>
     </div>
+    <script type="text/javascript">
+        // Client-side (example with a quantity input)
+        document.addEventListener('DOMContentLoaded', () => {
+          const subscribeButton = document.getElementById('subscribeButton');
+          const quantityInput = document.getElementById('subscriptionQuantity');
+
+          subscribeButton.addEventListener('click', async () => {
+            const quantity = parseInt(quantityInput.value, 10);
+            if (isNaN(quantity) || quantity < 0) {
+              alert('Please enter a valid quantity.');
+              return;
+            }
+
+            try {
+                if(quantity == 0){
+                    $.ajax({
+                        type: 'post',
+                        url: '/unsubscribe',
+                        data: {},
+                        success: function(data){
+                            alert(data);
+                            window.location.reload();
+                        }
+                    });
+                }else{
+                    const response = await fetch('/create-subscription-checkout', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ quantity: quantity }), // Send the quantity to the server
+                  });
+
+                  if (!response.ok) {
+                    // Handle errors from the server
+                    const errorData = await response.json();
+                    console.error('Error creating checkout session:', errorData);
+                    // Display an error message to the user in the UI
+                    const errorMessageElement = document.getElementById('error-message');
+                    if (errorMessageElement) {
+                      errorMessageElement.textContent = errorData.error || 'Failed to create checkout session.';
+                    } else {
+                      alert(errorData.error || 'Failed to create checkout session.');
+                    }
+                    return; // Stop further processing
+                  }
+
+                  // If the response is successful (status code in the 2xx range)
+                  const { url } = await response.json();
+
+                  // Redirect the user to the Stripe Checkout URL
+                  window.location.href = url;
+                }   
+
+            } catch (error) {
+              // ... (handle error) ...
+                // Handle network errors or other exceptions during the fetch request
+              console.error('Fetch error:', error);
+              // Display a generic error message to the user
+              const errorMessageElement = document.getElementById('error-message');
+              if (errorMessageElement) {
+                errorMessageElement.textContent = 'An unexpected error occurred.';
+              } else {
+                alert('An unexpected error occurred.');
+              }
+            }
+          });
+        });
+    </script>
 <%- include('footer') %>
