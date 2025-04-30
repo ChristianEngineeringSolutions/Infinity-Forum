@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 
 const userSchema = mongoose.Schema({
     joined: {type: Date, default: Date.now},
+    lastLogin: {type: Date, default: Date.now},
     age: {
       type: Number,
       default: 0
