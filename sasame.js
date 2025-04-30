@@ -440,13 +440,21 @@ async function accessSecret(secretName) {
                 if(bookmark.passage.mirror != null){
                     if(bookmark.passage.mirrorEntire){
                         var mirror = await Passage.findOne({_id:bookmark.passage.mirror._id});
-                        bookmark.passage.title = mirror.title;
+                        if(mirror != null){
+                            bookmark.passage.title = mirror.title;
+                        }else{
+                            bookmark.mirror.title = 'Error (Working on it)';
+                        }
                     }
                 }
                 if(bookmark.passage.bestOf != null){
                     if(bookmark.passage.bestOfEntire){
                         var mirror = await Passage.findOne({parent:bookmark.passage.bestOf._id}).sort('-stars');
-                        bookmark.passage.title = mirror.title;
+                        if(mirror != null){
+                            bookmark.passage.title = mirror.title;
+                        }else{
+                            bookmark.mirror.title = 'Error (Working on it)';
+                        }
                     }
                 }
             }
@@ -3246,7 +3254,7 @@ async function accessSecret(secretName) {
         // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
         const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
         const stripe = require("stripe")(STRIPE_SECRET_KEY);
-        const endpointSecret = await accessSecret(STRIPE_ENDPOINT_SECRET_KEY);
+        const endpointSecret = await accessSecret("STRIPE_ENDPOINT_SECRET_KEY");
         const payload = request.body;
       
         console.log("Got payload: " + payload);
@@ -3274,10 +3282,10 @@ async function accessSecret(secretName) {
             if(user){
                 var totalAmount = await totalUSD();
                 var amountToAdd = 0;
-                var totalStarsGiven = await totalStarsGiven();
-                var percentUSD = await percentUSD(parseInt(amount));
+                var totalStarsGivenAmount = await totalStarsGiven();
+                var percentUSDAmount = await percentUSD(parseInt(amount));
                 //percentUSD returns 1 if its value is 0
-                amountToAdd = percentUSD * totalStarsGiven;
+                amountToAdd = percentUSDAmount * totalStarsGivenAmount;
                 if(totalStarsGiven == 0){
                     amountToAdd = 100;
                 }
@@ -3289,7 +3297,10 @@ async function accessSecret(secretName) {
         else if(event.type == "invoice.paid"){
             console.log(JSON.stringify(payload.data.object.subscription));
             var email = payload.data.object.customer_email;
+            console.log("UNDER TEST");
             if(email != null){
+                console.log("OVER TEST");
+                console.log(email);
                 //they get stars
                 //plus time bonus
                 var subscriber = await User.findOne({email: email});
@@ -3393,13 +3404,17 @@ async function accessSecret(secretName) {
                 }else{
                     const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
                     const stripe = require("stripe")(STRIPE_SECRET_KEY);
-                    const deleted = await stripe.subscriptions.del(
-                        user.subscriptionID
+                    const updatedSubscription = await stripe.subscriptions.update(
+                      user.subscriptionID,
+                      {
+                        cancel_at_period_end: true,
+                      }
                     );
                     user.subscribed = false;
                     user.subscriptionID = null;
                     await user.save();
                     req.session.user = user;
+                    return res.send("Subscription will cancel at the end of the period.");
                 }
             }
             return res.send("Done.");
@@ -3489,7 +3504,13 @@ async function accessSecret(secretName) {
         throw error;
       }
     }
-
+    app.get('/subscription-success', async function(req, res){
+        req.session.user.subscribed = true;
+        return res.redirect("/donate");
+    });
+    app.get('/subscription-cancel', async function(req, res){
+        return res.send("Canceled.");
+    });
     // Example usage:
     // updateSubscriptionQuantityWithoutCredit('sub_xxxxxxxxxxxxx', 0)
     //   .then(updatedSubscription => console.log('Subscription updated (no credit):', updatedSubscription))
