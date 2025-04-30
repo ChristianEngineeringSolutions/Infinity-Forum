@@ -4460,9 +4460,6 @@ async function accessSecret(secretName) {
     //   downloadMultipleFolders
     // };
 
-    app.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
-    });
     app.get('/dbbackup.zip', async (req, res) => {
         if(!req.session.user || !req.session.user.admin){
             return res.redirect('/');
