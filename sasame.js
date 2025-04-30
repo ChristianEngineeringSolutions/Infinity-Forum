@@ -4809,8 +4809,6 @@ async function accessSecret(secretName) {
                         find.users = { $in: [req.session.user._id] };
                         break;
                     case 'feed':
-                        const followings = await Follower.find({ user: req.session.user._id.toString() });
-                        find.author = { $in: followings.map(f => f.following._id) };
                         break;
                 }
                 if (parent !== 'root') find.parent = parent;
@@ -4833,12 +4831,27 @@ async function accessSecret(secretName) {
 
                 let passages;
                 try {
-                    passages = await Passage.paginate(find, {
-                        sort: sort_query, 
-                        page: page, 
-                        limit: DOCS_PER_PAGE, 
-                        populate: 'author users parent sourceList'
-                    });
+                    if(whichPage != 'feed'){
+                        passages = await Passage.paginate(find, {
+                            sort: sort_query, 
+                            page: page, 
+                            limit: DOCS_PER_PAGE, 
+                            populate: 'author users parent sourceList'
+                        });
+                    }else{
+                        const result = await generateFeedWithPagination(req.session.user, page, DOCS_PER_PAGE);
+                        passages = {};
+                        passages.docs = [];
+                        console.log("LOGS");
+                        if('feed' in result){
+                            for (let i = 0; i < result.feed.length; i++) {
+                              const processedPassage = await getPassage(result.feed[i]);
+                              passages.docs.push(processedPassage);
+                            }
+                        }else{
+                            return res.send("No more passages.");
+                        }
+                    }
                     
                     console.log(`Found ${passages.docs.length} passages for page ${page}`);
                 } catch (err) {
@@ -7551,10 +7564,10 @@ async function accessSecret(secretName) {
           deleted: false,
           $or: [
             { author: { $in: followedAuthors } }, // From followed authors
-            { createdAt: { $gte: veryRecentCutoff } }, // Very recent content
+            { date: { $gte: veryRecentCutoff } }, // Very recent content
             { "stars": { $gte: 5 } }, // Content with engagement
             { 
-              createdAt: { $gte: recentCutoff },
+              date: { $gte: recentCutoff },
               "stars": { $gte: 1 } // Recent with some engagement
             }
           ]
@@ -7565,7 +7578,6 @@ async function accessSecret(secretName) {
         const passages = await Passage.find(passageQuery)
           .populate('author users sourceList')
           .limit(1000);
-        
         // Score and rank passages
         const scoredPassages = await scorePassages(passages, user);
         
@@ -7576,7 +7588,6 @@ async function accessSecret(secretName) {
         // Use cached feed IDs
         feedIds = JSON.parse(feedCache);
       }
-      
       // Apply pagination
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
