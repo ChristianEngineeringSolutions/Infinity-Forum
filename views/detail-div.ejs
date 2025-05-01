@@ -3,7 +3,7 @@
         <div style="<%=short%>"class="p-padding-box">
             <div class="toppings">
             <div style=""class="p-image-container">
-            <%if(passage.author && passage.author.thumbnail != null){%>
+            <%if(passage.author && passage.author.thumbnail != null && passage.author.thumbnail != ''){%>
                 <div class="p-thumbnail"style="display:block;background:url('/uploads/<%=passage.author.thumbnail%>');background-size:cover;background-position: center center;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>"></div>
                 <%}else{%>
                     <ion-icon style=""class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
