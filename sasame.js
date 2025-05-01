@@ -181,7 +181,7 @@ async function accessSecret(secretName) {
     //       credentials: true
     //     }
       // });
-    app.use(express.urlencoded({ extended: true, limit: '512mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '250mb' }));
     app.use(compression());
     app.use(cors());
     app.use(helmet());
@@ -2629,6 +2629,7 @@ async function accessSecret(secretName) {
         });
     });
     app.post('/search_profile/', async (req, res) => {
+        console.log("TEST");
         var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         var find = {
             author: req.body._id,
@@ -2652,6 +2653,7 @@ async function accessSecret(secretName) {
                 break;
             case 'Newest-Oldest':
                 sort = {date: -1};
+                console.log(find.author);
                 break;
             case 'Oldest-Newest':
                 sort = {date: 1};
@@ -2854,6 +2856,7 @@ async function accessSecret(secretName) {
     //     await labelOldPassages();
     // })();
     app.post('/search/', async (req, res) => {
+        console.log("SEARCH");
         var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         // let exact = await Passage.findOne({personal:false,deleted:false,title:search});
         // if(exact == null && req.session.user){
@@ -4813,6 +4816,8 @@ async function accessSecret(secretName) {
                 }
                 if (parent !== 'root') find.parent = parent;
                 if (profile !== 'false') find.author = profile;
+                console.log(profile);
+                console.log("TEST");
                 if (from_ppe_queue) find.mimeType = 'image';
                 if (label !== 'All') find.label = label;
 
@@ -4823,6 +4828,7 @@ async function accessSecret(secretName) {
                         break;
                     case 'Newest-Oldest':
                         sort_query = {date: -1};
+                        console.log("NEWEST");
                         break;
                     case 'Oldest-Newest':
                         sort_query = {date: 1};
