@@ -5880,7 +5880,6 @@ async function accessSecret(secretName) {
         }
     }
     async function deleteOldUploads(passage){
-        const Passage = require('./models/Passage');
         var where = passage.personal ? 'protected' : 'uploads';
         var index = 0;
         for(const f of passage.filename){
