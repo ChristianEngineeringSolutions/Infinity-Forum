@@ -145,12 +145,17 @@ $(function(){
     });
     $(document).on('change', '#label-select-div, #sort-select-div', function(){
         //trigger search
-        //TODO: do for profile and messages
-        if($('#chief_passage_id').val() == 'root'){
-            $("#search").trigger({ type: "keypress", which: 13 });
+        //TODO: do for messages
+        if($('#is_profile').val() == 'false'){
+            if($('#chief_passage_id').val() == 'root'){
+                $("#search").trigger({ type: "keypress", which: 13 });
+            }
+            else{
+                $("#search_passage").trigger({ type: "keypress", which: 13 });
+            }
         }
         else{
-            $("#search_passage").trigger({ type: "keypress", which: 13 });
+            $("#search_profile").trigger({ type: "keypress", which: 13 });
         }
     });
     //search

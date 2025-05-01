@@ -26,6 +26,27 @@
     var fs = require('fs'); 
     const fsp = require('fs').promises;
     const jwt = require('jsonwebtoken');
+
+    const redis = require('redis');
+    const Queue = require('bull');
+
+    // Initialize Redis client with promisification
+    let redisClient;
+    if (process.env.REDIS_URL) {
+      redisClient = redis.createClient({
+        url: process.env.REDIS_URL
+      });
+    } else {
+      redisClient = redis.createClient();
+    }
+
+    // Promisify Redis methods
+    const redisGet = promisify(redisClient.get).bind(redisClient);
+    const redisSet = promisify(redisClient.set).bind(redisClient);
+    const redisDel = promisify(redisClient.del).bind(redisClient);
+
+    // Create a Bull queue for feed generation
+    const feedQueue = new Queue('feed-generation', process.env.REDIS_URL || 'redis://localhost:6379');
     //for daemons access to help code
     function DAEMONLIBS(passage, USERID){
         return `
@@ -96,7 +117,7 @@ async function accessSecret(secretName) {
     const JTI = require('./models/JTI');
     // Controllers
     const passageController = require('./controllers/passageController');
-    // Routes
+     // Routes
     // const passageRoutes = require('./routes/passage');
 
     const { google } = require('googleapis');
@@ -160,7 +181,7 @@ async function accessSecret(secretName) {
     //       credentials: true
     //     }
       // });
-    app.use(express.urlencoded({ extended: true, limit: '512mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '250mb' }));
     app.use(compression());
     app.use(cors());
     app.use(helmet());
@@ -414,6 +435,32 @@ async function accessSecret(secretName) {
     // Apply the under construction enforcement
     app.use(enforceUnderConstruction);
 
+    // Add this middleware to common routes to periodically update lastLogin
+    function updateActivityTimestamp(req, res, next) {
+        if (!req.session.user) {
+            return next();
+        }
+        
+        // Only update if it's been more than 30 minutes since last update
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        
+        // Check if we need to update (avoid excessive database writes)
+        if (!req.session.user.lastLogin || new Date(req.session.user.lastLogin) < thirtyMinutesAgo) {
+            // Update in database
+            User.findByIdAndUpdate(req.session.user._id, {
+                lastLogin: new Date()
+            }).catch(err => console.error('Error updating activity timestamp:', err));
+            
+            // Also update in session
+            req.session.user.lastLogin = new Date();
+        }
+        
+        next();
+    }
+
+    // Then apply this middleware to key routes:
+    app.use(['/feed', '/posts', '/profile', '/passage'], updateActivityTimestamp);
+
     // Route for the under construction page itself
     app.get('/under-construction', sendUnderConstruction);
 
@@ -547,6 +594,40 @@ async function accessSecret(secretName) {
     cron.schedule('0 12 1 * *', async () => {
         await rewardUsers();
         console.log('Monthly Cron ran at 12pm.');
+    });
+    // Schedule periodic feed updates for active users
+    cron.schedule('0 */3 * * *', async () => { // Every 3 hours
+    try {
+      // Find active users (those who logged in within last 7 days)
+      const activeTimeThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const activeUsers = await User.find({
+        lastLogin: { $gte: activeTimeThreshold }
+      });
+      
+      console.log(`Scheduling feed updates for ${activeUsers.length} active users`);
+      
+      // Add jobs to queue with different priorities based on user activity
+      for (const user of activeUsers) {
+        const hoursSinceLastLogin = (Date.now() - new Date(user.lastLogin)) / (1000 * 60 * 60);
+        
+        // Determine job priority based on activity
+        let priority = 3; // Default priority
+        
+        if (hoursSinceLastLogin < 24) {
+          priority = 1; // High priority for very active users
+        } else if (hoursSinceLastLogin < 72) {
+          priority = 2; // Medium priority for moderately active users
+        }
+        
+        // Schedule job
+        await feedQueue.add(
+          { userId: user._id.toString() },
+          { priority }
+        );
+      }
+    } catch (error) {
+      console.error('Error scheduling feed updates:', error);
+    }
     });
     //remove payment locks and reset amountEarnedThisYear
     // cron.schedule('0 0 1 1 *', async () => {
@@ -2431,56 +2512,56 @@ async function accessSecret(secretName) {
         return sources;
     }
 
-    app.get('/feed', async (req, res) => {
-        const ISMOBILE = browser(req.headers['user-agent']).mobile;
-        //REX
-        if(req.session.CESCONNECT){
-            getRemotePage(req, res);
-        }
-        else{
-            let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-            let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-            let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
-            let golden = '';
-            let addPassageAllowed = true;
-            let addChapterAllowed = true;
-            var user = req.session.user || null;
-            const followings = await Follower.find({ user: req.session.user._id.toString() });
-            const followingIds = followings.map(f => f.following._id);
-            let passages = await Passage.find({
-                deleted: false,
-                personal: false,
-                author: { $in: followingIds },
-            }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
-            for(var i = 0; i < passages.length; ++i){
-                passages[i] = await getPassage(passages[i]);
-            }
-            let passageUsers = [];
-            let bookmarks = [];
-            // if(req.session.user){
-            //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
-            // }
-            if(req.session.user){
-                bookmarks = getBookmarks(req.session.user);
-            }
-            passages = await fillUsedInList(passages);
-            res.render("stream", {
-                subPassages: false,
-                passageTitle: false, 
-                scripts: scripts, 
-                passages: passages, 
-                passage: {id:'root', author: {
-                    _id: 'root',
-                    username: 'Sasame'
-                }},
-                bookmarks: bookmarks,
-                ISMOBILE: ISMOBILE,
-                page: 'feed',
-                whichPage: 'feed',
-                thread: false
-            });
-        }
-    });
+    // app.get('/feed', async (req, res) => {
+    //     const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    //     //REX
+    //     if(req.session.CESCONNECT){
+    //         getRemotePage(req, res);
+    //     }
+    //     else{
+    //         let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+    //         let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
+    //         let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
+    //         let golden = '';
+    //         let addPassageAllowed = true;
+    //         let addChapterAllowed = true;
+    //         var user = req.session.user || null;
+    //         const followings = await Follower.find({ user: req.session.user._id.toString() });
+    //         const followingIds = followings.map(f => f.following._id);
+    //         let passages = await Passage.find({
+    //             deleted: false,
+    //             personal: false,
+    //             author: { $in: followingIds },
+    //         }).populate('author users sourceList parent').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
+    //         for(var i = 0; i < passages.length; ++i){
+    //             passages[i] = await getPassage(passages[i]);
+    //         }
+    //         let passageUsers = [];
+    //         let bookmarks = [];
+    //         // if(req.session.user){
+    //         //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+    //         // }
+    //         if(req.session.user){
+    //             bookmarks = getBookmarks(req.session.user);
+    //         }
+    //         passages = await fillUsedInList(passages);
+    //         res.render("stream", {
+    //             subPassages: false,
+    //             passageTitle: false, 
+    //             scripts: scripts, 
+    //             passages: passages, 
+    //             passage: {id:'root', author: {
+    //                 _id: 'root',
+    //                 username: 'Sasame'
+    //             }},
+    //             bookmarks: bookmarks,
+    //             ISMOBILE: ISMOBILE,
+    //             page: 'feed',
+    //             whichPage: 'feed',
+    //             thread: false
+    //         });
+    //     }
+    // });
     app.post('/interact', async (req, res) => {
         var interaction = await Interaction.create({
             keeper: req.body.keeper,
@@ -2548,6 +2629,7 @@ async function accessSecret(secretName) {
         });
     });
     app.post('/search_profile/', async (req, res) => {
+        console.log("TEST");
         var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         var find = {
             author: req.body._id,
@@ -2571,6 +2653,7 @@ async function accessSecret(secretName) {
                 break;
             case 'Newest-Oldest':
                 sort = {date: -1};
+                console.log(find.author);
                 break;
             case 'Oldest-Newest':
                 sort = {date: 1};
@@ -2773,6 +2856,7 @@ async function accessSecret(secretName) {
     //     await labelOldPassages();
     // })();
     app.post('/search/', async (req, res) => {
+        console.log("SEARCH");
         var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         // let exact = await Passage.findOne({personal:false,deleted:false,title:search});
         // if(exact == null && req.session.user){
@@ -3979,6 +4063,9 @@ async function accessSecret(secretName) {
         //check if email has been verified
         var user = await authenticateUsername(req.body.username, req.body.password);
         if(user){
+            // Update last login time
+            user.lastLogin = new Date();
+            await user.save();
             req.session.user = user;
             return res.redirect('/profile/'+ user.username + '/' + user._id);
         }
@@ -4375,10 +4462,6 @@ async function accessSecret(secretName) {
     //   downloadMultipleFolders
     // };
 
-    const port = process.env.PORT || 8080;
-    app.listen(port, () => {
-      console.log(`Server listening on port ${port}`);
-    });
     app.get('/dbbackup.zip', async (req, res) => {
         if(!req.session.user || !req.session.user.admin){
             return res.redirect('/');
@@ -4728,12 +4811,12 @@ async function accessSecret(secretName) {
                         find.users = { $in: [req.session.user._id] };
                         break;
                     case 'feed':
-                        const followings = await Follower.find({ user: req.session.user._id.toString() });
-                        find.author = { $in: followings.map(f => f.following._id) };
                         break;
                 }
                 if (parent !== 'root') find.parent = parent;
                 if (profile !== 'false') find.author = profile;
+                console.log(profile);
+                console.log("TEST");
                 if (from_ppe_queue) find.mimeType = 'image';
                 if (label !== 'All') find.label = label;
 
@@ -4744,6 +4827,7 @@ async function accessSecret(secretName) {
                         break;
                     case 'Newest-Oldest':
                         sort_query = {date: -1};
+                        console.log("NEWEST");
                         break;
                     case 'Oldest-Newest':
                         sort_query = {date: 1};
@@ -4752,12 +4836,27 @@ async function accessSecret(secretName) {
 
                 let passages;
                 try {
-                    passages = await Passage.paginate(find, {
-                        sort: sort_query, 
-                        page: page, 
-                        limit: DOCS_PER_PAGE, 
-                        populate: 'author users parent sourceList'
-                    });
+                    if(whichPage != 'feed'){
+                        passages = await Passage.paginate(find, {
+                            sort: sort_query, 
+                            page: page, 
+                            limit: DOCS_PER_PAGE, 
+                            populate: 'author users parent sourceList'
+                        });
+                    }else{
+                        const result = await generateFeedWithPagination(req.session.user, page, DOCS_PER_PAGE);
+                        passages = {};
+                        passages.docs = [];
+                        console.log("LOGS");
+                        if('feed' in result){
+                            for (let i = 0; i < result.feed.length; i++) {
+                              const processedPassage = await getPassage(result.feed[i]);
+                              passages.docs.push(processedPassage);
+                            }
+                        }else{
+                            return res.send("No more passages.");
+                        }
+                    }
                     
                     console.log(`Found ${passages.docs.length} passages for page ${page}`);
                 } catch (err) {
@@ -5137,6 +5236,7 @@ async function accessSecret(secretName) {
             //also update file and server
             updateFile(passage.fileStreamPath, passage.code);
         }
+        await afterPassageCreation(newPassage);
         passage = await getPassage(passage);
         if(formData.page == 'stream'){
             return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage:true});
@@ -6977,16 +7077,923 @@ async function accessSecret(secretName) {
     const MAX_MEMORY_INCREASE = 500 * 1024 * 1024; // 500MB increase threshold
 
     // Check memory every 1 minutes
-    setInterval(() => {
-        const currentMemory = process.memoryUsage().heapUsed;
-        const memoryIncrease = currentMemory - initialMemory;
+    // setInterval(() => {
+    //     const currentMemory = process.memoryUsage().heapUsed;
+    //     const memoryIncrease = currentMemory - initialMemory;
 
-        if (memoryIncrease > MAX_MEMORY_INCREASE) {
-            console.error(`Memory leak alert! Memory increased by ${memoryIncrease / 1024 / 1024}MB`);
-            // Send alert (email, Slack, etc.)
-            console.log('Memory Leak Warning', `Memory increased by ${memoryIncrease / 1024 / 1024}MB`);
+    //     if (memoryIncrease > MAX_MEMORY_INCREASE) {
+    //         console.error(`Memory leak alert! Memory increased by ${memoryIncrease / 1024 / 1024}MB`);
+    //         // Send alert (email, Slack, etc.)
+    //         console.log('Memory Leak Warning', `Memory increased by ${memoryIncrease / 1024 / 1024}MB`);
+    //     }
+    // }, 1 * 60 * 1000);
+
+
+    //FEED SYSTEM
+    /**
+     * Feed monitoring and performance tracking
+     * This module helps track and optimize feed algorithm performance
+     */
+
+    // Performance tracking for feed generation
+    const feedPerformanceStats = {
+      totalRequests: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      totalGenerationTimeMs: 0,
+      slowGenerations: 0
+    };
+
+    /**
+     * Middleware to track feed performance metrics
+     * @param {Object} req - Express request object
+     * @param {Object} res - Express response object
+     * @param {Function} next - Express next function
+     */
+    async function trackFeedPerformance(req, res, next) {
+      // Only track performance for feed routes
+      if (!req.originalUrl.startsWith('/feed')) {
+        return next();
+      }
+
+      const startTime = Date.now();
+      const userId = req.session.user?._id;
+      
+      if (!userId) {
+        return next();
+      }
+      
+      // Check if we'll have a cache hit
+      const cacheKey = `user_feed:${userId}`;
+      const hasCachedFeed = await redis.exists(cacheKey);
+      
+      // Store original end function
+      const originalEnd = res.end;
+      
+      // Override end function to capture timing
+      res.end = function(chunk, encoding) {
+        // Restore original end function
+        res.end = originalEnd;
+        
+        // Calculate performance metrics
+        const duration = Date.now() - startTime;
+        feedPerformanceStats.totalRequests++;
+        
+        if (hasCachedFeed) {
+          feedPerformanceStats.cacheHits++;
+        } else {
+          feedPerformanceStats.cacheMisses++;
+          feedPerformanceStats.totalGenerationTimeMs += duration;
+          
+          // Track slow generations (over 1 second)
+          if (duration > 1000) {
+            feedPerformanceStats.slowGenerations++;
+            console.warn(`Slow feed generation for user ${userId}: ${duration}ms`);
+          }
         }
-    }, 1 * 60 * 1000);
+        
+        // Call the original end function
+        return originalEnd.call(this, chunk, encoding);
+      };
+      
+      // Continue with the request
+      next();
+    }
+
+    /**
+     * Get feed performance statistics
+     * @return {Object} Performance statistics
+     */
+    function getFeedPerformanceStats() {
+      const cacheHitRate = feedPerformanceStats.totalRequests > 0 
+        ? (feedPerformanceStats.cacheHits / feedPerformanceStats.totalRequests * 100).toFixed(2) 
+        : 0;
+      
+      const avgGenerationTime = feedPerformanceStats.cacheMisses > 0 
+        ? (feedPerformanceStats.totalGenerationTimeMs / feedPerformanceStats.cacheMisses).toFixed(2) 
+        : 0;
+      
+      return {
+        totalRequests: feedPerformanceStats.totalRequests,
+        cacheHitRate: `${cacheHitRate}%`,
+        avgGenerationTime: `${avgGenerationTime}ms`,
+        slowGenerations: feedPerformanceStats.slowGenerations
+      };
+    }
+
+    /**
+     * Admin endpoint to check feed generation stats
+     * Add this to your routes
+     */
+    function setupFeedMonitoringEndpoint(app, authMiddleware) {
+      app.get('/api/admin/feed-stats', authMiddleware, async (req, res) => {
+        try {
+          // Get basic performance stats
+          const stats = getFeedPerformanceStats();
+          
+          // Add queue information
+          stats.activeFeedJobs = await feedQueue.getActiveCount();
+          stats.waitingFeedJobs = await feedQueue.getWaitingCount();
+          stats.completedFeedJobs = await feedQueue.getCompletedCount();
+          stats.failedFeedJobs = await feedQueue.getFailedCount();
+          
+          res.json(stats);
+        } catch (error) {
+          console.error('Error getting feed stats:', error);
+          res.status(500).json({ error: 'Error retrieving feed statistics' });
+        }
+      });
+    }
+
+    /**
+     * Track user engagement with feed content
+     * This helps improve the feed algorithm over time
+     * @param {string} userId - User ID
+     * @param {string} passageId - Passage ID
+     * @param {string} action - Type of interaction (view, star, comment, etc.)
+     */
+    async function trackFeedEngagement(userId, passageId, action) {
+      try {
+        // Log engagement for analytics
+        console.log(`Feed engagement: ${userId} ${action} ${passageId}`);
+        
+        // You can store this in a database for analytics
+        // This data is valuable for improving the feed algorithm
+        
+        // Example: Store in Redis as a sorted set for recency
+        const now = Date.now();
+        await redis.zadd(`feed_engagement:${userId}`, now, `${action}:${passageId}`);
+        
+        // Use this data to improve the feed algorithm for this user
+        // For example, if they consistently engage with certain authors or topics
+        
+        return true;
+      } catch (error) {
+        console.error('Error tracking feed engagement:', error);
+        return false;
+      }
+    }
+
+    /**
+     * Get user engagement data for analytics
+     * @param {string} userId - User ID
+     * @param {number} limit - Number of records to retrieve
+     * @return {Array} Engagement data
+     */
+    async function getUserEngagementData(userId, limit = 100) {
+      try {
+        // Get recent engagement data from Redis
+        const data = await redis.zrevrange(`feed_engagement:${userId}`, 0, limit - 1, 'WITHSCORES');
+        
+        // Parse and format the data
+        const engagementData = [];
+        for (let i = 0; i < data.length; i += 2) {
+          const [action, passageId] = data[i].split(':');
+          const timestamp = parseInt(data[i+1]);
+          
+          engagementData.push({
+            userId,
+            passageId,
+            action,
+            timestamp: new Date(timestamp),
+          });
+        }
+        
+        return engagementData;
+      } catch (error) {
+        console.error('Error getting user engagement data:', error);
+        return [];
+      }
+    }
+
+    // Expose an engagement tracking endpoint
+    // This can be called via AJAX when users interact with content
+    function setupEngagementEndpoint(app) {
+      app.post('/api/track-engagement', async (req, res) => {
+        if (!req.session.user) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+        
+        const { passageId, action } = req.body;
+        
+        if (!passageId || !action) {
+          return res.status(400).json({ error: 'Missing required parameters' });
+        }
+        
+        await trackFeedEngagement(req.session.user._id, passageId, action);
+        
+        return res.json({ success: true });
+      });
+    }
+
+    /**
+     * Generate engagement analytics for admin dashboard
+     */
+    async function generateEngagementAnalytics() {
+      try {
+        // Get engagement data for the last 30 days
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        
+        // You would implement this with a database query
+        // This is just a simplified example
+        
+        return {
+          totalViews: 0,
+          totalStars: 0,
+          totalComments: 0,
+          activeUsers: 0,
+          topPassages: [],
+          mostEngagedUsers: []
+        };
+      } catch (error) {
+        console.error('Error generating engagement analytics:', error);
+        return null;
+      }
+    }
+    // Add this after a passage is saved to update followers' feeds in real-time
+    PassageSchema.post('save', async function(doc) {
+      // Only trigger for brand new passages that aren't versions of other passages
+      if (!doc.versionOf) {
+        try {
+          await afterPassageCreation(doc);
+        } catch (error) {
+          console.error('Error updating feeds after passage creation:', error);
+        }
+      }
+    });
+    // Add a route to manually invalidate a user's feed cache
+    // Useful during development or for admin tools
+    app.post('/api/admin/invalidate-feed-cache', requiresAdmin, async (req, res) => {
+      try {
+        const { userId } = req.body;
+        
+        if (!userId) {
+          return res.status(400).json({ error: 'Missing userId parameter' });
+        }
+        
+        const cacheKey = `user_feed:${userId}`;
+        await redis.del(cacheKey);
+        
+        // Queue a job to regenerate the feed
+        await feedQueue.add(
+          { userId },
+          { priority: 1 } // High priority
+        );
+        
+        res.json({ success: true, message: 'Feed cache invalidated and regeneration queued' });
+      } catch (error) {
+        console.error('Error invalidating feed cache:', error);
+        res.status(500).json({ error: 'Failed to invalidate feed cache' });
+      }
+    });
+
+    // Add a route to clear all feed caches
+    // Use with caution - this will cause a spike in database load
+    app.post('/api/admin/clear-all-feed-caches', requiresAdmin, async (req, res) => {
+      try {
+        // Get all feed cache keys
+        const keys = await redis.keys('user_feed:*');
+        
+        if (keys.length > 0) {
+          // Delete all feed caches
+          await redis.del(keys);
+          console.log(`Cleared ${keys.length} feed caches`);
+        }
+        
+        res.json({ success: true, cleared: keys.length });
+      } catch (error) {
+        console.error('Error clearing feed caches:', error);
+        res.status(500).json({ error: 'Failed to clear feed caches' });
+      }
+    });
+
+    app.get('/feed', async (req, res) => {
+      if (!req.session.user) {
+        return res.redirect('/loginform');
+      }
+
+      const ISMOBILE = browser(req.headers['user-agent']).mobile;
+      const page = parseInt(req.query.page || '1');
+      const limit = DOCS_PER_PAGE;
+      
+      try {
+        // Get feed with pagination
+        const result = await generateFeedWithPagination(req.session.user, page, limit);
+        
+        // If we need to redirect to a different page (e.g., if requested page is beyond results)
+        if (result.redirect) {
+          return res.redirect(`/feed?page=${result.page}`);
+        }
+        
+        // Process passages with getPassage to get all required data
+        const passages = [];
+        for (let i = 0; i < result.feed.length; i++) {
+          const processedPassage = await getPassage(result.feed[i]);
+          passages.push(processedPassage);
+        }
+        
+        // Get bookmarks for sidebar
+        let bookmarks = [];
+        if (req.session.user) {
+          bookmarks = await getBookmarks(req.session.user);
+        }
+        
+        // Render the stream view with feed data
+        return res.render("stream", {
+          subPassages: false,
+          passageTitle: false, 
+          scripts: scripts, 
+          passages: passages, 
+          passage: {
+            id: 'root', 
+            author: {
+              _id: 'root',
+              username: 'Sasame'
+            }
+          },
+          bookmarks: bookmarks,
+          ISMOBILE: ISMOBILE,
+          page: 'feed',
+          whichPage: 'feed',
+          thread: false,
+          currentPage: result.currentPage,
+          totalPages: result.totalPages
+        });
+      } catch (error) {
+        console.error('Error generating feed:', error);
+        return res.status(500).send('Error generating feed. Please try again later.');
+      }
+    });
+
+    // Hook into passage creation to update feeds in real-time
+    // Add this to your passage creation routes
+    async function afterPassageCreation(newPassage) {
+      try {
+        // Find users who follow this author
+        const followers = await Follower.find({ following: newPassage.author }).distinct('follower');
+        
+        // For followed authors, inject the new passage into their feed
+        for (const followerId of followers) {
+          // Get current cached feed
+          const cacheKey = `user_feed:${followerId}`;
+          const feedCache = await redisGet(cacheKey);
+          
+          if (feedCache) {
+            const feedIds = JSON.parse(feedCache);
+            
+            // Insert at the beginning (or using a score-based position)
+            feedIds.unshift(newPassage._id.toString());
+            
+            // Keep the feed at a reasonable size
+            if (feedIds.length > 1000) feedIds.pop();
+            
+            // Update cache
+            await redisSet(cacheKey, JSON.stringify(feedIds), 'EX', 3600);
+          }
+        }
+        
+        console.log(`Updated feeds for ${followers.length} followers of ${newPassage.author.username || newPassage.author.name}`);
+      } catch (error) {
+        console.error('Error in afterPassageCreation:', error);
+      }
+    }
+
+    // Initialize the feed system during app startup
+    async function initializeFeedSystem() {
+      // Process the feed generation jobs
+      feedQueue.process(async (job) => {
+        const { userId } = job.data;
+        const user = await User.findById(userId);
+        
+        if (!user) {
+          console.error(`User ${userId} not found for feed generation`);
+          return { success: false, error: 'User not found' };
+        }
+        
+        try {
+          // Generate the feed
+          const relevantPassages = await getRelevantPassagesForUser(user);
+          const scoredPassages = await scorePassages(relevantPassages, user);
+          
+          // Cache the results
+          const feedIds = scoredPassages.map(item => item.passage._id.toString());
+          await redisSet(
+            `user_feed:${userId}`, 
+            JSON.stringify(feedIds),
+            'EX',
+            3600 // 1 hour cache
+          );
+          
+          return { success: true, userId, feedSize: feedIds.length };
+        } catch (error) {
+          console.error(`Error generating feed for user ${userId}:`, error);
+          return { success: false, userId, error: error.message };
+        }
+      });
+      
+      // Schedule periodic feed updates for active users
+      cron.schedule('0 */3 * * *', async () => { // Every 3 hours
+        try {
+          // Find active users (those who logged in within last 7 days)
+          const activeTimeThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          const activeUsers = await User.find({
+            lastLogin: { $gte: activeTimeThreshold }
+          });
+          
+          console.log(`Scheduling feed updates for ${activeUsers.length} active users`);
+          
+          // Add jobs to queue with different priorities based on user activity
+          for (const user of activeUsers) {
+            const hoursSinceLastLogin = (Date.now() - new Date(user.lastLogin)) / (1000 * 60 * 60);
+            
+            // Determine job priority based on activity
+            let priority = 3; // Default priority
+            
+            if (hoursSinceLastLogin < 24) {
+              priority = 1; // High priority for very active users
+            } else if (hoursSinceLastLogin < 72) {
+              priority = 2; // Medium priority for moderately active users
+            }
+            
+            // Schedule job
+            await feedQueue.add(
+              { userId: user._id.toString() },
+              { priority }
+            );
+          }
+        } catch (error) {
+          console.error('Error scheduling feed updates:', error);
+        }
+      });
+      
+      console.log('Feed system initialized');
+    }
+        /**
+     * Generates a personalized feed with pagination for a user
+     * Balances:
+     * - Showing newer posts more frequently
+     * - Occasionally showing older posts (no zero probability)
+     * - Prioritizing posts with more stars
+     * - Prioritizing posts used by others (especially different authors)
+     * - Considering followed authors
+     * 
+     * @param {Object} user - The current user
+     * @param {Number} page - Page number for pagination
+     * @param {Number} limit - Number of items per page
+     * @return {Object} Feed results with pagination info
+     */
+    async function generateFeedWithPagination(user, page = 1, limit = 20) {
+      const cacheKey = `user_feed:${user._id}`;
+      const CACHE_EXPIRATION = 3600; // 1 hour in seconds
+      
+      // Try to get cached feed IDs
+      let feedCache = await redis.get(cacheKey);
+      let feedIds;
+      
+      // If cache doesn't exist or is expired, generate the feed scores
+      if (!feedCache) {
+        console.log(`Generating new feed for user ${user._id}`);
+        
+        // Get filtering parameters
+        const recentCutoff = new Date(Date.now() - (90 * 24 * 60 * 60 * 1000)); // Last 90 days
+        const veryRecentCutoff = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)); // Last 7 days
+        
+        // Get followed authors
+        const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+        
+        // Initial filtering query to reduce the dataset
+        const passageQuery = { 
+          versionOf: null,
+          personal: false,
+          deleted: false,
+          $or: [
+            { author: { $in: followedAuthors } }, // From followed authors
+            { date: { $gte: veryRecentCutoff } }, // Very recent content
+            { "stars": { $gte: 5 } }, // Content with engagement
+            { 
+              date: { $gte: recentCutoff },
+              "stars": { $gte: 1 } // Recent with some engagement
+            }
+          ]
+        };
+        
+        // Get passages with initial filtering
+        // Limit to a reasonable number for scoring (1000 is enough for most feeds)
+        const passages = await Passage.find(passageQuery)
+          .populate('author users sourceList')
+          .limit(1000);
+        // Score and rank passages
+        const scoredPassages = await scorePassages(passages, user);
+        
+        // Extract IDs and save to cache
+        feedIds = scoredPassages.map(item => item.passage._id.toString());
+        await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', CACHE_EXPIRATION);
+      } else {
+        // Use cached feed IDs
+        feedIds = JSON.parse(feedCache);
+      }
+      // Apply pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedIds = feedIds.slice(startIndex, endIndex);
+      
+      // Check if we have enough items for this page
+      if (paginatedIds.length < limit && startIndex < feedIds.length) {
+        // We're at the last page but have fewer items than the limit
+        // This is normal, just use what we have
+      } else if (paginatedIds.length === 0 && feedIds.length > 0) {
+        // Page is beyond available results, redirect to last valid page
+        const lastValidPage = Math.ceil(feedIds.length / limit);
+        return { 
+          redirect: true, 
+          page: lastValidPage,
+          totalPages: lastValidPage
+        };
+      }
+      
+      // Fetch full passage data for paginated IDs
+      let feed = [];
+      if (paginatedIds.length > 0) {
+        feed = await Passage.find({ 
+          _id: { $in: paginatedIds.map(id => mongoose.Types.ObjectId(id)) }
+        }).populate('author users sourceList');
+        
+        // Fill in usedIn data
+        feed = await fillUsedInList(feed);
+        
+        // Sort according to the feed order (to maintain ranking)
+        feed.sort((a, b) => {
+          return paginatedIds.indexOf(a._id.toString()) - paginatedIds.indexOf(b._id.toString());
+        });
+      }
+      
+      // Return feed with pagination metadata
+      return {
+        feed,
+        totalPages: Math.ceil(feedIds.length / limit),
+        currentPage: page,
+        totalItems: feedIds.length
+      };
+    }
+
+    /**
+     * Scores passages for feed ranking
+     * 
+     * @param {Array} passages - Array of passage objects to score
+     * @param {Object} user - Current user
+     * @return {Array} Scored and sorted passages
+     */
+    async function scorePassages(passages, user) {
+      // Get list of authors the user follows
+      const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+      
+      const scoredPassages = [];
+      
+      for (const passage of passages) {
+        // Get distinct authors who used this passage (excluding the original author)
+        const usedByAuthors = await Passage.find({
+          sourceList: { $in: [passage._id] },
+          versionOf: null,
+          author: { $ne: passage.author._id }
+        }).distinct('author');
+        
+        // Calculate scores for different factors
+        const recencyScore = calculateRecencyScore(passage.createdAt);
+        const starScore = passage.stars || 0;
+        const usedByScore = usedByAuthors.length;
+        
+        // Apply bonuses for social factors
+        const followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.5 : 1;
+        
+        // Add randomness factor (values between 0.8 and 1.2)
+        // This ensures some variety and prevents feeds from being too deterministic
+        const randomnessFactor = 0.8 + (Math.random() * 0.4);
+        
+        // Calculate final score with weighted components
+        const score = (
+          (recencyScore * 0.4) +  // 40% weight for recency
+          (starScore * 0.25) +    // 25% weight for stars
+          (usedByScore * 0.25)    // 25% weight for usage by different authors
+        ) * followedAuthorBonus * randomnessFactor;
+        
+        scoredPassages.push({
+          passage,
+          score
+        });
+      }
+      
+      // Sort by score (descending)
+      return scoredPassages.sort((a, b) => b.score - a.score);
+    }
+
+    /**
+     * Calculates a recency score with exponential decay
+     * - New posts start with score 1.0
+     * - Old posts decay to a minimum of 0.1 (never zero)
+     * - This ensures older posts have some chance of appearing
+     * 
+     * @param {Date} createdAt - Creation date of the passage
+     * @return {Number} Recency score between 0.1 and 1.0
+     */
+    function calculateRecencyScore(createdAt) {
+      const now = new Date();
+      const ageInDays = (now - new Date(createdAt)) / (1000 * 60 * 60 * 24);
+      
+      // Exponential decay function:
+      // - Starts at 1.0 for new posts
+      // - Decays to 0.1 for very old posts
+      // - Half-life of about 14 days (0.05 decay rate)
+      return 0.1 + (0.9 * Math.exp(-0.05 * ageInDays));
+    }
+
+    /**
+     * Updates the feed in the background
+     * This should be called from a cron job or similar
+     */
+    async function scheduleBackgroundFeedUpdates() {
+      try {
+        // Find active users who have logged in recently
+        const activeTimeThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
+        const activeUsers = await User.find({
+          lastLogin: { $gte: activeTimeThreshold }
+        });
+        
+        console.log(`Scheduling feed updates for ${activeUsers.length} active users`);
+        
+        // Process users in batches to avoid overwhelming the system
+        const batchSize = 50;
+        
+        for (let i = 0; i < activeUsers.length; i += batchSize) {
+          const batch = activeUsers.slice(i, i + batchSize);
+          
+          // Process each user in the batch
+          await Promise.all(batch.map(async (user) => {
+            try {
+              const hoursSinceLastLogin = (Date.now() - new Date(user.lastLogin)) / (1000 * 60 * 60);
+              
+              // Determine refresh frequency based on activity
+              let refreshInterval;
+              if (hoursSinceLastLogin < 24) {
+                refreshInterval = 3 * 60 * 60 * 1000; // 3 hours for very active users
+              } else if (hoursSinceLastLogin < 72) {
+                refreshInterval = 6 * 60 * 60 * 1000; // 6 hours for moderately active users
+              } else {
+                refreshInterval = 12 * 60 * 60 * 1000; // 12 hours for less active users
+              }
+              
+              // Use the job queue system to schedule feed updates
+              await feedQueue.add(
+                { userId: user._id.toString() },
+                { 
+                  repeat: { every: refreshInterval },
+                  jobId: `feed-update-${user._id}`
+                }
+              );
+            } catch (error) {
+              console.error(`Error scheduling feed update for user ${user._id}:`, error);
+            }
+          }));
+          
+          // Small delay between batches to reduce database load
+          if (i + batchSize < activeUsers.length) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
+        console.log(`Completed scheduling feed updates`);
+      } catch (error) {
+        console.error('Error in scheduleBackgroundFeedUpdates:', error);
+      }
+    }
+
+    /**
+     * Process the feed generation job from the queue
+     */
+    async function processFeedGenerationJob(job) {
+      const { userId } = job.data;
+      
+      try {
+        console.log(`Processing feed update for user ${userId}`);
+        
+        const user = await User.findById(userId);
+        if (!user) {
+          console.error(`User ${userId} not found when processing feed update`);
+          return { success: false, error: 'User not found' };
+        }
+        
+        // Get filtered passages for this user
+        const relevantPassages = await getRelevantPassagesForUser(user);
+        
+        // Score passages
+        const scoredPassages = await scorePassages(relevantPassages, user);
+        
+        // Extract IDs and cache the feed
+        const feedIds = scoredPassages.map(item => item.passage._id.toString());
+        const cacheKey = `user_feed:${userId}`;
+        
+        await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', 3600); // 1 hour cache
+        
+        return { 
+          success: true, 
+          userId,
+          feedSize: feedIds.length
+        };
+      } catch (error) {
+        console.error(`Error in processFeedGenerationJob for user ${userId}:`, error);
+        return { 
+          success: false, 
+          userId,
+          error: error.message
+        };
+      }
+    }
+
+    /**
+     * Get relevant passages for a user's feed with efficient filtering
+     */
+    async function getRelevantPassagesForUser(user, limit = 1000) {
+      // Get followed authors
+      const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+      
+      // Time windows
+      const veryRecentCutoff = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)); // 1 week
+      const recentCutoff = new Date(Date.now() - (90 * 24 * 60 * 60 * 1000)); // 3 months
+      
+      // First-stage filtering
+      const query = {
+        versionOf: null,
+        deleted: false,
+        personal: false,
+        $or: [
+          { author: { $in: followedAuthors } }, // From followed authors
+          { createdAt: { $gte: veryRecentCutoff } }, // Very recent content
+          { 
+            createdAt: { $gte: recentCutoff },
+            stars: { $gte: 1 } // Recent with some engagement
+          }
+        ]
+      };
+      
+      // Get passages with filtered query
+      const passages = await Passage.find(query)
+        .populate('author users sourceList')
+        .sort('-stars -createdAt')
+        .limit(limit);
+      
+      return passages;
+    }
+
+    // Add this to your feed API endpoint
+    async function handleFeedRequest(req, res) {
+      try {
+        const user = req.user;
+        const page = parseInt(req.query.page || '1');
+        const limit = parseInt(req.query.limit || '20');
+        
+        // Generate or retrieve feed
+        const feedResult = await generateFeedWithPagination(user, page, limit);
+        
+        // Check if we need to redirect to a different page
+        if (feedResult.redirect) {
+          return res.json({
+            redirect: true,
+            page: feedResult.page,
+            totalPages: feedResult.totalPages
+          });
+        }
+        
+        // Return feed data
+        return res.json({
+          feed: feedResult.feed,
+          totalPages: feedResult.totalPages,
+          currentPage: feedResult.currentPage,
+          totalItems: feedResult.totalItems
+        });
+      } catch (error) {
+        console.error('Error generating feed:', error);
+        return res.status(500).json({ error: 'Could not generate feed' });
+      }
+    }
+
+    /**
+     * Add this to your app setup
+     */
+    function initFeedSystem() {
+      // Set up the feed queue processor
+      feedQueue.process(async (job) => {
+        return await processFeedGenerationJob(job);
+      });
+      
+      // Schedule initial background updates
+      scheduleBackgroundFeedUpdates();
+      
+      // Schedule regular runs of the background updater
+      cron.schedule('0 */6 * * *', async () => { // Every 6 hours
+        await scheduleBackgroundFeedUpdates();
+      });
+    }
+
+    // Utility function to handle real-time injection of important content
+    async function injectHighPriorityContent(newPassage, maxFeedsToUpdate = 100) {
+      try {
+        // Only inject if the passage is significant
+        if (newPassage.author && (newPassage.stars > 10 || newPassage.usedByDifferentAuthorsCount > 3)) {
+          console.log(`Injecting high-priority content ${newPassage._id} into user feeds`);
+          
+          // Find followers of this author
+          const followers = await Follower.find({ following: newPassage.author._id }).limit(maxFeedsToUpdate);
+          
+          // Inject content into their feeds
+          for (const follower of followers) {
+            const cacheKey = `user_feed:${follower.user}`;
+            const cachedFeed = await redis.get(cacheKey);
+            
+            if (cachedFeed) {
+              const feedIds = JSON.parse(cachedFeed);
+              
+              // Insert at a high position (not necessarily the top)
+              // This preserves some randomness while ensuring visibility
+              const insertPosition = Math.min(5, Math.floor(feedIds.length * 0.1));
+              feedIds.splice(insertPosition, 0, newPassage._id.toString());
+              
+              // Update cache with the new feed order
+              await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', 3600);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error injecting high priority content:', error);
+      }
+    }
+
+
+    // Initialize the feed system during app startup
+    // Add this near the end of your app initialization code
+    (async function() {
+      try {
+        console.log('Initializing feed system...');
+        
+        // Initialize Redis client without using connect()
+        redisClient = redis.createClient({
+          url: process.env.REDIS_URL || 'redis://localhost:6379',
+          retry_strategy: function(options) {
+            if (options.error && options.error.code === 'ECONNREFUSED') {
+              console.error('Redis connection refused. Retrying...');
+              return Math.min(options.attempt * 100, 3000);
+            }
+            return Math.min(options.attempt * 100, 3000);
+          }
+        });
+
+        redisClient.on('error', (error) => {
+          console.error('Redis client error:', error);
+        });
+
+        redisClient.on('ready', () => {
+          console.log('Connected to Redis');
+        });
+
+        // Promisify Redis methods for easier async/await usage
+        redis.get = promisify(redisClient.get).bind(redisClient);
+        redis.set = promisify(redisClient.set).bind(redisClient);
+        redis.del = promisify(redisClient.del).bind(redisClient);
+        redis.keys = promisify(redisClient.keys).bind(redisClient);
+        redis.exists = promisify(redisClient.exists).bind(redisClient);
+        redis.zadd = promisify(redisClient.zadd).bind(redisClient);
+        redis.zrevrange = promisify(redisClient.zrevrange).bind(redisClient);
+        
+        // Initialize Bull queue for background processing
+        feedQueue.on('error', (error) => {
+          console.error('Feed queue error:', error);
+        });
+        
+        // Process feed generation jobs
+        feedQueue.process(async (job) => {
+          return await processFeedGenerationJob(job);
+        });
+        
+        // Add monitoring endpoints
+        setupFeedMonitoringEndpoint(app, requiresAdmin);
+        setupEngagementEndpoint(app);
+        
+        // Schedule initial feed updates for active users
+        const startupDelay = 10 * 1000; // 10 seconds
+        setTimeout(async () => {
+          try {
+            await scheduleBackgroundFeedUpdates();
+            console.log('Initial feed updates scheduled');
+          } catch (error) {
+            console.error('Error scheduling initial feed updates:', error);
+          }
+        }, startupDelay);
+        
+        console.log('Feed system initialized');
+      } catch (error) {
+        console.error('Error initializing feed system:', error);
+      }
+    })();
+
+
     // CLOSING LOGIC
     server.listen(PORT, () => {
         console.log(`Sasame started on Port ${PORT}`);
