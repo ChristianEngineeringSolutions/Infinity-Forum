@@ -115,6 +115,70 @@ async function accessSecret(secretName) {
     const Notification = require('./models/Notification');
     const Star = require('./models/Star');
     const JTI = require('./models/JTI');
+    async function setupDatabaseIndexes() {
+      try {
+        console.log("Setting up database indexes...");
+        
+        // Create indexes one by one with error handling
+        const indexOperations = [
+          // Basic indexes
+          { collection: 'passages', index: { versionOf: 1 } },
+          { collection: 'passages', index: { personal: 1 } },
+          { collection: 'passages', index: { deleted: 1 } },
+          { collection: 'passages', index: { author: 1 } },
+          { collection: 'passages', index: { date: -1 } },
+          { collection: 'passages', index: { stars: -1 } },
+          
+          // Compound indexes
+          { 
+            collection: 'passages', 
+            index: { versionOf: 1, personal: 1, deleted: 1, date: -1, stars: -1 },
+            options: { name: 'feed_main_index' }
+          },
+          { 
+            collection: 'passages', 
+            index: { versionOf: 1, personal: 1, deleted: 1, author: 1 },
+            options: { name: 'feed_author_index' }
+          },
+          { 
+            collection: 'passages', 
+            index: { versionOf: 1, personal: 1, deleted: 1, "passages.0": 1 },
+            options: { name: 'feed_passages_index' }
+          },
+          
+          // Index for followers
+          { 
+            collection: 'followers', 
+            index: { user: 1, following: 1 },
+            options: { name: 'follower_index' }
+          }
+        ];
+        
+        // Create indexes sequentially to avoid overwhelming the database
+        for (const op of indexOperations) {
+          try {
+            // Get the model that corresponds to the collection name
+            const modelName = op.collection.charAt(0).toUpperCase() + op.collection.slice(1, -1);
+            const Model = mongoose.model(modelName);
+            
+            // console.log(`Creating index on ${op.collection}: ${JSON.stringify(op.index)}`);
+            
+            // Create the index
+            await Model.collection.createIndex(op.index, op.options || {});
+            
+            // console.log(`Successfully created index on ${op.collection}: ${JSON.stringify(op.index)}`);
+          } catch (indexError) {
+            // Don't fail the entire operation if one index fails
+            console.error(`Error creating index on ${op.collection} ${JSON.stringify(op.index)}:`, indexError);
+          }
+        }
+        
+        console.log("Database indexes setup complete");
+      } catch (error) {
+        console.error("Error setting up database indexes:", error);
+      }
+    }
+    setupDatabaseIndexes();
     // Controllers
     const passageController = require('./controllers/passageController');
      // Routes
@@ -7551,6 +7615,7 @@ async function accessSecret(secretName) {
       let feedIds;
       
       // If cache doesn't exist or is expired, generate the feed scores
+      //!feedCache
       if (!feedCache) {
         console.log(`Generating new feed for user ${user._id}`);
         
@@ -7580,7 +7645,13 @@ async function accessSecret(secretName) {
         // Get passages with initial filtering
         // Limit to a reasonable number for scoring (1000 is enough for most feeds)
         const passages = await Passage.find(passageQuery)
-          .populate('author users sourceList')
+          .populate([
+            { path: 'author' },
+            { path: 'users' },
+            { path: 'sourceList' },
+            { path: 'comments', select: 'author' }, // Only need author field from comments
+            { path: 'passages', select: 'author' }  // Only need author field from sub-passages
+          ])
           .limit(1000);
         // Score and rank passages
         const scoredPassages = await scorePassages(passages, user);
@@ -7644,47 +7715,85 @@ async function accessSecret(secretName) {
      * @return {Array} Scored and sorted passages
      */
     async function scorePassages(passages, user) {
-      // Get list of authors the user follows
-      const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
-      
-      const scoredPassages = [];
-      
-      for (const passage of passages) {
-        // Get distinct authors who used this passage (excluding the original author)
-        const usedByAuthors = await Passage.find({
-          sourceList: { $in: [passage._id] },
-          versionOf: null,
-          author: { $ne: passage.author._id }
-        }).distinct('author');
-        
-        // Calculate scores for different factors
-        const recencyScore = calculateRecencyScore(passage.createdAt);
-        const starScore = passage.stars || 0;
-        const usedByScore = usedByAuthors.length;
-        
-        // Apply bonuses for social factors
-        const followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.5 : 1;
-        
-        // Add randomness factor (values between 0.8 and 1.2)
-        // This ensures some variety and prevents feeds from being too deterministic
-        const randomnessFactor = 0.8 + (Math.random() * 0.4);
-        
-        // Calculate final score with weighted components
-        const score = (
-          (recencyScore * 0.4) +  // 40% weight for recency
-          (starScore * 0.25) +    // 25% weight for stars
-          (usedByScore * 0.25)    // 25% weight for usage by different authors
-        ) * followedAuthorBonus * randomnessFactor;
-        
-        scoredPassages.push({
-          passage,
-          score
-        });
-      }
-      
-      // Sort by score (descending)
-      return scoredPassages.sort((a, b) => b.score - a.score);
+  // Get list of authors the user follows
+  const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+  
+  const scoredPassages = [];
+  
+  for (const passage of passages) {
+    // Get distinct authors who used this passage (excluding the original author)
+    const usedByAuthors = await Passage.find({
+      sourceList: { $in: [passage._id] },
+      versionOf: null,
+      author: { $ne: passage.author._id }
+    }).distinct('author');
+    
+    // Calculate comment count based on passage type, excluding author's own comments
+    let commentCount = 0;
+    
+    if (passage.private === true && passage.comments) {
+      commentCount = passage.comments.filter(comment => 
+        comment.author && comment.author.toString() !== passage.author._id.toString()
+      ).length;
+    } else if (passage.private === false && passage.passages) {
+      commentCount = passage.passages.filter(subPassage => 
+        subPassage.author && subPassage.author.toString() !== passage.author._id.toString()
+      ).length;
     }
+    
+    // Apply logarithmic scaling to prevent dominance by any one factor
+    const dateField = passage.createdAt || passage.date;
+    const recencyScore = calculateRecencyScore(dateField);
+    const starScore = Math.log10(passage.stars + 1) * 1.5; // Logarithmic scaling
+    const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
+    const commentScore = Math.log10(commentCount + 1) * 1.5;
+    
+    // Apply social factor bonuses
+    const followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.3 : 1;
+    
+    // Stronger randomness factor (between 0.6 and 1.4)
+    const randomnessFactor = 0.6 + (Math.random() * 0.8);
+    
+    // Calculate final score with weighted components
+    const score = (
+      (recencyScore * 0.35) +      // 35% weight for recency
+      (starScore * 0.2) +          // 20% weight for stars
+      (usedByScore * 0.25) +       // 15% weight for usage
+      (commentScore * 0.15)        // 15% weight for comments
+    ) * followedAuthorBonus * randomnessFactor;
+    
+    scoredPassages.push({
+      passage,
+      score,
+      // Add debug info to help understand scoring (remove in production)
+      // debug: {
+      //   recency: recencyScore * 0.35,
+      //   stars: starScore * 0.2,
+      //   usedBy: usedByScore * 0.15,
+      //   comments: commentScore * 0.15,
+      //   authorBonus: followedAuthorBonus,
+      //   random: randomnessFactor
+      // }
+    });
+  }
+  
+  // Add an additional shuffle step to further randomize when scores are close
+  scoredPassages.sort((a, b) => {
+    // If scores are within 10% of each other, randomize their order
+    if (Math.abs(a.score - b.score) < (a.score * 0.1)) {
+      return Math.random() - 0.5;
+    }
+    return b.score - a.score; // Otherwise use score order
+  });
+  
+  console.log("Score distribution:", 
+    scoredPassages.slice(0, 10).map(p => 
+      ({id: p.passage._id.toString().substr(-4), score: p.score.toFixed(2)})
+    )
+  );
+  
+  return scoredPassages;
+}
 
     /**
      * Calculates a recency score with exponential decay
@@ -7826,9 +7935,9 @@ async function accessSecret(secretName) {
         personal: false,
         $or: [
           { author: { $in: followedAuthors } }, // From followed authors
-          { createdAt: { $gte: veryRecentCutoff } }, // Very recent content
+          { date: { $gte: veryRecentCutoff } }, // Very recent content
           { 
-            createdAt: { $gte: recentCutoff },
+            date: { $gte: recentCutoff },
             stars: { $gte: 1 } // Recent with some engagement
           }
         ]
@@ -7837,7 +7946,7 @@ async function accessSecret(secretName) {
       // Get passages with filtered query
       const passages = await Passage.find(query)
         .populate('author users sourceList')
-        .sort('-stars -createdAt')
+        .sort('-stars -date')
         .limit(limit);
       
       return passages;
