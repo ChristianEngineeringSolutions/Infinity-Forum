@@ -1750,7 +1750,7 @@ async function accessSecret(secretName) {
     //         )
     //     }));
     // }
-    async function getPassageLocation(passage, train){
+async function getPassageLocation(passage, train){
         train = train || [];
         // console.log(passage.parent);
         if(passage.parent == null){
@@ -2075,6 +2075,7 @@ async function accessSecret(secretName) {
         }
         passage = await fillUsedInListSingle(passage);
         passage.location = await returnPassageLocation(passage);
+        // passage.location = 'Test';
         if(passage.showBestOf){
             //get best sub passage
             var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
@@ -4850,9 +4851,6 @@ async function accessSecret(secretName) {
     app.post('/paginate', async function(req, res) {
         try {
             const { page, profile, search = '', parent = 'root', whichPage, sort = 'Most Stars', label = 'All', from_ppe_queue } = req.body;
-            
-            console.log(`Processing page ${page} with profile ${profile}`);
-
             // Handle standard passages
             if (!['filestream', 'messages', 'leaderboard'].includes(profile)) {
                 let find = {
@@ -4922,7 +4920,6 @@ async function accessSecret(secretName) {
                         }
                     }
                     
-                    console.log(`Found ${passages.docs.length} passages for page ${page}`);
                 } catch (err) {
                     console.error('Error in pagination:', err);
                     throw err;
@@ -4931,17 +4928,8 @@ async function accessSecret(secretName) {
                 // Process passages with error handling for each
                 const processedPassages = [];
                 for (let i = 0; i < passages.docs.length; i++) {
-                    try {
-                        console.log(`Processing passage ${i + 1}/${passages.docs.length}, ID: ${passages.docs[i]._id}`);
-                        
-                        // Debug log the passage structure
-                        console.log('Passage structure:', {
-                            id: passages.docs[i]._id,
-                            hasUsers: Array.isArray(passages.docs[i].users),
-                            hasAuthor: !!passages.docs[i].author,
-                            hasParent: !!passages.docs[i].parent,
-                            hasSourceList: Array.isArray(passages.docs[i].sourceList),
-                        });
+                    try {                        
+                        // console.log("Passage.location:" + (await getPassageLocation(passages.docs[i])));
 
                         let passageWithUsedIn = await fillUsedInList(passages.docs[i]);
                         let processedPassage = await getPassage(passageWithUsedIn);
@@ -7634,7 +7622,7 @@ async function accessSecret(secretName) {
           $or: [
             { author: { $in: followedAuthors } }, // From followed authors
             { date: { $gte: veryRecentCutoff } }, // Very recent content
-            { "stars": { $gte: 5 } }, // Content with engagement
+            { "stars": { $gte: 0 } }, // Content with engagement
             { 
               date: { $gte: recentCutoff },
               "stars": { $gte: 1 } // Recent with some engagement
@@ -7945,7 +7933,7 @@ async function accessSecret(secretName) {
       
       // Get passages with filtered query
       const passages = await Passage.find(query)
-        .populate('author users sourceList')
+        .populate('author users sourceList parent collaborators versions mirror')
         .sort('-stars -date')
         .limit(limit);
       
