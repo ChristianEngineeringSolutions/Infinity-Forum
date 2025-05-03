@@ -7658,7 +7658,7 @@ async function getPassageLocation(passage, train){
       
       // If cache doesn't exist or is expired, generate the feed scores
       //!feedCache
-      if (true) {
+      if (!feedCache) {
         console.log(`Generating new feed for user ${user._id}`);
         
         // Get filtering parameters
