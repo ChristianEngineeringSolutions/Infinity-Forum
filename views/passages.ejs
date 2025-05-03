@@ -2,6 +2,7 @@
     <%- include('passage', {passage: passage, sub: true, subPassage:false}) %>
 <%});%>
 <% const currentPage = typeof page !== 'undefined' ? page : 1; %>
+<input type="hidden" class="cursor"value="<%=typeof cursor === 'undefined' ? null : cursor%>"name="">
 <% if(passages.length == 0 && currentPage == 1){ %>
     <div style="margin:auto;text-align:center;">No Passages Yet.</div>
 <% } %>

@@ -2072,6 +2072,7 @@ async function getPassageLocation(passage, train){
             var parentID = 'root';
         }
         passage = await fillUsedInListSingle(passage);
+        // passage.location = 'test';
         passage.location = await returnPassageLocation(passage);
         // passage.location = 'Test';
         if(passage.showBestOf){
@@ -2955,22 +2956,23 @@ async function getPassageLocation(passage, train){
         console.log(req.body.whichPage);
         var sort = {stars: -1, _id: -1};
         var results; // Declare results here
-        
+        var nextCursor = null;
         switch(req.body.sort){
             case 'Most Stars':
                 sort = {stars: -1, _id: -1};
                 break;
             case 'Most Cited':
                 const cursor = req.body.cursor || null;
-                results = await getPassagesByUsage({
+                var result = await getPassagesByUsage({
                   cursor: cursor,
-                  limit: DOCS_PER_PAGE,
+                  limit: 1,
                   minUsageCount: 2
                 });
-                results = results.passages;
+                var results = result.passages;
                 for(var i = 0; i < results.length; ++i){
                     results[i] = await getPassage(results[i]);
                 }
+                nextCursor = result.nextCursor;
                 break;  
             case 'Newest-Oldest':
                 sort = {date: -1};
@@ -2992,7 +2994,8 @@ async function getPassageLocation(passage, train){
             subPassages: false,
             sub: true,
             subPassage: false,
-            page: 1
+            page: 1,
+            cursor: nextCursor
         });
     });
     async function getBookmarks(user){
@@ -3865,6 +3868,7 @@ async function getPassageLocation(passage, train){
         // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
         // console.log('TEST'+bigRes.passage.usedIn);
         if(!res.headersSent){
+            // var location = ['test'];
             var location = await getPassageLocation(bigRes.passage);
             await getRecursiveSpecials(bigRes.passage);
             return res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
@@ -4888,7 +4892,25 @@ async function getPassageLocation(passage, train){
                         sort_query = {stars: -1, _id: -1};
                         break;
                     case 'Most Cited':
-
+                        const cursor = req.body.cursor || null;
+                        var result = await getPassagesByUsage({
+                          cursor: cursor,
+                          limit: 1,
+                          minUsageCount: 2
+                        });
+                        var results = result.passages;
+                        for(var i = 0; i < results.length; ++i){
+                            results[i] = await fillUsedInList(results[i]);
+                            results[i] = await getPassage(results[i]);
+                        }
+                        return res.render('passages', {
+                                subPassages: false,
+                                passages: results,
+                                sub: true,
+                                subPassage: false,
+                                page: page,
+                                cursor: result.nextCursor
+                            });
                         break;
                     case 'Newest-Oldest':
                         sort_query = {date: -1};
@@ -4924,6 +4946,7 @@ async function getPassageLocation(passage, train){
                             return res.send("No more passages.");
                         }
                     }else{
+                        ///feed
                         const result = await generateFeedWithPagination(req.session.user, page, DOCS_PER_PAGE);
                         passages = {};
                         passages.docs = [];
@@ -4933,6 +4956,13 @@ async function getPassageLocation(passage, train){
                               const processedPassage = await getPassage(result.feed[i]);
                               passages.docs.push(processedPassage);
                             }
+                            return res.render('passages', {
+                                subPassages: false,
+                                passages: passages.docs,
+                                sub: true,
+                                subPassage: false,
+                                page: page
+                            });
                         }else{
                             return res.send("No more passages.");
                         }

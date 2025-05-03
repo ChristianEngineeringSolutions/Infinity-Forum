@@ -1108,12 +1108,14 @@ $(function(){
             if(!$('#page-loader').length){
                 $('#passage_wrapper').append('<div id="page-loader">'+$('#small-loading').html()+'</div>');
             }
+            var cursor = $('.cursor').last().val() == '' ? null : $('.cursor').last().val();
             $.ajax({
                 type: 'post',
                 url: '/paginate',
                 // url: DOMAIN + '/paginate/' + fromOtro,
                 data: {
                     page: page,
+                    cursor: cursor,
                     passage: $('#chief_passage_id').val(),
                     parent: $('#chief_passage_id').val(),
                     profile: isProfile,
