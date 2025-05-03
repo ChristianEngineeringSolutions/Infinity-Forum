@@ -194,6 +194,7 @@ const passageSchema = mongoose.Schema({
         default: ''
         // index: true
     },
+    lastUpdated: {type: Date, default: Date.now},
     //forces content to be a unique value unless null
     // content: {
     //     type: String,
@@ -281,8 +282,6 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     }, //subforum or not
-    //date last updated
-    updated: {type: Date, default: Date.now},
     previewLink: {
         type: String,
         default: null,

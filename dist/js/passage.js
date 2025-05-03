@@ -1136,7 +1136,7 @@ $(function(){
                     analyzeVideos();
                 },
                 error: function(a, b, c){
-                    alert(JSON.stringify(a) + b + c);
+                    console.log(JSON.stringify(a) + b + c);
                 }
             });
         }

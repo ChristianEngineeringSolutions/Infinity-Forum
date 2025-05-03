@@ -126,6 +126,7 @@ async function accessSecret(secretName) {
           { collection: 'passages', index: { personal: 1 } },
           { collection: 'passages', index: { deleted: 1 } },
           { collection: 'passages', index: { author: 1 } },
+          { collection: 'passages', index: { sourceList: 1 } },
           { collection: 'passages', index: { date: -1 } },
           { collection: 'passages', index: { stars: -1 } },
           
@@ -1813,55 +1814,52 @@ async function getPassageLocation(passage, train){
     }
     app.get('/posts', async (req, res) => {
         const ISMOBILE = browser(req.headers['user-agent']).mobile;
-        //REX
+          const page = parseInt(req.query.page || '1');
+          const limit = DOCS_PER_PAGE;
         if(req.session.CESCONNECT){
             getRemotePage(req, res);
         }
         else{
-            let fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-            let urlEnd = fullUrl.split('/')[fullUrl.split('/').length - 1];
-            let passageTitle = fullUrl.split('/')[fullUrl.split('/').length - 2];
-            let golden = '';
-            let addPassageAllowed = true;
-            let addChapterAllowed = true;
-            var user = req.session.user || null;
-            let passages = await Passage.find({
-                deleted: false,
-                personal: false,
-                versionOf: null
-            }).populate('author users sourceList parent collaborators versions mirror').sort({stars:-1, _id:-1}).limit(DOCS_PER_PAGE);
-            // for(const passage of passages){
-            //     // return await getPassage(passage._id);
-            //     // passages[passage] = bubbleUpAll(passage);
-            //     // passage.location = await returnPassageLocation(passage);
-            //     // passage.sourceList = await getRecursiveSourceList(passage.sourceList);
-            // }
-            for(var i = 0; i < passages.length; ++i){
-                passages[i] = await getPassage(passages[i]);
+            try {
+            // Generate feed for guest users
+            const feedResult = await generateGuestFeed(page, limit);
+            
+            // Check if we need to redirect (e.g., page number is beyond available results)
+            if (feedResult.redirect) {
+              return res.redirect(`/discover?page=${feedResult.page}`);
             }
-            let passageUsers = [];
-            let bookmarks = [];
-            // if(req.session.user){
-            //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
-            // }
-            if(req.session.user){
-                bookmarks = getBookmarks(req.session.user);
+            
+            // Process each passage to get complete data
+            const passages = [];
+            for (let i = 0; i < feedResult.feed.length; i++) {
+              const processedPassage = await getPassage(feedResult.feed[i]);
+              passages.push(processedPassage);
             }
-            passages = await fillUsedInList(passages);
-            res.render("stream", {
-                subPassages: false,
-                passageTitle: false, 
-                scripts: scripts, 
-                passages: passages, 
-                passage: {id:'root', author: {
-                    _id: 'root',
-                    username: 'Sasame'
-                }},
-                bookmarks: bookmarks,
-                ISMOBILE: ISMOBILE,
-                page: 'posts',
-                whichPage: 'stream'
+            
+            // Render the feed page
+            return res.render("stream", {
+              subPassages: false,
+              passageTitle: false, 
+              scripts: scripts, 
+              passages: passages, 
+              passage: {
+                id: 'root', 
+                author: {
+                  _id: 'root',
+                  username: 'Sasame'
+                }
+              },
+              ISMOBILE: ISMOBILE,
+              page: 'posts',
+              whichPage: 'stream',
+              thread: false,
+              currentPage: feedResult.currentPage,
+              totalPages: feedResult.totalPages
             });
+          } catch (error) {
+            console.error('Error generating guest feed:', error);
+            return res.status(500).send('Error generating feed. Please try again later.');
+          }
         }
     });
     //index.html
@@ -2039,7 +2037,7 @@ async function getPassageLocation(passage, train){
             passage.passages = replacement.passages;
             passage.bubbling = replacement.bubbling;
         }
-        if(passage.mirrorEntire && passage.mirror != null){
+        if(passage.mirrorEntire && passage.mirror != null && replacement != null){
             passage.title = replacement.title;
         }
         if(passage.bestOfEntire && replacement != null){
@@ -2921,38 +2919,17 @@ async function getPassageLocation(passage, train){
     //     await labelOldPassages();
     // })();
     app.post('/search/', async (req, res) => {
-        console.log("SEARCH");
         var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // let exact = await Passage.findOne({personal:false,deleted:false,title:search});
-        // if(exact == null && req.session.user){
-        //     let passage = await Passage.create({
-        //         author: req.session.user._id,
-        //         users: [req.session.user._id],
-        //         parent: null,
-        //         title: search,
-        //         public: true
-        //     });
-        // }
         var label = req.body.label;
         var find = {
             deleted: false,
             versionOf: null,
             personal: req.body.personal,
             title: {$regex:search,$options:'i'},
-            // $or: [
-            //     {title: {$regex:search,$options:'i'}},
-            //     {content: {$regex:search,$options:'i'}},
-            //     {code: {$regex:search,$options:'i'}},
-            // ],
         };
         if(label != 'All'){
             find.label = req.body.label;
         }
-        // var find1 = find;
-        // find1.title = search;
-        // var find2 = find;
-        // find2.title = {};
-
         if(req.body.personal == 'true'){
             find.users = {
                 $in: [req.session.user._id]
@@ -2977,10 +2954,24 @@ async function getPassageLocation(passage, train){
         }
         console.log(req.body.whichPage);
         var sort = {stars: -1, _id: -1};
+        var results; // Declare results here
+        
         switch(req.body.sort){
             case 'Most Stars':
                 sort = {stars: -1, _id: -1};
                 break;
+            case 'Most Cited':
+                const cursor = req.body.cursor || null;
+                results = await getPassagesByUsage({
+                  cursor: cursor,
+                  limit: DOCS_PER_PAGE,
+                  minUsageCount: 2
+                });
+                results = results.passages;
+                for(var i = 0; i < results.length; ++i){
+                    results[i] = await getPassage(results[i]);
+                }
+                break;  
             case 'Newest-Oldest':
                 sort = {date: -1};
                 break;
@@ -2988,10 +2979,14 @@ async function getPassageLocation(passage, train){
                 sort = {date: 1};
                 break;
         }
-        let results = await Passage.find(find).populate('author users sourceList parent').sort(sort).limit(DOCS_PER_PAGE);
-        for(var i = 0; i < results.length; ++i){
-            results[i] = await getPassage(results[i]);
+        
+        if(req.body.sort != 'Most Cited'){
+            results = await Passage.find(find).populate('author users sourceList parent').sort(sort).limit(DOCS_PER_PAGE);
+            for(var i = 0; i < results.length; ++i){
+                results[i] = await getPassage(results[i]);
+            }
         }
+        
         res.render("passages", {
             passages: results,
             subPassages: false,
@@ -3083,6 +3078,9 @@ async function getPassageLocation(passage, train){
             parent.sourceList = Object.values(parent.sourceList.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
             parent.markModified('sourceList');
             await parent.save();
+            //passage usage list has grown so put it higher in feed
+            passage.lastUpdated = Date.now();
+            await passage.save();
             console.log('souces:'+parent.sourceList);
             var test = await Passage.findOne({_id:parent._id});
             console.log('sources'+test.sourceList);
@@ -4858,7 +4856,7 @@ async function getPassageLocation(passage, train){
                     versionOf: null,
                     title: new RegExp(search, "i"),
                 };
-
+                console.log("WHICH PAGE:"+whichPage);
                 switch(whichPage) {
                     case 'tasks':
                         find.public = true;
@@ -4874,6 +4872,8 @@ async function getPassageLocation(passage, train){
                         break;
                     case 'feed':
                         break;
+                    case 'stream':
+                        break;
                 }
                 if (parent !== 'root') find.parent = parent;
                 if (profile !== 'false') find.author = profile;
@@ -4887,6 +4887,9 @@ async function getPassageLocation(passage, train){
                     case 'Most Stars':
                         sort_query = {stars: -1, _id: -1};
                         break;
+                    case 'Most Cited':
+
+                        break;
                     case 'Newest-Oldest':
                         sort_query = {date: -1};
                         console.log("NEWEST");
@@ -4898,13 +4901,28 @@ async function getPassageLocation(passage, train){
 
                 let passages;
                 try {
-                    if(whichPage != 'feed'){
+                    if((whichPage != 'feed' && whichPage != 'stream') || search != ''){
                         passages = await Passage.paginate(find, {
                             sort: sort_query, 
                             page: page, 
                             limit: DOCS_PER_PAGE, 
                             populate: 'author users parent sourceList'
                         });
+                    }else if(whichPage == 'stream'){
+                        // Generate feed for guest users
+                        const result = await generateGuestFeed(page, limit);
+                        console.log("URIAH");
+                        passages = {};
+                        passages.docs = [];
+                        console.log("LOGS");
+                        if('feed' in result){
+                            for (let i = 0; i < result.feed.length; i++) {
+                              const processedPassage = await getPassage(result.feed[i]);
+                              passages.docs.push(processedPassage);
+                            }
+                        }else{
+                            return res.send("No more passages.");
+                        }
                     }else{
                         const result = await generateFeedWithPagination(req.session.user, page, DOCS_PER_PAGE);
                         passages = {};
@@ -5112,7 +5130,8 @@ async function getPassageLocation(passage, train){
             // forum: forum,
             lang: lang,
             fileStreamPath: fileStreamPath,
-            personal: personal
+            personal: personal,
+            lastUpdated: Date.now()
         });
         if(subforums == 'true'){
             passage.forumType = 'subforum';
@@ -5888,7 +5907,7 @@ async function getPassageLocation(passage, train){
         passage.previewLink = formData['editor-preview'];
         //no longer synthetic if it has been edited
         passage.synthetic = false;
-        passage.updated = Date.now();
+        passage.lastUpdated = Date.now();
         var uploadTitle = '';
         if (!req.files || Object.keys(req.files).length === 0) {
             //no files uploaded
@@ -7580,6 +7599,41 @@ async function getPassageLocation(passage, train){
       
       console.log('Feed system initialized');
     }
+    app.get('/feed-debug/', async (req, res) => {
+  // const userId = req.params.userId;
+  // const user = await getUser(req.session.user);
+  const user = req.session.user;
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  // Force regenerate without cache
+  await redis.del(`user_feed:${user._id}`);
+  
+  // Enable console logging with capture
+  const logs = [];
+  const originalLog = console.log;
+  console.log = (...args) => {
+    logs.push(args.join(' '));
+    originalLog.apply(console, args);
+  };
+  
+  const result = await generateFeedWithPagination(user, 1, 20);
+  
+  console.log = originalLog;
+  
+  res.json({
+    logs: logs,
+    feedCount: result.feed.length,
+    firstFive: result.feed.slice(0, 5).map(p => ({
+      id: p._id,
+      title: p.title || p.content.substring(0, 50),
+      author: p.author.username,
+      stars: p.stars,
+      date: p.date
+    }))
+  });
+});
         /**
      * Generates a personalized feed with pagination for a user
      * Balances:
@@ -7604,7 +7658,7 @@ async function getPassageLocation(passage, train){
       
       // If cache doesn't exist or is expired, generate the feed scores
       //!feedCache
-      if (!feedCache) {
+      if (true) {
         console.log(`Generating new feed for user ${user._id}`);
         
         // Get filtering parameters
@@ -7625,7 +7679,7 @@ async function getPassageLocation(passage, train){
             { "stars": { $gte: 0 } }, // Content with engagement
             { 
               date: { $gte: recentCutoff },
-              "stars": { $gte: 1 } // Recent with some engagement
+              // "stars": { $gte: 0 } // Recent with some engagement
             }
           ]
         };
@@ -7675,7 +7729,7 @@ async function getPassageLocation(passage, train){
       if (paginatedIds.length > 0) {
         feed = await Passage.find({ 
           _id: { $in: paginatedIds.map(id => mongoose.Types.ObjectId(id)) }
-        }).populate('author users sourceList');
+        }).populate('author users sourceList parent collaborators versions mirror');
         
         // Fill in usedIn data
         feed = await fillUsedInList(feed);
@@ -7776,7 +7830,7 @@ async function getPassageLocation(passage, train){
   
   console.log("Score distribution:", 
     scoredPassages.slice(0, 10).map(p => 
-      ({id: p.passage._id.toString().substr(-4), score: p.score.toFixed(2)})
+      JSON.stringify({id: p.passage._id.toString().substr(-4), score: p.score.toFixed(2)})
     )
   );
   
@@ -8023,6 +8077,398 @@ async function getPassageLocation(passage, train){
       }
     }
 
+    /**
+     * Generates a feed for non-logged-in users
+     * @param {Number} page - Page number for pagination
+     * @param {Number} limit - Number of items per page
+     * @return {Object} Feed results with pagination info
+     */
+    async function generateGuestFeed(page = 1, limit = DOCS_PER_PAGE) {
+      // Unique cache key for guest feed
+      const cacheKey = `guest_feed:v1`;
+      const CACHE_EXPIRATION = 300; // 5 minutes
+      
+      let feedIds = null;
+      
+      // Try to get from cache if Redis is available
+      if (redisClient && redisClient.isReady) {
+        try {
+          const feedCache = await redisClient.get(cacheKey);
+          if (feedCache) {
+            feedIds = JSON.parse(feedCache);
+          }
+        } catch (error) {
+          console.error('Redis error when getting guest feed cache:', error);
+        }
+      }
+      
+      // If not in cache or Redis unavailable, generate the feed
+      if (!feedIds) {
+        console.log('Generating new guest feed');
+        
+        // Define time windows
+        const recentCutoff = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)); // Last 30 days
+        const veryRecentCutoff = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000)); // Last 3 days
+        
+        // Query to efficiently filter passages
+        const query = {
+          versionOf: null,
+          deleted: false,
+          personal: false,
+          $or: [
+            { date: { $gte: veryRecentCutoff } }, // Very recent content
+            { stars: { $gte: 5 } }, // Popular content would be 5
+            { 
+              date: { $gte: recentCutoff },
+              stars: { $gte: 2 } // Recent content with some engagement
+            }
+          ]
+        };
+        
+        // First, just get IDs and minimal data needed for scoring
+        const minimalPassages = await Passage.find(query)
+          .select('_id author stars date')
+          .limit(500);
+        
+        // Get IDs list for additional queries
+        const passageIds = minimalPassages.map(p => p._id);
+        
+        // Get comment counts with a single aggregation query
+        const commentCounts = await Passage.aggregate([
+          { $match: { _id: { $in: passageIds } } },
+          { $project: {
+            commentCount: { 
+              $cond: {
+                if: { $eq: ["$private", true] },
+                then: {
+                  $size: {
+                    $filter: {
+                      input: "$comments",
+                      as: "comment",
+                      cond: { $ne: ["$$comment.author", "$author"] }
+                    }
+                  }
+                },
+                else: {
+                  $size: {
+                    $filter: {
+                      input: "$passages",
+                      as: "subpassage",
+                      cond: { $ne: ["$$subpassage.author", "$author"] }
+                    }
+                  }
+                }
+              }
+            }
+          }}
+        ]);
+        
+        // Create a lookup map for comment counts
+        const commentCountMap = commentCounts.reduce((map, item) => {
+          map[item._id.toString()] = item.commentCount || 0;
+          return map;
+        }, {});
+        
+        // Get usage counts with a single query
+        const usageCounts = await Passage.aggregate([
+          { $match: { sourceList: { $in: passageIds } } },
+          { $group: {
+            _id: "$sourceList",
+            usedByAuthors: { $addToSet: "$author" }
+          }}
+        ]);
+        
+        // Create a lookup map for usage counts
+        const usageCountMap = {};
+        for (const usage of usageCounts) {
+          const sourceId = usage._id.toString();
+          usageCountMap[sourceId] = (usageCountMap[sourceId] || []).concat(usage.usedByAuthors);
+        }
+        
+        // Score passages using the maps
+        const scoredPassages = [];
+        for (const passage of minimalPassages) {
+          const passageId = passage._id.toString();
+          
+          // Get counts from maps
+          const commentCount = commentCountMap[passageId] || 0;
+          const usedByAuthors = usageCountMap[passageId] || [];
+          
+          // Calculate scores
+          const recencyScore = calculateRecencyScore(passage.date);
+          const starScore = Math.log10(passage.stars + 1) * 2;
+          const commentScore = Math.log10(commentCount + 1) * 1.5;
+          const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
+          
+          // Randomness factor
+          const randomnessFactor = 0.7 + (Math.random() * 0.6);
+          
+          // Calculate final score
+          const score = (
+            (recencyScore * 0.3) +
+            (starScore * 0.3) +
+            (usedByScore * 0.2) +
+            (commentScore * 0.2)
+          ) * randomnessFactor;
+          
+          scoredPassages.push({
+            passageId: passage._id,
+            score
+          });
+        }
+        
+        // Sort and get IDs
+        scoredPassages.sort((a, b) => b.score - a.score);
+        feedIds = scoredPassages.map(item => item.passageId.toString());
+        
+        // Cache the IDs
+        if (redisClient && redisClient.isReady) {
+          try {
+            await redisClient.set(cacheKey, JSON.stringify(feedIds), {
+              EX: CACHE_EXPIRATION
+            });
+          } catch (error) {
+            console.error('Redis error when setting guest feed cache:', error);
+          }
+        }
+      }
+      
+      // Apply pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedIds = feedIds.slice(startIndex, endIndex);
+      
+      // Check pagination bounds
+      if (paginatedIds.length === 0 && feedIds.length > 0) {
+        const lastValidPage = Math.ceil(feedIds.length / limit);
+        return { 
+          redirect: true, 
+          page: lastValidPage,
+          totalPages: lastValidPage
+        };
+      }
+      
+      // Only now fetch the full passages needed for this page
+      let feed = [];
+      if (paginatedIds.length > 0) {
+        feed = await Passage.find({ 
+          _id: { $in: paginatedIds }
+        }).populate('author users sourceList parent collaborators versions mirror');
+        
+        // Fill in usedIn lists
+        feed = await fillUsedInList(feed);
+        
+        // Sort according to the feed order
+        feed.sort((a, b) => {
+          return paginatedIds.indexOf(a._id.toString()) - paginatedIds.indexOf(b._id.toString());
+        });
+      }
+      
+      return {
+        feed,
+        totalPages: Math.ceil(feedIds.length / limit),
+        currentPage: page,
+        totalItems: feedIds.length
+      };
+    }
+
+    /**
+     * Score passages for guest feed (without follower data)
+     * @param {Array} passages - Array of passage documents
+     * @return {Array} Scored passages sorted by score
+     */
+    async function scoreGuestPassages(passages) {
+      const scoredPassages = [];
+      
+      for (const passage of passages) {
+        // Get distinct authors who used this passage (excluding the original author)
+        const usedByAuthors = await Passage.find({
+          sourceList: { $in: [passage._id] },
+          versionOf: null,
+          author: { $ne: passage.author._id }
+        }).distinct('author');
+        
+        // Calculate comment count based on passage type, excluding author's own comments
+        let commentCount = 0;
+        
+        if (passage.private === true && passage.comments) {
+          commentCount = passage.comments.filter(comment => 
+            comment.author && comment.author.toString() !== passage.author._id.toString()
+          ).length;
+        } else if (passage.private === false && passage.passages) {
+          commentCount = passage.passages.filter(subPassage => 
+            subPassage.author && subPassage.author.toString() !== passage.author._id.toString()
+          ).length;
+        }
+        
+        // Apply logarithmic scaling to prevent dominance by any one factor
+        const dateField = passage.createdAt || passage.date;
+        const recencyScore = calculateRecencyScore(dateField);
+        const starScore = Math.log10(passage.stars + 1) * 2; // Weighted higher for guest feed
+        const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
+        const commentScore = Math.log10(commentCount + 1) * 1.5;
+        
+        // Stronger randomness factor for guest feed (between 0.7 and 1.3)
+        const randomnessFactor = 0.7 + (Math.random() * 0.6);
+        
+        // Calculate final score with weighted components
+        // Note: For guest feeds, we emphasize stars and comments more
+        const score = (
+          (recencyScore * 0.3) +       // 30% weight for recency
+          (starScore * 0.3) +          // 30% weight for stars (higher for guests)
+          (usedByScore * 0.2) +        // 20% weight for usage
+          (commentScore * 0.2)         // 20% weight for comments
+        ) * randomnessFactor;
+        
+        scoredPassages.push({
+          passage,
+          score
+        });
+      }
+      
+      // Add randomization for similar scores
+      scoredPassages.sort((a, b) => {
+        // If scores are within 15% of each other, add some randomness
+        if (Math.abs(a.score - b.score) < (a.score * 0.15)) {
+          return Math.random() - 0.5;
+        }
+        return b.score - a.score;
+      });
+      
+      return scoredPassages;
+    }
+
+async function getPassagesByUsage(options = {}) {
+  const { 
+    limit = 100,
+    timeRange = null,
+    minUsageCount = 1,
+    excludeVersions = true,
+    cursor = null
+  } = options;
+  
+  const pipeline = [
+    {
+      $match: {
+        sourceList: { $exists: true, $ne: [] },
+        personal: false,
+        deleted: false,
+        versionOf: null
+      }
+    },
+    { $unwind: "$sourceList" },
+    {
+      $lookup: {
+        from: "Passages",
+        localField: "sourceList",
+        foreignField: "_id",
+        as: "referencedPassage"
+      }
+    },
+    { $unwind: "$referencedPassage" },
+    {
+      $addFields: {
+        isSelfReference: { $eq: ["$author", "$referencedPassage.author"] }
+      }
+    },
+    {
+      $group: {
+        _id: "$sourceList",
+        totalCount: { $sum: 1 },
+        nonSelfCount: { 
+          $sum: { $cond: [{ $not: "$isSelfReference" }, 1, 0] }
+        },
+        passageDetails: { $first: "$referencedPassage" }
+      }
+    },
+    {
+      $match: {
+        nonSelfCount: { $gte: minUsageCount },
+        "passageDetails.personal": false,
+        "passageDetails.deleted": false,
+        ...(excludeVersions ? { "passageDetails.versionOf": null } : {}),
+        ...(timeRange ? { "passageDetails.date": { $gte: timeRange } } : {})
+      }
+    },
+    { $sort: { nonSelfCount: -1, "passageDetails.date": -1, _id: 1 } }
+  ];
+  
+  if (cursor) {
+    const { usageCount, date, _id } = JSON.parse(cursor);
+    pipeline.push({
+      $match: {
+        $or: [
+          { nonSelfCount: { $lt: usageCount } },
+          { 
+            nonSelfCount: usageCount,
+            "passageDetails.date": { $lt: date }
+          },
+          {
+            nonSelfCount: usageCount,
+            "passageDetails.date": date,
+            _id: { $gt: _id }
+          }
+        ]
+      }
+    });
+  }
+  
+  pipeline.push(
+  { $limit: limit + 1 },
+  {
+    $replaceRoot: {
+      newRoot: {
+        $mergeObjects: [
+          "$passageDetails",
+          { usageCount: "$nonSelfCount" }
+        ]
+      }
+    }
+  }
+);
+  
+  const results = await Passage.aggregate(pipeline);
+  
+  const hasMore = results.length > limit;
+  if (hasMore) {
+    results.pop();
+  }
+  
+  let nextCursor = null;
+  if (hasMore && results.length > 0) {
+    const lastItem = results[results.length - 1];
+    nextCursor = JSON.stringify({
+      usageCount: lastItem.usageCount,
+      date: lastItem.date,
+      _id: lastItem._id
+    });
+  }
+  
+  const populatedResults = await Passage.populate(results, { path: 'author' });
+  
+  return {
+    passages: populatedResults,
+    nextCursor,
+    hasMore
+  };
+}
+    // Example usage:
+    async function showPopularByUsage() {
+      const passages = await getPassagesSortedByUsage({
+        limit: 50,
+        minUsageCount: 2,
+        timeRange: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000) // Last 180 days
+      });
+      
+      console.log("Most referenced passages:");
+      passages.forEach((passage, index) => {
+        console.log(`${index + 1}. "${passage.title || passage.content.slice(0, 50)}..."`);
+        console.log(`   Used ${passage.usageCount} times by ${passage.uniqueAuthors} different authors`);
+        console.log(`   By: ${passage.author.username}`);
+        console.log(`   Stars: ${passage.stars}`);
+        console.log("-------------------");
+      });
+    }
 
     // Initialize the feed system during app startup
     // Add this near the end of your app initialization code
