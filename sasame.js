@@ -1,5 +1,9 @@
 'use strict';
 (async function(){
+    const {accessSecret, 
+    scripts, percentStarsGiven,
+     percentUSD, totalUSD, 
+     totalStarsGiven} = require('./common-utils');
     const express = require('express');
     const fileUpload = require('express-fileupload');
     const querystring = require('querystring');
@@ -89,20 +93,6 @@
 
 let client;
 
-async function accessSecret(secretName) {
-  if (process.env.REMOTE == 'true') {
-    if (!client) {
-      client = new SecretManagerServiceClient();
-    }
-    const [version] = await client.accessSecretVersion({
-      name: `projects/${process.env.GCLOUD_PROJECT}/secrets/${secretName}/versions/latest`,
-    });
-    return version.payload.data.toString();
-  } else {
-    return process.env[secretName];
-  }
-}
-
     // Models
     const {User, UserSchema} = require('./models/User');
     const { Passage, PassageSchema } = require('./models/Passage');
@@ -115,6 +105,28 @@ async function accessSecret(secretName) {
     const Notification = require('./models/Notification');
     const Star = require('./models/Star');
     const JTI = require('./models/JTI');
+    const System = require('./models/System');
+    //one time function
+    (async function(){
+        const SYSTEM = await System.findOne({});
+        if(SYSTEM == null){
+            await System.create({
+                totalStarsGiven: 0,
+                numUsersOnboarded: 0
+            });
+        }
+        //one time function to set system stars given equal to the correct amount
+        var users = await User.find({});
+        var total = 0;
+        for(const user of users){
+            total += user.starsGiven;
+        }
+        SYSTEM.totalStarsGiven = total;
+        //one time function to set system num users to current num users
+        let onboarded = await User.find({stripeOnboardingComplete: true});
+        SYSTEM.numUsersOnboarded = onboarded.length;
+        await SYSTEM.save();
+    })();
     async function setupDatabaseIndexes() {
       try {
         console.log("Setting up database indexes...");
@@ -313,78 +325,7 @@ async function accessSecret(secretName) {
     var sharedsession = require("express-socket.io-session");
     const cookieParser = require('cookie-parser');
     const nodemailer = require('nodemailer');
-    const scripts = {};
-    scripts.isPassageUser = function(user, passage){
-        if(typeof user == 'undefined'){
-            return false;
-        }
-        var ret;
-        if(user._id.toString() == passage.author._id.toString()){
-            return true;
-        }
-        var i = 0;
-        for(const u of passage.users){
-            if(u._id.toString() == user._id.toString()){
-                return true;
-            }
-        }
-        return false;
-    };
-    scripts.getCategoryTopicsNum = function (cat) {
-        var num = 0;
-        for(var c of cat.passages){
-            if(c.forumType != 'subforum'){
-                ++num;
-            }
-        }
-        return num;
-    };
-    scripts.getNumPosts = function (cat){
-        var num = 0;
-        for(var c of cat.passages){
-            if(c.forumType != 'subforum'){
-                // ++num;
-                num += c.passages.length;
-            }
-        }
-        return num;
-    };
-    //for categories
-    scripts.lastPost = function(cat){
-        if(cat.passages && cat.passages.length > 0){
-        var passage = cat.passages.at(-1);
-        return 'by ' + passage.author.name + '<br>' + passage.date.toLocaleDateString();
-        }
-        else{
-            return 'No Posts Yet.'
-        }
-    };
-    scripts.getNumViews = async function(id){
-        var views = await Visitor.countDocuments({visited:id});
-        // if(views == '' || !views){
-        //     return 0;
-        // }
-        return views;
-    }
-    scripts.getMaxToGiveOut = async function(){
-        let users = await User.find({stripeOnboardingComplete: true});
-        const maxAmountPerUser = 100; //ofc they can get more than this; this is just number for if they all had equal portion
-        var maxToGiveOut = maxAmountPerUser * users.length * 100;
-        var usd = parseInt(await totalUSD());
-        if(maxToGiveOut > usd){
-            usd = usd;
-        }
-        else if(maxToGiveOut < usd){
-            usd = maxToGiveOut;
-        }
-        return 0.20 * usd; //give out in 20% increments
-    }
-    scripts.getBest = async function(passage){
-        return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
-    };
-    // scripts.getPassage = async function(passage){
-    //     return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
-    // };
+    
     app.use(cookieParser());
     app.use(session);
     io.use(sharedsession(session, {
@@ -655,9 +596,28 @@ async function accessSecret(secretName) {
     const { copyPassage } = require('./controllers/passageController');
     const Bookmark = require('./models/Bookmark');
     // const { getMode } = require('ionicons/dist/types/stencil-public-runtime');
+    //Get total star count and pay out users
+    var {
+    queueRewardDistribution,
+    getRewardJobStatus,
+    cleanupOldJobs,
+    rewardQueue,
+    } = require('./reward-users');
     //run monthly cron
     cron.schedule('0 12 1 * *', async () => {
-        await rewardUsers();
+        //reward users
+        (async function(){
+            // Queue a reward distribution
+            const result = await queueRewardDistribution();
+            console.log(`Job ID: ${result.jobId}`);
+
+            // Check status
+            const status = await getRewardJobStatus(result.jobId);
+            console.log(`Status: ${status.state}, Progress: ${status.progress}%`);
+
+            // Clean up old jobs
+            await cleanupOldJobs(7); // Remove jobs older than 7 days
+        })();
         console.log('Monthly Cron ran at 12pm.');
     });
     // Schedule periodic feed updates for active users
@@ -709,94 +669,6 @@ async function accessSecret(secretName) {
         months -= d1.getMonth();
         months += d2.getMonth();
         return months <= 0 ? 0 : months;
-    }
-    //Get total star count and pay out users
-    async function rewardUsers(){
-        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
-        const stripe = require("stripe")(STRIPE_SECRET_KEY);
-        var users = await User.find({stripeOnboardingComplete:true});
-        var usd = await scripts.getMaxToGiveOut();
-        var cut;
-        var totalCut = 0;
-        for(const user of users){
-            // if(!user.paymentsLocked){
-                //appropriate percentage based on stars
-                //users get same allotment as they have percentage of stars given
-                let userUSD = parseInt((await percentStarsGiven(user.starsGiven)) * usd);
-                try{
-                    // if(user.amountEarnedThisYear + (userUSD/100) > 600){
-                    //     userUSD = 600 - user.amountEarnedThisYear;
-                    // }
-                    cut = (userUSD*0.05);
-                    const transfer = await stripe.transfers.create({
-                        //take 5%
-                        amount: Math.floor(userUSD - (cut)),
-                        currency: "usd",
-                        destination: user.stripeAccountId,
-                    });
-                    totalCut += cut;
-                    // if(user.amountEarnedThisYear + (userUSD/100) > 600){
-                    //     user.amountEarned += 600 - user.amountEarnedThisYear;
-                    //     user.amountEarnedThisYear += 600 - user.amountEarnedThisYear;
-                    //     user.paymentsLocked = true;
-                    // }else{
-                    //     user.amountEarned += userUSD / 100;
-                    //     user.amountEarnedThisYear += userUSD / 100;
-                    // }
-                }
-                catch(err){
-                    console.log(err);
-                }
-            // }
-        }
-        console.log("Users paid");
-        //pay the platform the leftover money
-        const payout = await stripe.payouts.create({
-          amount: Math.floor(totalCut),
-          currency: 'usd',
-        });
-    }
-    // for testing
-    // (async function(){
-    //     await rewardUsers();
-    // })();
-    //get percentage of total stars
-    async function percentStarsGiven(user_stars){
-        let final = user_stars / (await totalStarsGiven());
-        return final;
-    }
-    //get percentage of total usd
-    async function percentUSD(donationUSD){
-        var amount = await totalUSD();
-        if(amount == 0){
-            return 1;
-        }
-        let final = donationUSD / (amount);
-        return final;
-    }
-    async function totalUSD(){
-        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
-        const stripe = require("stripe")(STRIPE_SECRET_KEY);
-        const balance = await stripe.balance.retrieve();
-        var usd = 0;
-        for(const i of balance.available){
-            if(i.currency == 'usd'){
-                usd = i.amount;
-                break;
-            }
-        }
-        return usd;
-    }
-    async function totalStarsGiven(){
-        let users = await User.find({stripeOnboardingComplete: true});
-        if(users == false){
-            return 0;
-        }
-        var stars = 0;
-        for(const user of users){
-            stars += user.starsGiven;
-        }
-        return stars;
     }
     //function from string-similarity-js
     //since i was having import issues
@@ -932,6 +804,9 @@ async function accessSecret(secretName) {
         //you have to star someone elses passage to get stars
         if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
             user.starsGiven += amount;
+            const SYSTEM = await System.findOne({});
+            SYSTEM.totalStarsGiven += amount;
+            await SYSTEM.save();
             if(passage.collaborators.length > 0){
                 passage.author.stars += (amount + bonus)/(passage.collaborators.length + 1);
             }
@@ -1222,7 +1097,15 @@ async function accessSecret(secretName) {
             bookmarks = getBookmarks(req.session.user);
         }
         var usd = 0;
-        usd = parseInt((await percentStarsGiven(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
+        const SYSTEM = await System.findOne({});
+        // usd = parseInt((await percentStarsGiven(profile.starsGiven)) * (await scripts.getMaxToGiveOut()));
+        let systemStarsGiven = SYSTEM.totalStarsGiven;
+        console.log(profile.starsGiven);
+        console.log("SYSTEMSTARS:"+systemStarsGiven);
+        console.log("SYSTEMMAX:"+(await scripts.getMaxToGiveOut()));
+        usd = (profile.starsGiven/systemStarsGiven) * (await scripts.getMaxToGiveOut());
+        console.log(parseInt(parseInt(profile.starsGiven)/parseInt(systemStarsGiven)));
+        console.log(profile.starsGiven/systemStarsGiven);
         if(isNaN(usd)){
             usd = 0;
         }
@@ -1250,7 +1133,7 @@ async function accessSecret(secretName) {
         if(isNaN(usd)){
             usd = 0;
         }
-        res.render("profile", {usd: usd, subPassages: false, passages: passages, scripts: scripts, profile: profile,
+        res.render("profile", {usd: parseInt(usd), subPassages: false, passages: passages, scripts: scripts, profile: profile,
         bookmarks: bookmarks,
         whichPage: 'profile',
         page: 1,
@@ -2946,11 +2829,11 @@ async function getPassageLocation(passage, train){
                 find.forum = false;
                 break;
             case 'feed':
-                const followings = await Follower.find({ user: req.session.user._id.toString() });
-                const followingIds = followings.map(f => f.following._id);
-                find.author = {
-                    $in: followingIds
-                };
+                // const followings = await Follower.find({ user: req.session.user._id.toString() });
+                // const followingIds = followings.map(f => f.following._id);
+                // find.author = {
+                //     $in: followingIds
+                // };
                 break;
         }
         console.log(req.body.whichPage);
@@ -2958,6 +2841,26 @@ async function getPassageLocation(passage, train){
         var results; // Declare results here
         var nextCursor = null;
         switch(req.body.sort){
+            case 'Most Relevant':
+                if(search != ''){
+                    sort = {stars: -1, _id: -1};
+                }else{
+                     // Generate feed for guest users
+                    console.log("Guest feed");
+                    result = await generateGuestFeed(1, DOCS_PER_PAGE);
+                    var passages = {};
+                    passages.docs = [];
+                    if('feed' in result){
+                        for (let i = 0; i < result.feed.length; i++) {
+                          const processedPassage = await getPassage(result.feed[i]);
+                          passages.docs.push(processedPassage);
+                        }
+                        var results = passages.docs;
+                    }else{
+                        return res.send("No more passages.");
+                    }
+                }
+                break;
             case 'Most Stars':
                 sort = {stars: -1, _id: -1};
                 break;
@@ -2998,6 +2901,56 @@ async function getPassageLocation(passage, train){
             cursor: nextCursor
         });
     });
+    async function paginate(model, pageSize, cursor, sortFields = { _id: -1 }, find = {}) {
+      let query = { ...find }; // Start with the provided find query
+
+      if (cursor) {
+        query.$and = [
+          { ...find }, // Ensure existing find conditions are still applied
+          {
+            $or: Object.keys(sortFields).map((field, index, array) => {
+              const condition = {};
+              if (index < array.length - 1) {
+                // For preceding sort fields, match the cursor value exactly
+                for (let i = 0; i < index; i++) {
+                  const sortField = array[i];
+                  condition[sortField] = cursor[sortField];
+                }
+                // For the current sort field, apply the less than/greater than condition
+                condition[field] = sortFields[field] === 1 ? { $gt: cursor[field] } : { $lt: cursor[field] };
+              } else {
+                // For the last sort field, apply the less than/greater than condition
+                condition[field] = sortFields[field] === 1 ? { $gt: cursor[field] } : { $lt: cursor[field] };
+                // For preceding sort fields, match the cursor value exactly
+                for (let i = 0; i < index; i++) {
+                  const sortField = array[i];
+                  condition[sortField] = cursor[sortField];
+                }
+              }
+              return condition;
+            }),
+          },
+        ];
+      }
+
+      const results = await model.find(query)
+        .sort(sortFields)
+        .limit(pageSize)
+        .exec();
+
+      let nextCursor = null;
+      if (results.length === pageSize) {
+        nextCursor = {};
+        for (const field in sortFields) {
+          nextCursor[field] = results[results.length - 1][field];
+        }
+      }
+
+      return {
+        data: results,
+        nextCursor
+      };
+    }
     async function getBookmarks(user){
         return await Bookmark.find({user:user._id}).populate('passage');
     }
@@ -4114,6 +4067,9 @@ async function getPassageLocation(passage, train){
             user.stripeOnboardingComplete = true;
             user.canReceivePayouts = canReceivePayouts(account);
             await user.save();
+            const SYSTEM = await System.findOne({});
+            SYSTEM.numUsersOnboarded += 1;
+            await SYSTEM.save();
             res.redirect('/profile');
           } else {
             console.log('The onboarding process was not completed.');
@@ -4854,6 +4810,7 @@ async function getPassageLocation(passage, train){
         try {
             const { page, profile, search = '', parent = 'root', whichPage, sort = 'Most Stars', label = 'All', from_ppe_queue } = req.body;
             // Handle standard passages
+            let passages;
             if (!['filestream', 'messages', 'leaderboard'].includes(profile)) {
                 let find = {
                     personal: false,
@@ -4887,13 +4844,33 @@ async function getPassageLocation(passage, train){
                 if (label !== 'All') find.label = label;
 
                 var sort_query = {stars: -1, _id: -1};
+                const cursor = req.body.cursor || null;
+                var result;
                 switch(sort) {
+                case 'Most Relevant':
+                    //show by most stars if searching
+                        if(search != ''){
+                            sort = {stars: -1, _id: -1};
+                        }else{
+                             // Generate feed for guest users
+                            result = await generateGuestFeed(page, limit);
+                            passages = {};
+                            passages.docs = [];
+                            if('feed' in result){
+                                for (let i = 0; i < result.feed.length; i++) {
+                                  const processedPassage = await getPassage(result.feed[i]);
+                                  passages.docs.push(processedPassage);
+                                }
+                            }else{
+                                return res.send("No more passages.");
+                            }
+                        }
+                        break;
                     case 'Most Stars':
                         sort_query = {stars: -1, _id: -1};
                         break;
                     case 'Most Cited':
-                        const cursor = req.body.cursor || null;
-                        var result = await getPassagesByUsage({
+                        result = await getPassagesByUsage({
                           cursor: cursor,
                           limit: 1,
                           minUsageCount: 2
@@ -4918,33 +4895,27 @@ async function getPassageLocation(passage, train){
                         break;
                     case 'Oldest-Newest':
                         sort_query = {date: 1};
+                        console.log("Oldest");
                         break;
                 }
 
-                let passages;
                 try {
-                    if((whichPage != 'feed' && whichPage != 'stream') || search != ''){
+                    if(sort != 'Most Relevant'){
                         passages = await Passage.paginate(find, {
                             sort: sort_query, 
                             page: page, 
                             limit: DOCS_PER_PAGE, 
                             populate: 'author users parent sourceList'
                         });
-                    }else if(whichPage == 'stream'){
-                        // Generate feed for guest users
-                        const result = await generateGuestFeed(page, limit);
-                        console.log("URIAH");
-                        passages = {};
-                        passages.docs = [];
-                        console.log("LOGS");
-                        if('feed' in result){
-                            for (let i = 0; i < result.feed.length; i++) {
-                              const processedPassage = await getPassage(result.feed[i]);
-                              passages.docs.push(processedPassage);
-                            }
-                        }else{
-                            return res.send("No more passages.");
-                        }
+                        // console.log("cursor:"+cursor);
+                        // passages = await paginate(
+                        //     Passage,
+                        //     DOCS_PER_PAGE,
+                        //     cursor ? JSON.parse(cursor) : null,
+                        //     sort_query,
+                        //     find
+                        // );
+                        // passages = {docs: passages};
                     }else{
                         ///feed
                         const result = await generateFeedWithPagination(req.session.user, page, DOCS_PER_PAGE);
@@ -5017,7 +4988,7 @@ async function getPassageLocation(passage, train){
                 };
                 var messages = await Message.paginate(find,
                 {sort: '-stars', page: page, limit: DOCS_PER_PAGE, populate: 'author users passage'});
-                var passages = [];
+                passages = [];
                 for(const message of messages.docs){
                     var p = await Passage.findOne({
                         _id: message.passage._id
@@ -7681,7 +7652,9 @@ async function getPassageLocation(passage, train){
     async function generateFeedWithPagination(user, page = 1, limit = 20) {
       const cacheKey = `user_feed:${user._id}`;
       const CACHE_EXPIRATION = 3600; // 1 hour in seconds
-      
+      if (redisClient && redisClient.isReady) {
+        console.log("Redis available");
+    }
       // Try to get cached feed IDs
       let feedCache = await redis.get(cacheKey);
       let feedIds;
@@ -8119,9 +8092,9 @@ async function getPassageLocation(passage, train){
       const CACHE_EXPIRATION = 300; // 5 minutes
       
       let feedIds = null;
-      
       // Try to get from cache if Redis is available
       if (redisClient && redisClient.isReady) {
+        console.log("Redis available");
         try {
           const feedCache = await redisClient.get(cacheKey);
           if (feedCache) {
@@ -8250,7 +8223,8 @@ async function getPassageLocation(passage, train){
         // Sort and get IDs
         scoredPassages.sort((a, b) => b.score - a.score);
         feedIds = scoredPassages.map(item => item.passageId.toString());
-        
+        console.log(redisClient);
+        console.log("Is ready?"+redisClient.isReady);
         // Cache the IDs
         if (redisClient && redisClient.isReady) {
           try {
@@ -8266,6 +8240,11 @@ async function getPassageLocation(passage, train){
       // Apply pagination
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
+       // Double-check it's an array
+    if (!Array.isArray(feedIds)) {
+      console.error('Generated feedIds is not an array:', feedIds);
+      feedIds = [];
+    }
       const paginatedIds = feedIds.slice(startIndex, endIndex);
       
       // Check pagination bounds

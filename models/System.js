@@ -1,34 +1,15 @@
 'use strict';
 const mongoose = require('mongoose');
 
-const starSchema = mongoose.Schema({
-    //who cast the star
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    //which passage was starred
-    passage: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
-    },
-    system:{
-        type: Boolean,
-        default: true
-    },
-    amount:{
+const systemSchema = mongoose.Schema({
+    totalStarsGiven:{
         type: Number,
         default: 0
     },
-    single:{
-        type: Boolean,
-        default: true
-    },
-    //recursive sources at the time of being starred
-    sources: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Passage'
-    }],
+    numUsersOnboarded: {
+        type: Number,
+        default: 0
+    }
 });
 
-module.exports = mongoose.model('Star', starSchema, 'Stars');
+module.exports = mongoose.model('System', systemSchema, 'System');
