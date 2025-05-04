@@ -115,17 +115,19 @@ let client;
                 numUsersOnboarded: 0
             });
         }
-        //one time function to set system stars given equal to the correct amount
-        var users = await User.find({});
-        var total = 0;
-        for(const user of users){
-            total += user.starsGiven;
+        if(SYSTEM.totalStarsGiven == 0){
+            //one time function to set system stars given equal to the correct amount
+            var users = await User.find({});
+            var total = 0;
+            for(const user of users){
+                total += user.starsGiven;
+            }
+            SYSTEM.totalStarsGiven = total;
+            //one time function to set system num users to current num users
+            let onboarded = await User.find({stripeOnboardingComplete: true});
+            SYSTEM.numUsersOnboarded = onboarded.length;
+            await SYSTEM.save();
         }
-        SYSTEM.totalStarsGiven = total;
-        //one time function to set system num users to current num users
-        let onboarded = await User.find({stripeOnboardingComplete: true});
-        SYSTEM.numUsersOnboarded = onboarded.length;
-        await SYSTEM.save();
     })();
     async function setupDatabaseIndexes() {
       try {
@@ -6621,7 +6623,8 @@ async function getPassageLocation(passage, train){
                 fileStreamPath: directory
             });
             for (const file of files){
-                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images'){
+                //need to change this to be for specific full paths
+                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images' || file == 'uploads' || file == 'protected'){
                     continue;
                 }
                 // console.log(directory + '/' + file);
@@ -6656,6 +6659,8 @@ async function getPassageLocation(passage, train){
                         fileStreamPath: directory + '/' + file,
                         title: file
                     });
+                    exists.code = await fsp.readFile(directory + '/' + file);
+                    await exists.save();
                     if(exists == null){
                         let passage = await Passage.create({
                             title: title,
@@ -8353,7 +8358,8 @@ async function getPassagesByUsage(options = {}) {
     timeRange = null,
     minUsageCount = 1,
     excludeVersions = true,
-    cursor = null
+    cursor = null,
+    author = null  // Add author parameter with default null
   } = options;
   
   const pipeline = [
@@ -8396,7 +8402,8 @@ async function getPassagesByUsage(options = {}) {
         "passageDetails.personal": false,
         "passageDetails.deleted": false,
         ...(excludeVersions ? { "passageDetails.versionOf": null } : {}),
-        ...(timeRange ? { "passageDetails.date": { $gte: timeRange } } : {})
+        ...(timeRange ? { "passageDetails.date": { $gte: timeRange } } : {}),
+        ...(author ? { "passageDetails.author": author } : {})  // Add author filter
       }
     },
     { $sort: { nonSelfCount: -1, "passageDetails.date": -1, _id: 1 } }
@@ -8423,18 +8430,18 @@ async function getPassagesByUsage(options = {}) {
   }
   
   pipeline.push(
-  { $limit: limit + 1 },
-  {
-    $replaceRoot: {
-      newRoot: {
-        $mergeObjects: [
-          "$passageDetails",
-          { usageCount: "$nonSelfCount" }
-        ]
+    { $limit: limit + 1 },
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: [
+            "$passageDetails",
+            { usageCount: "$nonSelfCount" }
+          ]
+        }
       }
     }
-  }
-);
+  );
   
   const results = await Passage.aggregate(pipeline);
   
