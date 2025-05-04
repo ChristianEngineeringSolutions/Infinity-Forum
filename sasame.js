@@ -7513,7 +7513,7 @@ async function getPassageLocation(passage, train){
         for (const followerId of followers) {
           // Get current cached feed
           const cacheKey = `user_feed:${followerId}`;
-          const feedCache = await redisGet(cacheKey);
+          const feedCache = await redis.get(cacheKey);
           
           if (feedCache) {
             const feedIds = JSON.parse(feedCache);
@@ -7525,7 +7525,7 @@ async function getPassageLocation(passage, train){
             if (feedIds.length > 1000) feedIds.pop();
             
             // Update cache
-            await redisSet(cacheKey, JSON.stringify(feedIds), 'EX', 3600);
+            await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', 3600);
           }
         }
         
@@ -7554,7 +7554,7 @@ async function getPassageLocation(passage, train){
           
           // Cache the results
           const feedIds = scoredPassages.map(item => item.passage._id.toString());
-          await redisSet(
+          await redis.set(
             `user_feed:${userId}`, 
             JSON.stringify(feedIds),
             'EX',
@@ -7657,7 +7657,7 @@ async function getPassageLocation(passage, train){
     async function generateFeedWithPagination(user, page = 1, limit = 20) {
       const cacheKey = `user_feed:${user._id}`;
       const CACHE_EXPIRATION = 3600; // 1 hour in seconds
-      if (redisClient && redisClient.isReady) {
+      if (redisClient && redisClient.ready) {
         console.log("Redis available");
     }
       // Try to get cached feed IDs
@@ -8098,18 +8098,21 @@ async function getPassageLocation(passage, train){
       
       let feedIds = null;
       // Try to get from cache if Redis is available
-      if (redisClient && redisClient.isReady) {
+      if (redisClient && redisClient.ready) {
         console.log("Redis available");
         try {
-          const feedCache = await redisClient.get(cacheKey);
+          const feedCache = await redis.get(cacheKey);
           if (feedCache) {
+            console.log('feedcache:'+cacheKey);
+            console.log(feedIds);
             feedIds = JSON.parse(feedCache);
+            console.log('feedids2:'+feedIds);
           }
         } catch (error) {
           console.error('Redis error when getting guest feed cache:', error);
         }
       }
-      
+      console.log('Feedids:'+(feedIds));
       // If not in cache or Redis unavailable, generate the feed
       if (!feedIds) {
         console.log('Generating new guest feed');
@@ -8202,7 +8205,7 @@ async function getPassageLocation(passage, train){
           const commentCount = commentCountMap[passageId] || 0;
           const usedByAuthors = usageCountMap[passageId] || [];
           
-          // Calculate scores
+          // Calculate scoresgenerateGuestFeed
           const recencyScore = calculateRecencyScore(passage.date);
           const starScore = Math.log10(passage.stars + 1) * 2;
           const commentScore = Math.log10(commentCount + 1) * 1.5;
@@ -8228,14 +8231,12 @@ async function getPassageLocation(passage, train){
         // Sort and get IDs
         scoredPassages.sort((a, b) => b.score - a.score);
         feedIds = scoredPassages.map(item => item.passageId.toString());
-        console.log(redisClient);
-        console.log("Is ready?"+redisClient.isReady);
         // Cache the IDs
-        if (redisClient && redisClient.isReady) {
+        if (redisClient && redisClient.ready) {
           try {
-            await redisClient.set(cacheKey, JSON.stringify(feedIds), {
-              EX: CACHE_EXPIRATION
-            });
+            console.log("Setting cacheKey");
+            console.log(feedIds);
+            await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', CACHE_EXPIRATION);
           } catch (error) {
             console.error('Redis error when setting guest feed cache:', error);
           }
