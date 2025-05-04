@@ -91,8 +91,6 @@
     }
     const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 
-let client;
-
     // Models
     const {User, UserSchema} = require('./models/User');
     const { Passage, PassageSchema } = require('./models/Passage');

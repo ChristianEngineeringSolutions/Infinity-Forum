@@ -1,6 +1,6 @@
 const {User, UserSchema} = require('./models/User');
 const System = require('./models/System');
-
+let client;
 async function accessSecret(secretName) {
   if (process.env.REMOTE == 'true') {
     if (!client) {
