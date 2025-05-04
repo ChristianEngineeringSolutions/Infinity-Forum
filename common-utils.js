@@ -1,4 +1,5 @@
 const {User, UserSchema} = require('./models/User');
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const System = require('./models/System');
 let client;
 async function accessSecret(secretName) {
