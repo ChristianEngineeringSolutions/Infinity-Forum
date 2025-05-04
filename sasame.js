@@ -5967,6 +5967,8 @@ async function getPassageLocation(passage, train){
       }
       try {
         const dns = require("node:dns");
+        console.log("URL:");
+        console.log(removeHTMLTags(text));
         const data = await linkPreview.getLinkPreview(removeHTMLTags(text), {
             resolveDNSHost: async (url) => {
                 return new Promise((resolve, reject) => {

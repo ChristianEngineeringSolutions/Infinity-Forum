@@ -23,12 +23,16 @@ function isValidHttpUrl(string) {
 
   return url.protocol === "http:" || url.protocol === "https:";
 }
+function stringContainsUrl(str) {
+  return str.includes('http://') || str.includes('https://');
+}
 function analyzeImages() {
   //just gonna handle image preview links right here for now, might need to restructure code
   $('.preview-image:not(.image-loaded)').each(function(){
+    console.log('hello');
     var thiz = $(this);
     var _id = thiz.attr('id').split('-').at(-1);
-    // if(isValidHttpUrl(thiz.data('url'))){
+    if(stringContainsUrl(thiz.data('url'))){
       fetch(`/preview-link?url=${encodeURIComponent(thiz.data('url'))}`)
       .then(response => response.json())
       .then(data => {
@@ -49,7 +53,7 @@ function analyzeImages() {
       .catch(error => {
         console.error('Error:', error);
       });
-    // }
+    }
   });
   if($('#safe-mode').val() == 'true'){
     $('.uploadedImage:not(.nsfw-checked)').each(function() {
