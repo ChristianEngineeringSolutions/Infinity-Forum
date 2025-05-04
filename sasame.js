@@ -106,12 +106,14 @@
     const System = require('./models/System');
     //one time function
     (async function(){
-        const SYSTEM = await System.findOne({});
+        var SYSTEM = await System.findOne({});
         if(SYSTEM == null){
             await System.create({
                 totalStarsGiven: 0,
-                numUsersOnboarded: 0
+                numUsersOnboarded: 0,
+                lastUpdated: Date.now()
             });
+            SYSTEM = await System.findOne({});
         }
         if(SYSTEM.totalStarsGiven == 0){
             //one time function to set system stars given equal to the correct amount
@@ -126,6 +128,7 @@
             SYSTEM.numUsersOnboarded = onboarded.length;
             await SYSTEM.save();
         }
+
     })();
     async function setupDatabaseIndexes() {
       try {
@@ -4852,8 +4855,12 @@ async function getPassageLocation(passage, train){
                         if(search != ''){
                             sort = {stars: -1, _id: -1};
                         }else{
+                            if(whichPage == 'stream'){
                              // Generate feed for guest users
-                            result = await generateGuestFeed(page, limit);
+                                result = await generateGuestFeed(page, limit);
+                            }else if(whichPage == 'feed'){
+                                result = await generateFeedWithPagination(req.session.user, page, limit);
+                            }
                             passages = {};
                             passages.docs = [];
                             if('feed' in result){
@@ -7687,7 +7694,7 @@ async function getPassageLocation(passage, train){
             { "stars": { $gte: 0 } }, // Content with engagement
             { 
               date: { $gte: recentCutoff },
-              // "stars": { $gte: 0 } // Recent with some engagement
+              "stars": { $gte: 0 } // Recent with some engagement
             }
           ]
         };
@@ -7703,6 +7710,8 @@ async function getPassageLocation(passage, train){
             { path: 'passages', select: 'author' }  // Only need author field from sub-passages
           ])
           .limit(1000);
+        console.log("FEED LENGTH:"+passages.length);
+        console.log(passages[999]);
         // Score and rank passages
         const scoredPassages = await scorePassages(passages, user);
         
@@ -8112,9 +8121,27 @@ async function getPassageLocation(passage, train){
           console.error('Redis error when getting guest feed cache:', error);
         }
       }
+      var SYSTEM = await System.findOne({});
+      var lastUpdateOnFile = new Date(process.env.LAST_UPDATE);
+      console.log(lastUpdateOnFile);
+      console.log(SYSTEM.lastUpdate)
+      if((await System.findOne({lastUpdate: {$exists:true}})) == null){
+        SYSTEM.lastUpdate = Date.now();
+        await SYSTEM.save();
+      }
+      //if the last manual update was after the last soft update
+      if(lastUpdateOnFile > SYSTEM.lastUpdate){
+        //generate a new feed
+        var pass = true;
+        SYSTEM.lastUpdate = lastUpdateOnFile;
+        await SYSTEM.save();
+        console.log("Updated guest feed");
+      }else{
+        var pass = false; //show cached feed
+      }
       console.log('Feedids:'+(feedIds));
       // If not in cache or Redis unavailable, generate the feed
-      if (!feedIds) {
+      if (!feedIds || pass) {
         console.log('Generating new guest feed');
         
         // Define time windows
@@ -8128,7 +8155,7 @@ async function getPassageLocation(passage, train){
           personal: false,
           $or: [
             { date: { $gte: veryRecentCutoff } }, // Very recent content
-            { stars: { $gte: 5 } }, // Popular content would be 5
+            { stars: { $gte: 0 } }, // Popular content would be 5
             { 
               date: { $gte: recentCutoff },
               stars: { $gte: 2 } // Recent content with some engagement

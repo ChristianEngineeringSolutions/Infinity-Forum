@@ -9,6 +9,11 @@ const systemSchema = mongoose.Schema({
     numUsersOnboarded: {
         type: Number,
         default: 0
+    },
+    //last time the algorithm was updated
+    lastUpdate: {
+        type: Date,
+        default: Date.now
     }
 });
 
