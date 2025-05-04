@@ -423,6 +423,8 @@ $(function(){
     }
     $(document).on('click', '[id^="passage-delete-"]', function(e){
         var _id = $(this).attr('id').split('-').at(-1);
+        $('#passage_'+_id).remove();
+        $('.close-modal').click();
         $.ajax({
             type: 'post',
             // url: DOMAIN + '/delete_passage/' + fromOtro,
@@ -431,8 +433,8 @@ $(function(){
                 _id: _id
             },
             success: function(data){
-                $('#passage_'+_id).remove();
-                $('.close-modal').click();
+                // $('#passage_'+_id).remove();
+                // $('.close-modal').click();
             }
         });
     });

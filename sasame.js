@@ -6604,18 +6604,28 @@ async function getPassageLocation(passage, train){
     //\testing
     async function syncFileStream(){
         //clear filestream
-        await Passage.updateMany({mainFile:true}, {mainFile:false});
+        //await Passage.updateMany({mainFile:true}, {mainFile:false});
         //await Passage.deleteMany({fileStreamPath: {$ne:null}});
         var author = await User.findOne({admin:true});
-        let top = await Passage.create({
+        var top = await Passage.find({
             title: 'Infinity Forum Source Code',
             author: author._id,
             fileStreamPath: __dirname + '/',
             mainFile: true,
             public: false,
-            parent: null,
+            parent: null
         });
-        //create filestream
+        if(top == null){
+            top = await Passage.create({
+                title: 'Infinity Forum Source Code',
+                author: author._id,
+                fileStreamPath: __dirname + '/',
+                mainFile: true,
+                public: false,
+                parent: null,
+            });
+        }
+        //create filestream if not exists otherwise sync it
         await loadFileStream(top);
     }
     //create FileStream passage if not exists
@@ -6631,7 +6641,7 @@ async function getPassageLocation(passage, train){
             });
             for (const file of files){
                 //need to change this to be for specific full paths
-                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images' || file == 'uploads' || file == 'protected'){
+                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images' || file == 'uploads' || file == 'protected' || file == 'nsfw'){
                     continue;
                 }
                 // console.log(directory + '/' + file);
@@ -6653,6 +6663,7 @@ async function getPassageLocation(passage, train){
                             mainFile: true,
                             public: false,
                             parent: directory == __dirname ? top._id : parentDirectory._id,
+                            date: new Date("2023-05-04 01:00:00")
                         });
                     }
                     //recursively create passages
@@ -6666,8 +6677,19 @@ async function getPassageLocation(passage, train){
                         fileStreamPath: directory + '/' + file,
                         title: file
                     });
-                    exists.code = await fsp.readFile(directory + '/' + file);
-                    await exists.save();
+                    if(exists != null){
+                        try {
+                          console.log('Directory:', directory);
+                            console.log('File:', file);
+                            const fullPath = directory + '/' + file;
+                            console.log('Full path being used:', fullPath);
+                            exists.code = await fsp.readFile(fullPath);
+                            // console.log('Result:', exists.code);
+                            await exists.save();
+                        } catch (error) {
+                          console.error('Error reading file:', error);
+                        }
+                    }
                     if(exists == null){
                         let passage = await Passage.create({
                             title: title,
@@ -6677,7 +6699,8 @@ async function getPassageLocation(passage, train){
                             fileStreamPath: directory + '/' + file,
                             mainFile: true,
                             parent: directory == __dirname ? top._id : parentDirectory._id,
-                            public: false
+                            public: false,
+                            date: new Date("2023-05-04 01:00:00")
                         });
                         if(parentDirectory != null){
                             parentDirectory.passages.push(passage);
