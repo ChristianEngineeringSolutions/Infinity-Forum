@@ -4821,6 +4821,7 @@ async function getPassageLocation(passage, train){
                     title: new RegExp(search, "i"),
                 };
                 console.log("WHICH PAGE:"+whichPage);
+                console.log(profile);
                 switch(whichPage) {
                     case 'tasks':
                         find.public = true;
@@ -5012,7 +5013,7 @@ async function getPassageLocation(passage, train){
                 });
             }
             else if(profile == 'filestream'){
-
+                console.log(profile);
             }
             else if(profile == 'leaderboard'){
                 console.log("leaderboard!");
@@ -6645,7 +6646,7 @@ async function getPassageLocation(passage, train){
             });
             for (const file of files){
                 //need to change this to be for specific full paths
-                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images' || file == 'uploads' || file == 'protected' || file == 'nsfw' || file == 'libssl1.1_1.1.1f-1ubuntu2_amd64.deb' || file == '.DS_STORE'){
+                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images' || file == 'uploads' || file == 'protected' || file == 'nsfw' || file == 'libssl1.1_1.1.1f-1ubuntu2_amd64.deb' || file == '.DS_STORE' || file == 'dump' || file == 'backup'){
                     continue;
                 }
                 // console.log(directory + '/' + file);
@@ -6671,6 +6672,7 @@ async function getPassageLocation(passage, train){
                         });
                     }else{
                         exists.parent = directory == __dirname ? top._id : parentDirectory._id;
+                        console.log(1);
                         await exists.save();
                         console.log(top._id);
                         console.log("PARENT:"+exists.parent);
@@ -6698,12 +6700,18 @@ async function getPassageLocation(passage, train){
                                 console.log("CODE:"+exists.code);
                             }
                             // console.log('Result:', exists.code);
+                            console.log(2);
                             await exists.save();
+                            console.log(3);
                         } catch (error) {
                           console.error('Error reading file:', error);
                         }
                     }
+                    console.log(4);
                     if(exists == null){
+                        console.log(5);
+                        console.log(directory + '/' + title);
+                        console.log(5.5);
                         let passage = await Passage.create({
                             title: title,
                             author: author._id,
@@ -6715,8 +6723,11 @@ async function getPassageLocation(passage, train){
                             public: false,
                             date: new Date("2023-05-04 01:00:00")
                         });
-                        if(parentDirectory != null){
+                        console.log(6);
+                        if(parentDirectory != null && !parentDirectory.passages.includes(passage)){
+                            console.log(6);
                             parentDirectory.passages.push(passage);
+                            parentDirectory.markModified('passages');
                             await parentDirectory.save();
                         }
                     }
