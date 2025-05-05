@@ -6604,9 +6604,9 @@ async function getPassageLocation(passage, train){
     // })();
     //\testing
     async function syncFileStream(){
-        // await Passage.deleteMany({fileStreamPath: {$ne:null}});
         //clear filestream
         //await Passage.updateMany({mainFile:true}, {mainFile:false});
+        //don't uncomment, dangerous
         //await Passage.deleteMany({fileStreamPath: {$ne:null}});
         var author = await User.findOne({admin:true});
         var top = await Passage.findOne({
@@ -6627,6 +6627,7 @@ async function getPassageLocation(passage, train){
                 mainFile: true,
                 public: false,
                 parent: null,
+                date: new Date("2023-05-04 01:00:00")
             });
         }
         console.log("TOP:"+top);
@@ -7747,12 +7748,15 @@ async function getPassageLocation(passage, train){
             { path: 'author' },
             { path: 'users' },
             { path: 'sourceList' },
+            { path: 'parent' },
+            { path: 'collaborators' },
+            { path: 'versions' },
+            { path: 'mirror' },
             { path: 'comments', select: 'author' }, // Only need author field from comments
             { path: 'passages', select: 'author' }  // Only need author field from sub-passages
           ])
+          .sort('-stars -date')
           .limit(1000);
-        console.log("FEED LENGTH:"+passages.length);
-        console.log(passages[999]);
         // Score and rank passages
         const scoredPassages = await scorePassages(passages, user);
         
@@ -8036,18 +8040,29 @@ async function getPassageLocation(passage, train){
         $or: [
           { author: { $in: followedAuthors } }, // From followed authors
           { date: { $gte: veryRecentCutoff } }, // Very recent content
+          { "stars": { $gte: 0 } }, // Content with engagement
           { 
             date: { $gte: recentCutoff },
-            stars: { $gte: 1 } // Recent with some engagement
+            stars: { $gte: 0 } // Recent with some engagement
           }
         ]
       };
       
       // Get passages with filtered query
       const passages = await Passage.find(query)
-        .populate('author users sourceList parent collaborators versions mirror')
+        .populate([
+            { path: 'author' },
+            { path: 'users' },
+            { path: 'sourceList' },
+            { path: 'parent' },
+            { path: 'collaborators' },
+            { path: 'versions' },
+            { path: 'mirror' },
+            { path: 'comments', select: 'author' }, // Only need author field from comments
+            { path: 'passages', select: 'author' }  // Only need author field from sub-passages
+          ])
         .sort('-stars -date')
-        .limit(limit);
+        .limit(1000);
       
       return passages;
     }

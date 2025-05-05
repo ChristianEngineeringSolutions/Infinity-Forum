@@ -145,7 +145,7 @@ const passageSchema = mongoose.Schema({
     },
     fileStreamPath: {
         type: String,
-        default: null,
+        default: '',
     },
     //there can only be one mainFile for each fileStreamPath
     mainFile: {
