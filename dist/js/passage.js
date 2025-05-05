@@ -935,32 +935,33 @@ $(function(){
                 amount: amount,
                 parent: $('#chief_passage_id').val()
             };
+            // alert(JSON.stringify(data));
+        if(passage_id.includes('star_number')){
+            alert(passage_id);
+            alert($(this).attr('id').split('_').at(-1));
+        }
         // alert(JSON.stringify(data));
         $.ajax({
             url: '/star_passage/',
             // url: DOMAIN + '/star_passage/' + fromOtro,
             type: 'POST',
-            data: {
-                passage_id: passage_id,
-                amount: amount,
-                parent: $('#chief_passage_id').val()
-            },
-            success: function(data){
-                if(data == 'Not enough stars.' || data == 'Please enter a number greater than 0.'){
-                    alert(data);
+            data: data,
+            success: function(data2){
+                if(data2 == 'Not enough stars.' || data2 == 'Please enter a number greater than 0.'){
+                    alert(data2);
                 }
                 else{
-                    if(data[0] == 'N'){
-                        thisPassage(thiz).prepend(data);
+                    if(data2[0] == 'N'){
+                        thisPassage(thiz).prepend(data2);
                     }
                     else{
-                        thisPassage(thiz).replaceWith(data);
+                        thisPassage(thiz).replaceWith(data2);
                     }
                 }
             }
         });
     });
-    $(document).on('click', '[id^=star]', function(){
+    $(document).on('click', '[id^=star-]', function(){
         var thiz = $(this);
         $.ajax({
             type: 'post',

@@ -718,160 +718,170 @@
         return source;
     }
     async function starPassage(req, amount, passageID, userID, deplete=true){
-        let user = await User.findOne({_id: userID});
-        if(isNaN(amount) || amount == 0){
-            return 'Please enter a number greater than 0.';
-        }
-        //infinite stars on a local sasame
-        if(user.stars < amount && process.env.REMOTE == 'false'){
-            return "Not enough stars.";
-        }
-        if(deplete){
-            user.stars -= amount;
-        }
-        if(passageID.includes('_')){
-            passageID = passageID.split('_').at(-1);
-        }
-        let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
-        var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
-        //Give starring user stars for each logged stars at 1% rate
-        var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources');
-        var totalForStarrer = 0;
-        for(const loggedStar of loggedStars){
-            var starrer = loggedStar.user;
-            var sourceLog = [];
-            if(req.session.user._id.toString() != starrer._id.toString()){
-                totalForStarrer = 0.01 * loggedStar.amount * amount;
-                console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
+        try{
+            let user = await User.findOne({_id: userID});
+            if(isNaN(amount) || amount == 0){
+                return 'Please enter a number greater than 0.';
             }
-            // console.log("Logged sources: " + loggedStar.sources);
-            for(const source of loggedStar.sources){
-                //if the author of the passage is not the one who did the starring
-                // console.log(source.author._id.toString() != starrer._id.toString());
-                //only give each starrer each source one time &&
-                //a starrer will not get back stars from their own passages &&
-                //you dont get stars back when starring a passage, only when others star it
-                if(!sourceLog.includes(source) && 
-                    source.author._id.toString() != starrer._id.toString() && 
-                    req.session.user._id.toString() != starrer._id.toString()){
-                    console.log("working, " + starrer.name);
-                    //give the starrer 1% of each entry
-                    let subtotal = 0.01 * loggedStar.amount * amount;
-                    totalForStarrer += subtotal;
-                    console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+            //infinite stars on a local sasame
+            if(user.stars < amount && process.env.REMOTE == 'false'){
+                return "Not enough stars.";
+            }
+            if(deplete){
+                user.stars -= amount;
+            }
+            console.log("passageID:"+passageID);
+            if(passageID.includes('_')){
+                passageID = passageID.split('_').at(-1);
+            }
+            let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
+            console.log("test");
+            var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+            //Give starring user stars for each logged stars at 1% rate
+            var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources');
+            var totalForStarrer = 0;
+            for(const loggedStar of loggedStars){
+                var starrer = loggedStar.user;
+                var sourceLog = [];
+                if(req.session.user._id.toString() != starrer._id.toString()){
+                    totalForStarrer = 0.01 * loggedStar.amount * amount;
+                    console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
                 }
-                sourceLog.push(source);
+                // console.log("Logged sources: " + loggedStar.sources);
+                for(const source of loggedStar.sources){
+                    //if the author of the passage is not the one who did the starring
+                    // console.log(source.author._id.toString() != starrer._id.toString());
+                    //only give each starrer each source one time &&
+                    //a starrer will not get back stars from their own passages &&
+                    //you dont get stars back when starring a passage, only when others star it
+                    if(!sourceLog.includes(source) && 
+                        source.author._id.toString() != starrer._id.toString() && 
+                        req.session.user._id.toString() != starrer._id.toString()){
+                        console.log("working, " + starrer.name);
+                        //give the starrer 1% of each entry
+                        let subtotal = 0.01 * loggedStar.amount * amount;
+                        totalForStarrer += subtotal;
+                        console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                    }
+                    sourceLog.push(source);
+                }
+                // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                starrer.stars += totalForStarrer;
+                await starrer.save();
             }
-            // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
-            starrer.stars += totalForStarrer;
-            await starrer.save();
-        }
-        //log the amount starred
-        var star = await Star.create({
-            user: userID,
-            passage: passage._id,
-            amount: amount,
-            sources: sources,
-            single: false,
-            system: null //not relevant since we cant unstar these so just make it null
-        });
-        var lastSource = await getLastSource(passage);
-        var bonus = 0;
-        //calculate bonus
-        for(const source of passage.sourceList){
-            if(passage.author._id.toString() != source.author._id.toString()){
-                var similarity = passageSimilarity(passage, source);
-                bonus += similarity > 0.1 ? similarity : 0;
+            //log the amount starred
+            var star = await Star.create({
+                user: userID,
+                passage: passage._id,
+                amount: amount,
+                sources: sources,
+                single: false,
+                system: null //not relevant since we cant unstar these so just make it null
+            });
+            var lastSource = await getLastSource(passage);
+            var bonus = 0;
+            //calculate bonus
+            for(const source of passage.sourceList){
+                if(passage.author._id.toString() != source.author._id.toString()){
+                    var similarity = passageSimilarity(passage, source);
+                    bonus += similarity > 0.1 ? similarity : 0;
+                }
             }
-        }
-        bonus = bonus * amount;
-        // if(lastSource != null){
-        //     bonus = passageSimilarity(passage, lastSource);
-        // }else{
-        //     bonus = 0;
-        // }
-        // if(lastSource && lastSource.author._id.toString() == req.session.user._id.toString()){
-        //     bonus = 0;
-        // }
-        //add stars to passage and sources
-        passage.stars += amount + bonus;
-        //if bubbling star all sub passages (content is displayed in parent)
-        if(passage.bubbling && passage.passages && !passage.public){
-            for(const p of passage.passages){
-                //also star sources for each sub passage
-                passage.sourceList = [...passage.sourceList, ...p.sourceList];
-                await starPassage(req, amount, p._id, userID, false);
+            bonus = bonus * amount;
+            // if(lastSource != null){
+            //     bonus = passageSimilarity(passage, lastSource);
+            // }else{
+            //     bonus = 0;
+            // }
+            // if(lastSource && lastSource.author._id.toString() == req.session.user._id.toString()){
+            //     bonus = 0;
+            // }
+            //add stars to passage and sources
+            passage.stars += amount + bonus;
+            //if bubbling star all sub passages (content is displayed in parent)
+            if(passage.bubbling && passage.passages && !passage.public){
+                for(const p of passage.passages){
+                    //also star sources for each sub passage
+                    passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                    await starPassage(req, amount, p._id, userID, false);
+                }
             }
-        }
-        await starMessages(passage._id, amount);
-        //you have to star someone elses passage to get stars
-        if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
-            user.starsGiven += amount;
-            const SYSTEM = await System.findOne({});
-            SYSTEM.totalStarsGiven += amount;
-            await SYSTEM.save();
-            if(passage.collaborators.length > 0){
-                passage.author.stars += (amount + bonus)/(passage.collaborators.length + 1);
+            await starMessages(passage._id, amount);
+            //you have to star someone elses passage to get stars
+            if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
+                user.starsGiven += amount;
+                const SYSTEM = await System.findOne({});
+                SYSTEM.totalStarsGiven += amount;
+                await SYSTEM.save();
+                if(passage.collaborators.length > 0){
+                    passage.author.stars += (amount + bonus)/(passage.collaborators.length + 1);
+                }
+                else{
+                    passage.author.stars += amount + bonus;
+                }
+                //give stars to collaborators if applicable
+                //split stars with collaborators
+                if(passage.collaborators.length > 0){
+                    for(const collaborator in passage.collaborators){
+                        if(collaborator == passage.author.email){
+                            //we already starred the author
+                            continue;
+                        }
+                        let collaber = await User.findOne({email:collaborator});
+                        if(collaber != null){
+                            collaber.stars += (amount + bonus)/(passage.collaborators.length + 1);
+                            await collaber.save();
+                        }
+                    }
+                }
+                await passage.author.save();
+            }
+            await user.save();
+            await passage.save();
+            //star each source
+            var i = 0;
+            var authors = [];
+            //add sources for best,bestof,and mirror
+            if(passage.showBestOf){
+                var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
+                if(best != null){
+                    passage.sourceList.push(best);
+                }
             }
             else{
-                passage.author.stars += amount + bonus;
-            }
-            //give stars to collaborators if applicable
-            //split stars with collaborators
-            if(passage.collaborators.length > 0){
-                for(const collaborator in passage.collaborators){
-                    if(collaborator == passage.author.email){
-                        //we already starred the author
-                        continue;
-                    }
-                    let collaber = await User.findOne({email:collaborator});
-                    if(collaber != null){
-                        collaber.stars += (amount + bonus)/(passage.collaborators.length + 1);
-                        await collaber.save();
-                    }
+                try{
+                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
+                    if(mirror != null)
+                    passage.sourceList.push(mirror);
+                }
+                catch(e){
+                }
+                try{
+                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
+                    if(bestOf != null)
+                        passage.sourceList.push(bestOf);
+                }
+                catch(e){
                 }
             }
-            await passage.author.save();
+            //recursively star ssources
+            await starSources(passage, passage, [], [], amount, req);
+            return await fillUsedInListSingle(passage);
         }
-        await user.save();
-        await passage.save();
-        //star each source
-        var i = 0;
-        var authors = [];
-        //add sources for best,bestof,and mirror
-        if(passage.showBestOf){
-            var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
-            if(best != null){
-                passage.sourceList.push(best);
-            }
+        catch(err){
+            console.log(err);
+            console.log("err passageID"+passageID);
         }
-        else{
-            try{
-                var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
-                if(mirror != null)
-                passage.sourceList.push(mirror);
-            }
-            catch(e){
-            }
-            try{
-                var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
-                if(bestOf != null)
-                    passage.sourceList.push(bestOf);
-            }
-            catch(e){
-            }
-        }
-        //recursively star ssources
-        await starSources(passage, passage, [], [], amount, req);
-        return await fillUsedInListSingle(passage);
     }
     async function starSources(passage, top, authors=[], starredPassages=[], amount, req){
         var i = 0;
         var bonus;
+        console.log("length:"+passage.sourceList.length);
         for(const source of passage.sourceList){
             //don't star same passage twice
             if(!starredPassages.includes(source._id.toString())){
                 await starMessages(source._id, amount);
+                console.log(passage.sourceList);
                 let sourceAuthor = await User.findOne({_id: source.author._id});
                 //you won't get extra stars for citing your own work
                 //also give author stars once per author
@@ -5435,6 +5445,7 @@ async function getPassageLocation(passage, train){
     });
     app.post('/star_passage/', async (req, res) => {
         console.log('star_passage');
+        // return res.send('Not enough stars.');
         var passage_id = req.body.passage_id;
         var user = req.session.user;
         var amount = parseInt(req.body.amount);
@@ -5445,6 +5456,7 @@ async function getPassageLocation(passage, train){
             if(sessionUser.stars > amount && process.env.REMOTE == 'true'){
                 //user must trade their own stars
                 sessionUser.stars -= parseInt(amount);
+                console.log("Before star passage");
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
                 await sessionUser.save();
                 if(typeof passage === 'object' && passage !== null){
