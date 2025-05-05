@@ -4934,27 +4934,6 @@ async function getPassageLocation(passage, train){
                         //     find
                         // );
                         // passages = {docs: passages};
-                    }else{
-                        ///feed
-                        const result = await generateFeedWithPagination(req.session.user, page, DOCS_PER_PAGE);
-                        passages = {};
-                        passages.docs = [];
-                        console.log("LOGS");
-                        if('feed' in result){
-                            for (let i = 0; i < result.feed.length; i++) {
-                              const processedPassage = await getPassage(result.feed[i]);
-                              passages.docs.push(processedPassage);
-                            }
-                            return res.render('passages', {
-                                subPassages: false,
-                                passages: passages.docs,
-                                sub: true,
-                                subPassage: false,
-                                page: page
-                            });
-                        }else{
-                            return res.send("No more passages.");
-                        }
                     }
                     
                 } catch (err) {
