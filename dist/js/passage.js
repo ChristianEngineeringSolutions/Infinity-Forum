@@ -440,6 +440,7 @@ $(function(){
     });
     $(document).on('click', '[id^="passage_delete_"]', function(e){
         var _id = getPassageId(this);
+        $('#passage_'+_id).remove();
         $.ajax({
             type: 'post',
             // url: DOMAIN + '/delete_passage/' + fromOtro,
@@ -448,7 +449,7 @@ $(function(){
                 _id: _id
             },
             success: function(data){
-                $('#passage_'+_id).remove();
+                
             }
         });
     });

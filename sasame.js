@@ -6603,11 +6603,12 @@ async function getPassageLocation(passage, train){
     // })();
     //\testing
     async function syncFileStream(){
+        // await Passage.deleteMany({fileStreamPath: {$ne:null}});
         //clear filestream
         //await Passage.updateMany({mainFile:true}, {mainFile:false});
         //await Passage.deleteMany({fileStreamPath: {$ne:null}});
         var author = await User.findOne({admin:true});
-        var top = await Passage.find({
+        var top = await Passage.findOne({
             title: 'Infinity Forum Source Code',
             author: author._id,
             fileStreamPath: __dirname + '/',
@@ -6615,7 +6616,9 @@ async function getPassageLocation(passage, train){
             public: false,
             parent: null
         });
+        console.log(top);
         if(top == null){
+            console.log("HERE");
             top = await Passage.create({
                 title: 'Infinity Forum Source Code',
                 author: author._id,
@@ -6625,6 +6628,7 @@ async function getPassageLocation(passage, train){
                 parent: null,
             });
         }
+        console.log("TOP:"+top);
         //create filestream if not exists otherwise sync it
         await loadFileStream(top);
     }
@@ -6634,14 +6638,14 @@ async function getPassageLocation(passage, train){
         var author = await User.findOne({admin:true});
         try {
             const files = await readdir(directory);
-            console.log(directory);
+            // console.log(directory);
             let parentDirectory = await Passage.findOne({
                 mainFile: true,
                 fileStreamPath: directory
             });
             for (const file of files){
                 //need to change this to be for specific full paths
-                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images' || file == 'uploads' || file == 'protected' || file == 'nsfw'){
+                if(file == '.env' || file == '.git' || file == 'node_modules' || file == 'images' || file == 'uploads' || file == 'protected' || file == 'nsfw' || file == 'libssl1.1_1.1.1f-1ubuntu2_amd64.deb' || file == '.DS_STORE'){
                     continue;
                 }
                 // console.log(directory + '/' + file);
@@ -6653,7 +6657,7 @@ async function getPassageLocation(passage, train){
                     var exists = await Passage.findOne({
                         mainFile: true,
                         fileStreamPath: directory + '/' + file,
-                        title: title + '/'
+                        title: title + '/',
                     });
                     if(exists == null){
                         let passage = await Passage.create({
@@ -6665,12 +6669,21 @@ async function getPassageLocation(passage, train){
                             parent: directory == __dirname ? top._id : parentDirectory._id,
                             date: new Date("2023-05-04 01:00:00")
                         });
+                    }else{
+                        exists.parent = directory == __dirname ? top._id : parentDirectory._id;
+                        await exists.save();
+                        console.log(top._id);
+                        console.log("PARENT:"+exists.parent);
                     }
                     //recursively create passages
                     //put in parent directory
                     await loadFileStream(top, directory + '/' + file);
                 }
                 else{
+                    var lang = getLang('.' + file.split('.').at('-1'));
+                    if(typeof lang === 'undefined'){
+                        lang = 'text';
+                    }
                     //create passage
                     var exists = await Passage.findOne({
                         mainFile: true,
@@ -6679,11 +6692,11 @@ async function getPassageLocation(passage, train){
                     });
                     if(exists != null){
                         try {
-                          console.log('Directory:', directory);
-                            console.log('File:', file);
                             const fullPath = directory + '/' + file;
-                            console.log('Full path being used:', fullPath);
-                            exists.code = await fsp.readFile(fullPath);
+                            exists.code = await fsp.readFile(fullPath, 'utf-8');
+                            if(file == '.gitignore'){
+                                console.log("CODE:"+exists.code);
+                            }
                             // console.log('Result:', exists.code);
                             await exists.save();
                         } catch (error) {
@@ -6695,7 +6708,7 @@ async function getPassageLocation(passage, train){
                             title: title,
                             author: author._id,
                             code: await fsp.readFile(directory + '/' + file),
-                            lang: getLang('.' + file.split('.').at('-1')),
+                            lang: lang,
                             fileStreamPath: directory + '/' + file,
                             mainFile: true,
                             parent: directory == __dirname ? top._id : parentDirectory._id,
@@ -6801,7 +6814,11 @@ async function getPassageLocation(passage, train){
         
     });
     app.post('/syncfilestream', requiresAdmin, async function(req, res){
+        const fsp = require('fs').promises;
         await syncFileStream();
+        // var code = await fsp.readFile("/home/uriah/Desktop/United Life/CES/ChristianEngineeringSolutions/.gitignore", 'utf-8')
+        // console.log(code);
+        // console.log(await fsp.readFile("/home/uriah/Desktop/United Life/CES/ChristianEngineeringSolutions/rs.sh"));
         res.send("Done.");
     });
     app.post('/updateFileStream', requiresAdmin, async function(req, res) {
