@@ -7937,86 +7937,104 @@ async function getPassageLocation(passage, train){
      * @param {Object} user - Current user
      * @return {Array} Scored and sorted passages
      */
-    async function scorePassages(passages, user) {
-  // Get list of authors the user follows
-  const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
-  
-  const scoredPassages = [];
-  
-  for (const passage of passages) {
-    // Get distinct authors who used this passage (excluding the original author)
-    const usedByAuthors = await Passage.find({
-      sourceList: { $in: [passage._id] },
-      versionOf: null,
-      author: { $ne: passage.author._id }
-    }).distinct('author');
-    
-    // Calculate comment count based on passage type, excluding author's own comments
-    let commentCount = 0;
-    
-    if (passage.private === true && passage.comments) {
-      commentCount = passage.comments.filter(comment => 
-        comment.author && comment.author.toString() !== passage.author._id.toString()
-      ).length;
-    } else if (passage.private === false && passage.passages) {
-      commentCount = passage.passages.filter(subPassage => 
-        subPassage.author && subPassage.author.toString() !== passage.author._id.toString()
-      ).length;
+    async function scorePassages(passages, user=null) {
+      // Get list of authors the user follows
+        if(user != null){
+            const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+        }
+      // Track author counts as we go through the scoring
+      const authorAppearances = {};
+      const scoredPassages = [];
+
+      
+      for (const passage of passages) {
+        const authorId = passage.author._id.toString();
+        // Count this appearance (start at 0)
+        authorAppearances[authorId] = (authorAppearances[authorId] || 0);
+        // Get distinct authors who used this passage (excluding the original author)
+        const usedByAuthors = await Passage.find({
+          sourceList: { $in: [passage._id] },
+          versionOf: null,
+          author: { $ne: passage.author._id }
+        }).distinct('author');
+        
+        // Calculate comment count based on passage type, excluding author's own comments
+        let commentCount = 0;
+        
+        if (passage.private === true && passage.comments) {
+          commentCount = passage.comments.filter(comment => 
+            comment.author && comment.author.toString() !== passage.author._id.toString()
+          ).length;
+        } else if (passage.private === false && passage.passages) {
+          commentCount = passage.passages.filter(subPassage => 
+            subPassage.author && subPassage.author.toString() !== passage.author._id.toString()
+          ).length;
+        }
+        
+        // Apply logarithmic scaling to prevent dominance by any one factor
+        const dateField = passage.createdAt || passage.date;
+        const recencyScore = calculateRecencyScore(dateField);
+        const starScore = Math.log10(passage.stars + 1) * 1.5; // Logarithmic scaling
+        const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
+        const commentScore = Math.log10(commentCount + 1) * 1.5;
+        
+        // Apply social factor bonuses
+        if(user != null){
+            const followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.3 : 1;
+        }else{
+            console.log("FLAIR");
+            var followedAuthorBonus = 1;
+        }
+
+        // Apply author diversity penalty - stronger with each appearance
+        // First appearance has no penalty (factor = 1.0)
+        const authorDiversityFactor = 1 / (1 + authorAppearances[authorId] * 0.2);
+        
+        // Stronger randomness factor (between 0.6 and 1.4)
+        const randomnessFactor = 0.6 + (Math.random() * 0.8);
+        
+        // Calculate final score with weighted components
+        const score = (
+          (recencyScore * 0.35) +      // 35% weight for recency
+          (starScore * 0.2) +          // 20% weight for stars
+          (usedByScore * 0.25) +       // 15% weight for usage
+          (commentScore * 0.15)        // 15% weight for comments
+        ) * followedAuthorBonus * authorDiversityFactor * randomnessFactor;
+        
+        scoredPassages.push({
+          passage,
+          score,
+          // Add debug info to help understand scoring (remove in production)
+          // debug: {
+          //   recency: recencyScore * 0.35,
+          //   stars: starScore * 0.2,
+          //   usedBy: usedByScore * 0.15,
+          //   comments: commentScore * 0.15,
+          //   authorBonus: followedAuthorBonus,
+          //   random: randomnessFactor
+          // }
+        });
+        // Increment author appearance count for next time
+        authorAppearances[authorId]++;
+      }
+      
+      // Add an additional shuffle step to further randomize when scores are close
+      scoredPassages.sort((a, b) => {
+        // If scores are within 10% of each other, randomize their order
+        if (Math.abs(a.score - b.score) < (a.score * 0.1)) {
+          return Math.random() - 0.5;
+        }
+        return b.score - a.score; // Otherwise use score order
+      });
+      
+      console.log("Score distribution:", 
+        scoredPassages.slice(0, 10).map(p => 
+          JSON.stringify({id: p.passage._id.toString().substr(-4), score: p.score.toFixed(2)})
+        )
+      );
+      
+      return scoredPassages;
     }
-    
-    // Apply logarithmic scaling to prevent dominance by any one factor
-    const dateField = passage.createdAt || passage.date;
-    const recencyScore = calculateRecencyScore(dateField);
-    const starScore = Math.log10(passage.stars + 1) * 1.5; // Logarithmic scaling
-    const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
-    const commentScore = Math.log10(commentCount + 1) * 1.5;
-    
-    // Apply social factor bonuses
-    const followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.3 : 1;
-    
-    // Stronger randomness factor (between 0.6 and 1.4)
-    const randomnessFactor = 0.6 + (Math.random() * 0.8);
-    
-    // Calculate final score with weighted components
-    const score = (
-      (recencyScore * 0.35) +      // 35% weight for recency
-      (starScore * 0.2) +          // 20% weight for stars
-      (usedByScore * 0.25) +       // 15% weight for usage
-      (commentScore * 0.15)        // 15% weight for comments
-    ) * followedAuthorBonus * randomnessFactor;
-    
-    scoredPassages.push({
-      passage,
-      score,
-      // Add debug info to help understand scoring (remove in production)
-      // debug: {
-      //   recency: recencyScore * 0.35,
-      //   stars: starScore * 0.2,
-      //   usedBy: usedByScore * 0.15,
-      //   comments: commentScore * 0.15,
-      //   authorBonus: followedAuthorBonus,
-      //   random: randomnessFactor
-      // }
-    });
-  }
-  
-  // Add an additional shuffle step to further randomize when scores are close
-  scoredPassages.sort((a, b) => {
-    // If scores are within 10% of each other, randomize their order
-    if (Math.abs(a.score - b.score) < (a.score * 0.1)) {
-      return Math.random() - 0.5;
-    }
-    return b.score - a.score; // Otherwise use score order
-  });
-  
-  console.log("Score distribution:", 
-    scoredPassages.slice(0, 10).map(p => 
-      JSON.stringify({id: p.passage._id.toString().substr(-4), score: p.score.toFixed(2)})
-    )
-  );
-  
-  return scoredPassages;
-}
 
     /**
      * Calculates a recency score with exponential decay
@@ -8316,6 +8334,7 @@ async function getPassageLocation(passage, train){
       }
       console.log('Feedids:'+(feedIds));
       // If not in cache or Redis unavailable, generate the feed
+      //!feedIds || pass
       if (!feedIds || pass) {
         console.log('Generating new guest feed');
         
@@ -8401,10 +8420,14 @@ async function getPassageLocation(passage, train){
           const sourceId = usage._id.toString();
           usageCountMap[sourceId] = (usageCountMap[sourceId] || []).concat(usage.usedByAuthors);
         }
-        
+        // Track author counts as we go through the scoring
+        const authorAppearances = {};
         // Score passages using the maps
         const scoredPassages = [];
         for (const passage of minimalPassages) {
+            const authorId = passage.author._id.toString();
+            // Count this appearance (start at 0)
+            authorAppearances[authorId] = (authorAppearances[authorId] || 0);
           const passageId = passage._id.toString();
           
           // Get counts from maps
@@ -8417,6 +8440,10 @@ async function getPassageLocation(passage, train){
           const commentScore = Math.log10(commentCount + 1) * 1.5;
           const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
           
+          // Apply author diversity penalty - stronger with each appearance
+            // First appearance has no penalty (factor = 1.0)
+            const authorDiversityFactor = 1 / (1 + authorAppearances[authorId] * 0.2);
+
           // Randomness factor
           const randomnessFactor = 0.7 + (Math.random() * 0.6);
           
@@ -8426,7 +8453,7 @@ async function getPassageLocation(passage, train){
             (starScore * 0.3) +
             (usedByScore * 0.2) +
             (commentScore * 0.2)
-          ) * randomnessFactor;
+          ) * authorDiversityFactor * randomnessFactor;
           
           scoredPassages.push({
             passageId: passage._id,
