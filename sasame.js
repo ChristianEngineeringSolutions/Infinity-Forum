@@ -254,6 +254,7 @@
 
     var app = express();
     var server = http.Server(app);
+    var isShuttingDown = false;
 
     //socket io
     const io = require('socket.io')(server);
@@ -7941,7 +7942,7 @@ async function getPassageLocation(passage, train){
     async function scorePassages(passages, user=null) {
       // Get list of authors the user follows
         if(user != null){
-            const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+            var followedAuthors = await Follower.find({ user: user._id }).distinct('following');
         }
       // Track author counts as we go through the scoring
       const authorAppearances = {};
@@ -7981,7 +7982,7 @@ async function getPassageLocation(passage, train){
         
         // Apply social factor bonuses
         if(user != null){
-            const followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.3 : 1;
+            var followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.3 : 1;
         }else{
             console.log("FLAIR");
             var followedAuthorBonus = 1;
@@ -8787,7 +8788,51 @@ async function getPassagesByUsage(options = {}) {
       }
     })();
 
+    async function gracefulShutdown(signal) {
+      console.log(`Received ${signal}. Starting graceful shutdown...`);
+      isShuttingDown = true;
 
+      server.close(async (err) => { // Use your 'server' instance here
+        console.log('Server stopped accepting new connections.');
+        if (err) {
+          console.error('Error during server close:', err);
+          process.exit(1);
+        }
+
+        const shutdownTimeout = 10000; // 10 seconds
+        const startTime = Date.now();
+
+        // You might need a different way to track in-flight requests
+        // if you're not solely relying on Express's internal mechanisms.
+        // This example assumes Express is handling requests.
+        while (Date.now() - startTime < shutdownTimeout && app._events.requestCount > 0) {
+          console.log(`Waiting for ${app._events.requestCount} requests to complete...`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        }
+
+        console.log('All in-flight requests finished (or timeout reached).');
+
+        // Close MongoDB connection
+        try {
+          await mongoose.connection.close();
+          console.log('MongoDB connection closed through graceful shutdown.');
+        } catch (err) {
+          console.error('Error during MongoDB shutdown:', err);
+          process.exit(1);
+        }
+        // Close Socket.IO connections if you're using it
+        if (io) {
+          io.close(() => {
+            console.log('Socket.IO server closed.');
+            console.log('Graceful shutdown complete. Exiting.');
+            process.exit(0);
+          });
+        } else {
+          console.log('Graceful shutdown complete. Exiting.');
+          process.exit(0);
+        }
+      });
+    }
     // CLOSING LOGIC
     server.listen(PORT, () => {
         console.log(`Sasame started on Port ${PORT}`);
@@ -8798,21 +8843,25 @@ async function getPassagesByUsage(options = {}) {
         console.log(err);
         // server.close();
     });
-    process.on('SIGTERM', function(err){
-        console.log('SIGTERM');
-        console.log(err);
-        server.close();
+    // Listen for SIGINT (Ctrl+C)
+    process.on('SIGINT', gracefulShutdown);
+
+    // Listen for SIGTERM (PM2 shutdown)
+    process.on('SIGTERM', gracefulShutdown);
+
+    // Middleware to track in-flight requests (basic example for Express)
+    app.use((req, res, next) => {
+      if (!isShuttingDown) {
+        app._events.requestCount = (app._events.requestCount || 0) + 1;
+        res.on('finish', () => {
+          app._events.requestCount--;
+        });
+      }
+      next();
     });
-    // Proper cleanup on application shutdown
-    process.on('SIGINT', async () => {
-        try {
-            await mongoose.connection.close();
-            console.log('MongoDB connection closed through app termination');
-            process.exit(0);
-        } catch (err) {
-            console.error('Error during MongoDB shutdown:', err);
-            process.exit(1);
-        }
+
+    app.get('/health', (req, res) => {
+      res.sendStatus(isShuttingDown ? 503 : 200); // 503 if shutting down
     });
 
     //debugging
