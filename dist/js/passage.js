@@ -666,10 +666,28 @@ $(function(){
                     username: thiz.val()
                 },
                 success: function (data) {
+                    alert(data);
                     window.location.reload();
                 }
             });
         }
+    });
+    $(document).on('click', '.btn-add-user', function(e){
+        var thiz = $(this);
+        var _id = thiz.attr('id').split('-').at(-1);
+        $.ajax({
+            // url: DOMAIN + '/add_user',
+            url: '/add_user',
+            type: 'POST',
+            data: {
+                passageId: _id,
+                username: $('#passage_add_user_'+_id).val()
+            },
+            success: function (data) {
+                alert(data);
+                window.location.reload();
+            }
+        });
     });
     $(document).on('keyup', '.share-passage', function(e){
         if(e.keyCode == 13){
@@ -700,10 +718,28 @@ $(function(){
                     username: thiz.val()
                 },
                 success: function (data) {
+                    alert(data);
                     window.location.reload();
                 }
             });
         }
+    });
+    $(document).on('click', '.btn-add-collaber', function(e){
+        var thiz = $(this);
+        var _id = thiz.attr('id').split('-').at(-1);
+        $.ajax({
+            // url: DOMAIN + '/add_user',
+            url: '/add_collaborator',
+            type: 'POST',
+            data: {
+                passageID: _id,
+                username: $('#passage_add_collaborator_'+_id).val()
+            },
+            success: function (data) {
+                alert(data);
+                window.location.reload();
+            }
+        });
     });
     $(document).on('click', '.passage_remove_user', function(e){
         var thiz = $(this);

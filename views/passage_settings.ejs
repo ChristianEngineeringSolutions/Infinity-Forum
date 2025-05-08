@@ -20,10 +20,12 @@ Collaborators:
 <br><br>
 Add User (Read/Write Access): <br>
 <input autocomplete="off" placeholder="Username..."class="passage_add_user"id="passage_add_user_<%=passage._id%>"type="">
+<button class="btn-add-user"id="add-user-<%=passage._id%>">Add</button>
 <div id="same-users-<%=passage._id%>"><input id="passage_same_users_<%=passage._id%>"<%=passage.sameUsers ? ' checked ' : ''%>type="checkbox" autocomplete="off"> Use same users for Sub-passages</div>
 <br>
 Add Collaborator (Split Stars): <br>
 <input autocomplete="off" placeholder="Username..."class="passage_add_collaborator"id="passage_add_collaborator_<%=passage._id%>"type="">
+<button class="btn-add-collaber"id="add-collaber-<%=passage._id%>">Add</button>
 <div id="same-collabers-<%=passage._id%>"><input id="passage_same_collabers_<%=passage._id%>"<%=passage.sameCollabers ? ' checked ' : ''%>type="checkbox" autocomplete="off"> Use same collaborators for Sub-passages</div>
 <hr>
 <div id="same-sources-<%=passage._id%>"><input id="passage_same_sources_<%=passage._id%>"<%=passage.sameSources ? ' checked ' : ''%>type="checkbox" autocomplete="off"> Use same Sources for Sub-passages</div>

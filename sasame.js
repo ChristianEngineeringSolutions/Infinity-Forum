@@ -3204,11 +3204,12 @@ async function getPassageLocation(passage, train){
         }
     });
     app.post('/add_collaborator', async (req, res) => {
-        console.log("HEEEELLLLLOOOO");
         var passage = await Passage.findOne({_id: req.body.passageID});
         if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
             var collaborator = await User.findOne({username:req.body.username});
-            console.log("HALT");
+            if(collaborator == null){
+                return res.send("Collaborator not found.");
+            }
             console.log(collaborator._id.toString());
             console.log(req.session.user._id.toString());
             console.log(collaborator._id.toString() != req.session.user._id.toString());
