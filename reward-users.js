@@ -3,6 +3,7 @@ const {accessSecret,
      percentUSD, totalUSD, 
      totalStarsGiven} = require('./common-utils');
 const {User, UserSchema} = require('./models/User');
+const System = require('./models/System');
 const crypto = require('crypto');
 const Bull = require('bull');
 
@@ -116,7 +117,9 @@ async function processRewardDistribution(job) {
     const rateLimiter = new RateLimiter(RATE_LIMIT.STRIPE_RATE_LIMIT, 1000);
     
     const users = await User.find({ stripeOnboardingComplete: true });
-    const usd = await scripts.getMaxToGiveOut();
+    // const usd = await scripts.getMaxToGiveOut();
+    var SYSTEM = await System.findOne({});
+    var usd = SYSTEM.userAmount;
     let totalCut = 0;
     const successfulTransfers = [];
     const failedTransfers = [];
@@ -145,7 +148,8 @@ async function processRewardDistribution(job) {
                         // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                         //     userUSD = 600 - user.amountEarnedThisYear;
                         // }
-                        const cut = (userUSD*0.05);
+                        // const cut = (userUSD*0.55);
+                        const cut = 0;
                         const transferAmount = Math.floor(userUSD - cut);
 
                         // Generate idempotency key
@@ -160,7 +164,6 @@ async function processRewardDistribution(job) {
 
                         const transfer = await withRetry(
                             () => stripe.transfers.create({
-                                //take 5%
                                 amount: transferAmount,
                                 currency: "usd",
                                 destination: user.stripeAccountId,
@@ -223,16 +226,18 @@ async function processRewardDistribution(job) {
         );
 
         try {
-            const payout = await withRetry(
-                () => stripe.payouts.create({
-                    amount: Math.floor(totalCut),
-                    currency: 'usd',
-                }, {
-                    idempotencyKey: payoutIdempotencyKey,
-                }),
-                'platform payout'
-            );
-            await job.log(`Platform payout created: ${payout.id}, amount: ${totalCut}`);
+            SYSTEM.userAmount = 0;
+            await SYSTEM.save();
+            // const payout = await withRetry(
+            //     () => stripe.payouts.create({
+            //         amount: Math.floor(totalCut),
+            //         currency: 'usd',
+            //     }, {
+            //         idempotencyKey: payoutIdempotencyKey,
+            //     }),
+            //     'platform payout'
+            // );
+            // await job.log(`Platform payout created: ${payout.id}, amount: ${totalCut}`);
         } catch (err) {
             await job.log(`Failed to create platform payout: ${err.message}`);
             throw err; // This will trigger job retry

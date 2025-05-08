@@ -7,6 +7,11 @@ const starSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    //author of the passage that was starred
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     //which passage was starred
     passage: {
         type: mongoose.Schema.Types.ObjectId,
@@ -17,6 +22,10 @@ const starSchema = mongoose.Schema({
         default: true
     },
     amount:{
+        type: Number,
+        default: 0
+    },
+    debt:{
         type: Number,
         default: 0
     },

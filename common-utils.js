@@ -103,17 +103,19 @@ const scripts = {};
         return final;
     }
     async function totalUSD(){
-        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
-        const stripe = require("stripe")(STRIPE_SECRET_KEY);
-        const balance = await stripe.balance.retrieve();
-        var usd = 0;
-        for(const i of balance.available){
-            if(i.currency == 'usd'){
-                usd = i.amount;
-                break;
-            }
-        }
-        return usd;
+        // const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+        // const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        // const balance = await stripe.balance.retrieve();
+        // var usd = 0;
+        // for(const i of balance.available){
+        //     if(i.currency == 'usd'){
+        //         usd = i.amount;
+        //         break;
+        //     }
+        // }
+        var SYSTEM = await System.findOne({});
+        return SYSTEM.userAmount;
+        // return usd - SYSTEM.amount;
     }
     async function totalStarsGiven(){
         let users = await User.find({stripeOnboardingComplete: true});

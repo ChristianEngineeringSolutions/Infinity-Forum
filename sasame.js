@@ -105,31 +105,50 @@
     const JTI = require('./models/JTI');
     const System = require('./models/System');
     //one time function
-    (async function(){
-        var SYSTEM = await System.findOne({});
-        if(SYSTEM == null){
-            await System.create({
-                totalStarsGiven: 0,
-                numUsersOnboarded: 0,
-                lastUpdated: Date.now()
-            });
-            SYSTEM = await System.findOne({});
-        }
-        if(SYSTEM.totalStarsGiven == 0){
-            //one time function to set system stars given equal to the correct amount
-            var users = await User.find({});
-            var total = 0;
-            for(const user of users){
-                total += user.starsGiven;
-            }
-            SYSTEM.totalStarsGiven = total;
-            //one time function to set system num users to current num users
-            let onboarded = await User.find({stripeOnboardingComplete: true});
-            SYSTEM.numUsersOnboarded = onboarded.length;
-            await SYSTEM.save();
-        }
+    // (async function(){
+    //     var SYSTEM = await System.findOne({});
+    //     if(SYSTEM == null){
+    //         await System.create({
+    //             totalStarsGiven: 0,
+    //             numUsersOnboarded: 0,
+    //             lastUpdated: Date.now()
+    //         });
+    //         SYSTEM = await System.findOne({});
+    //     }
+    //     if(SYSTEM.totalStarsGiven == 0){
+    //         //one time function to set system stars given equal to the correct amount
+    //         var users = await User.find({});
+    //         var total = 0;
+    //         for(const user of users){
+    //             total += user.starsGiven;
+    //         }
+    //         SYSTEM.totalStarsGiven = total;
+    //         //one time function to set system num users to current num users
+    //         let onboarded = await User.find({stripeOnboardingComplete: true});
+    //         SYSTEM.numUsersOnboarded = onboarded.length;
+    //         await SYSTEM.save();
+    //     }
 
-    })();
+    // })();
+    //one time function
+    // (async function(){
+    //     var SYSTEM = await System.findOne({});
+    //     const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+    //     const stripe = require("stripe")(STRIPE_SECRET_KEY);
+    //     const balance = await stripe.balance.retrieve();
+    //     var usd = 0;
+    //     for(const i of balance.available){
+    //         if(i.currency == 'usd'){
+    //             usd = i.amount;
+    //             break;
+    //         }
+    //     }
+    //     SYSTEM.userAmount = usd * 0.45;
+    //     SYSTEM.platformAmount = usd * 0.55;
+    //     await SYSTEM.save();
+    //     console.log("SYSTEM amounts updated.");
+
+    // })();
     async function setupDatabaseIndexes() {
       try {
         console.log("Setting up database indexes...");
@@ -773,11 +792,13 @@
             var star = await Star.create({
                 user: userID,
                 passage: passage._id,
+                passageAuthor: passage.author._id.toString(),
                 amount: amount,
                 sources: sources,
                 single: false,
+                debt: amount,
                 system: null //not relevant since we cant unstar these so just make it null
-            });
+            });            
             var lastSource = await getLastSource(passage);
             var bonus = 0;
             //calculate bonus
@@ -807,29 +828,58 @@
                 }
             }
             await starMessages(passage._id, amount);
+            //absorb amount of stars that goes to author and collaborators
+            //depending on "star debt"
+            //get stars given to the starrer by these collaborators
+            var allCollaborators = [passage.author, ...passage.collaborators];
+            var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
+            collaboratorsLoop:
+            for(const collaber of allCollaborators){
+                var stars  = await Star.find({
+                    //they got starred by collaber
+                    passageAuthor: req.session.user._id.toString(),
+                    user: collaber._id.toString(), //they starred session user
+                    single: false,
+                    debt: {$gt:0}
+                });
+                for(const star of stars){
+                    amountToGiveCollabers -= star.debt;
+                    star.debt -= (amount + bonus)/(passage.collaborators.length + 1);
+                    if(star.debt <= 0){
+                        star.debt = 0;
+                        await star.save();
+                        //they paid off this debt so continue to the next one
+                        continue;
+                    }else{
+                        //amountToGiveCollaborators should be <= 0
+                        await star.save();
+                        //they cant pay off their debt so stop
+                        //trying to pay it
+                        break collaboratorsLoop;
+                    }
+                }
+            }
+            if(amountToGiveCollabers < 0){
+                amountToGiveCollabers = 0;
+            }
             //you have to star someone elses passage to get stars
             if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
                 user.starsGiven += amount;
                 const SYSTEM = await System.findOne({});
                 SYSTEM.totalStarsGiven += amount;
                 await SYSTEM.save();
-                if(passage.collaborators.length > 0){
-                    passage.author.stars += (amount + bonus)/(passage.collaborators.length + 1);
-                }
-                else{
-                    passage.author.stars += amount + bonus;
-                }
+                passage.author.stars += amountToGiveCollabers;
                 //give stars to collaborators if applicable
                 //split stars with collaborators
                 if(passage.collaborators.length > 0){
                     for(const collaborator in passage.collaborators){
-                        if(collaborator == passage.author.email){
+                        if(collaborator._id.toString() == passage.author._id.toString()){
                             //we already starred the author
                             continue;
                         }
-                        let collaber = await User.findOne({email:collaborator});
+                        let collaber = await User.findOne({_id:collaborator._id.toString()});
                         if(collaber != null){
-                            collaber.stars += (amount + bonus)/(passage.collaborators.length + 1);
+                            collaber.stars += amountToGiveCollabers;
                             await collaber.save();
                         }
                     }
@@ -3365,14 +3415,12 @@ async function getPassageLocation(passage, train){
         // await user.save();
         res.send("Done.");
     });
-    app.post('/stripe_webhook', bodyParser.raw({type: 'application/json'}), async (request, response) => {
-        // response.header("Access-Control-Allow-Origin", "*");
-        // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    app.post('/stripe_webhook', bodyParser.raw({ type: 'application/json' }), async (request, response) => {
         const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
         const stripe = require("stripe")(STRIPE_SECRET_KEY);
         const endpointSecret = await accessSecret("STRIPE_ENDPOINT_SECRET_KEY");
         const payload = request.body;
-      
+
         console.log("Got payload: " + payload);
         const sig = request.headers['stripe-signature'];
         let event;
@@ -3381,44 +3429,76 @@ async function getPassageLocation(passage, train){
             console.log(event.type);
         } catch (err) {
             console.log(err);
-            //console.log(response.status(400).send(`Webhook Error: ${err.message}`));
             return response.status(400).send(`Webhook Error: ${err.message}`);
+        }
+
+        if (event.type === 'checkout.session.completed') {
+            try {
+                const session = event.data.object;
+                const amount = session.amount_total;
+                const customerEmail = session.customer_details?.email; //Use optional chaining
+
+                // 1. Get the Charge ID from the completed session.
+                const chargeId = session.payment_intent ? await stripe.paymentIntents.retrieve(session.payment_intent).then(pi => pi.latest_charge) : null;
+
+                 if (chargeId) {
+                    // 2. Retrieve the Charge object to get the balance transaction.
+                    const charge = await stripe.charges.retrieve(chargeId);
+                    const balanceTransactionId = charge.balance_transaction;
+
+                    if (balanceTransactionId) {
+                        // 3. Retrieve the Balance Transaction to get the fee.
+                        const balanceTransaction = await stripe.balanceTransactions.retrieve(balanceTransactionId);
+                        const fee = balanceTransaction.fee;
+                        const net = balanceTransaction.net;
+
+                        // console.log(`Stripe Fee: ${fee}`);
+                        // console.log(`Net Amount: ${net}`);
+
+                        //Save recording passage in database and give user correct number of stars
+                        //get user from email
+                        var user = await User.findOne({ email: customerEmail });
+                        if (user) {
+                            var totalAmount = await totalUSD();
+                            var amountToAdd = 0;
+                            var totalStarsGivenAmount = await totalStarsGiven();
+                            var percentUSDAmount = await percentUSD(parseInt(amount));
+                            //percentUSD returns 1 if its value is 0
+                            amountToAdd = percentUSDAmount * totalStarsGivenAmount;
+                            if (totalStarsGiven == 0) {
+                                amountToAdd = 100;
+                            }
+                            user.stars += amountToAdd;
+                            await user.save();
+                            //pay platform our cut
+                            var SYSTEM = await System.findOne({});
+                            SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
+                            SYSTEM.userAmount += Math.floor(amount * 0.45);
+                            await SYSTEM.save();
+                        }
+                    }
+                } else {
+                     console.log("Charge ID not found in session or payment intent.");
+                }
+            } catch (error) {
+                 console.error("Error processing checkout.session.completed:", error);
+                 return response.status(500).send(`Error processing event: ${error.message}`);
+            }
         }
         //if subscription created or ended
         //update subscription data in db
         //...
-        // Handle the checkout.session.completed event
-        // For Custom Amount Investment
-        if (event.type === 'checkout.session.completed') {
-            let amount = payload.data.object.amount_total;
-            //Save recording passage in database and give user correct number of stars
-            //get user from email
-            var user = await User.findOne({email: payload.data.object.customer_details.email});
-            if(user){
-                var totalAmount = await totalUSD();
-                var amountToAdd = 0;
-                var totalStarsGivenAmount = await totalStarsGiven();
-                var percentUSDAmount = await percentUSD(parseInt(amount));
-                //percentUSD returns 1 if its value is 0
-                amountToAdd = percentUSDAmount * totalStarsGivenAmount;
-                if(totalStarsGiven == 0){
-                    amountToAdd = 100;
-                }
-                user.stars += amountToAdd;
-                await user.save();
-            }
-        }
-        //For Subscriptions
-        else if(event.type == "invoice.paid"){
+        // For Subscriptions
+        else if (event.type == "invoice.paid") {
             console.log(JSON.stringify(payload.data.object.subscription));
             var email = payload.data.object.customer_email;
             console.log("UNDER TEST");
-            if(email != null){
+            if (email != null) {
                 console.log("OVER TEST");
                 console.log(email);
                 //they get stars
                 //plus time bonus
-                var subscriber = await User.findOne({email: email});
+                var subscriber = await User.findOne({ email: email });
                 subscriber.subscriptionID = payload.data.object.subscription;
                 subscriber.subscribed = true;
                 // subscriber.lastSubscribed = new Date();
@@ -3426,21 +3506,20 @@ async function getPassageLocation(passage, train){
                 subscriber.stars += (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
                 await subscriber.save();
             }
-        }
-        else if(event.type == "invoice.payment_failed"){
+        } else if (event.type == "invoice.payment_failed") {
             var email = payload.data.object.customer_email;
-            if(email != null){
-                var subscriber = await User.findOne({email: email});
-                subscriber.subscribed = false;  
+            if (email != null) {
+                var subscriber = await User.findOne({ email: email });
+                subscriber.subscribed = false;
                 subscriber.lastSubscribed = new Date();
                 await subscriber.save();
             }
-        }
-        else{
+        } else {
             console.log(event.type);
-        }  
+        }
         response.status(200).end();
-      });
+    });
+
     function canReceivePayouts(account){
       // Check if payouts are enabled
       if (account.payouts_enabled !== true) {
@@ -6180,6 +6259,15 @@ async function getPassageLocation(passage, train){
                                      mimeType.split('/')[1] + ' ' + passage._id,
                                     async (err, stdout, stderr) => {
                                         await handleCompression(err, stdout, stderr, passage, partialpath, uploadTitle, index);
+                                        //not enough memory on server
+                                        //local for now
+                                        // if(process.env.LOCAL == 'true'){
+                                        //     exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
+                                        //     , (err, stdout, stderr) => {
+                                        //             //done
+                                        //             console.log(err + stdout + stderr);
+                                        //         });
+                                        // }
                                         resolveCompress();
                                     }
                                 );
@@ -6237,7 +6325,43 @@ async function getPassageLocation(passage, train){
                                                     });
                                                 });
                                             }
-                                            
+                                              //not enough memory on server. local for now.
+                                              //   if(process.env.LOCAL == 'true'){
+                                              //       var screenshotName = v4();
+                                              //       ffmpeg(fullpath+'/'+newfilename)
+                                              //         .on('filenames', function(filenames) {
+                                              //           console.log('Will generate ' + filenames.join(', '))
+                                              //         })
+                                              //         .on('end', async function() {
+                                              //           console.log('Screenshots taken');
+                                              //           exec('node nsfw.js '+where+'/'+newfilename + ' ' + where + ' ' + passage._id + ' video ' + screenshotName
+                                              //               , (err, stdout, stderr) => {
+                                              //               console.log(err + stdout + stderr);
+                                              //               console.log("Finished Processing Media.");
+                                              //               //done
+                                              //               //delete each screenshot
+                                              //               for(var t = 1; t < 4; ++t){
+                                              //                 fs.unlink(partialpath + '/' + screenshotName+'_'+t + '.png', function(err2){
+                                              //                   if (err2 && err2.code == 'ENOENT') {
+                                              //                       // file doens't exist
+                                              //                       console.info("File doesn't exist, won't remove it.");
+                                              //                   } else if (err2) {
+                                              //                       // other errors, e.g. maybe we don't have enough permission
+                                              //                       console.error("Error occurred while trying to remove file");
+                                              //                   } else {
+                                              //                       console.info(`removed screenshot.`);
+                                              //                   }
+                                              //                 });
+                                              //               }
+                                              //           });
+                                              //         })
+                                              //         .screenshots({
+                                              //           // Will take screens at 25%, 50%, 75%
+                                              //           count: 3,
+                                              //           filename: screenshotName +'_%i.png',
+                                              //           folder: partialpath
+                                              //         });
+                                              // }
                                             resolveVideo();
                                         } catch (error) {
                                             console.error("Error in post-processing:", error);
