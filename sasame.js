@@ -7853,6 +7853,10 @@ async function getPassageLocation(passage, train){
               date: { $gte: recentCutoff },
               "stars": { $gte: 0 } // Recent with some engagement
             }
+          ],
+          $or: [
+            { content: { $ne: '' } },
+            { code: { $ne: '' } }
           ]
         };
         
@@ -8331,6 +8335,10 @@ async function getPassageLocation(passage, train){
               date: { $gte: recentCutoff },
               stars: { $gte: 2 } // Recent content with some engagement
             }
+          ],
+          $or: [
+            { content: { $ne: '' } },
+            { code: { $ne: '' } }
           ]
         };
         
