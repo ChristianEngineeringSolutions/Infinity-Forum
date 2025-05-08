@@ -139,6 +139,10 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+    borrowedStars: {
+        type: Number,
+        default: 0
+    },
 });
 
 userSchema.plugin(mongoosePaginate);

@@ -386,7 +386,7 @@
         res.locals.CESCONNECT = req.session.CESCONNECT;
         res.locals.fromOtro = req.query.fromOtro || false;
         //daemoncheck
-        if(['notifications', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+        if(['notifications', 'stars', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
             let daemons = [];
             if(req.session.user){
                 let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -737,6 +737,21 @@
         var source = await Passage.findOne({_id:passage.sourceList.at(-1)});
         return source;
     }
+    async function addStarsToUser(user, amount){
+        if(user.borrowedStars > 0){
+            user.borrowedStars -= amount;
+            var remainder = user.borrowedStars;
+            if(remainder < 0){
+                user.stars -= remainder;
+            }
+            if(user.borrowedStars < 0){
+                user.borrowedStars = 0;
+            }
+        }else{
+            user.stars += amount;
+        }
+        await user.save();
+    }
     async function starPassage(req, amount, passageID, userID, deplete=true){
         try{
             let user = await User.findOne({_id: userID});
@@ -744,11 +759,22 @@
                 return 'Please enter a number greater than 0.';
             }
             //infinite stars on a local sasame
-            if(user.stars < amount && process.env.REMOTE == 'false'){
+            if((user.stars + user.borrowedStars) < amount){
                 return "Not enough stars.";
             }
+            var starsTakenAway = amount;
             if(deplete){
-                user.stars -= amount;
+                var remainder = amount;
+                //spend borrowed stars first
+                if(user.borrowedStars > 0){
+                    user.borrowedStars -= amount;
+                    remainder = -1 * user.borrowedStars;
+                    if(user.borrowedStars < 0){
+                        user.borrowedStars = 0;
+                    }
+                }
+                starsTakenAway = remainder;
+                user.stars -= remainder;
             }
             console.log("passageID:"+passageID);
             if(passageID.includes('_')){
@@ -786,8 +812,7 @@
                     sourceLog.push(source);
                 }
                 // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
-                starrer.stars += totalForStarrer;
-                await starrer.save();
+                await addStarsToUser(starrer, totalForStarrer);
             }
             //log the amount starred
             var star = await Star.create({
@@ -865,11 +890,12 @@
             }
             //you have to star someone elses passage to get stars
             if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
-                user.starsGiven += amount;
+                user.starsGiven += starsTakenAway;
                 const SYSTEM = await System.findOne({});
                 SYSTEM.totalStarsGiven += amount;
                 await SYSTEM.save();
-                passage.author.stars += amountToGiveCollabers;
+                // passage.author.stars += amountToGiveCollabers;
+                await addStarsToUser(passage.author, amountToGiveCollabers);
                 //give stars to collaborators if applicable
                 //split stars with collaborators
                 if(passage.collaborators.length > 0){
@@ -880,12 +906,13 @@
                         }
                         let collaber = await User.findOne({_id:collaborator._id.toString()});
                         if(collaber != null){
-                            collaber.stars += amountToGiveCollabers;
-                            await collaber.save();
+                            // collaber.stars += amountToGiveCollabers;
+                            await addStarsToUser(collaber, amountToGiveCollabers);
+                            // await collaber.save();
                         }
                     }
                 }
-                await passage.author.save();
+                // await passage.author.save();
             }
             await user.save();
             await passage.save();
@@ -932,7 +959,7 @@
             //don't star same passage twice
             if(!starredPassages.includes(source._id.toString())){
                 await starMessages(source._id, amount);
-                console.log(passage.sourceList);
+                // console.log(passage.sourceList);
                 let sourceAuthor = await User.findOne({_id: source.author._id});
                 //you won't get extra stars for citing your own work
                 //also give author stars once per author
@@ -945,8 +972,7 @@
                     //dont give author stars if starrer is a collaborator
                     if(!source.collaborators.includes(req.session.user._id.toString())){
                         if(!authors.includes(sourceAuthor._id)){
-                            sourceAuthor.stars += amount + bonus/(source.collaborators.length + 1);
-                            await sourceAuthor.save();
+                            await addStarsToUser(sourceAuthor, (amount + bonus/(source.collaborators.length + 1)));
                         }
                     }
                     authors.push(sourceAuthor._id);
@@ -963,8 +989,7 @@
                                 }
                                 let collaber = await User.findOne({email:collaborator});
                                 if(collaber != null){
-                                    collaber.stars += (amount + bonus)/(source.collaborators.length + 1);
-                                    await collaber.save();
+                                    await addStarsToUser(collaber, ((amount + bonus)/(source.collaborators.length + 1)));
                                 }
                             }
                         }   
@@ -3464,14 +3489,13 @@ async function getPassageLocation(passage, train){
                             var totalAmount = await totalUSD();
                             var amountToAdd = 0;
                             var totalStarsGivenAmount = await totalStarsGiven();
-                            var percentUSDAmount = await percentUSD(parseInt(amount));
+                            var percentUSDAmount = await percentUSD(Number(amount));
                             //percentUSD returns 1 if its value is 0
                             amountToAdd = percentUSDAmount * totalStarsGivenAmount;
                             if (totalStarsGiven == 0) {
                                 amountToAdd = 100;
                             }
-                            user.stars += amountToAdd;
-                            await user.save();
+                            await addStarsToUser(user, amountToAdd);
                             //pay platform our cut
                             var SYSTEM = await System.findOne({});
                             SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
@@ -3505,8 +3529,8 @@ async function getPassageLocation(passage, train){
                 subscriber.subscribed = true;
                 // subscriber.lastSubscribed = new Date();
                 let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-                subscriber.stars += (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
-                await subscriber.save();
+                var subscriptionReward = (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
+                await addStarsToUser(subscriber, subscriptionReward);
             }
         } else if (event.type == "invoice.payment_failed") {
             var email = payload.data.object.customer_email;
@@ -5508,17 +5532,14 @@ async function getPassageLocation(passage, train){
         // return res.send('Not enough stars.');
         var passage_id = req.body.passage_id;
         var user = req.session.user;
-        var amount = parseInt(req.body.amount);
+        var amount = Number(req.body.amount);
         //get user from db
         let sessionUser = await User.findOne({_id: user._id});
         var subPassage = req.body.parent == 'root' ? false : true;
         if(req.session && user){
             if(sessionUser.stars > amount && process.env.REMOTE == 'true'){
-                //user must trade their own stars
-                sessionUser.stars -= parseInt(amount);
                 console.log("Before star passage");
-                let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
-                await sessionUser.save();
+                let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, true);
                 if(typeof passage === 'object' && passage !== null){
                     passage = await getPassage(passage);
                 }
@@ -5529,7 +5550,7 @@ async function getPassageLocation(passage, train){
                 return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
             }
             else if(process.env.REMOTE == 'false'){
-                let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, false);
+                let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, true);
                 await sessionUser.save();
                 if(typeof passage === 'object' && passage !== null){
                     passage = await getPassage(passage);
@@ -7666,6 +7687,27 @@ async function getPassageLocation(passage, train){
         console.error('Error generating feed:', error);
         return res.status(500).send('Error generating feed. Please try again later.');
       }
+    });
+    app.get('/stars', async (req, res) => {
+      if (!req.session.user) {
+        return res.redirect('/loginform');
+      }
+      var user = await User.findOne({_id:req.session.user._id});
+      return res.render('stars', {borrowedAmount:user.borrowedStars});
+      
+    });
+    app.post('/borrow-stars', async (req, res) => {
+      if (!req.session.user) {
+        return res.redirect('/loginform');
+      }
+      if(!isNaN(req.body.quantity) && req.body.quantity > 0){
+        var user = await User.findOne({_id:req.session.user._id});
+        user.borrowedStars += Number(req.body.quantity);
+        await user.save();
+        return res.send(`You borrowed ${req.body.quantity} star${req.body.quantity == 1 ? '' : 's'}!`);
+      }
+      return res.send("Error.");
+      
     });
 
     // Hook into passage creation to update feeds in real-time
