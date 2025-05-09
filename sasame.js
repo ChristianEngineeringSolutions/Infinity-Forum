@@ -7733,16 +7733,17 @@ async function getPassageLocation(passage, train){
       
     });
     app.post('/borrow-stars', async (req, res) => {
-      if (!req.session.user) {
-        return res.redirect('/loginform');
-      }
-      if(!isNaN(req.body.quantity) && req.body.quantity > 0){
-        var user = await User.findOne({_id:req.session.user._id});
-        user.borrowedStars += Number(req.body.quantity);
-        await user.save();
-        return res.send(`You borrowed ${req.body.quantity} star${req.body.quantity == 1 ? '' : 's'}!`);
-      }
-      return res.send("Error.");
+      // if (!req.session.user) {
+      //   return res.redirect('/loginform');
+      // }
+      // if(!isNaN(req.body.quantity) && req.body.quantity > 0){
+      //   var user = await User.findOne({_id:req.session.user._id});
+      //   user.borrowedStars += Number(req.body.quantity);
+      //   await user.save();
+      //   return res.send(`You borrowed ${req.body.quantity} star${req.body.quantity == 1 ? '' : 's'}!`);
+      // }
+      // return res.send("Error.");
+        return res.send("error");
       
     });
 
