@@ -100,7 +100,7 @@ def compress_jpeg(image, output_filepath, max_size_kb=500, initial_quality=80, q
 
 
 
-def optimize_image(filepath, max_width=500, max_size_kb=500, initial_jpeg_quality=80, jpeg_quality_step=5, min_jpeg_quality=10, dither=True, posterize_bits=None):
+def optimize_image(filepath, max_width=500, max_size_kb=500, initial_jpeg_quality=80, jpeg_quality_step=5, min_jpeg_quality=10, dither=True, posterize_bits=None, profile_photo=False):
     """
     Optimizes an image by optionally resizing, converting to JPEG, and compressing.
     Saves two versions if the original width is greater than max_width and deletes the original.
@@ -117,6 +117,11 @@ def optimize_image(filepath, max_width=500, max_size_kb=500, initial_jpeg_qualit
         posterize_bits (int, optional): Reduce color depth by posterizing. Defaults to None.
     """
     try:
+        is_profile_photo = sys.argv[2]
+        if is_profile_photo == 'true':
+            is_profile_photo = True
+        else:
+            is_profile_photo = False 
         img = Image.open(filepath)
         original_format = img.format.lower()
         filename_without_ext, ext = os.path.splitext(os.path.basename(filepath))
@@ -132,84 +137,92 @@ def optimize_image(filepath, max_width=500, max_size_kb=500, initial_jpeg_qualit
         img_resized = img.copy()  # Initialize with a copy of the original image
 
         if img.width > max_width:
-            # Save original width version
-            output_filepath_orig_base = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}_orig")
-            output_filepath_orig_ext = '.jpg' if  (original_format == 'tiff' or original_format == 'tif' or original_format == 'avif' or original_format == 'apng' ) and img.mode != 'RGBA' and not ('transparency' in img.info and img.mode != 'P') else  '.jpg' if (original_format == 'webp' or original_format == 'png') and img.mode != 'RGBA' and not ('transparency' in img.info and img.mode != 'P') else ext
-            output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
-            img_orig = img.copy()
             saved_orig = False
-
-            if original_format == 'png':
-                if not (img_orig.mode == 'RGBA' or (img_orig.mode == 'P' and 'transparency' in img_orig.info)):
-                    img_orig = img_orig.convert('RGB')
-                    if compress_jpeg(img_orig, output_filepath_orig, max_size_kb, initial_jpeg_quality, jpeg_quality_step, min_jpeg_quality):
-                        saved_orig = True
-                        saved_count += 1
-                        print(f"pngconvert {filepath}")
-                        print(f"Saved original width version (JPEG): {output_filepath_orig}")
+            # Save original width version
+            if not is_profile_photo:
+                if is_profile_photo:
+                    output_filepath_orig_base = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}")
                 else:
-                    if optimize_png_with_pngquant(img_orig, output_filepath_orig, dither, posterize_bits):
-                        saved_orig = True
-                        saved_count += 1
-                        print(f"Saved original width version (pngquant): {output_filepath_orig}")
-                    else:
-                        print(f"Error optimizing original PNG with Pillow's save.")
-                        try:
-                            img_orig.save(output_filepath_orig, optimize=False, compress_level=6)
+                    output_filepath_orig_base = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}_orig")
+                output_filepath_orig_ext = '.jpg' if  (original_format == 'tiff' or original_format == 'tif' or original_format == 'avif' or original_format == 'apng' ) and img.mode != 'RGBA' and not ('transparency' in img.info and img.mode != 'P') else  '.jpg' if (original_format == 'webp' or original_format == 'png') and img.mode != 'RGBA' and not ('transparency' in img.info and img.mode != 'P') else ext
+                output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
+                img_orig = img.copy()
+                saved_orig = False
+
+                if original_format == 'png':
+                    if not (img_orig.mode == 'RGBA' or (img_orig.mode == 'P' and 'transparency' in img_orig.info)):
+                        img_orig = img_orig.convert('RGB')
+                        if compress_jpeg(img_orig, output_filepath_orig, max_size_kb, initial_jpeg_quality, jpeg_quality_step, min_jpeg_quality):
                             saved_orig = True
                             saved_count += 1
-                            print(f"Saved original width version (Pillow): {output_filepath_orig}")
-                        except Exception as e:
-                            print(f"Error saving original PNG with Pillow: {e}")
-                            print(f"error {filepath}")
+                            print(f"pngconvert {filepath}")
+                            print(f"Saved original width version (JPEG): {output_filepath_orig}")
+                    else:
+                        if optimize_png_with_pngquant(img_orig, output_filepath_orig, dither, posterize_bits):
+                            saved_orig = True
+                            saved_count += 1
+                            print(f"Saved original width version (pngquant): {output_filepath_orig}")
+                        else:
+                            print(f"Error optimizing original PNG with Pillow's save.")
+                            try:
+                                img_orig.save(output_filepath_orig, optimize=False, compress_level=6)
+                                saved_orig = True
+                                saved_count += 1
+                                print(f"Saved original width version (Pillow): {output_filepath_orig}")
+                            except Exception as e:
+                                print(f"Error saving original PNG with Pillow: {e}")
+                                print(f"error {filepath}")
 
-            elif original_format in ('jpeg', 'jpg'):
-                start_time = time.time()
-                if compress_jpeg(img_orig, output_filepath_orig, max_size_kb, initial_jpeg_quality, jpeg_quality_step, min_jpeg_quality):
-                    end_time = time.time()
-                    print(f"JPEG compression time (original): {end_time - start_time:.2f} seconds")
-                    saved_count += 1
+                elif original_format in ('jpeg', 'jpg'):
+                    start_time = time.time()
+                    if compress_jpeg(img_orig, output_filepath_orig, max_size_kb, initial_jpeg_quality, jpeg_quality_step, min_jpeg_quality):
+                        end_time = time.time()
+                        print(f"JPEG compression time (original): {end_time - start_time:.2f} seconds")
+                        saved_count += 1
+                        saved_orig = True
+                        print(f"Saved original width version: {output_filepath_orig}")
+                elif original_format == 'gif':
+                    try:
+                        img_orig.save(output_filepath_orig, optimize=True)
+                        final_size_bytes = os.path.getsize(output_filepath_orig)
+                        print(f"Optimized GIF (original width) size: {final_size_bytes / 1024:.2f} KB, saved as {output_filepath_orig}")
+                        saved_count += 1
+                        saved_orig = True
+                    except Exception as e:
+                        print(f"Error optimizing GIF (original width): {e}")
+                        print(f"error {filepath}")
+                elif original_format == 'webp':  # Handle WebP
+                    output_filepath_orig_ext = '.jpg' if img_orig.mode != 'RGBA' and not ('transparency' in img_orig.info and img.mode != 'P') else '.webp'
+                    output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
+                    if  img_orig.mode != 'RGBA' and not ('transparency' in img_orig.info and img.mode != 'P'):
+                        img_orig.save(output_filepath_orig, 'JPEG', quality=initial_jpeg_quality, optimize=True)
+                        print(f"Saved original width version (JPEG): {output_filepath_orig}")
+                    else:
+                        img_orig.save(output_filepath_orig, 'WEBP', quality=initial_jpeg_quality, optimize=True)
+                        print(f"Saved original width version (WebP): {output_filepath_orig}")
                     saved_orig = True
-                    print(f"Saved original width version: {output_filepath_orig}")
-            elif original_format == 'gif':
-                try:
-                    img_orig.save(output_filepath_orig, optimize=True)
-                    final_size_bytes = os.path.getsize(output_filepath_orig)
-                    print(f"Optimized GIF (original width) size: {final_size_bytes / 1024:.2f} KB, saved as {output_filepath_orig}")
                     saved_count += 1
-                    saved_orig = True
-                except Exception as e:
-                    print(f"Error optimizing GIF (original width): {e}")
-                    print(f"error {filepath}")
-            elif original_format == 'webp':  # Handle WebP
-                output_filepath_orig_ext = '.jpg' if img_orig.mode != 'RGBA' and not ('transparency' in img_orig.info and img.mode != 'P') else '.webp'
-                output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
-                if  img_orig.mode != 'RGBA' and not ('transparency' in img_orig.info and img.mode != 'P'):
+
+                elif original_format in ('tiff', 'tif', 'avif', 'apng'):  #  TIFF, AVIF, APNG
+                    output_filepath_orig_ext = '.jpg' if img_orig.mode != 'RGBA' and not ('transparency' in img_orig.info and img.mode != 'P') else ext
+                    output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
                     img_orig.save(output_filepath_orig, 'JPEG', quality=initial_jpeg_quality, optimize=True)
-                    print(f"Saved original width version (JPEG): {output_filepath_orig}")
-                else:
-                    img_orig.save(output_filepath_orig, 'WEBP', quality=initial_jpeg_quality, optimize=True)
-                    print(f"Saved original width version (WebP): {output_filepath_orig}")
-                saved_orig = True
-                saved_count += 1
-
-            elif original_format in ('tiff', 'tif', 'avif', 'apng'):  #  TIFF, AVIF, APNG
-                output_filepath_orig_ext = '.jpg' if img_orig.mode != 'RGBA' and not ('transparency' in img_orig.info and img.mode != 'P') else ext
-                output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
-                img_orig.save(output_filepath_orig, 'JPEG', quality=initial_jpeg_quality, optimize=True)
-                saved_orig = True
-                saved_count += 1
-                print(f"Saved original width version (JPEG conversion): {output_filepath_orig}")
-            elif original_format in ('svg', 'bmp', 'ico'):
-                output_filepath_orig_ext = '.png'
-                output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
-                img_orig.save(output_filepath_orig, 'PNG', optimize=True)
-                saved_orig = True
-                saved_count += 1
-                print(f"Saved original width version (PNG conversion): {output_filepath_orig}")
+                    saved_orig = True
+                    saved_count += 1
+                    print(f"Saved original width version (JPEG conversion): {output_filepath_orig}")
+                elif original_format in ('svg', 'bmp', 'ico'):
+                    output_filepath_orig_ext = '.png'
+                    output_filepath_orig = output_filepath_orig_base + output_filepath_orig_ext
+                    img_orig.save(output_filepath_orig, 'PNG', optimize=True)
+                    saved_orig = True
+                    saved_count += 1
+                    print(f"Saved original width version (PNG conversion): {output_filepath_orig}")
 
             # Save reduced width version
-            output_filepath_resized_base = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}_medium")
+            if is_profile_photo:
+                output_filepath_resized_base = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}")
+            else:
+                output_filepath_resized_base = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}_medium")
             output_filepath_resized_ext = '.jpg' if  (original_format == 'tiff' or original_format == 'tif' or original_format == 'avif' or original_format == 'apng')  and img_resized.mode != 'RGBA' and not ('transparency' in img_resized.info and img_resized.mode != 'P') else  '.jpg' if (original_format == 'webp' or original_format == 'png') and img_resized.mode != 'RGBA' and not ('transparency' in img_resized.info and img_resized.mode != 'P') else ext
             output_filepath_resized = output_filepath_resized_base + output_filepath_resized_ext
             height_resized = int(img.height * (max_width / img.width))
@@ -301,7 +314,10 @@ def optimize_image(filepath, max_width=500, max_size_kb=500, initial_jpeg_qualit
 
         else:
             # Save only one compressed image with natural width
-            output_filepath = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}_orig{'.jpg' if original_format == 'png' and img.mode != 'RGBA' and not ('transparency' in img.info and img.mode != 'P') else ext}")
+            if is_profile_photo:
+                output_filepath = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}{'.jpg' if original_format == 'png' and img.mode != 'RGBA' and not ('transparency' in img.info and img.mode != 'P') else ext}")
+            else:
+                output_filepath = os.path.join(os.path.dirname(filepath), f"{filename_without_ext}_orig{'.jpg' if original_format == 'png' and img.mode != 'RGBA' and not ('transparency' in img.info and img.mode != 'P') else ext}")
             if original_format == 'png':
                 if not (img.mode == 'RGBA' or (img.mode == 'P' and 'transparency' in img.info)):
                     img = img.convert('RGB')
@@ -391,7 +407,7 @@ def optimize_image(filepath, max_width=500, max_size_kb=500, initial_jpeg_qualit
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python optimize_image.py <filename>")
+        print("Usage: python optimize_image.py <filename> <profilephoto>")
         sys.exit(1)
 
     filename = sys.argv[1]

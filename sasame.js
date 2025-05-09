@@ -386,7 +386,7 @@
         res.locals.CESCONNECT = req.session.CESCONNECT;
         res.locals.fromOtro = req.query.fromOtro || false;
         //daemoncheck
-        if(['notifications', 'stars', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+        if(['notifications', 'borrow', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
             let daemons = [];
             if(req.session.user){
                 let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -6136,20 +6136,56 @@ async function getPassageLocation(passage, train){
     async function uploadProfilePhoto(req, res){
         var user = await User.findOne({_id: req.session.user._id});
         if(req.files == null){
+            await fsp.unlink('./dist/uploads/'+user.thumbnail);
             user.thumbnail = '';
             await user.save();
         }else{
             // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
             var fileToUpload = req.files.photo;
             //uuid with  ext
-            var uploadTitle = v4() + "." + fileToUpload.name.split('.').at(-1);
+            var uploadTitle = fileToUpload.name.split('.')[0] + v4() + "." + fileToUpload.name.split('.').at(-1);
             var where = 'uploads';
+            console.log(uploadTitle);
+            const partialpath = where === 'protected' ? where : 'dist/' + where;
             // Use the mv() method to place the file somewhere on your server
-            fileToUpload.mv('./dist/'+where+'/'+uploadTitle, function(err) {
+            fileToUpload.mv('./dist/'+where+'/'+uploadTitle, async function(err) {
                 if (err){
                     return res.status(500).send(err);
                 }
+                await new Promise((resolveCompress) => {
+                    exec('python3 compress.py "' + partialpath + '/' + uploadTitle + '" true',
+                        async (err, stdout, stderr) => {
+                            console.log(err + stdout + stderr);
+                            console.log("Profile Image compressed.");
+                            var oldThumbnail = user.thumbnail;
+                            user.thumbnail = uploadTitle;
+                            await user.save();
+                            console.log("Old thumbnail:"+oldThumbnail);
+                            console.log("Upload Title:"+uploadTitle);
+                            if(oldThumbnail != uploadTitle && oldThumbnail.length > 1)
+                                await fsp.unlink('./dist/uploads/'+oldThumbnail);
+                            console.log("Deleted old profile photo.");
+                            //not enough memory on server
+                            //local for now
+                            // if(process.env.LOCAL == 'true'){
+                            //     exec('node nsfw.js '+where+'/'+uploadTitle + ' ' + where + ' ' + passage._id + ' image'
+                            //     , (err, stdout, stderr) => {
+                            //             //done
+                            //             console.log(err + stdout + stderr);
+                            //         });
+                            // }
+                            resolveCompress();
+                        }
+                    );
+                });
             });
+            try{
+                await fsp.unlink('./dist/uploads/'+user.thumbnail);
+                console.log("Deleted old profile photo.s");
+            }
+            catch(err){
+                console.log(err);
+            }
             user.thumbnail = uploadTitle;
             await user.save();
         }
@@ -7688,7 +7724,7 @@ async function getPassageLocation(passage, train){
         return res.status(500).send('Error generating feed. Please try again later.');
       }
     });
-    app.get('/stars', async (req, res) => {
+    app.get('/borrow', async (req, res) => {
       if (!req.session.user) {
         return res.redirect('/loginform');
       }
