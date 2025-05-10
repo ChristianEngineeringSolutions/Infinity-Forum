@@ -45,12 +45,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             const phoneInputField = document.querySelector("#phone");
             if(phoneInputField != null){
-                const phoneInput = window.intlTelInput(phoneInputField, {
+                var phoneInput = window.intlTelInput(phoneInputField, {
                  utilsScript:
                    "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js",
                });
             }
-          const borrowButton = document.getElementById('borrowButton');
+          var borrowButton = document.getElementById('borrowButton');
           const quantityInput = document.getElementById('quantity');
           $(document).on('click', '#request-code', function(){
                 // Example usage in your UI event handlers:
@@ -115,22 +115,34 @@
           // Example function to send verification code request
             async function requestVerificationCode(phoneNumber, channel = 'sms') {
               try {
-                const response = await fetch('/verify/start', {
+                const response = await fetch('/smsverify/start', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({ phoneNumber, channel }),
                 });
-                const data = await response.json();
-                if (data.success) {
-                    alert("Verification code sent.");
-                  console.log('Verification code sent successfully. SID:', data.verificationSid);
-                  // Store verificationSid to use when checking the code
-                  sessionStorage.setItem('verificationSid', data.verificationSid);
-                  return true;
+                if(response.ok){
+                    const data = await response.json();
+                    if (data.success) {
+                        alert("Verification code sent.");
+                      console.log('Verification code sent successfully. SID:', data.verificationSid);
+                      // Store verificationSid to use when checking the code
+                      sessionStorage.setItem('verificationSid', data.verificationSid);
+                      return true;
+                    } else {
+                        alert("Failed to send verification code.");
+                      console.error('Failed to send verification code:', data.error);
+                      return false;
+                    }
+                }else if (response.status === 429) {
+                  const errorMessage = await response.text(); // Or response.json() if you are sure the server sends JSON error
+                  console.error('Rate limited:', errorMessage);
+                  // Display the error message to the user (e.g., "Too many attempts, try again later.")
+                  alert("Too many attempts, try again later.");
+                  return false;
                 } else {
-                  console.error('Failed to send verification code:', data.error);
+                  console.error('Request failed with status:', response.status);
                   return false;
                 }
               } catch (error) {
@@ -147,7 +159,7 @@
                 return false;
               }
               try {
-                const response = await fetch('/verify/check', {
+                const response = await fetch('/smsverify/check', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -155,15 +167,29 @@
                   body: JSON.stringify({ phoneNumber, code, verificationSid }),
                 });
                 const data = await response.json();
-                if (data.success) {
-                  console.log('Phone number verified successfully. Status:', data.status);
-                  alert("Success!");
-                  window.location.reload();
-                  // Proceed with user registration or login
-                  return true;
+                if(data.failed == true){
+                        alert("A user already has this phone number!");
+                    }
+                if(response.ok){
+                    if (data.success) {
+                      console.log('Phone number verified successfully. Status:', data.status);
+                      alert("Success!");
+                      window.location.reload();
+                      // Proceed with user registration or login
+                      return true;
+                    } else {
+                      console.error('Verification failed:', data.error, 'Status:', data.status);
+                      alert("Verification failed.");
+                      return false;
+                    }
+                }else if (response.status === 429) {
+                  const errorMessage = await response.text(); // Or response.json() if you are sure the server sends JSON error
+                  console.error('Rate limited:', errorMessage);
+                  // Display the error message to the user (e.g., "Too many attempts, try again later.")
+                  alert("Too many attempts, try again later.");
+                  return false;
                 } else {
-                  console.error('Verification failed:', data.error, 'Status:', data.status);
-                  alert("Verification failed.");
+                  console.error('Request failed with status:', response.status);
                   return false;
                 }
               } catch (error) {

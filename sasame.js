@@ -4,6 +4,7 @@
     scripts, percentStarsGiven,
      percentUSD, totalUSD, 
      totalStarsGiven} = require('./common-utils');
+    const rateLimit = require('express-rate-limit');
     const express = require('express');
     const fileUpload = require('express-fileupload');
     const querystring = require('querystring');
@@ -7824,26 +7825,48 @@ async function getPassageLocation(passage, train){
       }
     }
 
-    // Example usage in your routes or controllers:
+    // Rate limiter for requestVerificationCode endpoint
+    const requestVerificationLimiter = rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour window
+      max: 5, // Limit each IP to 5 requests per windowMs
+      message: 'Too many verification code requests from this IP, please try again after an hour.',
+      standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    });
+
+    // Rate limiter for submitVerificationCode endpoint
+    const submitVerificationLimiter = rateLimit({
+      windowMs: 60 * 1000, // 1 minute window
+      max: 10, // Limit each IP to 10 attempts per windowMs
+      message: 'Too many verification attempts, please try again after a minute.',
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
 
     // Route to initiate verification
-    app.post('/verify/start', async (req, res) => {
+    app.post('/smsverify/start', requestVerificationLimiter, async (req, res) => {
       const { phoneNumber, channel } = req.body;
       const result = await startVerification(phoneNumber, channel);
       res.json(result);
     });
 
     // Route to check the verification code
-    app.post('/verify/check', async (req, res) => {
+    app.post('/smsverify/check', submitVerificationLimiter, async (req, res) => {
       const { phoneNumber, code, verificationSid } = req.body;
-      const result = await checkVerification(phoneNumber, code, verificationSid);
+      var result;
+      var phones = await User.find({phone:phoneNumber});
+        if(phones.length > 0){
+            result = {failed:true};
+            return res.json(result);
+        }
+      result = await checkVerification(phoneNumber, code, verificationSid);
       if(result.success){
         var user = await User.findOne({_id: req.session.user._id});
         user.phone = phoneNumber;
         await user.save();
         req.session.user.phone = phoneNumber;
       }
-      res.json(result);
+      return res.json(result);
     });
 
     // Hook into passage creation to update feeds in real-time
