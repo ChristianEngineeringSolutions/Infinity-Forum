@@ -11,6 +11,9 @@ body {
     color: #FBFBFB;
     font-family: 'Droid Sans', sans-serif;
 }
+.iti__country-name{
+  color: #000;
+}
 .hide2{
   display:none;
 }

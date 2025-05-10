@@ -127,6 +127,10 @@ const userSchema = mongoose.Schema({
       type: Date,
       default: null
     },
+    phone: {
+      type: String,
+      default: ''
+    },
     amountEarned: {
         type: Number,
         default: 0
@@ -143,6 +147,14 @@ const userSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
+    monthStarsBorrowed: {
+      type: Date,
+      default: null
+    },
+    starsBorrowedThisMonth: {
+      type: Number,
+      default: 0
+    }
 });
 
 userSchema.plugin(mongoosePaginate);

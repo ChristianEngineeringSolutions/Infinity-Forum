@@ -1,0 +1,177 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<link
+     rel="stylesheet"
+     href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"
+   />
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<input id="chief_passage_id"type="hidden" value="root"name="">
+    <br><br><br><br><br><br>
+    <div style="margin:auto;text-align:center;">
+        <h3>You owe:</h3>
+        <h1><%=borrowedAmount%> Star<%=borrowedAmount == 1 ? '' : 's';%></h1>
+        <h1 style="font-size:3em;">Borrow Stars:</h1>
+        <%if(user.phone == ''){%>
+        First, verify your phone number<br><br>
+        <input id="phone" autocomplete="off"type="tel" name="phone" /><br><br>
+        <button id="request-code">Request Verification Code</button><br><br>
+        <input id="twilio-code"placeholder="CODE"autocomplete="off"type="text" /><br><br>
+        <button id="verify-code">Verify Code</button>
+
+        <%}else{%>
+        <small>You can borrow up to 50 stars per month</small><br><br>
+        <small><%=starsBorrowedThisMonth%> star<%=starsBorrowedThisMonth == 1 ? '' : 's'%> borrowed this month</small>
+        <h5 id="update-subscription"style="font-weight:normal;color:white;cursor:pointer;"><input type="number" id="quantity" autocomplete="off"value="1" min="1">
+            <button id="borrowButton">Borrow</button>
+            </h5>
+        <%}%>
+        <!-- <h5>(Subscriber stars are multiplied by the number of months subscribed.)</h5> -->
+        <h3 style="margin-top:50px;">Borrowed stars are automatically paid back before you can earn new stars.<br>You cannot earn contribution points by spending borrowed stars.</h3>
+        <h3>Other ways to earn stars: Post, Give Stars, Donate.</h3>
+        <!-- <h5 style="font-weight: normal; color: red;">Get Paid Monthly by Investing Stars in Projects.</h5> -->
+        <br><br>
+    </div>
+    <script type="text/javascript">
+        var savedPhoneNumber = '';
+        document.addEventListener('DOMContentLoaded', () => {
+            const phoneInputField = document.querySelector("#phone");
+            if(phoneInputField != null){
+                const phoneInput = window.intlTelInput(phoneInputField, {
+                 utilsScript:
+                   "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js",
+               });
+            }
+          const borrowButton = document.getElementById('borrowButton');
+          const quantityInput = document.getElementById('quantity');
+          $(document).on('click', '#request-code', function(){
+                // Example usage in your UI event handlers:
+                // On button click to request code:
+                // requestVerificationCode('+1234567890');
+
+                // On button click to submit code:
+                // submitVerificationCode('+1234567890', '123456');
+                // requestVerificationCode();
+                if(phoneInput.isValidNumber()){
+                    var phoneNumber = phoneInput.getNumber();
+                    savedPhoneNumber = phoneNumber;
+                    requestVerificationCode(phoneNumber);
+                }else{
+                    alert("Please enter a valid number.");
+                }
+          });
+          $(document).on('click', '#verify-code', function(){
+                // Example usage in your UI event handlers:
+                // On button click to request code:
+                // requestVerificationCode('+1234567890');
+
+                // On button click to submit code:
+                // submitVerificationCode('+1234567890', '123456');
+                // requestVerificationCode();
+                if($('#twilio-code').val() != ''){
+                    submitVerificationCode(savedPhoneNumber, $('#twilio-code').val());
+                }else{
+                    alert("Please enter a valid number.");
+                }
+          });
+          if(borrowButton != null){
+            borrowButton.addEventListener('click', async () => {
+                const quantity = parseInt(quantityInput.value, 10);
+                if (isNaN(quantity) || quantity < 0 || quantity > 50) {
+                  alert('Please enter a valid quantity less than or equal to 50.');
+                  return;
+                }
+
+                try {
+                    if(quantity == 0){
+                        //pass
+                    }else{
+                        $.ajax({
+                            type: 'post',
+                            url: '/borrow-stars',
+                            data: {
+                                quantity: quantity
+                            },
+                            success: function(data){
+                                alert(data);
+                                window.location.reload();
+                            }
+                        });
+                    }   
+
+                } catch (error) {
+
+                }
+              });
+          }
+          // Example function to send verification code request
+            async function requestVerificationCode(phoneNumber, channel = 'sms') {
+              try {
+                const response = await fetch('/verify/start', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ phoneNumber, channel }),
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("Verification code sent.");
+                  console.log('Verification code sent successfully. SID:', data.verificationSid);
+                  // Store verificationSid to use when checking the code
+                  sessionStorage.setItem('verificationSid', data.verificationSid);
+                  return true;
+                } else {
+                  console.error('Failed to send verification code:', data.error);
+                  return false;
+                }
+              } catch (error) {
+                console.error('Error requesting verification:', error);
+                return false;
+              }
+            }
+
+            // Example function to submit the verification code
+            async function submitVerificationCode(phoneNumber, code) {
+              const verificationSid = sessionStorage.getItem('verificationSid');
+              if (!verificationSid) {
+                console.error('Verification SID not found.');
+                return false;
+              }
+              try {
+                const response = await fetch('/verify/check', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ phoneNumber, code, verificationSid }),
+                });
+                const data = await response.json();
+                if (data.success) {
+                  console.log('Phone number verified successfully. Status:', data.status);
+                  alert("Success!");
+                  window.location.reload();
+                  // Proceed with user registration or login
+                  return true;
+                } else {
+                  console.error('Verification failed:', data.error, 'Status:', data.status);
+                  alert("Verification failed.");
+                  return false;
+                }
+              } catch (error) {
+                console.error('Error submitting verification code:', error);
+                return false;
+              }
+            }
+        });
+
+    </script>
+<%- include('footer') %>

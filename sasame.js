@@ -7729,22 +7729,121 @@ async function getPassageLocation(passage, train){
         return res.redirect('/loginform');
       }
       var user = await User.findOne({_id:req.session.user._id});
-      return res.render('stars', {borrowedAmount:user.borrowedStars});
+      return res.render('borrow', {borrowedAmount:user.borrowedStars, starsBorrowedThisMonth: user.starsBorrowedThisMonth});
       
     });
     app.post('/borrow-stars', async (req, res) => {
-      // if (!req.session.user) {
-      //   return res.redirect('/loginform');
-      // }
-      // if(!isNaN(req.body.quantity) && req.body.quantity > 0){
-      //   var user = await User.findOne({_id:req.session.user._id});
-      //   user.borrowedStars += Number(req.body.quantity);
-      //   await user.save();
-      //   return res.send(`You borrowed ${req.body.quantity} star${req.body.quantity == 1 ? '' : 's'}!`);
-      // }
-      // return res.send("Error.");
-        return res.send("error");
-      
+      if (!req.session.user) {
+        return res.redirect('/loginform');
+      }
+        var SYSTEM = await System.findOne({});
+        // if(SYSTEM.userAmount == 0){
+        //     var allowedQuantity = 50;
+        // }
+        // else{
+        //     var allowedQuantity = (50 / SYSTEM.userAmount) * SYSTEM.totalStarsGiven;
+        // }
+        var allowedQuantity = 50;
+      if(!isNaN(req.body.quantity) && req.body.quantity > 0 && req.body.quantity <= allowedQuantity){
+        var user = await User.findOne({_id:req.session.user._id});
+        //check number of stars borrowed this month
+        if(user.monthStarsBorrowed == null){
+            user.monthStarsBorrowed = Date.now();
+        }
+        var today = new Date();
+        //its been more than a month since they last got stars so reset the month we're looking at
+        if(monthsBetween(user.monthStarsBorrowed, today) > 0){
+            user.monthStarsBorrowed = Date.now();
+            user.starsBorrowedThisMonth = 0;
+        }
+        if(user.starsBorrowedThisMonth < 50){
+            if( req.body.quantity + user.starsBorrowedThisMonth < 50){
+                user.borrowedStars += Number(req.body.quantity);
+                user.starsBorrowedThisMonth += Number(req.body.quantity);
+            }else{
+                return res.send("That would take you over your limit!");
+            }
+        }else{
+            const monthName = user.monthStarsBorrowed.toLocaleString('default', { month: 'long' });
+            return res.send("You have already borrowed the maximum number of stars for the month of "+monthName+".");
+        }
+        await user.save();
+        return res.send(`You borrowed ${req.body.quantity} star${req.body.quantity == 1 ? '' : 's'}!`);
+      }
+      return res.send("Error.");
+
+    });
+    function monthsBetween(date1, date2) {
+      const yearDiff = date2.getFullYear() - date1.getFullYear();
+      const monthDiff = date2.getMonth() - date1.getMonth();
+      return (yearDiff * 12) + monthDiff;
+    }
+    // Import the Twilio library
+    const twilio = require('twilio');
+
+    // Your Account SID and Auth Token from twilio.com/console
+    const accountSid = await accessSecret("TWILIO_ACCOUNT_SID");
+    const authToken = await accessSecret("TWILIO_AUTH_TOKEN");
+    const client = twilio(accountSid, authToken);
+
+    // Your Twilio Verify Service SID (found in the Twilio Console -> Verify -> Services)
+    const serviceSid = await accessSecret("TWILIO_SERVICE_SID");
+
+    // Function to start the verification process
+    async function startVerification(phoneNumber, channel = 'sms') {
+      try {
+        const verification = await client.verify.v2.services(serviceSid)
+          .verifications
+          .create({
+            to: phoneNumber,
+            channel: channel, // 'sms' or 'call'
+          });
+        console.log('Verification initiated:', verification.sid);
+        return { success: true, verificationSid: verification.sid };
+      } catch (error) {
+        console.error('Error initiating verification:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    // Function to check the verification code
+    async function checkVerification(phoneNumber, code, verificationSid) {
+      try {
+        const verificationCheck = await client.verify.v2.services(serviceSid)
+          .verificationChecks
+          .create({
+            to: phoneNumber,
+            code: code,
+            verificationSid: verificationSid // Optional, but recommended for security
+          });
+        console.log('Verification check status:', verificationCheck.status);
+        return { success: verificationCheck.status === 'approved', status: verificationCheck.status };
+      } catch (error) {
+        console.error('Error checking verification:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    // Example usage in your routes or controllers:
+
+    // Route to initiate verification
+    app.post('/verify/start', async (req, res) => {
+      const { phoneNumber, channel } = req.body;
+      const result = await startVerification(phoneNumber, channel);
+      res.json(result);
+    });
+
+    // Route to check the verification code
+    app.post('/verify/check', async (req, res) => {
+      const { phoneNumber, code, verificationSid } = req.body;
+      const result = await checkVerification(phoneNumber, code, verificationSid);
+      if(result.success){
+        var user = await User.findOne({_id: req.session.user._id});
+        user.phone = phoneNumber;
+        await user.save();
+        req.session.user.phone = phoneNumber;
+      }
+      res.json(result);
     });
 
     // Hook into passage creation to update feeds in real-time
@@ -7899,7 +7998,7 @@ async function getPassageLocation(passage, train){
      * @param {Number} limit - Number of items per page
      * @return {Object} Feed results with pagination info
      */
-    async function generateFeedWithPagination(user, page = 1, limit = 20) {
+    async function generateFeedWithPagination(user, page = 1, limit = DOCS_PER_PAGE) {
       const cacheKey = `user_feed:${user._id}`;
       const CACHE_EXPIRATION = 3600; // 1 hour in seconds
       if (redisClient && redisClient.ready) {
