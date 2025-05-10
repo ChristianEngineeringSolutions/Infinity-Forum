@@ -15,7 +15,7 @@
     </select>
     <br><br>
     <input type="hidden" name="repost"value="false">
-    <input id="passage_title"class="passage_title" value="" type="text"name="title"placeholder="Title (Optional)">
+    <input id="passage_title"class="passage_title" value="" type="text"name="title"placeholder="Title (Optional)"maxlength="200">
 
         <div class="rich_input input-field">
             <div class="passage_description" id="passage_content" cols="30" rows="10" placeholder="What are you creating?"></div>
@@ -27,15 +27,15 @@
             <textarea style="display:none;"class="passage_js" name="js" id="passage_js_clean" cols="30" rows="10" placeholder="Javascript"></textarea>
             <div style="display:inline-block;width:30%">
             HTML:<br>
-            <code-input template="code-input"lang="HTML"class="code_display display_html" id="display_html_clean" placeholder="HTML"value=""></code-input><br>
+            <code-input maxlength="566836"template="code-input"lang="HTML"class="code_display display_html" id="display_html_clean" placeholder="HTML"value=""></code-input><br>
             </div>
             <div style="display:inline-block;width:30%">
             CSS:<br>
-            <code-input template="code-input"lang="CSS"class="code_display display_css" id="display_css_clean" placeholder="CSS"value=""></code-input><br>
+            <code-input maxlength="566836"template="code-input"lang="CSS"class="code_display display_css" id="display_css_clean" placeholder="CSS"value=""></code-input><br>
             </div>
             <div style="display:inline-block;width:30%">
             JS:<br>
-            <code-input template="code-input"lang="javascript"class="code_display display_js" id="display_js_clean" placeholder="Javascript"value=""></code-input>
+            <code-input maxlength="566836"template="code-input"lang="javascript"class="code_display display_js" id="display_js_clean" placeholder="Javascript"value=""></code-input>
             </div>
         </div>
         <div class="d-code-input input-field hide2">
@@ -43,9 +43,15 @@
             <script>
                 var editor = ace.edit("editor");
                 editor.setTheme("ace/theme/monokai");
+                editor.setHighlightActiveLine(false);
                 // change this based on lang input
                 editor.session.setMode("ace/mode/javascript");
                 editor.getSession().on("change", function () {
+                    if (editor.getSession().getValue().length > 566836) {
+                        editor.setValue(editor.getSession().getValue().substring(0, maxLength));
+                        // Place the cursor at the end of the truncated text
+                        editor.moveCursorToPosition(editor.session.doc.indexToPosition(maxLength));
+                    }
                     $("textarea[id=\"passage_code\"]").val(editor.getSession().getValue());
                 });
                 editor.setOptions({
@@ -58,7 +64,7 @@
     <div style="text-align: left;">
         <a id="yt-drop%>">Embed Youtube Video</a>
         <br class="yt-dropdown"><br class="yt-dropdown">
-        <input autocomplete="off"class="yt-dropdown passage-yt" id="passage-yt"value="" type="text"name="yt"placeholder="Link to Video">
+        <input maxlength="1000"autocomplete="off"class="yt-dropdown passage-yt" id="passage-yt"value="" type="text"name="yt"placeholder="Link to Video">
     </div>
     <!-- Upload Directory -->
     <%/*%>
@@ -72,7 +78,7 @@
     <div id="passage_advanced"class="passage_advanced">
             <br>
             <div>Programming Language:</div><br>
-            <input autocomplete="off" id="passage_ext"class="passage_ext passage_lang" value="rich" type="text"name="lang"placeholder="Programming Language">
+            <input autocomplete="off" id="passage_ext"class="passage_ext passage_lang" maxlength="500"value="rich" type="text"name="lang"placeholder="Programming Language">
             <script>
                 $(function(){
                     $(document).on("keyup", "#passage_ext", function(){
@@ -94,19 +100,19 @@
                 });
             </script>
             <div style="margin-top: 25px;">File Path:</div><br>
-            <input autocomplete="off"id="passage_filestreampath"class="passage_ext" value="" type="text"name="filestreampath"placeholder="">
+            <input autocomplete="off"id="passage_filestreampath"class="passage_ext" maxlength="5000"value="" type="text"name="filestreampath"placeholder="">
             <%if(user && user.admin){%>
                 <!-- add radio buttons for making mainfile -->
                 <button id="make_mainfile">Make Mainfile (obsolete)</button>
             <%}%>
             <div style="margin-top: 25px;">Bibliography:</div><br>
-            <textarea id="passage_bibliography"class="passage_ext"name="bibliography"placeholder="Additional Source Info"></textarea>
+            <textarea maxlength="8000"id="passage_bibliography"class="passage_ext"name="bibliography"placeholder="Additional Source Info"></textarea>
             <!-- <div style="margin-top: 25px;">Inputs:</div><br>
             <input type="text"placeholder="input1" class="passage_input"><br>
             <button class="passage_button">More Inputs</button><br><br> -->
             <!-- <div style="margin-top: 25px;">Output:</div><br>
             <textarea class="passage-textarea"placeholder="Output"name="" id="" cols="30" rows="10"></textarea> -->
-            <textarea style="display:none;"class="passage_license" name="license" id="passage_license" cols="30" rows="10" placeholder="LICENSE"></textarea>
+            <textarea maxlength="2000"style="display:none;"class="passage_license" name="license" id="passage_license" cols="30" rows="10" placeholder="LICENSE"></textarea>
             <input class="editor-chief"type="hidden" value="<%=passage._id || 'root'%>"name="chief">
             <input id="post-pg"type="hidden" value="<%=page%>"name="page">
             <input id="forum-which"type="hidden" value=""name="which">

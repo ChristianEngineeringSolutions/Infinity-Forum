@@ -5272,7 +5272,15 @@ async function getPassageLocation(passage, train){
     async function updatePassageFunc(){
 
     }
-    app.post('/create_initial_passage/', async (req, res) => {
+    // Rate limiter for create initial passage endpoint
+    const intialPassageLimiter = rateLimit({
+      windowMs: 60 * 1000, // 1 minute window
+      max: 20, // Limit each IP to 20 requests per windowMs
+      message: 'Too many passages created, please try again after a minute.',
+      standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    });
+    app.post('/create_initial_passage/', intialPassageLimiter, async (req, res) => {
         if(!req.session.user){
             return res.send("You must log in to create a passage.");
         }
@@ -6143,6 +6151,9 @@ async function getPassageLocation(passage, train){
         }else{
             // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
             var fileToUpload = req.files.photo;
+            if(fileToUpload.size > 20 * 1024 * 1024){
+                return "File too large.";
+            }
             //uuid with  ext
             var uploadTitle = fileToUpload.name.split('.')[0] + v4() + "." + fileToUpload.name.split('.').at(-1);
             var where = 'uploads';
@@ -6163,8 +6174,12 @@ async function getPassageLocation(passage, train){
                             await user.save();
                             console.log("Old thumbnail:"+oldThumbnail);
                             console.log("Upload Title:"+uploadTitle);
-                            if(oldThumbnail != uploadTitle && oldThumbnail.length > 1)
-                                await fsp.unlink('./dist/uploads/'+oldThumbnail);
+                            try{
+                                if(oldThumbnail != uploadTitle && oldThumbnail.length > 1)
+                                    await fsp.unlink('./dist/uploads/'+oldThumbnail);
+                            }catch(err){
+                                console.log(err);
+                            }
                             console.log("Deleted old profile photo.");
                             //not enough memory on server
                             //local for now
@@ -6180,13 +6195,6 @@ async function getPassageLocation(passage, train){
                     );
                 });
             });
-            try{
-                await fsp.unlink('./dist/uploads/'+user.thumbnail);
-                console.log("Deleted old profile photo.s");
-            }
-            catch(err){
-                console.log(err);
-            }
             user.thumbnail = uploadTitle;
             await user.save();
         }

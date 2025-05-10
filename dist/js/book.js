@@ -60,6 +60,9 @@ function summonQuill(){
                     quill.root.innerHTML = document.getElementById('quill-data').value;
                     quill.on('text-change', function(delta, source) {
                         var justHtml = quill.root.innerHTML;
+                        if (quill.getLength() > 566836) {
+                            quill.deleteText(limit, quill.getLength());
+                          }
                         document.getElementById('quill-data').value = justHtml;
                     });
                 }

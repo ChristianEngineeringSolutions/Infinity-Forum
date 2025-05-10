@@ -69,12 +69,14 @@ const passageSchema = mongoose.Schema({
     },
     title: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
         // index: true
     },
     label: {
         type: String,
-        default: 'Project'
+        default: 'Project',
+        maxLength: 566836
         // index: true
     },
     forumSpecial: {
@@ -92,15 +94,18 @@ const passageSchema = mongoose.Schema({
     },
     html: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
     },
     css: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
     },
     javascript: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
     },
     libs: {
         type: String,
@@ -114,12 +119,14 @@ const passageSchema = mongoose.Schema({
     //to replace html/css/javascript
     code: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
         // index: true
     },
     bibliography: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
     },
     //can be enabled by default in passage settings
     distraction_free: {
@@ -141,11 +148,13 @@ const passageSchema = mongoose.Schema({
     },
     lang: {
         type: String,
-        default: 'rich'
+        default: 'rich',
+        maxLength: 566836
     },
     fileStreamPath: {
         type: String,
         default: '',
+        maxLength: 566836
     },
     //there can only be one mainFile for each fileStreamPath
     mainFile: {
@@ -191,7 +200,8 @@ const passageSchema = mongoose.Schema({
     }],
     content: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
         // index: true
     },
     lastUpdated: {type: Date, default: Date.now},
@@ -268,11 +278,13 @@ const passageSchema = mongoose.Schema({
     },
     yt: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
     },
     forumType: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
     }, //category, subcat, subforum
     stickied: {
         type: Boolean,
@@ -285,6 +297,7 @@ const passageSchema = mongoose.Schema({
     previewLink: {
         type: String,
         default: null,
+        maxLength: 566836
     },
     stars: {
         type: Number,
@@ -300,15 +313,24 @@ const passageSchema = mongoose.Schema({
     }, //content warning
     filename: {
         type: [String],
-        default: []
+        default: [],
+        set: function(arr) {
+          if (!arr) return [];
+          return arr.map(str => str.slice(0, 566836)); // Truncate to 566836 chars
+        }
     }, // associated file
     filenames: {
         type: [String],
-        default: []
+        default: [],
+        set: function(arr) {
+          if (!arr) return [];
+          return arr.map(str => str.slice(0, 566836)); // Truncate to 566836 chars
+        }
     }, //If we go with file upload multiple
     thumbnail: {
         type: String,
-        default: ''
+        default: '',
+        maxLength: 566836
     }, //For models, vids, etc.
     mimeType: {
         type: [String],

@@ -8,7 +8,7 @@ const starSchema = mongoose.Schema({
         ref: 'User'
     },
     //author of the passage that was starred
-    author: {
+    passageAuthor: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
