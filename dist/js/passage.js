@@ -976,10 +976,10 @@ $(function(){
                     parent: $('#chief_passage_id').val()
                 };
                 // alert(JSON.stringify(data));
-            if(passage_id.includes('star_number')){
-                alert(passage_id);
-                alert($(this).attr('id').split('_').at(-1));
-            }
+            // if(passage_id.includes('star_number')){
+            //     alert(passage_id);
+            //     alert($(this).attr('id').split('_').at(-1));
+            // }
             // if(!$('#page-loader').length){
             // thisPassage(thiz).replaceWith('<div class="page-loader-'+getPassageId(thiz)+'"id="page-loader">'+$('#small-loading').html()+'</div>');
             // }

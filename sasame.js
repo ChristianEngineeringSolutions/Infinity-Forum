@@ -332,6 +332,7 @@
     //     saveUninitialized: true,
     //     store: MongoStore.create({ mongoUrl: process.env.MONGODB_CONNECTION_URL })
     // });
+    //log in time
     const session = require('express-session')({
         secret: "ls",
         resave: false,

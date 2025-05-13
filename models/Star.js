@@ -42,7 +42,8 @@ const starSchema = mongoose.Schema({
     }],
     trackToken: {
         type: String,
-        default: () => v4()
+        default: () => v4(),
+        unique: true
     },
 });
 
