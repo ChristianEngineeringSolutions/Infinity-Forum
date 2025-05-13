@@ -338,12 +338,12 @@
         saveUninitialized: false,
         store: MongoStore.create({ 
             mongoUrl: await accessSecret("MONGODB_CONNECTION_URL"),
-            ttl: 24 * 60 * 60, // 1 day TTL
+            ttl: 30 * 24 * 60 * 60, // 30 days TTL (in seconds)
             autoRemove: 'native',
             touchAfter: 24 * 3600 // Only update sessions every 24 hours
         }),
         cookie: {
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days (in milliseconds)
         }
     });
     var sharedsession = require("express-socket.io-session");
