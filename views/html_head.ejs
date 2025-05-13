@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-G804TWSWNE"></script>
-    <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+        <%if(LOCAL == 'false'){%>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-G804TWSWNE"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
 
-    gtag('config', 'G-G804TWSWNE');
-    </script>
+            gtag('config', 'G-G804TWSWNE');
+            </script>
+        <%}%>
     <%if(user == null){%>
         <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <%}%>

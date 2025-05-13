@@ -1,6 +1,8 @@
 <div style="display:none;"id="sort-select-div">
     <select id="sort-select" autocomplete="off">
-        <option>Most Relevant</option>
+        <%if(typeof(mostRelevant) == 'undefined' || mostRelevant){%>
+            <option>Most Relevant</option>
+        <%}%>
         <option>Most Stars</option>
         <option>Most Cited</option>
         <option value="Newest-Oldest">Most Recent</option>

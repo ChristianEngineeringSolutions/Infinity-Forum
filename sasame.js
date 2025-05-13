@@ -2895,100 +2895,85 @@ async function getPassageLocation(passage, train){
     app.post('/search/', async (req, res) => {
         var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         var label = req.body.label;
-        var find = {
+        var matchStage = {
             deleted: false,
             versionOf: null,
-            personal: req.body.personal,
+            personal: req.body.personal === 'true', // Convert string to boolean
             title: {$regex:search,$options:'i'},
         };
-        if(label != 'All'){
-            find.label = req.body.label;
+
+        // Add label filter if not 'All'
+        if (label != 'All') {
+            matchStage.label = req.body.label;
         }
-        if(req.body.personal == 'true'){
-            find.users = {
-                $in: [req.session.user._id]
-            }
+
+        // Add personal filter if true
+        if (req.body.personal === 'true' && req.session.user && req.session.user._id) {
+            matchStage.users = { $in: [req.session.user._id] };
         }
-        switch(req.body.whichPage){
+
+        switch (req.body.whichPage) {
             case 'tasks':
-                find.public = true;
-                find.forum = false;
+                matchStage.public = true;
+                matchStage.forum = false;
                 break;
             case 'projects':
-                find.public = false;
-                find.forum = false;
+                matchStage.public = false;
+                matchStage.forum = false;
                 break;
-            case 'feed':
-                // const followings = await Follower.find({ user: req.session.user._id.toString() });
-                // const followingIds = followings.map(f => f.following._id);
-                // find.author = {
-                //     $in: followingIds
-                // };
-                break;
+            // case 'feed': // ... (your feed logic) ...
         }
-        console.log(req.body.whichPage);
-        var sort = {stars: -1, _id: -1};
-        var results; // Declare results here
+
+        var sort = { stars: -1, _id: -1 };
+        var results;
         var nextCursor = null;
-        switch(req.body.sort){
+        var feed = false;
+        switch (req.body.sort) {
             case 'Most Relevant':
                 if(search != ''){
-                    sort = {stars: -1, _id: -1};
-                }else{
-                     // Generate feed for guest users
-                    console.log("Guest feed");
-                    result = await generateGuestFeed(1, DOCS_PER_PAGE);
-                    var passages = {};
-                    passages.docs = [];
-                    if('feed' in result){
-                        for (let i = 0; i < result.feed.length; i++) {
-                          const processedPassage = await getPassage(result.feed[i]);
-                          passages.docs.push(processedPassage);
-                        }
-                        var results = passages.docs;
+                        sort = {stars: -1, _id: -1};
                     }else{
-                        return res.send("No more passages.");
+                         // Generate feed for guest users
+                        console.log("Guest feed");
+                        var result = await generateGuestFeed(1, DOCS_PER_PAGE);
+                        var passages = {};
+                        passages.docs = [];
+                        if('feed' in result){
+                            for (let i = 0; i < result.feed.length; i++) {
+                              const processedPassage = await getPassage(result.feed[i]);
+                              passages.docs.push(processedPassage);
+                            }
+                            var results = passages.docs;
+                        }else{
+                            return res.send("No more passages.");
+                        }
+                        feed = true;
                     }
-                }
                 break;
             case 'Most Stars':
-                sort = {stars: -1, _id: -1};
+                sort = { stars: -1, _id: -1 };
                 break;
             case 'Most Cited':
-                const cursor = req.body.cursor || null;
-                var result = await getPassagesByUsage({
-                  cursor: cursor,
-                  limit: 1,
-                  minUsageCount: 2
-                });
-                var results = result.passages;
-                for(var i = 0; i < results.length; ++i){
-                    results[i] = await getPassage(results[i]);
-                }
-                nextCursor = result.nextCursor;
-                break;  
+                sort = { stars: -1, _id: -1 };
+                break;
             case 'Newest-Oldest':
-                sort = {date: -1};
+                sort = { date: -1 };
                 break;
             case 'Oldest-Newest':
-                sort = {date: 1};
+                sort = { date: 1 };
                 break;
         }
-        
-        if(req.body.sort != 'Most Cited'){
-            results = await Passage.find(find).populate('author users sourceList parent').sort(sort).limit(DOCS_PER_PAGE);
-            for(var i = 0; i < results.length; ++i){
-                results[i] = await getPassage(results[i]);
-            }
+
+        if (!feed) {
+            results = await Passage.find(matchStage).populate('author users sourceList parent').sort(sort).limit(DOCS_PER_PAGE);            
         }
-        
+
         res.render("passages", {
             passages: results,
             subPassages: false,
             sub: true,
             subPassage: false,
-            page: 1,
-            cursor: nextCursor
+            page: 1
         });
     });
     async function paginate(model, pageSize, cursor, sortFields = { _id: -1 }, find = {}) {
@@ -4927,7 +4912,7 @@ async function getPassageLocation(passage, train){
     });
     app.post('/paginate', async function(req, res) {
         try {
-            const { page, profile, search = '', parent = 'root', whichPage, sort = 'Most Stars', label = 'All', from_ppe_queue } = req.body;
+            var { page, profile, search = '', parent = 'root', whichPage, sort = 'Most Stars', label = 'All', from_ppe_queue } = req.body;
             // Handle standard passages
             let passages;
             if (!['filestream', 'messages', 'leaderboard'].includes(profile)) {
