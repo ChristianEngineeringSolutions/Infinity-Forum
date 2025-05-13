@@ -138,3 +138,12 @@ Current Events
 
 autocomplete="new-password"
 
+
+okay so when a starrer stars a passage, 
+the author of that passage now owes the starrer a debt
+So we need to get all the debt they owe, before they can star that starrer back
+
+when a starrer stars a passage,
+the author of that passage also inherits all the starrers debt.
+
+you can pay off the debt owed for each transaction before adding new debt 

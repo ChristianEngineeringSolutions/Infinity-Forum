@@ -1,5 +1,6 @@
 'use strict';
 const mongoose = require('mongoose');
+const { v4 } = require('uuid');
 
 const starSchema = mongoose.Schema({
     //who cast the star
@@ -8,6 +9,7 @@ const starSchema = mongoose.Schema({
         ref: 'User'
     },
     //author of the passage that was starred
+    //owes the debt
     passageAuthor: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -38,6 +40,10 @@ const starSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     }],
+    trackToken: {
+        type: String,
+        default: () => v4()
+    },
 });
 
 module.exports = mongoose.model('Star', starSchema, 'Stars');

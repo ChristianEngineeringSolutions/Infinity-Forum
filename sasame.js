@@ -815,17 +815,6 @@
                 // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
                 await addStarsToUser(starrer, totalForStarrer);
             }
-            //log the amount starred
-            var star = await Star.create({
-                user: userID,
-                passage: passage._id,
-                passageAuthor: passage.author._id.toString(),
-                amount: amount,
-                sources: sources,
-                single: false,
-                debt: amount,
-                system: null //not relevant since we cant unstar these so just make it null
-            });            
             var lastSource = await getLastSource(passage);
             var bonus = 0;
             //calculate bonus
@@ -836,6 +825,18 @@
                 }
             }
             bonus = bonus * amount;
+            //log the amount starred
+            let loggedStarDebt = req.session.user._id.toString() == passage.author._id.toString() ? 0 : (amount + bonus);
+            await Star.create({
+                user: userID,
+                passage: passage._id,
+                passageAuthor: passage.author._id.toString(),
+                amount: amount,
+                sources: sources,
+                single: false,
+                debt: loggedStarDebt,
+                system: null //not relevant since we cant unstar these so just make it null
+            }); 
             // if(lastSource != null){
             //     bonus = passageSimilarity(passage, lastSource);
             // }else{
@@ -855,6 +856,12 @@
                 }
             }
             await starMessages(passage._id, amount);
+            //each collaber inherits star debt from starrer (session user)
+            var starrerDebt = await Star.find({
+                passageAuthor: req.session.user._id.toString(),
+                single: false,
+                debt: {$gt:0}
+            });
             //absorb amount of stars that goes to author and collaborators
             //depending on "star debt"
             //get stars given to the starrer by these collaborators
@@ -862,35 +869,59 @@
             var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
             collaboratorsLoop:
             for(const collaber of allCollaborators){
-                var stars  = await Star.find({
-                    //they got starred by collaber
-                    passageAuthor: req.session.user._id.toString(),
-                    user: collaber._id.toString(), //they starred session user
-                    single: false,
-                    debt: {$gt:0}
-                });
-                for(const star of stars){
-                    amountToGiveCollabers -= star.debt;
-                    star.debt -= (amount + bonus)/(passage.collaborators.length + 1);
-                    if(star.debt <= 0){
-                        star.debt = 0;
-                        await star.save();
-                        //they paid off this debt so continue to the next one
-                        continue;
-                    }else{
-                        //amountToGiveCollaborators should be <= 0
-                        await star.save();
-                        //they cant pay off their debt so stop
-                        //trying to pay it
-                        break collaboratorsLoop;
+                //only inherit debt, subtract debt, and create debt if we are actually starring the collaber
+                //you have to star someone elses passage to get stars
+                if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
+                    //get all debt owed by session user to specific collaber
+                    var stars  = await Star.find({
+                        //they got starred by collaber
+                        passageAuthor: req.session.user._id.toString(), //(owes the debt)
+                        user: collaber._id.toString(), //they starred session user
+                        single: false,
+                        debt: {$gt:0}
+                    });
+                    for(const star of stars){
+                        //filter out all old debt that was already added to this collaber in a previous starPassage()
+                        //before adding new debt
+                        starrerDebt = starrerDebt.filter(function(x){
+                            //this item comes from debt already added
+                            return x.trackToken != star.trackToken;
+                        });
+                        //reduce the amount we're giving collabers by the amount owed
+                        amountToGiveCollabers -= star.debt;
+                        star.debt -= (amount + bonus)/(passage.collaborators.length + 1);
+                        if(star.debt <= 0){
+                            star.debt = 0;
+                            await star.save();
+                            //they paid off this debt so continue to the next one
+                            continue;
+                        }else{
+                            //amountToGiveCollaborators should be <= 0
+                            await star.save();
+                            //they cant pay off their debt so stop
+                            //trying to pay it
+                            break collaboratorsLoop;
+                        }
+                    }
+                    //each collaber inherits star debt from starrer
+                    //this is so that the collaber has to pay off the debt before they can pay the debt.user
+                    for(const debt of starrerDebt){
+                        //create debt owed by collaber to starrer
+                        await Star.create({
+                            passageAuthor: collaber._id.toString(), //owes the debt
+                            user: debt.user._id.toString(), //to this user in the circle
+                            single: false,
+                            debt: debt.debt,
+                            system: null,
+                            passage: passage._id, //might not need this
+                            sources: sources, //might not need this
+                            trackToken: debt.trackToken
+                        });
                     }
                 }
-            }
-            if(amountToGiveCollabers < 0){
-                amountToGiveCollabers = 0;
-            }
-            //you have to star someone elses passage to get stars
-            if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
+                if(amountToGiveCollabers < 0){
+                    amountToGiveCollabers = 0;
+                }
                 user.starsGiven += starsTakenAway;
                 const SYSTEM = await System.findOne({});
                 SYSTEM.totalStarsGiven += amount;
