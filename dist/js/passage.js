@@ -962,43 +962,50 @@ $(function(){
     });
     $(document).on('click', '.add_stars', function(){
         var thiz = $(this);
-        var passage_id = $(this).attr('id').split('_').at(-1);
-        var amount = $('#star_number_' + passage_id).val();
-        amount = parseInt(amount, 10);
-        if (isNaN(amount) || amount < 1) {
-          alert('Please enter a valid quantity greater than 0.');
-          return;
-        }
-        var data = {
-                passage_id: passage_id,
-                amount: amount,
-                parent: $('#chief_passage_id').val()
-            };
+        if(thiz.text() == 'Give'){
+            var passage_id = $(this).attr('id').split('_').at(-1);
+            var amount = $('#star_number_' + passage_id).val();
+            amount = parseInt(amount, 10);
+            if (isNaN(amount) || amount < 1) {
+              alert('Please enter a valid quantity greater than 0.');
+              return;
+            }
+            var data = {
+                    passage_id: passage_id,
+                    amount: amount,
+                    parent: $('#chief_passage_id').val()
+                };
+                // alert(JSON.stringify(data));
+            if(passage_id.includes('star_number')){
+                alert(passage_id);
+                alert($(this).attr('id').split('_').at(-1));
+            }
+            // if(!$('#page-loader').length){
+            // thisPassage(thiz).replaceWith('<div class="page-loader-'+getPassageId(thiz)+'"id="page-loader">'+$('#small-loading').html()+'</div>');
+            // }
             // alert(JSON.stringify(data));
-        if(passage_id.includes('star_number')){
-            alert(passage_id);
-            alert($(this).attr('id').split('_').at(-1));
-        }
-        // alert(JSON.stringify(data));
-        $.ajax({
-            url: '/star_passage/',
-            // url: DOMAIN + '/star_passage/' + fromOtro,
-            type: 'POST',
-            data: data,
-            success: function(data2){
-                if(data2 == 'Not enough stars.' || data2 == 'Please enter a number greater than 0.'){
-                    alert(data2);
-                }
-                else{
-                    if(data2[0] == 'N'){
-                        thisPassage(thiz).prepend(data2);
+            thiz.text("Loading...");
+            $.ajax({
+                url: '/star_passage/',
+                // url: DOMAIN + '/star_passage/' + fromOtro,
+                type: 'POST',
+                data: data,
+                success: function(data2){
+                    if(data2 == 'Not enough stars.' || data2 == 'Please enter a number greater than 0.'){
+                        alert(data2);
                     }
                     else{
-                        thisPassage(thiz).replaceWith(data2);
+                        if(data2[0] == 'N'){
+                            thisPassage(thiz).prepend(data2);
+                        }
+                        else{
+                            thisPassage(thiz).replaceWith(data2);
+                            // $('.page-loader-'+getPassageId(thiz)).replaceWith(data2);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     });
     $(document).on('click', '[id^=star-]', function(){
         var thiz = $(this);
