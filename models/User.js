@@ -159,6 +159,19 @@ const userSchema = mongoose.Schema({
     starsBorrowedThisMonth: {
       type: Number,
       default: 0
+    },
+    identityVerified: {
+      type: Boolean,
+      default: false
+    },
+    verificationLevel: {
+      type: String,
+      default: ''
+    },
+    lastVerifiedAt: Date,
+    duplicateDetected: {
+      type: Boolean,
+      default: null
     }
 });
 

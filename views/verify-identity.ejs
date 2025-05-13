@@ -1,0 +1,71 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<script src="https://js.stripe.com/v3/"></script>
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<input id="chief_passage_id"type="hidden" value="root"name="">
+    <br><br><br><br><br><br>
+    <div style="margin:auto;text-align:center;">
+        <h1 style="font-size:3em;">Verify your Identity:</h1>
+        <h2><button id="verify-button">Verify</button></h2>
+        <h4><a href="/profile">Return to Profile after completing.</a></h4>
+        <br><br>
+    </div>
+    <script type="text/javascript">
+        // Set your publishable key: remember to change this to your live publishable key in production
+      // See your keys here: https://dashboard.stripe.com/apikeys
+          var stripe = Stripe("<%=publishableKey%>");
+          var verifyButton = document.getElementById('verify-button');
+
+      verifyButton.addEventListener('click', async function() {
+  // Get the VerificationSession client secret using the server-side
+  // endpoint you created in step 3.
+  try {
+    const response = await fetch('/create-verification-session', {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      // Handle HTTP errors (e.g., 500, 404)
+      const errorText = await response.text(); // Get error message
+      console.error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+      alert(`Error creating session: ${response.status} - ${errorText}`); // Show to user
+      return; // Stop execution
+    }
+
+    const session = await response.json();
+    // Check if client_secret exists
+    if (!session || !session.clientSecret) {
+        console.error("Error: clientSecret is missing from the response:", session);
+        if(session.clientSecret == null && session.status == 'verified'){
+            alert("You're already verified!");
+        }else{
+            alert("Error: Could not retrieve verification session secret.");
+        }
+        return;
+    }
+
+    // Show the verification modal.
+    const result = await stripe.verifyIdentity(session.clientSecret);
+
+    // If `verifyIdentity` fails, you should display the localized
+    // error message to your user using `error.message`.
+    if (result.error && typeof result.error.message != 'undefined') {
+      alert(result.error.message);
+    }
+  } catch (error) {
+    // Handle network errors or errors in parsing JSON
+    console.error('Error:', error);
+    alert(`An error occurred: ${error.message}`);
+  }
+});
+
+    </script>
+<%- include('footer') %>

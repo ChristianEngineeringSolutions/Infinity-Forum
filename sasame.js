@@ -9,9 +9,12 @@
     const fileUpload = require('express-fileupload');
     const querystring = require('querystring');
     const bcrypt = require('bcrypt');
+    const crypto = require('crypto');
     const mongoose = require('mongoose');
     const bodyParser = require("body-parser");
     const helmet = require('helmet');
+    const emitter = require('events').EventEmitter;
+        emitter.setMaxListeners(20); // Increased to a higher number
     const cors = require("cors");
     const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
     const stripe = require("stripe")(STRIPE_SECRET_KEY);
@@ -105,6 +108,7 @@
     const Star = require('./models/Star');
     const JTI = require('./models/JTI');
     const System = require('./models/System');
+    const VerificationSession = require('./models/VerificationSession');
     //one time function
     // (async function(){
     //     var SYSTEM = await System.findOne({});
@@ -388,7 +392,7 @@
         res.locals.CESCONNECT = req.session.CESCONNECT;
         res.locals.fromOtro = req.query.fromOtro || false;
         //daemoncheck
-        if(['notifications', 'borrow', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+        if(['notifications', 'verify-identity', 'borrow', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
             let daemons = [];
             if(req.session.user){
                 let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -3558,7 +3562,33 @@ async function getPassageLocation(passage, train){
                 subscriber.lastSubscribed = new Date();
                 await subscriber.save();
             }
-        } else {
+        } 
+
+        else if (event.type === 'identity.verification_session.updated' || 
+          event.type === 'identity.verification_session.created' ||
+          event.type === 'identity.verification_session.completed' ||
+          event.type === 'identity.verification_session.verified') {
+        
+        const verificationSession = event.data.object;
+        
+        // Update the verification session in our database
+        await VerificationSession.updateOne(
+          { stripeVerificationId: verificationSession.id },
+          { 
+            $set: { 
+              status: verificationSession.status,
+              lastUpdated: new Date()
+            } 
+          }
+        );
+        
+        // If the verification is complete, process it for duplicate detection
+        if (event.type === 'identity.verification_session.verified') {
+          console.log("Beginning ID verification...");
+          // Process verification and check for duplicates
+          await processVerificationResult(verificationSession.id);
+        }
+      }else {
             console.log(event.type);
         }
         response.status(200).end();
@@ -4146,6 +4176,210 @@ async function getPassageLocation(passage, train){
               }
         }
     });
+    app.get('/verify-identity', async(req, res) => {
+        if(req.session.user){
+            return res.render('verify-identity', {publishableKey: process.env.STRIPE_PUBLISHABLE_KEY});
+        }else{
+            return res.redirect('/loginform');
+        }
+    });
+    app.post('/create-verification-session', async(req, res) => {
+        if(req.session.user){
+            // Set your secret key. Remember to switch to your live secret key in production.
+            // See your keys here: https://dashboard.stripe.com/apikeys
+            const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+            const stripe = require("stripe")(STRIPE_SECRET_KEY);
+
+            // Check if user already has a pending or completed verification
+            const existingVerification = await VerificationSession
+              .findOne({
+                userId: req.session.user._id.toString(),
+                status: { $in: ['requires_input', 'processing', 'verified'] }
+              });
+
+            // If there's an active verification, return it instead of creating a new one
+            if (existingVerification) {
+              // Retrieve the verification details from Stripe
+              const verificationSession = await stripe.identity.verificationSessions.retrieve(
+                existingVerification.stripeVerificationId
+              );
+              return res.json({
+                success: true,
+                existingSession: true,
+                url: verificationSession.url,
+                clientSecret: verificationSession.client_secret,
+                status: verificationSession.status
+              });
+            }
+
+            // Create the session.
+            const verificationSession = await stripe.identity.verificationSessions.create
+            ({
+              type
+            : 'document',
+              provided_details
+            : {
+                email
+            : req.session.user.email,
+              },
+              metadata
+            : {
+                user_id: req.session.user._id.toString(),
+              },
+              options: {
+                document: {
+                  allowed_types: ['driving_license', 'passport', 'id_card'],
+                  require_id_number: true,
+                  require_live_capture: true,
+                  require_matching_selfie: true
+                }
+                }
+            });
+            // Store session info in database
+            await VerificationSession.create({
+              userId: req.session.user._id.toString(),
+              stripeVerificationId: verificationSession.id,
+              status: verificationSession.status,
+              created: new Date(),
+              lastUpdated: new Date()
+            });
+            // Return the details needed for the frontend
+            return res.json({
+              success: true,
+              url: verificationSession.url,
+              clientSecret: verificationSession.client_secret
+            });
+
+            // Return only the client secret to the frontend.
+            // const clientSecret = verificationSession.client_secret;
+            // return res.status(200).json({ clientSecret: clientSecret });
+        }else{
+            return res.send("Error.");
+        }
+    });
+    // Process verification result and check for duplicates
+    async function processVerificationResult(verificationSessionId) {
+      try {
+        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+        const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        // Retrieve the verification details from Stripe
+        const verificationSession = await stripe.identity.verificationSessions.retrieve(
+          verificationSessionId, 
+          { expand: ['verified_outputs'] }
+        );
+        
+        // Find our internal record for this verification
+        const internalRecord = await VerificationSession
+          .findOne({ stripeVerificationId: verificationSessionId });
+        
+        if (!internalRecord) {
+          console.error('Verification record not found for session:', verificationSessionId);
+          return;
+        }
+        
+        // If verification was successful
+        if (verificationSession.status === 'verified') {
+          // Get document details (available in verified_outputs)
+          const documentDetails = verificationSession.verified_outputs?.document?.dob ?
+            {
+              documentType: verificationSession.verified_outputs.document.type,
+              documentNumber: verificationSession.verified_outputs.document.number,
+              firstName: verificationSession.verified_outputs.document.first_name,
+              lastName: verificationSession.verified_outputs.document.last_name,
+              dob: verificationSession.verified_outputs.document.dob.day + 
+                   '/' + verificationSession.verified_outputs.document.dob.month +
+                   '/' + verificationSession.verified_outputs.document.dob.year,
+              expiryDate: verificationSession.verified_outputs.document.expiration_date ?
+                verificationSession.verified_outputs.document.expiration_date.day +
+                '/' + verificationSession.verified_outputs.document.expiration_date.month +
+                '/' + verificationSession.verified_outputs.document.expiration_date.year : null
+            } : null;
+          
+          // Create a unique identifier based on document details
+          const documentHash = await createDocumentHash(documentDetails);
+          
+          await VerificationSession.updateOne({
+            userId: internalRecord.userId
+          }, {$set: {
+            documentHash: documentHash,
+            documentType: documentDetails?.documentType,
+            verifiedAt: new Date(),
+            status: 'verified'
+          }});
+          console.log("Saved document hash.");
+          // Check for duplicate documents across users
+          const duplicateResults = await checkForDuplicateDocuments(documentHash, internalRecord.userId);
+          
+          if (duplicateResults.isDuplicate) {
+            // Flag accounts for review
+            // await flagDuplicateAccounts(internalRecord.userId, duplicateResults.existingUserIds);
+            
+            // Update session with duplicate info
+            await VerificationSession.updateOne(
+              { stripeVerificationId: verificationSessionId },
+              { $set: { duplicateDetected: true } }
+            );
+          } else {
+            // Update user's verification status
+            await User.updateOne(
+              { _id: internalRecord.userId },
+              { 
+                $set: { 
+                  identityVerified: true,
+                  verificationLevel: 'full',
+                  lastVerifiedAt: new Date()
+                } 
+              }
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Error processing verification result:', error);
+      }
+    }
+
+    // Helper functions remain the same as in the previous example
+    async function createDocumentHash(documentDetails) {
+      if (!documentDetails) return null;
+      
+      // Create a deterministic string from key document fields
+      const documentString = [
+        documentDetails.documentType,
+        documentDetails.documentNumber,
+        documentDetails.firstName,
+        documentDetails.lastName,
+        documentDetails.dob
+      ].join('|').toLowerCase();
+      
+      // Use a consistent salt for all hashing
+      const staticSalt = await accessSecret('DOCUMENT_VERIFICATION_SALT');
+      
+      return new Promise((resolve, reject) => {
+        crypto.scrypt(documentString, staticSalt, 64, (err, derivedKey) => {
+          if (err) reject(err);
+          resolve(derivedKey.toString('hex'));
+        });
+      });
+    }
+
+    async function checkForDuplicateDocuments(documentHash, currentUserId) {
+      if (!documentHash) return { isDuplicate: false, existingUserIds: [] };
+      
+      // Find other users who have verified with this document
+      const existingVerifications = await VerificationSession
+        .find({ 
+          documentHash,
+          userId: { $ne: currentUserId } // Exclude current user
+        })
+        .toArray();
+      
+      const existingUserIds = existingVerifications.map(v => v.userId);
+      
+      return {
+        isDuplicate: existingUserIds.length > 0,
+        existingUserIds
+      };
+    }
     app.get('/recover', async(req, res) => {
         res.render('recover');
     });

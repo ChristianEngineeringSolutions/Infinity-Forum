@@ -12,8 +12,13 @@
 </form>
 <p><%=profile.username%></p>
     <a target="_blank"href="/stripeAuthorize">Manage Payments</a>
-    <!-- <br> -->
-    <!-- <small>Payments currently limited to $600 a year.</small> -->
+    <%if(!user.identityVerified){%>
+        <br><br>
+        <a href="/verify-identity">Verify Identity (To get paid)</a>
+    <%}else{%>
+        <br><br>
+        *Verified
+    <%}%>
     <br><br>
     <form id="settings_form" action="/update_settings/" method="POST">
         <input name="oldUsername"id="oldUsername"type="hidden"value="<%=profile.username%>" />
