@@ -119,7 +119,8 @@ async function processRewardDistribution(job) {
     const users = await User.find({ stripeOnboardingComplete: true,  identityVerified: true});
     // const usd = await scripts.getMaxToGiveOut();
     var SYSTEM = await System.findOne({});
-    var usd = SYSTEM.userAmount;
+    // var usd = SYSTEM.userAmount;
+    var usd = await scripts.getMaxToGiveOut();
     let totalCut = 0;
     const successfulTransfers = [];
     const failedTransfers = [];

@@ -118,14 +118,18 @@ const scripts = {};
         // return usd - SYSTEM.amount;
     }
     async function totalStarsGiven(){
-        let users = await User.find({stripeOnboardingComplete: true});
-        if(users == false){
-            return 0;
-        }
-        var stars = 0;
-        for(const user of users){
-            stars += user.starsGiven;
-        }
-        return stars;
+        // let users = await User.find({stripeOnboardingComplete: true});
+        // if(users == false){
+        //     return 0;
+        // }
+        // var stars = 0;
+        // for(const user of users){
+        //     stars += user.starsGiven;
+        // }
+        // return stars;
+        const SYSTEM = await System.findOne({});
+        var totalStarsGivenAmount = SYSTEM.totalStarsGiven;
+        return totalStarsGivenAmount;
+
     }
 module.exports = {accessSecret, scripts, percentStarsGiven, percentUSD, totalUSD, totalStarsGiven};
