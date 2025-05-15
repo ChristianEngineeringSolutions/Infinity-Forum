@@ -2677,7 +2677,7 @@ async function getPassageLocation(passage, train){
             totalUSD: Math.floor(usd/100),
             donateLink: process.env.STRIPE_DONATE_LINK,
             subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK,
-            subscriptionQuantity: subscriptionQuantity
+            subscriptionQuantity: subscriptionQuantity,
         });
     });
     //Search
