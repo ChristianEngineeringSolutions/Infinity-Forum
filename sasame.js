@@ -2673,11 +2673,11 @@ async function getPassageLocation(passage, train){
             var subscriptionQuantity = 0;
         }
         res.render('donate', {
-            passage: {id: 'root'}, usd: ((await scripts.getMaxToGiveOut())/100), stars: stars,
-            totalUSD: usd/100,
+            passage: {id: 'root'}, usd: Math.floor((await scripts.getMaxToGiveOut())/100), stars: stars,
+            totalUSD: Math.floor(usd/100),
             donateLink: process.env.STRIPE_DONATE_LINK,
             subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK,
-            subscriptionQuantity: subscriptionQuantity
+            subscriptionQuantity: subscriptionQuantity,
         });
     });
     //Search
@@ -3469,6 +3469,7 @@ async function getPassageLocation(passage, train){
         const stripe = require("stripe")(STRIPE_SECRET_KEY);
         const endpointSecret = await accessSecret("STRIPE_ENDPOINT_SECRET_KEY");
         const payload = request.body;
+        const SYSTEM = await System.findOne({});
 
         console.log("Got payload: " + payload);
         const sig = request.headers['stripe-signature'];
@@ -3510,16 +3511,17 @@ async function getPassageLocation(passage, train){
                         if (user) {
                             var totalAmount = await totalUSD();
                             var amountToAdd = 0;
-                            var totalStarsGivenAmount = await totalStarsGiven();
+                            var totalStarsGivenAmount = SYSTEM.totalStarsGiven;
+                            // var totalStarsGivenAmount = await totalStarsGiven();
                             var percentUSDAmount = await percentUSD(Number(amount));
                             //percentUSD returns 1 if its value is 0
                             amountToAdd = percentUSDAmount * totalStarsGivenAmount;
                             if (totalStarsGiven == 0) {
                                 amountToAdd = 100;
                             }
-                            await addStarsToUser(user, amountToAdd);
-                            //pay platform our cut
-                            var SYSTEM = await System.findOne({});
+                            // await addStarsToUser(user, amountToAdd);
+                            distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
+                            //calculate cut for platform
                             SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
                             SYSTEM.userAmount += Math.floor(amount * 0.45);
                             await SYSTEM.save();
@@ -3550,9 +3552,15 @@ async function getPassageLocation(passage, train){
                 subscriber.subscriptionID = payload.data.object.subscription;
                 subscriber.subscribed = true;
                 // subscriber.lastSubscribed = new Date();
-                let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-                var subscriptionReward = (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
-                await addStarsToUser(subscriber, subscriptionReward);
+                // let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
+                // var subscriptionReward = (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
+                // await addStarsToUser(subscriber, subscriptionReward);
+                var amountToAdd = (await percentUSD(5 * subscriber.subscriptionQuantity * 100)) * (await totalStarsGiven());
+                //calculate cut for platform
+                SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
+                SYSTEM.userAmount += Math.floor(amount * 0.45);
+                await SYSTEM.save();
+                distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
             }
         } else if (event.type == "invoice.payment_failed") {
             var email = payload.data.object.customer_email;
@@ -3593,7 +3601,58 @@ async function getPassageLocation(passage, train){
         }
         response.status(200).end();
     });
+    async function distributeStars(amount) {
+      const batchSize = 1000; // Adjust batch size as needed
+      const cursor = await User.find({}).batchSize(batchSize);
+      const updateOperations = []; // Initialize an array to hold update operations
 
+      try {
+        while (await cursor.hasNext()) {
+          const user = await cursor.next(); // Get a single user object
+
+          let stars = user.stars;
+          let borrowedStars = user.borrowedStars || 0; // Ensure borrowedStars exists and is a number
+
+          if(user.borrowedStars > 0){
+                user.borrowedStars -= amount;
+                var remainder = user.borrowedStars;
+                if(remainder < 0){
+                    stars -= remainder;
+                }
+                if(user.borrowedStars < 0){
+                    user.borrowedStars = 0;
+                }
+            }else{
+                stars += amount;
+            }
+
+          updateOperations.push({
+            updateOne: {
+              filter: { _id: user._id },
+              update: { $set: { stars: stars } }
+            }
+          });
+
+          // Execute bulkWrite when the batch is full or the cursor is exhausted
+          if (updateOperations.length >= batchSize) {
+            await db.users.bulkWrite(updateOperations, { ordered: false });
+            updateOperations.length = 0; // Clear the array for the next batch
+          }
+        }
+
+        // Process any remaining update operations after the loop
+        if (updateOperations.length > 0) {
+          await db.users.bulkWrite(updateOperations, { ordered: false });
+        }
+
+      } finally {
+        await cursor.close();
+      }
+    }
+
+    // Call the function with the desired amount
+    // const amountToProcess = 5; // Example amount
+    // distributeStars(amountToProcess).catch(err => console.error("Error processing users:", err));
     function canReceivePayouts(account){
       // Check if payouts are enabled
       if (account.payouts_enabled !== true) {
