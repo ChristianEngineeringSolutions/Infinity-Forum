@@ -21,8 +21,9 @@
         <h2><a target="_blank"href="<%=subscribeLink%>">Subscribe</a></h2>
         <%*/%>
         <%if(user){%>
+            <h4>or</h4>
             <h5 id="update-subscription"style="font-weight:normal;color:white;cursor:pointer;">$5 per <input type="number" id="subscriptionQuantity" autocomplete="off"value="<%=(subscriptionQuantity == 0 ? 1 : subscriptionQuantity)%>" min="0">
-            <button id="subscribeButton">Update Subscription</button>
+            <button id="subscribeButton"><%=user.subscribed ? "Update Subscription" : "Subscribe"%></button>
             <%if(user.subscribed){%>
                 <br>
                 (Currently Subscribed)
