@@ -23,14 +23,14 @@ const userSchema = mongoose.Schema({
         unique: true,
         required: false,
         trim: true,
-        maxLength: 566836
+        maxLength: 55
       },
       username: {
         type: String,
         unique: true,
         required: true,
         trim: true,
-        maxLength: 566836
+        maxLength: 100
       },
       password: {
         type: String,
@@ -40,7 +40,7 @@ const userSchema = mongoose.Schema({
     name: {
       type: String,
       default: '',
-      maxLength: 566836
+      maxLength: 50
     },
     thumbnail: {
       type: String,
@@ -69,7 +69,7 @@ const userSchema = mongoose.Schema({
     },
     stars: {
         type: Number,
-        default: 0
+        default: 100
     },
     starsGiven: {
         type: Number,
