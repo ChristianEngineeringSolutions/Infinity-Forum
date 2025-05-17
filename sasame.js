@@ -3689,6 +3689,7 @@ async function getPassageLocation(passage, train){
         // response.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
         const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
         const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        const SYSTEM = await System.findOne({});
 
         const endpointSecret = await accessSecret("STRIPE_ENDPOINT_CONNECT_SECRET_KEY");
         const payload = request.body;
@@ -3710,8 +3711,17 @@ async function getPassageLocation(passage, train){
                 const updatedAccount = event.data.object;
                 var user = await User.findOne({email: updatedAccount.email});
                 // Then define and call a function to handle the event account.updated
+                var couldReceivePayouts = user.canReceivePayouts;
                 user.canReceivePayouts = canReceivePayouts(updatedAccount);
+                if(couldReceivePayouts && !user.canReceivePayouts){
+                    SYSTEM.numUsersOnboarded -= 1;
+                }
+                else if(!couldReceivePayouts && user.canReceivePayouts && user.identityVerified){
+                    SYSTEM.numUsersOnboarded += 1;
+                }
+
                 await user.save();
+                await SYSTEM.save();
               break;
             // ... handle other event types
             default:
@@ -4321,6 +4331,7 @@ async function getPassageLocation(passage, train){
       try {
         const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
         const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        const SYSTEM = await System.findOne({});
         // Retrieve the verification details from Stripe
         const verificationSession = await stripe.identity.verificationSessions.retrieve(
           verificationSessionId, 
@@ -4390,6 +4401,17 @@ async function getPassageLocation(passage, train){
                 } 
               }
             );
+            var user = await User.findOne({_id: internalRecord.userId});
+            if(user.stripeOnboardingComplete && user.stripeAccountId){
+                const account = await stripe.account.retrieve(user.stripeAccountId);
+                user.canReceivePayouts = canReceivePayouts(account);
+                if(user.canReceivePayouts){
+                    SYSTEM.numUsersOnboarded += 1;
+                    await SYSTEM.save();
+                }
+                await user.save();
+            }
+
           }
         }
       } catch (error) {
@@ -4497,7 +4519,9 @@ async function getPassageLocation(passage, train){
             user.canReceivePayouts = canReceivePayouts(account);
             await user.save();
             const SYSTEM = await System.findOne({});
-            SYSTEM.numUsersOnboarded += 1;
+            if(user.identityVerified && user.canReceivePayouts){
+                SYSTEM.numUsersOnboarded += 1;
+            }
             await SYSTEM.save();
             res.redirect('/profile');
           } else {

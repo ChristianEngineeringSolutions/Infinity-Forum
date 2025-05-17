@@ -116,7 +116,7 @@ async function processRewardDistribution(job) {
     // Initialize rate limiter (100 requests per second)
     const rateLimiter = new RateLimiter(RATE_LIMIT.STRIPE_RATE_LIMIT, 1000);
     
-    const users = await User.find({ stripeOnboardingComplete: true,  identityVerified: true});
+    const users = await User.find({ stripeOnboardingComplete: true,  identityVerified: true}).sort('-starsGiven');
     // const usd = await scripts.getMaxToGiveOut();
     var SYSTEM = await System.findOne({});
     // var usd = SYSTEM.userAmount;
@@ -130,6 +130,7 @@ async function processRewardDistribution(job) {
     await job.log(`Starting reward distribution for ${users.length} users`);
 
     // Process users in batches
+    paymentLoop:
     for (let i = 0; i < users.length; i += RATE_LIMIT.BATCH_SIZE) {
         const batch = users.slice(i, i + RATE_LIMIT.BATCH_SIZE);
         const batchNumber = Math.floor(i / RATE_LIMIT.BATCH_SIZE) + 1;
@@ -152,44 +153,49 @@ async function processRewardDistribution(job) {
                         // const cut = (userUSD*0.55);
                         const cut = 0;
                         const transferAmount = Math.floor(userUSD - cut);
+                        //only do payout for more than one cent
+                        if(transferAmount >= 1){
+                            // Generate idempotency key
+                            const idempotencyKey = generateIdempotencyKey(
+                                user._id,
+                                'transfer',
+                                timestamp // Use job timestamp for consistency
+                            );
 
-                        // Generate idempotency key
-                        const idempotencyKey = generateIdempotencyKey(
-                            user._id,
-                            'transfer',
-                            timestamp // Use job timestamp for consistency
-                        );
+                            // Rate limiting
+                            await rateLimiter.wait();
 
-                        // Rate limiting
-                        await rateLimiter.wait();
+                            const transfer = await withRetry(
+                                () => stripe.transfers.create({
+                                    amount: transferAmount,
+                                    currency: "usd",
+                                    destination: user.stripeAccountId,
+                                }, {
+                                    idempotencyKey: idempotencyKey,
+                                }),
+                                `transfer for user ${user._id}`
+                            );
+                            totalCut += cut;
+                            // if(user.amountEarnedThisYear + (userUSD/100) > 600){
+                            //     user.amountEarned += 600 - user.amountEarnedThisYear;
+                            //     user.amountEarnedThisYear += 600 - user.amountEarnedThisYear;
+                            //     user.paymentsLocked = true;
+                            // }else{
+                            //     user.amountEarned += userUSD / 100;
+                            //     user.amountEarnedThisYear += userUSD / 100;
+                            // }
 
-                        const transfer = await withRetry(
-                            () => stripe.transfers.create({
+                            // Track successful transfer
+                            successfulTransfers.push({
+                                userId: user._id,
+                                transferId: transfer.id,
                                 amount: transferAmount,
-                                currency: "usd",
-                                destination: user.stripeAccountId,
-                            }, {
-                                idempotencyKey: idempotencyKey,
-                            }),
-                            `transfer for user ${user._id}`
-                        );
-                        totalCut += cut;
-                        // if(user.amountEarnedThisYear + (userUSD/100) > 600){
-                        //     user.amountEarned += 600 - user.amountEarnedThisYear;
-                        //     user.amountEarnedThisYear += 600 - user.amountEarnedThisYear;
-                        //     user.paymentsLocked = true;
-                        // }else{
-                        //     user.amountEarned += userUSD / 100;
-                        //     user.amountEarnedThisYear += userUSD / 100;
-                        // }
-
-                        // Track successful transfer
-                        successfulTransfers.push({
-                            userId: user._id,
-                            transferId: transfer.id,
-                            amount: transferAmount,
-                            cut: cut,
-                        });
+                                cut: cut,
+                            });
+                        }
+                        else{
+                            break paymentLoop;
+                        }
 
                         return { success: true, cut };
                     }
