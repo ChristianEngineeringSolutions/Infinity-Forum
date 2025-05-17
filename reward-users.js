@@ -130,8 +130,8 @@ async function processRewardDistribution(job) {
     await job.log(`Starting reward distribution for ${users.length} users`);
 
     // Process users in batches
-    paymentLoop:
-    for (let i = 0; i < users.length; i += RATE_LIMIT.BATCH_SIZE) {
+    var shouldContinue = true;
+    for (let i = 0; i < users.length && shouldContinue; i += RATE_LIMIT.BATCH_SIZE) {
         const batch = users.slice(i, i + RATE_LIMIT.BATCH_SIZE);
         const batchNumber = Math.floor(i / RATE_LIMIT.BATCH_SIZE) + 1;
         const totalBatches = Math.ceil(users.length / RATE_LIMIT.BATCH_SIZE);
@@ -194,7 +194,7 @@ async function processRewardDistribution(job) {
                             });
                         }
                         else{
-                            break paymentLoop;
+                            shouldContinue = false;
                         }
 
                         return { success: true, cut };
