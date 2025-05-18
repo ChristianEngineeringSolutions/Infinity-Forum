@@ -165,6 +165,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    publicReply: {
+        type: Boolean,
+        default: false
+    },
     // tags: [{
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Tag'

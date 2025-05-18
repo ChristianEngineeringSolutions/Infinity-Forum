@@ -64,7 +64,11 @@
                 <input id="search"placeholder="Search Posts..." type="hidden" name="" autocomplete="off">
                 <input id="search_passage"placeholder="Search <%=passage.title%>..." type="" name="" autocomplete="off">
             <%} %>
-            <%-include('sort_select');%>
+            <%if(passage._id != 'root'){%>
+                <%-include('sort_select', {mostRelevant:false});%>
+            <%}else{%>
+                <%-include('sort_select');%>
+            <%}%>
             <%if((typeof comments != 'undefined' && comments == true) || (user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if((typeof comments != 'undefined' && comments == true) || (passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true)){%>
                     <button title="Add Passage"id="add_passage_button">+</button>
