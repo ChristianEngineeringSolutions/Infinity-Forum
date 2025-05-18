@@ -392,7 +392,7 @@
         res.locals.CESCONNECT = req.session.CESCONNECT;
         res.locals.fromOtro = req.query.fromOtro || false;
         //daemoncheck
-        if(['notifications', 'verify-identity', 'borrow', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+        if(['notifications', 'verify-identity', 'bank', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
             let daemons = [];
             if(req.session.user){
                 let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -782,12 +782,7 @@
                 starsTakenAway = remainder;
                 user.stars -= remainder;
             }
-            console.log("passageID:"+passageID);
-            if(passageID.includes('_')){
-                passageID = passageID.split('_').at(-1);
-            }
             let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
-            console.log("test");
             var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
             //Give starring user stars for each logged stars at 1% rate
             var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources');
@@ -2213,7 +2208,7 @@ async function getPassageLocation(passage, train){
         console.log(passage.sourceList.length);
         if(passage.public == true && !passage.forum){
             // var subPassages = await Passage.find({parent: passage_id}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
-            var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
+            var subPassages = await Passage.paginate({parent: passage_id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
             // if(replacing){
             //     var subPassages = await Passage.paginate({parent: replacement._id, comment:false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
             // }
@@ -2232,7 +2227,9 @@ async function getPassageLocation(passage, train){
             }
             else{ 
                 //private passages
-                var subPassages = await Passage.find({parent: passage_id, comment: false}).populate('author users sourceList collaborators versions mirror bestOf best');  
+                var subPassages = await Passage.find({parent: passage_id, comment: false, author: {
+                    $in: [passageUsers]
+                }}).populate('author users sourceList collaborators versions mirror bestOf best');  
                 // if(replacing){
                 //     var subPassages = await Passage.find({parent: replacement._id, comment: false}).populate('author users sourceList collaborators versions mirror bestOf best');
                 // }
@@ -2247,6 +2244,9 @@ async function getPassageLocation(passage, train){
         }
         //we have to do this because of issues with populating passage.passages foreign keys
         if(!passage.public && !passage.forum){
+            // passage.passages = passage.passages.filter(function(p){
+            //     return !p.publicReply;
+            // });
             //reorder sub passages to match order of passage.passages
             var reordered = Array(subPassages.length).fill(0);
             for(var i = 0; i < passage.passages.length; ++i){
@@ -2287,7 +2287,10 @@ async function getPassageLocation(passage, train){
             passage.passages = passage.subforums;
         }
         else if(comments){
-            var comments = await Passage.paginate({comment:true, parent:passage._id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+            var comments = await Passage.paginate({$or: [
+                {comment: true},
+                {publicReply:true}
+            ],parent:passage._id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
             passage.passages = comments.docs;
             for(var i = 0; i < passage.passages.length; ++i){
                 passage.passages[i] = await getPassage(passage.passages[i]);
@@ -2966,7 +2969,7 @@ async function getPassageLocation(passage, train){
         var feed = false;
         switch (req.body.sort) {
             case 'Most Relevant':
-                if(search != ''){
+                if(search != '' || label != 'All'){
                         sort = {stars: -1, _id: -1};
                     }else{
                          // Generate feed for guest users
@@ -5518,6 +5521,7 @@ async function getPassageLocation(passage, train){
         var parent;
         var personal = false;
         var fileStreamPath = null;
+        var publicReply = false;
         if(user){
             users = [user];
         }
@@ -5552,6 +5556,7 @@ async function getPassageLocation(passage, train){
                 // return res.send("Not allowed.");
                 return "Not allowed."
             }
+            publicReply = parent.public ? true : false;
         }
         var lang = 'rich';
         if(parent && parent.lang){
@@ -5569,7 +5574,8 @@ async function getPassageLocation(passage, train){
             lang: lang,
             fileStreamPath: fileStreamPath,
             personal: personal,
-            lastUpdated: Date.now()
+            lastUpdated: Date.now(),
+            publicReply: publicReply
         });
         if(subforums == 'true'){
             passage.forumType = 'subforum';
@@ -5587,8 +5593,10 @@ async function getPassageLocation(passage, train){
             }
             else{
                 console.log("pushed");
-                parent.passages.push(passage);
-                parent.markModified('passages');
+                if(!parent.public){
+                    parent.passages.push(passage);
+                    parent.markModified('passages');
+                }
             }
             await parent.save();
         }
@@ -5695,6 +5703,9 @@ async function getPassageLocation(passage, train){
                 passage.public = true;
                 passage.forum = true;
                 break;
+            default:
+                passage.public = false;
+                passage.forum = false;
 
         }
         passage.html = formData.html;
@@ -8067,12 +8078,12 @@ async function getPassageLocation(passage, train){
         return res.status(500).send('Error generating feed. Please try again later.');
       }
     });
-    app.get('/borrow', async (req, res) => {
+    app.get('/bank', async (req, res) => {
       if (!req.session.user) {
         return res.redirect('/loginform');
       }
       var user = await User.findOne({_id:req.session.user._id});
-      return res.render('borrow', {borrowedAmount:user.borrowedStars, starsBorrowedThisMonth: user.starsBorrowedThisMonth});
+      return res.render('bank', {borrowedAmount:user.borrowedStars, starsBorrowedThisMonth: user.starsBorrowedThisMonth});
       
     });
     app.post('/borrow-stars', async (req, res) => {
