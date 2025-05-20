@@ -69,7 +69,6 @@
                     },
                     body: JSON.stringify({ quantity: quantity }), // Send the quantity to the server
                   });
-
                   if (!response.ok) {
                     // Handle errors from the server
                     const errorData = await response.json();
@@ -85,10 +84,16 @@
                   }
 
                   // If the response is successful (status code in the 2xx range)
-                  const { url } = await response.json();
+                  var res = await response.json();
+                  if(typeof res.okay != 'undefined'){
+                    alert(res.okay);
+                  }
+                  else{
+                    const { url } = res;
 
-                  // Redirect the user to the Stripe Checkout URL
-                  window.location.href = url;
+                      // Redirect the user to the Stripe Checkout URL
+                      window.location.href = url;
+                  }
                 }   
 
             } catch (error) {
@@ -100,7 +105,7 @@
               if (errorMessageElement) {
                 errorMessageElement.textContent = 'An unexpected error occurred.';
               } else {
-                alert('An unexpected error occurred.');
+                alert('An unexpected error occurred.' + error);
               }
             }
           });

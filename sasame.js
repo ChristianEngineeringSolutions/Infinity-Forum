@@ -3754,7 +3754,7 @@ async function getPassageLocation(passage, train){
                     user.subscriptionID = null;
                     await user.save();
                     req.session.user = user;
-                    return res.send("Subscription will cancel at the end of the period.");
+                    return res.send("Subscription canceled.");
                 }
             }
             return res.send("Done.");
@@ -3774,8 +3774,10 @@ async function getPassageLocation(passage, train){
       try {
         if(req.session.user.subscribed){
             console.log('ID '+req.session.user.subscriptionID);
+
             await updateSubscriptionQuantityWithoutCredit(req.session.user.subscriptionID, quantity, req.session.user);
-            return res.send("Updated subscription.");
+            // return res.send("Updated subscription.");
+            return res.json({ okay: "Updated subscription." });
           }
         const userEmail = req.session.user.email;
         if (!userEmail) {
@@ -3807,7 +3809,7 @@ async function getPassageLocation(passage, train){
           success_url: `${req.headers.origin}/subscription-success?session_id={CHECKOUT_SESSION_ID}`, // Adjust your success URL
           cancel_url: `${req.headers.origin}/subscription-cancel`, // Adjust your cancel URL
         });
-
+        console.log(session.url);
         // Send the session URL back to the client for redirection
         return res.json({ url: session.url });
 
