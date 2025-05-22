@@ -116,7 +116,9 @@ async function processRewardDistribution(job) {
     // Initialize rate limiter (100 requests per second)
     const rateLimiter = new RateLimiter(RATE_LIMIT.STRIPE_RATE_LIMIT, 1000);
     
-    const users = await User.find({ stripeOnboardingComplete: true,  identityVerified: true}).sort('-starsGiven');
+    // const users = await User.find({ stripeOnboardingComplete: true,  identityVerified: true}).sort('-starsGiven');
+    const users = await User.find({}).sort('starsGiven');
+    const starValues = users.map(doc => doc.starsGiven);
     // const usd = await scripts.getMaxToGiveOut();
     var SYSTEM = await System.findOne({});
     // var usd = SYSTEM.userAmount;
@@ -194,7 +196,7 @@ async function processRewardDistribution(job) {
                             });
                         }
                         else{
-                            shouldContinue = false;
+                            // shouldContinue = false;
                         }
 
                         return { success: true, cut };

@@ -307,6 +307,10 @@ const passageSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
+    lastCap: {
+        type: Number,
+        default: 0
+    },
     crossOriginAllowed: {
         type: Boolean,
         default: false

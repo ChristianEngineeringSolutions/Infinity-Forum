@@ -847,6 +847,7 @@
             // }
             //add stars to passage and sources
             passage.stars += amount + bonus;
+            passage.lastCap = passage.stars;
             //if bubbling star all sub passages (content is displayed in parent)
             if(passage.bubbling && passage.passages && !passage.public){
                 for(const p of passage.passages){
@@ -4407,6 +4408,7 @@ async function getPassageLocation(passage, train){
               }
             );
             var user = await User.findOne({_id: internalRecord.userId});
+            user.stars += 100;
             if(user.stripeOnboardingComplete && user.stripeAccountId){
                 const account = await stripe.account.retrieve(user.stripeAccountId);
                 user.canReceivePayouts = canReceivePayouts(account);
@@ -4414,8 +4416,8 @@ async function getPassageLocation(passage, train){
                     SYSTEM.numUsersOnboarded += 1;
                     await SYSTEM.save();
                 }
-                await user.save();
             }
+            await user.save();
 
           }
         }
@@ -5996,6 +5998,10 @@ async function getPassageLocation(passage, train){
                     system: system
                 });
                 await singleStarSources(user, sources);
+                //if user is verified and numStars > lastCap give the passage a user star
+                if(req.session.user.identityVerified && (passage.stars + 1) > passage.lastCap){
+                    await starPassage(req, 1, passage._id, req.session.user._id.toString());
+                }
                 passage.stars += 1;
                 passage.starrers.push(user);
             }
@@ -6042,12 +6048,11 @@ async function getPassageLocation(passage, train){
             var p = await Passage.findOne({_id: req.body._id});
             console.log("ON:"+req.body.on);
             console.log(p.starrers.includes(user));
+            //whether we are giving a star or taking it away
             if(req.body.on == 'false' && !p.starrers.includes(user)){
-                console.log("NOO");
                 var passage = await singleStarPassage(req, p);
             }
             else if(req.body.on == 'true'){
-                console.log("YES");
                 var passage = await singleStarPassage(req, p, true);
             }
             else{

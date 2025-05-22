@@ -69,7 +69,7 @@ const userSchema = mongoose.Schema({
     },
     stars: {
         type: Number,
-        default: 100
+        default: 0
     },
     starsGiven: {
         type: Number,
