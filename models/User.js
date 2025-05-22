@@ -75,6 +75,18 @@ const userSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
+    percentile: {
+        type: Number,
+        default: 1
+    },
+    rank: {
+        type: Number,
+        default: 0
+    },
+    top: {
+        type: Number,
+        default: 99
+    },
     token: {
       type: String,
       default: ''

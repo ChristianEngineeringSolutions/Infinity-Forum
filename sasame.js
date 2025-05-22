@@ -3524,7 +3524,7 @@ async function getPassageLocation(passage, train){
                                 amountToAdd = 100;
                             }
                             // await addStarsToUser(user, amountToAdd);
-                            distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
+                            // distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
                             //calculate cut for platform
                             SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
                             SYSTEM.userAmount += Math.floor(amount * 0.45);

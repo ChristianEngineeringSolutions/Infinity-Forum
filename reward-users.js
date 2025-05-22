@@ -117,8 +117,8 @@ async function processRewardDistribution(job) {
     const rateLimiter = new RateLimiter(RATE_LIMIT.STRIPE_RATE_LIMIT, 1000);
     
     // const users = await User.find({ stripeOnboardingComplete: true,  identityVerified: true}).sort('-starsGiven');
-    const users = await User.find({}).sort('starsGiven');
-    const starValues = users.map(doc => doc.starsGiven);
+    const users = await User.find({}).sort({ starsGiven: -1, _id: 1 });
+    // const starValues = users.map(doc => doc.starsGiven);
     // const usd = await scripts.getMaxToGiveOut();
     var SYSTEM = await System.findOne({});
     // var usd = SYSTEM.userAmount;
@@ -149,14 +149,25 @@ async function processRewardDistribution(job) {
                     //users get same allotment as they have percentage of stars given
                     let userUSD = parseInt((await percentStarsGiven(user.starsGiven)) * usd);
                     try{
+                        //calculate percentile
+                        var rank = i + 1; //Rank 1 has the most stars
+                        var top = parseInt((rank / users.length) * 100);
+                        var percentile = parseInt((users.length - rank + 1) / users.length * 100);
+                        user.percentile = percentile;
+                        user.top = top;
+                        user.rank = rank;
+                        if(user.identityVerified){
+                            user.stars += 50; //give monthly allotment
+                        }
+                        await user.save();
                         // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                         //     userUSD = 600 - user.amountEarnedThisYear;
                         // }
                         // const cut = (userUSD*0.55);
                         const cut = 0;
                         const transferAmount = Math.floor(userUSD - cut);
-                        //only do payout for more than one cent
-                        if(transferAmount >= 1){
+                        //only do payout for more than one cent and for verified onboarded members
+                        if(transferAmount >= 1 && user.identityVerified == true && user.stripeOnboardingComplete == true){
                             // Generate idempotency key
                             const idempotencyKey = generateIdempotencyKey(
                                 user._id,
