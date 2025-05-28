@@ -846,8 +846,11 @@
             //     bonus = 0;
             // }
             //add stars to passage and sources
+            console.log("Cluster1:"+passage.stars);
             passage.stars += amount + bonus;
-            passage.lastCap = passage.stars;
+            console.log("Cluster2:"+passage.stars);
+            passage.verifiedStars += amount + bonus;
+            passage.lastCap = passage.verifiedStars;
             //if bubbling star all sub passages (content is displayed in parent)
             if(passage.bubbling && passage.passages && !passage.public){
                 for(const p of passage.passages){
@@ -947,6 +950,7 @@
                 }
                 // await passage.author.save();
             }
+            console.log("Cluster3:"+passage.stars);
             await user.save();
             await passage.save();
             //star each source
@@ -5999,10 +6003,14 @@ async function getPassageLocation(passage, train){
                 });
                 await singleStarSources(user, sources);
                 //if user is verified and numStars > lastCap give the passage a user star
-                if(req.session.user.identityVerified && (passage.stars + 1) > passage.lastCap){
+                //so we give the passage a user star if it has more stars than it did last time it got single starred
+                if(req.session.user.identityVerified && (passage.verifiedStars + 1) > passage.lastCap){
+                    console.log('cluster'+passage.stars);
                     await starPassage(req, 1, passage._id, req.session.user._id.toString());
                 }
+                console.log("Clustercheck:"+passage.stars);
                 passage.stars += 1;
+                console.log("Cluster4:"+passage.stars);
                 passage.starrers.push(user);
             }
             //if bubbling star all sub passages (content is displayed in parent)
@@ -6021,6 +6029,9 @@ async function getPassageLocation(passage, train){
                     var record = await Star.findOne({user:req.session.user._id, passage: passage._id});
                     await singleStarSources(user, sources, true);
                     passage.stars -= 1;
+                    if(req.session.user.identityVerified){
+                        passage.verifiedStars -= 1;
+                    }
                     passage.starrers = passage.starrers.filter(u => {
                         return u != user;
                     });
