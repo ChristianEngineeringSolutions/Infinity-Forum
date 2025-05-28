@@ -69,11 +69,23 @@ const userSchema = mongoose.Schema({
     },
     stars: {
         type: Number,
-        default: 100
+        default: 0
     },
     starsGiven: {
         type: Number,
         default: 0
+    },
+    percentile: {
+        type: Number,
+        default: 1
+    },
+    rank: {
+        type: Number,
+        default: 0
+    },
+    top: {
+        type: Number,
+        default: 99
     },
     token: {
       type: String,

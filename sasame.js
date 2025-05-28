@@ -847,6 +847,8 @@
             // }
             //add stars to passage and sources
             passage.stars += amount + bonus;
+            passage.verifiedStars += amount + bonus;
+            passage.lastCap = passage.verifiedStars;
             //if bubbling star all sub passages (content is displayed in parent)
             if(passage.bubbling && passage.passages && !passage.public){
                 for(const p of passage.passages){
@@ -3523,7 +3525,7 @@ async function getPassageLocation(passage, train){
                                 amountToAdd = 100;
                             }
                             // await addStarsToUser(user, amountToAdd);
-                            distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
+                            // distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
                             //calculate cut for platform
                             SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
                             SYSTEM.userAmount += Math.floor(amount * 0.45);
@@ -4407,6 +4409,7 @@ async function getPassageLocation(passage, train){
               }
             );
             var user = await User.findOne({_id: internalRecord.userId});
+            user.stars += 100;
             if(user.stripeOnboardingComplete && user.stripeAccountId){
                 const account = await stripe.account.retrieve(user.stripeAccountId);
                 user.canReceivePayouts = canReceivePayouts(account);
@@ -4414,8 +4417,8 @@ async function getPassageLocation(passage, train){
                     SYSTEM.numUsersOnboarded += 1;
                     await SYSTEM.save();
                 }
-                await user.save();
             }
+            await user.save();
 
           }
         }
@@ -5996,7 +5999,14 @@ async function getPassageLocation(passage, train){
                     system: system
                 });
                 await singleStarSources(user, sources);
-                passage.stars += 1;
+                //if user is verified and numVerifiedStars > lastCap give the passage a user star
+                if(req.session.user.identityVerified && (passage.verifiedStars + 1) > passage.lastCap){
+                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString());
+                }
+                else{
+                    //just add a star to passage but not collabers
+                    passage.stars += 1;
+                }
                 passage.starrers.push(user);
             }
             //if bubbling star all sub passages (content is displayed in parent)
@@ -6015,6 +6025,9 @@ async function getPassageLocation(passage, train){
                     var record = await Star.findOne({user:req.session.user._id, passage: passage._id});
                     await singleStarSources(user, sources, true);
                     passage.stars -= 1;
+                    if(req.session.user.identityVerified){
+                        passage.verifiedStars -= 1;
+                    }
                     passage.starrers = passage.starrers.filter(u => {
                         return u != user;
                     });
@@ -6042,12 +6055,11 @@ async function getPassageLocation(passage, train){
             var p = await Passage.findOne({_id: req.body._id});
             console.log("ON:"+req.body.on);
             console.log(p.starrers.includes(user));
+            //whether we are giving a star or taking it away
             if(req.body.on == 'false' && !p.starrers.includes(user)){
-                console.log("NOO");
                 var passage = await singleStarPassage(req, p);
             }
             else if(req.body.on == 'true'){
-                console.log("YES");
                 var passage = await singleStarPassage(req, p, true);
             }
             else{
