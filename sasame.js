@@ -776,8 +776,9 @@
             if(isNaN(amount) || amount == 0){
                 return 'Please enter a number greater than 0.';
             }
-            var starsTakenAway = amount;
+            var starsTakenAway = 0;
             if(deplete){
+                starsTakenAway = amount;
                 //infinite stars on a local sasame
                 if((user.stars + user.borrowedStars + user.donationStars) < amount){
                     return "Not enough stars.";
@@ -944,7 +945,11 @@
                 }
                 user.starsGiven += starsTakenAway;
                 const SYSTEM = await System.findOne({});
-                SYSTEM.totalStarsGiven += amount;
+                if(deplete){
+                    //only add to starsgiven count if they cant be associated with a user
+                    //thus deplete must be true because single stars don't add to starsGiven
+                    SYSTEM.totalStarsGiven += amount;
+                }
                 await SYSTEM.save();
                 // passage.author.stars += amountToGiveCollabers;
                 await addStarsToUser(passage.author, amountToGiveCollabers);
@@ -6024,7 +6029,7 @@ async function getPassageLocation(passage, train){
                 console.log(passage.starrers);
                 //if user is verified and numVerifiedStars > lastCap give the passage a user star
                 if(req.session.user.identityVerified && (passage.verifiedStars + 1) > passage.lastCap){
-                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString());
+                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString(), false);
                 }
                 else{
                     //just add a star to passage but not collabers
