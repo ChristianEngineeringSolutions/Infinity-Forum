@@ -42,6 +42,13 @@
   <%if(profile.about && profile.about.length > 0){%>
     <div style="margin-top:5px !important;width:50%;margin:auto;"><%=profile.about%></div>
   <%}%>
+  <br>
+  <div>
+      <%if(profile.rank != 0 && profile.rank <= 1000){%>
+        Rank <%=profile.rank%>, 
+      <%}%>
+      Top <%=profile.top%>%
+  </div>
   <div id="profile_stars">
     <%var money = user && user._id == profile._id ? "($"+usd+")" : ''%>
     <p><%=parseInt(profile.stars)%> Star<%-parseInt(profile.stars) == 1 ? '' : 's'%>. <%=profile.starsGiven%> Contribution Point<%-profile.starsGiven == 1 ? '' : 's'%> <%=money%></p>

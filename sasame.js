@@ -649,6 +649,18 @@
         })();
         console.log('Monthly Cron ran at 12pm.');
     });
+    // (async function(){
+    //         // Queue a reward distribution
+    //         const result = await queueRewardDistribution();
+    //         console.log(`Job ID: ${result.jobId}`);
+
+    //         // Check status
+    //         const status = await getRewardJobStatus(result.jobId);
+    //         console.log(`Status: ${status.state}, Progress: ${status.progress}%`);
+
+    //         // Clean up old jobs
+    //         await cleanupOldJobs(7); // Remove jobs older than 7 days
+    //     })();
     // Schedule periodic feed updates for active users
     cron.schedule('0 */3 * * *', async () => { // Every 3 hours
     try {
@@ -1192,6 +1204,7 @@
         }
         else{
             profile = await User.findOne({_id: req.params._id});
+            console.log("TEST:"+profile.rank);
         }
         if(profile == null){
             return res.redirect('/');
@@ -1256,6 +1269,7 @@
         if(isNaN(usd)){
             usd = 0;
         }
+        console.log("TEST:"+profile.rank);
         res.render("profile", {usd: parseInt(usd), subPassages: false, passages: passages, scripts: scripts, profile: profile,
         bookmarks: bookmarks,
         whichPage: 'profile',
@@ -5999,6 +6013,7 @@ async function getPassageLocation(passage, train){
                     system: system
                 });
                 await singleStarSources(user, sources);
+                console.log(passage.starrers);
                 //if user is verified and numVerifiedStars > lastCap give the passage a user star
                 if(req.session.user.identityVerified && (passage.verifiedStars + 1) > passage.lastCap){
                     passage = await starPassage(req, 1, passage._id, req.session.user._id.toString());
@@ -6008,6 +6023,7 @@ async function getPassageLocation(passage, train){
                     passage.stars += 1;
                 }
                 passage.starrers.push(user);
+                console.log(passage.starrers);
             }
             //if bubbling star all sub passages (content is displayed in parent)
             if(passage.bubbling && passage.passages && !passage.public){
