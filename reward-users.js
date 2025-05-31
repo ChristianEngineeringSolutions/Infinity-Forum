@@ -89,9 +89,9 @@ class RateLimiter {
 async function processBatchWithConcurrency(items, batchProcessor, concurrencyLimit) {
     const results = [];
     const executing = new Set();
-
+    var indexInBatch = 0;
     for (const item of items) {
-        const promise = batchProcessor(item).then(result => {
+        const promise = batchProcessor(item, indexInBatch++).then(result => {
             executing.delete(promise);
             return result;
         });
@@ -143,23 +143,33 @@ async function processRewardDistribution(job) {
 
         const batchResults = await processBatchWithConcurrency(
             batch,
-            async (user) => {
+            async (user, indexInBatch) => {
                 // if(!user.paymentsLocked){
                     //appropriate percentage based on stars
                     //users get same allotment as they have percentage of stars given
                     let userUSD = parseInt((await percentStarsGiven(user.starsGiven)) * usd);
                     try{
                         //calculate percentile
-                        var rank = i + 1; //Rank 1 has the most stars
+                        var rank = i + indexInBatch + 1; //Rank 1 has the most stars
                         var top = parseInt((rank / users.length) * 100);
+                        console.log(user.name+" TOP:"+top+'%');
                         var percentile = parseInt((users.length - rank + 1) / users.length * 100);
                         user.percentile = percentile;
+                        if(top < 1){
+                            top = 1;
+                        }
+                        if(top > 99){
+                            top = 99;
+                        }
                         user.top = top;
                         user.rank = rank;
                         if(user.identityVerified){
                             user.stars += 50; //give monthly allotment
                         }
                         await user.save();
+                        console.log(user.name+': '+user.top+'%');
+                        var test = await User.findOne({_id:user._id});
+                        console.log(test.name+': '+test.top+'%');
                         // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                         //     userUSD = 600 - user.amountEarnedThisYear;
                         // }
