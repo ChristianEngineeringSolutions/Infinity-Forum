@@ -776,12 +776,12 @@
             if(isNaN(amount) || amount == 0){
                 return 'Please enter a number greater than 0.';
             }
-            //infinite stars on a local sasame
-            if((user.stars + user.borrowedStars) < amount){
-                return "Not enough stars.";
-            }
             var starsTakenAway = amount;
             if(deplete){
+                //infinite stars on a local sasame
+                if((user.stars + user.borrowedStars + user.donationStars) < amount){
+                    return "Not enough stars.";
+                }
                 var remainder = amount;
                 //spend borrowed stars first
                 if(user.borrowedStars > 0){
@@ -793,6 +793,12 @@
                 }
                 starsTakenAway = remainder;
                 user.stars -= remainder;
+                if(user.donationStars > 0 && user.stars <= 0){
+                    user.donationStars -= (-1 * user.stars);
+                    //give back stars that weren't taken away from main stars
+                    starsTakenAway -= (-1 * user.stars);
+                    user.stars = 0;
+                }
             }
             let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
             var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
@@ -3539,6 +3545,7 @@ async function getPassageLocation(passage, train){
                                 amountToAdd = 100;
                             }
                             // await addStarsToUser(user, amountToAdd);
+                            user.donationStars += amountToAdd;
                             // distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
                             //calculate cut for platform
                             SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
@@ -3574,6 +3581,7 @@ async function getPassageLocation(passage, train){
                 // let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
                 // var subscriptionReward = (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
                 // await addStarsToUser(subscriber, subscriptionReward);
+                subscriber.donationStars += amountToAdd;
                 var amountToAdd = (await percentUSD(5 * subscriber.subscriptionQuantity * 100)) * (await totalStarsGiven());
                 //calculate cut for platform
                 SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
@@ -5910,7 +5918,7 @@ async function getPassageLocation(passage, train){
         let sessionUser = await User.findOne({_id: user._id});
         var subPassage = req.body.parent == 'root' ? false : true;
         if(req.session && user){
-            if(sessionUser.stars > amount && process.env.REMOTE == 'true'){
+            if((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount && process.env.REMOTE == 'true'){
                 console.log("Before star passage");
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, true);
                 if(typeof passage === 'object' && passage !== null){

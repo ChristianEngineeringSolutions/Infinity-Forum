@@ -17,8 +17,8 @@
 <input id="chief_passage_id"type="hidden" value="root"name="">
     <br><br><br><br><br><br>
     <div style="margin:auto;text-align:center;">
-        <h3>You owe:</h3>
-        <h1><%=borrowedAmount%> Star<%=borrowedAmount == 1 ? '' : 's';%></h1>
+        <h3>Donation Stars: <%=user.donationStars%></h3>
+        <h3>You owe: <%=borrowedAmount%> Star<%=borrowedAmount == 1 ? '' : 's';%></h3>
         <h1 style="font-size:3em;">Borrow Stars:</h1>
         <%if(user.phone == ''){%>
         First, verify your phone number<br><br>
@@ -37,8 +37,9 @@
         <!-- <h5>(Subscriber stars are multiplied by the number of months subscribed.)</h5> -->
         <h3 style="margin-top:50px;">Borrowed stars are automatically paid back before you can earn new stars.<br>You cannot earn contribution points by spending borrowed stars.</h3>
         <%# And Donate if investing on %>
-        <h3>Other ways to earn stars: Post, Give Stars (You get dividends)<%#, Donate (for non-fundable stars)%>.</h3>
+        <h3>Other ways to earn stars: Post, Give Stars (You get dividends), Donate (for non-fundable stars).</h3>
         <!-- <h5 style="font-weight: normal; color: red;">Get Paid Monthly by Investing Stars in Projects.</h5> -->
+        <h3>Donation stars don't yield dividends or contribution points. They are spent last.</h3>
         <br><br>
     </div>
     <script type="text/javascript">
