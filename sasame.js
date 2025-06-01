@@ -770,7 +770,7 @@
         }
         await user.save();
     }
-    async function starPassage(req, amount, passageID, userID, deplete=true){
+    async function starPassage(req, amount, passageID, userID, deplete=true, single=false){
         try{
             let user = await User.findOne({_id: userID});
             if(isNaN(amount) || amount == 0){
@@ -780,7 +780,8 @@
             if(deplete){
                 starsTakenAway = amount;
                 //infinite stars on a local sasame
-                if((user.stars + user.borrowedStars + user.donationStars) < amount){
+                //if single they can just incur a debt
+                if(((user.stars + user.borrowedStars + user.donationStars) < amount) && !single){
                     return "Not enough stars.";
                 }
                 var remainder = amount;
@@ -6121,7 +6122,7 @@ async function getPassageLocation(passage, train){
                 console.log(passage.starrers);
                 //if user is verified and numVerifiedStars > lastCap give the passage a user star
                 if(req.session.user.identityVerified && (passage.verifiedStars + 1) > passage.lastCap){
-                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString());
+                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString(), true, true);
                 }
                 else{
                     //just add a star to passage but not collabers
