@@ -999,7 +999,7 @@
                 catch(e){
                 }
             }
-            //recursively star ssources
+            //recursively star sources
             await starSources(passage, passage, [], [], amount, req);
             return await fillUsedInListSingle(passage);
         }
@@ -1280,7 +1280,6 @@
         if(isNaN(usd)){
             usd = 0;
         }
-        console.log("TEST:"+profile.rank);
         res.render("profile", {usd: parseInt(usd), subPassages: false, passages: passages, scripts: scripts, profile: profile,
         bookmarks: bookmarks,
         whichPage: 'profile',
@@ -1473,9 +1472,9 @@
     //     var request = https.request(remoteURL, function(response){
     //         response.setEncoding('utf8');
     //         response.on('data', function(data){
-    //             var final = data.replaceAll("/css/", "https://christianengineeringsolutions.com/css/");
-    //             var final = data.replaceAll("/js/", "https://christianengineeringsolutions.com/js/");
-    //             var final = data.replaceAll("/images/", "https://christianengineeringsolutions.com/images/");
+    //             var final = data.replaceAll("/css/", "https://infinity-forum.org/css/");
+    //             var final = data.replaceAll("/js/", "https://infinity-forum.org/js/");
+    //             var final = data.replaceAll("/images/", "https://infinity-forum.org/images/");
     //             return res.send(final);
     //         });
     //     });
@@ -1493,7 +1492,7 @@
             const fsp = require('fs').promises;
             var passage = await Passage.findOne({_id: req.body._id}).populate('author users sourceList collaborators versions');
 
-              var url = 'https://christianengineeringsolutions.com/pull';
+              var url = 'https://infinity-forum.org/pull';
               //TODO add file
               var file = await fsp.readFile('./dist/uploads/' + passage.filename, "base64");
               var data = querystring.stringify({
@@ -1501,7 +1500,7 @@
                 file: file
             });
               var options = {
-                  hostname: 'christianengineeringsolutions.com',
+                  hostname: 'infinity-forum.org',
                   path: '/pull',
                   method: 'POST',
                   thumbnail: '',
@@ -1561,7 +1560,7 @@
             //file from passage 
 
             const file = await fs.createWriteStream('./dist/uploads/' + uploadTitle);
-            const request = https.get('https://christianengineeringsolutions.com/uploads/' + passage.filename, function(response){
+            const request = https.get('https://infinity-forum.org/uploads/' + passage.filename, function(response){
                 response.pipe(file);
                 file.on('finish', () => {
                     file.close();
@@ -1587,7 +1586,7 @@
                 await copy.save();
                 var buf = Buffer.from(req.body.file, 'base64');
                 await fsp.writeFile('./dist/uploads/'+uploadTitle, buf);
-                return res.send('https://christianengineeringsolutions.com/passage/' + encodeURIComponent(copy.title) + '/' + copy._id);
+                return res.send('https://infinity-forum.org/passage/' + encodeURIComponent(copy.title) + '/' + copy._id);
             }
             else{
                 return res.send("Wrong Credentials.");
@@ -1621,19 +1620,19 @@
     function getRemotePage(req, res){
         //get same route from server
         var route = req.originalUrl + '?fromOtro=true';
-        const remoteURL = 'https://christianengineeringsolutions.com' + route;
+        const remoteURL = 'https://infinity-forum.org' + route;
         var output = '';
         var request = https.request(remoteURL, function(response){
             response.setEncoding('utf8');
             response.on('data', function(data){
-                var final = data.replaceAll("/css/", "https://christianengineeringsolutions.com/css/");
-                final = final.replaceAll("/js/", "https://christianengineeringsolutions.com/js/");
-                final = final.replaceAll("/eval/", "https://christianengineeringsolutions.com/eval/");
-                final = final.replaceAll("/images/", "https://christianengineeringsolutions.com/images/");
-                final = final.replaceAll("/jquery", "https://christianengineeringsolutions.com/jquery");
-                final = final.replaceAll("https://unpkg.com/three@0.87.1/exampleshttps://christianengineeringsolutions.com/js/loaders/GLTFLoader.js", "https://unpkg.com/three@0.87.1/examples/js/loaders/GLTFLoader.js");
-                final = final.replaceAll("/ionicons.esm.js", "https://christianengineeringsolutions.com/ionicons.esm.js");
-                final = final.replaceAll("/ionicons.js", "https://christianengineeringsolutions.com/ionicons.js");
+                var final = data.replaceAll("/css/", "https://infinity-forum.org/css/");
+                final = final.replaceAll("/js/", "https://infinity-forum.org/js/");
+                final = final.replaceAll("/eval/", "https://infinity-forum.org/eval/");
+                final = final.replaceAll("/images/", "https://infinity-forum.org/images/");
+                final = final.replaceAll("/jquery", "https://infinity-forum.org/jquery");
+                final = final.replaceAll("https://unpkg.com/three@0.87.1/exampleshttps://infinity-forum.org/js/loaders/GLTFLoader.js", "https://unpkg.com/three@0.87.1/examples/js/loaders/GLTFLoader.js");
+                final = final.replaceAll("/ionicons.esm.js", "https://infinity-forum.org/ionicons.esm.js");
+                final = final.replaceAll("/ionicons.js", "https://infinity-forum.org/ionicons.js");
                 output += final;
             });
             response.on('end', function(){
@@ -2573,16 +2572,19 @@ async function getPassageLocation(passage, train){
         
     //     res.render("projects");
     // });
-    async function getRecursiveSourceList(sourceList, sources=[], passage){
+    async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor=false){
         for(const source of sourceList){
-            var sourcePassage = await Passage.findOne({_id:source});
+            if(getAuthor){
+                var sourcePassage = await Passage.findOne({_id:source}).populate('author');
+            }else{
+                var sourcePassage = await Passage.findOne({_id:source});
+            }
             //get specials as well
             // sourcePassage = await getPassage(sourcePassage);
             if(sourcePassage != null){
                 var special = null;
                 // console.log(sourcePassage._id);
                 if(sources.includes(sourcePassage)){
-                    console.log('flaiys');
                     continue;
                 }                
                 sources.push(sourcePassage);
@@ -2603,10 +2605,15 @@ async function getPassageLocation(passage, train){
                     special = source.mirror;
                 }
                 if(special != null){
+                    if(getAuthor){
+                        special = await Passage.findOne({_id:special}).populate('author');
+                    }else{
+                        special = await Passage.findOne({_id:special});
+                    }
                     special = await Passage.findOne({_id:special});
                     sources.push(special);
                 }
-                sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage);
+                sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage, getAuthor);
             }
         }
         // console.log(sources);
@@ -5129,7 +5136,6 @@ async function getPassageLocation(passage, train){
             return res.send("Protected Uploads restored.");
         });
     });
-    //test
     app.get('/admin', async function(req, res){
         // await mongoSnap('./backup/collections.tar'); // backup
         // await mongoSnap('./backups/collections.tar', true); // restore
@@ -5164,6 +5170,68 @@ async function getPassageLocation(passage, train){
             });
         }
     });
+    async function addSource(req, passage, source, reason){
+        if(req.session.user.admin || req.session.user.moderator){
+            var suggestion = false;
+            if((await isInCreativeChain(req.session.user._id, passage))){
+                suggestion = true;
+            }
+            await Source.create({
+                user: req.session.user._id.toString(),
+                passage: passage._id,
+                source: source._id,
+                addedByReview: true,
+                moderators: [req.session.user._id.toString()],
+                votes: [1],
+                reasons: [reason],
+                suggested: suggestion,
+                active: true
+            });
+
+        }
+    }
+    async function voteOnSource(req, source, vote, reason){
+        source.moderators.push(req.session.user._id);
+        source.votes.push(vote);
+        source.reasons.push(reason);
+        source.markModified('moderators');
+        source.markModified('votes');
+        source.markModified('reasons');
+        if(source.votes.at(-1) === source.votes.at(-2) && 
+            (
+                (!source.suggested && source.votes.length > 3) 
+                || 
+                (source.suggested && source.votes.length > 4)
+            )){
+            if(source.votes.at(-1) === 1){
+                source.hardActive = true;
+            }else if(source.votes.at(-1) === -1){
+                source.hardInActive = true;
+                source.active = false;
+            }
+            var index = 0;
+            for(const vote of votes){
+                var user = await User.findOne({_id:source.moderators[index]._id.toString()});
+                if(vote === source.votes.at(-1)){
+                    user.modPoints += 1;
+                    user.stars += 1;
+                }else if(vote === -1 * source.votes.at(-1)){
+                    user.modPoints -= 2;
+                }
+                await user.save();
+            }
+        }
+        await source.save();
+    }
+    //are they a contributor?
+    async function isInCreativeChain(user, passage){
+        return await getContributors(passage).includes(user);
+    }
+    async function getContributors(passage){
+        var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+        var contributors = sources.map(source => source.author);
+        return contributors;
+    }
     async function userExists(email){
         var member = await User.findOne({email: email});
         if(member == null){
@@ -6029,7 +6097,7 @@ async function getPassageLocation(passage, train){
                 console.log(passage.starrers);
                 //if user is verified and numVerifiedStars > lastCap give the passage a user star
                 if(req.session.user.identityVerified && (passage.verifiedStars + 1) > passage.lastCap){
-                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString(), false);
+                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString());
                 }
                 else{
                     //just add a star to passage but not collabers

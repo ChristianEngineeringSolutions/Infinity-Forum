@@ -45,6 +45,10 @@ const starSchema = mongoose.Schema({
         default: () => v4(),
         unique: true
     },
+    date:{
+        type: Date,
+        default: Date.now
+    }
 });
 
 module.exports = mongoose.model('Star', starSchema, 'Stars');
