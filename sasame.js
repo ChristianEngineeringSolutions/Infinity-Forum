@@ -2613,7 +2613,12 @@ async function getPassageLocation(passage, train){
                     special = await Passage.findOne({_id:special});
                     sources.push(special);
                 }
-                sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage, getAuthor);
+                if(source._id.toString() !== passage._id.toString()){
+                    sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage, getAuthor);
+                }
+                else{
+                    continue;
+                }
             }
         }
         // console.log(sources);
