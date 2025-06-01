@@ -794,6 +794,7 @@
                 }
                 starsTakenAway = remainder;
                 user.stars -= remainder;
+                console.log("REMAINDER:"+remainder);
                 if(user.donationStars > 0 && user.stars <= 0){
                     user.donationStars -= (-1 * user.stars);
                     //give back stars that weren't taken away from main stars
@@ -6077,8 +6078,8 @@ async function getPassageLocation(passage, train){
         var user = req.session.user._id.toString();
         var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
         //check if starred already
-        var recordSingle = await Star.findOne({user: user._id, passage:passage, single:true, system:false});
-        var recordSingleSystem = await Star.findOne({user: user._id, passage:passage, single:true, system:true});
+        var recordSingle = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:false});
+        var recordSingleSystem = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:true});
         if(!reverse){
             //star mirror best and bestof and repost
             //and add to sources
@@ -6140,9 +6141,10 @@ async function getPassageLocation(passage, train){
         }
         else{
             if(passage.starrers.includes(user)){
-                //unstar if no previous record of being directly starred
-                if(recordSingle == null){
-                    var record = await Star.findOne({user:req.session.user._id, passage: passage._id});
+                // recordSingle = await Star.findOne({user: user._id, passage:passage, single:true, system:false});
+                //unstar if no previous record of being directly starred or isnt a sub passage
+                if((recordSingle == null && recordSingleSystem != null) || !isSub){
+                    var record = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:false});
                     await singleStarSources(user, sources, passage, true);
                     passage.stars -= 1;
                     if(req.session.user.identityVerified){
@@ -6173,7 +6175,6 @@ async function getPassageLocation(passage, train){
         var user = req.session.user._id.toString();
         if(req.session && req.session.user){
             var p = await Passage.findOne({_id: req.body._id});
-            console.log("ON:"+req.body.on);
             console.log(p.starrers.includes(user));
             //whether we are giving a star or taking it away
             if(req.body.on == 'false' && !p.starrers.includes(user)){
