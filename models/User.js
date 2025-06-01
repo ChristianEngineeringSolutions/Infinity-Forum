@@ -59,6 +59,14 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+    moderator: {
+      type: Boolean,
+      default: false
+    },
+    modPoints: {
+      type: Number,
+      default: 0
+    },
     verified: {
       type: Boolean,
       default: false
