@@ -60,7 +60,7 @@
         </div>
         <br>
         <%if((!passage.sourceList || passage.sourceList.length < 1) && (passage.sourceLink == null || passage.sourceLink.length < 1)){%>
-            <div><b>No Sources</b></div>
+            <div><b id="no-sources-<%=passage._id%>">No Sources</b></div>
             <div id="sourcelist_<%=passage._id%>"></div>
         <%}else{%>
         <b>Sources:</b>
@@ -82,6 +82,14 @@
                 <span id="remove-sources-<%=passage._id%>"class="link">Remove Sources</span>
             <%}%>
         </div>
+        <%}%>
+        <%if(user && user._id == passage.author._id){%>
+            <div class="add-source"id="add-source-<%=passage._id%>">+ Add Source</div>
+            <div class="new-sources"id="new-sources-<%=passage._id%>">
+                <br>
+                Click "cite" in the <b id="b-bar-<%=passage._id%>"class="b-bar">Bookmarks Bar</b>
+                <br><br>
+            </div>
         <%}%>
         <br>
         <div>

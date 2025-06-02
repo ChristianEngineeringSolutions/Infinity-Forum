@@ -2012,6 +2012,7 @@ async function getPassageLocation(passage, train){
         // fillForum();
     });
     async function getPassage(passage, small=true){
+        console.log('test9');
         passage.originalSourceList = passage.sourceList.slice();
         // var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
         if(passage == null){
@@ -2150,6 +2151,7 @@ async function getPassageLocation(passage, train){
             passage.repostFixed = false;
         }
         passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
+        console.log('test10');
         return passage;
     }
     async function getBigPassage(req, res, params=false, subforums=false, comments=false){
@@ -2584,6 +2586,14 @@ async function getPassageLocation(passage, train){
     // });
     async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor=false){
         for(const source of sourceList){
+            // Check if we've already processed this source
+            //prevent circularity
+            if(sources.some(s => s._id.toString() === source._id.toString()) || 
+               source._id.toString() === passage._id.toString()){
+                console.log("Circular");
+                continue;
+            }
+            console.log("Non Circular");
             if(getAuthor){
                 var sourcePassage = await Passage.findOne({_id:source}).populate('author');
             }else{
@@ -2623,13 +2633,7 @@ async function getPassageLocation(passage, train){
                     special = await Passage.findOne({_id:special});
                     sources.push(special);
                 }
-                //handle circular citations
-                if(source._id.toString() !== passage._id.toString()){
-                    sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage, getAuthor);
-                }
-                else{
-                    continue;
-                }
+                sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage, getAuthor);
             }
         }
         // console.log(sources);
@@ -3195,8 +3199,19 @@ async function getPassageLocation(passage, train){
                 return res.render('passage', {subPassage: true, subPassages: false, passage: copy, sub: true});
             }
         }else{
+            var title = passage.title == '' ? 'Untitled' : passage.title;
             //add passage to sourcelist
             parent = await Passage.findOne({_id: req.body.parent});
+            var parentUsageList = await Passage.find({
+                sourceList: {
+                    $in: [parent._id]
+                },
+                versionOf: null
+            }, {_id:1, author:0, passages:0}).lean();
+            parentUsageList = parentUsageList.map(item => item._id.toString());
+            if(parent._id == passage._id || parentUsageList.includes(passage._id.toString())){
+                return res.send('<div data-token="'+passage._id+'"data-title="'+title+'"class="new-source">"'+title+'" Could not be added. Circular citation.</div>');
+            }
             parent.sourceList.push(passage._id);
             //remove duplicates
             parent.sourceList = Object.values(parent.sourceList.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
@@ -3205,10 +3220,9 @@ async function getPassageLocation(passage, train){
             //passage usage list has grown so put it higher in feed
             passage.lastUpdated = Date.now();
             await passage.save();
-            console.log('souces:'+parent.sourceList);
+            console.log('sources:'+parent.sourceList);
             var test = await Passage.findOne({_id:parent._id});
             console.log('sources'+test.sourceList);
-            var title = passage.title == '' ? 'Untitled' : passage.title;
             return res.send('<div data-token="'+passage._id+'"data-title="'+title+'"class="new-source">"'+title+'" Added to Sourcelist.</div>');
         }
     });
