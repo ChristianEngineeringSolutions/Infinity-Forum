@@ -2586,14 +2586,6 @@ async function getPassageLocation(passage, train){
     // });
     async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor=false){
         for(const source of sourceList){
-            // Check if we've already processed this source
-            //prevent circularity
-            if(sources.some(s => s._id.toString() === source._id.toString()) || 
-               source._id.toString() === passage._id.toString()){
-                console.log("Circular");
-                continue;
-            }
-            console.log("Non Circular");
             if(getAuthor){
                 var sourcePassage = await Passage.findOne({_id:source}).populate('author');
             }else{
@@ -3624,16 +3616,16 @@ async function getPassageLocation(passage, train){
                 subscriber.subscriptionID = payload.data.object.subscription;
                 subscriber.subscribed = true;
                 // subscriber.lastSubscribed = new Date();
-                // let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-                // var subscriptionReward = (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
+                let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
+                var subscriptionReward = (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
                 // await addStarsToUser(subscriber, subscriptionReward);
-                subscriber.donationStars += amountToAdd;
                 var amountToAdd = (await percentUSD(5 * subscriber.subscriptionQuantity * 100)) * (await totalStarsGiven());
+                subscriber.donationStars += subscriptionReward;
                 //calculate cut for platform
                 SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
                 SYSTEM.userAmount += Math.floor(amount * 0.45);
                 await SYSTEM.save();
-                distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
+                // distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
             }
         } else if (event.type == "invoice.payment_failed") {
             var email = payload.data.object.customer_email;

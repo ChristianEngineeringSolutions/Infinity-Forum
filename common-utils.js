@@ -80,7 +80,8 @@ const scripts = {};
         else if(maxToGiveOut < usd){
             usd = maxToGiveOut;
         }
-        return 0.20 * usd; //give out in 20% increments
+        return usd; //give out total amount for now
+        // return 0.20 * usd; //give out in 20% increments
     }
     scripts.getBest = async function(passage){
         return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
