@@ -124,6 +124,7 @@ $(function(){
                     //add source to sourcelist client side
                     var ID = $('.new-sources:visible').attr('id').split('-').at(-1);
                     $('#sourcelist_'+ID).append('<div class="passage_source_'+ID+'"><a target="_blank"href="/passage/'+title+'/'+token+'">'+title+'</a></div>');
+                    $('#no-sources-'+ID).text("Sources:");
                 }
                 if(window.matchMedia("(max-width: 715px)").matches){
                     $('#side_panel_close').click();

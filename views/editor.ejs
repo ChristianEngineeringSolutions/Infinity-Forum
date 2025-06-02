@@ -37,7 +37,7 @@
             <div class="ace-editor"style=""id="editor-<%=passage._id%>"><%=passage.code || ''%></div>
             <script>
                 var editor_<%=passage._id%> = ace.edit("editor-<%=passage._id%>");
-                editor.setHighlightActiveLine(false);
+                editor_<%=passage._id%>.setHighlightActiveLine(false);
                 editor_<%=passage._id%>.setTheme("ace/theme/monokai");
                 editor_<%=passage._id%>.session.setMode("ace/mode/<%=passage.lang == 'daemon' ? 'javascript' : passage.lang%>");
                 editor_<%=passage._id%>.getSession().on("change", function () {
@@ -123,12 +123,5 @@
     <ul class="passage_tabs">
         <li id="passage_executable_<%=passage._id%>"class="passage_tab passage_tab_open_advanced view_code">Advanced</li>
     </ul>
-    <br>
-    <div class="add-source"id="add-source-<%=passage._id%>">+ Add Source</div>
-    <br>
-    <div class="new-sources"id="new-sources-<%=passage._id%>">
-        Click "cite" in the <b id="b-bar-<%=passage._id%>"class="b-bar">Bookmarks Bar</b>
-        <br><br>
-    </div>
     <br>
 </form>
