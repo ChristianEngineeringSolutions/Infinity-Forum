@@ -1,6 +1,7 @@
 const {User, UserSchema} = require('./models/User');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const System = require('./models/System');
+const Visitor = require('./models/Visitor');
 let client;
 async function accessSecret(secretName) {
   if (process.env.REMOTE == 'true') {

@@ -12,7 +12,7 @@
 </form>
 <p><%=profile.username%></p>
     <a target="_blank"href="/stripeAuthorize">Manage Payments</a>
-    <%if(!profile.identityVerified){%>
+    <%if(user && !user.identityVerified){%>
         <br><br>
         <a href="/verify-identity">Verify Identity (To get paid)</a>
     <%}else{%>
