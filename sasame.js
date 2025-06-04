@@ -3864,7 +3864,7 @@ async function getPassageLocation(passage, train){
           payment_method_types: ['card'],
           line_items: [
             {
-              price: process.env.SUBSCRIPTION_PRICE_ID, // Replace with your actual Price ID
+              price: process.env.SUBSCRIPTION_PRICE_ID,
               quantity: quantity,
             },
           ],
