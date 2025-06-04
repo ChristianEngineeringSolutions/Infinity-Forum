@@ -1,5 +1,5 @@
 "use strict";
-const Passage = require('../models/Passage');
+const { Passage, PassageSchema } = require('../models/Passage');
 //Call in Scripts
 const scripts = {};
 var fs = require('fs'); 
