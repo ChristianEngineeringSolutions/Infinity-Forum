@@ -7,7 +7,8 @@ const passageSchema = mongoose.Schema({
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        default: null
+        default: null,
+        index: true
     },
     //author is first user
     users: [{
@@ -138,6 +139,11 @@ const passageSchema = mongoose.Schema({
         default: false
     },
     flagged: {
+        type: Boolean,
+        default: false
+    },
+    //contains a blacklisted keyword
+    blacklisted: {
         type: Boolean,
         default: false
     },

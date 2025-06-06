@@ -82,6 +82,10 @@ Toggle Green/Red for Active/Inactive
 </div>
 <br><br>
 <button id="passage-delete-<%=passage._id%>" style="border: 1px solid red;cursor:pointer;">DELETE PASSAGE</button>
+<%if(user.admin){%>
+    <br><br>
+    <button data-passage-id="<%=passage._id%>"id="passage-dprofile-<%=passage.author._id%>" style="border: 1px solid red;cursor:pointer;">DELETE PROFILE <%=passage.author.username%></button>
+<%}%>
 <!-- <hr>
 <div id="show-keys">Keys</div>
 <br>
