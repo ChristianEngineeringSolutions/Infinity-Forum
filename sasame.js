@@ -3608,25 +3608,99 @@ async function getPassageLocation(passage, train){
         else if (event.type == "invoice.paid") {
             console.log(JSON.stringify(payload.data.object.subscription));
             var email = payload.data.object.customer_email;
+            const invoice = event.data.object;
+            var subscriber = await User.findOne({ email: email });
+            var fee = 0;
+             let chargeId = null;
+              let paymentIntentId = null;
+
+              // Determine if it was paid by a Charge or PaymentIntent
+              if (invoice.charge) {
+                chargeId = invoice.charge;
+              } else if (invoice.payment_intent) {
+                paymentIntentId = invoice.payment_intent;
+              }
+
+              if (chargeId) {
+                try {
+                  // Retrieve the Charge and expand its balance_transaction
+                  const charge = await stripe.charges.retrieve(chargeId, {
+                    expand: ['balance_transaction'] // IMPORTANT: expands the balance_transaction object
+                  });
+
+                  if (charge.balance_transaction) {
+                    fee = charge.balance_transaction.fee; // Fee in cents (or smallest currency unit)
+                    console.log("FEE:"+fee);
+                  } else {
+                    console.log('  Balance transaction not available on the Charge yet.');
+                  }
+                } catch (apiErr) {
+                  console.error(`Error retrieving Charge ${chargeId}: ${apiErr.message}`);
+                }
+              } else if (paymentIntentId) {
+                try {
+                  // Retrieve the PaymentIntent
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+                  if (paymentIntent.latest_charge) {
+                    // Retrieve the Charge and expand its balance_transaction
+                    const charge = await stripe.charges.retrieve(paymentIntent.latest_charge, {
+                      expand: ['balance_transaction']
+                    });
+
+                    if (charge.balance_transaction) {
+                      fee = charge.balance_transaction.fee;
+                      console.log("FEE:"+fee);
+                    } else {
+                        console.log('  Balance transaction not available on the Charge yet.');
+                    }
+                  } else {
+                    console.log('  No latest_charge found on PaymentIntent.');
+                  }
+                } catch (apiErr) {
+                  console.error(`Error retrieving PaymentIntent ${paymentIntentId}: ${apiErr.message}`);
+                }
+              } else {
+                console.log('  Invoice paid without an associated Charge or PaymentIntent (e.g., credit balance used).');
+              }
             console.log("UNDER TEST");
             if (email != null) {
                 console.log("OVER TEST");
                 console.log(email);
                 //they get stars
                 //plus time bonus
-                var subscriber = await User.findOne({ email: email });
+                var subscriptionQuantity = 1;
+                if (invoice.lines && invoice.lines.data) {
+                    invoice.lines.data.forEach(lineItem => {
+                      // Check if the line item is related to a subscription
+                      if (lineItem.type === 'subscription' && lineItem.quantity) {
+                        subscriptionQuantity = lineItem.quantity;
+                      }
+                    });
+                  } else {
+                    console.log('  No line items found on this invoice.');
+                  }
+                //if it's their first time subscriber notate it
+                if(!subscriber.subscribed){
+                    subscriber.lastSubscribed = new Date();
+                }
+                console.log("Subscription Quantity:"+subscriptionQuantity);
+                subscriber.subscriptionQuantity = subscriptionQuantity;
                 subscriber.subscriptionID = payload.data.object.subscription;
                 subscriber.subscribed = true;
+                subscriber.subscriptionPendingCancellation = false;
                 // subscriber.lastSubscribed = new Date();
                 let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-                var subscriptionReward = (await percentUSD(5 * subscriber.subscriptionQuantity * 100 * monthsSubscribed)) * (await totalStarsGiven());
+                var subscriptionReward = (await percentUSD(500 * subscriber.subscriptionQuantity * 100 * (monthsSubscribed + 1))) * (await totalStarsGiven());
                 // await addStarsToUser(subscriber, subscriptionReward);
-                var amountToAdd = (await percentUSD(5 * subscriber.subscriptionQuantity * 100)) * (await totalStarsGiven());
+                var amountToAdd = (await percentUSD(500 * subscriber.subscriptionQuantity * 100)) * (await totalStarsGiven());
                 subscriber.donationStars += subscriptionReward;
                 //calculate cut for platform
+                var amount = 500 * subscriptionQuantity;
                 SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
                 SYSTEM.userAmount += Math.floor(amount * 0.45);
                 await SYSTEM.save();
+                await subscriber.save();
                 // distributeStars(amountToAdd).catch(err => console.error("Error processing users:", err));
             }
         } else if (event.type == "invoice.payment_failed") {
@@ -3634,10 +3708,36 @@ async function getPassageLocation(passage, train){
             if (email != null) {
                 var subscriber = await User.findOne({ email: email });
                 subscriber.subscribed = false;
-                subscriber.lastSubscribed = new Date();
+                user.subscriptionID = null;
+                subscriber.lastSubscribed = null;
                 await subscriber.save();
             }
-        } 
+        } else if (event.type == "customer.subscription.deleted") {
+            const deletedSubscription = event.data.object;
+            const customerId = deletedSubscription.customer;
+            if (customerId) {
+                try {
+                  // Retrieve the Customer object using its ID
+                  const customer = await stripe.customers.retrieve(customerId);
+                  const customerEmail = customer.email;
+                  if(customerEmail != null){
+                    var subscriber = await User.findOne({ email: email });
+                    if(subscriber.subscriptionPendingCancellation){
+                        subscriber.subscribed = false;
+                        user.subscriptionID = null;
+                        subscriber.lastSubscribed = null;
+                        await subscriber.save();
+                    }
+                    console.log("Subscription deleted.");
+                  }
+                } catch (apiErr) {
+                  console.error(`Error retrieving Customer ${customerId}: ${apiErr.message}`);
+                  // Handle cases where the customer might have been deleted or not found
+                }
+              } else {
+                console.log('  No customer ID found on the deleted subscription.');
+              }
+        }
 
         else if (event.type === 'identity.verification_session.updated' || 
           event.type === 'identity.verification_session.created' ||
@@ -3814,8 +3914,7 @@ async function getPassageLocation(passage, train){
                         cancel_at_period_end: true,
                       }
                     );
-                    user.subscribed = false;
-                    user.subscriptionID = null;
+                    user.subscriptionPendingCancellation = true;
                     await user.save();
                     req.session.user = user;
                     return res.send("Subscription canceled.");
@@ -3839,9 +3938,9 @@ async function getPassageLocation(passage, train){
         if(req.session.user.subscribed){
             console.log('ID '+req.session.user.subscriptionID);
 
-            await updateSubscriptionQuantityWithoutCredit(req.session.user.subscriptionID, quantity, req.session.user);
+            // await updateSubscriptionQuantityWithoutCredit(req.session.user.subscriptionID, quantity, req.session.user);
             // return res.send("Updated subscription.");
-            return res.json({ okay: "Updated subscription." });
+            return res.json({ okay: "Currently Subscribed. Unsubscribe by updating number to 0 first! (You will not lose your monthly star multiplier if you resubscribe before your last subscription ends)" });
           }
         const userEmail = req.session.user.email;
         if (!userEmail) {

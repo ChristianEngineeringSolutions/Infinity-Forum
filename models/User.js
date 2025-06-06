@@ -205,7 +205,11 @@ const userSchema = mongoose.Schema({
     duplicateDetected: {
       type: Boolean,
       default: null
-    }
+    },
+    subscriptionPendingCancellation: {
+      type: Boolean,
+      default: false
+    },
 });
 
 userSchema.plugin(mongoosePaginate);
