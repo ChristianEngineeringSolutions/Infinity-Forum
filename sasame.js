@@ -4898,7 +4898,7 @@ async function getPassageLocation(passage, train){
     }
 
     // Route to trigger the GCS upload process
-    app.get('/upload-to-gcs', async (req, res) => {
+    app.get('/upload-to-gcs', requiresAdmin, async (req, res) => {
       if (!req.session.user || !req.session.user.admin) {
         return res.redirect('/');
       } else {
@@ -5107,7 +5107,7 @@ async function getPassageLocation(passage, train){
     //   downloadMultipleFolders
     // };
 
-    app.get('/dbbackup.zip', async (req, res) => {
+    app.get('/dbbackup.zip', requiresAdmin, async (req, res) => {
         if(!req.session.user || !req.session.user.admin){
             return res.redirect('/');
         }
@@ -5130,7 +5130,7 @@ async function getPassageLocation(passage, train){
     function getZip(which){
 
     }
-    app.get('/uploadsbackup.zip', async (req, res) => {
+    app.get('/uploadsbackup.zip', requiresAdmin, async (req, res) => {
         if(!req.session.user || !req.session.user.admin){
             return res.redirect('/');
         }
@@ -5146,7 +5146,7 @@ async function getPassageLocation(passage, train){
         }
         return res.send(zip1.toBuffer());
     });
-    app.get('/protectedbackup.zip', async (req, res) => {
+    app.get('/protectedbackup.zip', requiresAdmin, async (req, res) => {
         if(!req.session.user || !req.session.user.admin){
             return res.redirect('/');
         }
@@ -5162,7 +5162,7 @@ async function getPassageLocation(passage, train){
         }
         return res.send(zip1.toBuffer());
     });
-    app.post('/restoredatabase', async (req, res) => {
+    app.post('/restoredatabase', requiresAdmin, async (req, res) => {
         var AdmZip = require("adm-zip");
         const fsp = require('fs').promises;
         var files = req.files;
@@ -5207,7 +5207,7 @@ async function getPassageLocation(passage, train){
     }
 });
     });
-    app.post('/restoreuploads', async (req, res) => {
+    app.post('/restoreuploads', requiresAdmin, async (req, res) => {
 	var AdmZip = require("adm-zip");
         try {
             // Check if files were uploaded
@@ -5250,7 +5250,7 @@ async function getPassageLocation(passage, train){
             }
         }
     });
-    app.post('/restoreprotected', async (req, res) => {
+    app.post('/restoreprotected', requiresAdmin, async (req, res) => {
         var AdmZip = require("adm-zip");
         const fsp = require('fs').promises;
         var files = req.files;
@@ -5263,7 +5263,7 @@ async function getPassageLocation(passage, train){
             return res.send("Protected Uploads restored.");
         });
     });
-    app.get('/admin/:focus?/', async function(req, res){
+    app.get('/admin/:focus?/', requiresAdmin, async function(req, res){
         var focus = req.params.focus || false;
         // await mongoSnap('./backup/collections.tar'); // backup
         // await mongoSnap('./backups/collections.tar', true); // restore
@@ -7844,7 +7844,7 @@ async function getPassageLocation(passage, train){
             next();
         }
         else{
-            return res.redirect('/');
+            return res.send('Requires Admin.');
         }
     }
     async function sendEmail(to, subject, body){
