@@ -5560,8 +5560,12 @@ async function getPassageLocation(passage, train){
 
     }
     app.post('/delete-profile', async function(req, res) {
-        await deleteProfile(req.body._id);
-        return res.send("Profile deleted.");
+        if(req.session.user && req.session.user.admin){
+            await deleteProfile(req.body._id);
+            return res.send("Profile deleted.");
+        }else{
+            return res.send("Must be an admin");
+        }
     });
     app.post('/paginate', async function(req, res) {
         try {
