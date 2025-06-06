@@ -144,6 +144,15 @@ const userSchema = mongoose.Schema({
       type: String,
       default: 'root'
     },
+    IP: {
+      type: Number,
+      default: 0
+    },
+    //doesn't show up in blacklist search
+    whitelisted: {
+      type: Boolean,
+      default: false
+    },
     stripeOnboardingComplete: {
       type: Boolean,
       default: false

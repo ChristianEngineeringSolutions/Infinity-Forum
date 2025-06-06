@@ -56,6 +56,12 @@
                         <button type="submit">Restore Protected</button>
                     </form>
                  </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <a href="/admin/requested-daemons">View Requested Daemons</a>
+                 </div>
+                 <div style="margin-left:97px;margin-bottom:10px;">
+                    <a href="/admin/blacklisted">View Blacklisted Passages</a>
+                 </div>
             </div>
             <%if(passages){%>
                 <input id="search"placeholder="Search Solutions..." type="" name="" autocomplete="off">
@@ -72,7 +78,7 @@
             <div id="passage_wrapper">
                 <!-- Show passage list or search list -->
                 <%if(passages){%>
-                    <%- include('passages') %>
+                    <%- include('passages', {whitelistOption:whitelistOption}) %>
                 <%}else if (passage){%>
                 <!-- Just show one passage -->
                     <%- include('passage', {passage: passage, sub: sub, subPassages: subPassages}) %>

@@ -441,6 +441,24 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^="passage-dprofile-"]', function(e){
+        var _id = $(this).attr('id').split('-').at(-1);
+        $('#passage_'+$(this).data('passage-id')).remove();
+        $('.close-modal').click();
+        $.ajax({
+            type: 'post',
+            // url: DOMAIN + '/delete_passage/' + fromOtro,
+            url: '/delete-profile/',
+            data: {
+                _id: _id
+            },
+            success: function(data){
+                alert(data);
+                // $('#passage_'+_id).remove();
+                // $('.close-modal').click();
+            }
+        });
+    });
     $(document).on('click', '[id^="passage_delete_"]', function(e){
         var _id = getPassageId(this);
         $('#passage_'+_id).remove();

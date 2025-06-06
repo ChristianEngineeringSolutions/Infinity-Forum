@@ -286,6 +286,8 @@
     //       credentials: true
     //     }
       // });
+    // Enable trust proxy
+    app.set('trust proxy', true);
     app.use(express.urlencoded({ extended: true, limit: '250mb' }));
     app.use(compression());
     app.use(cors());
@@ -5162,7 +5164,8 @@ async function getPassageLocation(passage, train){
             return res.send("Protected Uploads restored.");
         });
     });
-    app.get('/admin', async function(req, res){
+    app.get('/admin/:focus?/', async function(req, res){
+        var focus = req.params.focus || false;
         // await mongoSnap('./backup/collections.tar'); // backup
         // await mongoSnap('./backups/collections.tar', true); // restore
         const ISMOBILE = browser(req.headers['user-agent']).mobile;
@@ -5170,8 +5173,59 @@ async function getPassageLocation(passage, train){
             return res.redirect('/');
         }
         else{
-            //view all passages requesting to be a public daemon
-            var passages = await Passage.find({public_daemon:1}).sort('-stars');
+            var whitelistOption = false;
+            if(focus == 'requested-daemons' || focus == false){
+                whitelistOption = false;
+                //view all passages requesting to be a public daemon
+                var passages = await Passage.find({public_daemon:1}).sort('-stars').populate('users author sourceList');
+            }else if(focus == 'blacklisted'){
+                whitelistOption = true;
+                var blacklisted = [
+                    "whatsapp", 'btn', 'tokopedia', 'gopay',
+                    'dbs', 'call center', 'indodax'
+                ];
+                var passages = await Passage.aggregate([
+                    {
+                        $match: {
+                            $or: [
+                                { title: { $in: blacklisted } },
+                                { content: { $in: blacklisted } }
+                            ]
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'Users', // <--- Changed from 'users' to 'Users'
+                            localField: 'author',
+                            foreignField: '_id',
+                            as: 'user'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$user',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $match: {
+                            $or: [
+                                { 'user.whitelisted': { $ne: true } },
+                                { user: { $exists: false } }
+                            ]
+                        }
+                    },
+                    {
+                        $sort: { _id: -1 }
+                    },
+                    {
+                        $project: {
+                            user: 0
+                        }
+                    }
+                ]);
+
+            }
             let bookmarks = [];
             // if(req.session.user){
             //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
@@ -5180,10 +5234,17 @@ async function getPassageLocation(passage, train){
                 bookmarks = getBookmarks(req.session.user);
             }
             passages = await fillUsedInList(passages);
+            // bcrypt.hash('test', 10, function (err, hash){
+            //     if (err) {
+            //       console.log(err);
+            //     }
+            //     console.log(hash);
+            //   });
             return res.render("admin", {
                 subPassages: false,
                 ISMOBILE: ISMOBILE,
                 test: 'test',
+                whitelistOption: whitelistOption,
                 passageTitle: 'Infinity Forum', 
                 scripts: scripts, 
                 passages: passages, 
@@ -5295,13 +5356,14 @@ async function getPassageLocation(passage, train){
             }
 
             let numUsers = await User.countDocuments({username: req.body.username.trim()}) + 1;
-            
+            let ipNumber = req.ip.split('.').map(Number).reduce((a, b) => (a << 8) + b, 0);
             var userData = {
             name: req.body.username || req.body.email,
             username: req.body.username.split(' ').join('.') + '.' + numUsers || '',
             password: req.body.password,
             stars: 0,
-            token: v4()
+            token: v4(),
+            IP: ipNumber
             }  //use schema.create to insert data into the db
           if(req.body.email != ''){
             userData.email = req.body.email;
@@ -5387,6 +5449,20 @@ async function getPassageLocation(passage, train){
             });
           }
         res.redirect('/');
+    });
+    async function deleteProfile(userID){
+        //delete profile and all associated passages
+        var user = await User.findOne({_id:userID});
+        var passages = await Passage.find({author:user._id.toString()});
+        for(const passage of passages){
+            await deletePassage(passage);
+        }
+        await User.deleteOne({_id:user._id});
+
+    }
+    app.post('/delete-profile', async function(req, res) {
+        await deleteProfile(req.body._id);
+        return res.send("Profile deleted.");
     });
     app.post('/paginate', async function(req, res) {
         try {
@@ -5846,7 +5922,7 @@ async function getPassageLocation(passage, train){
         passage.lang = formData.lang;
         passage.fileStreamPath = formData.filestreampath;
         passage.previewLink = formData['editor-preview'];
-        if(parent != null){
+        if(parent != null && !passage.public && parent.author._id.toString() == req.session.user._id.toString()){
             if(parent.sameUsers){
                 console.log("Same users");
                 passage.users = parent.users;

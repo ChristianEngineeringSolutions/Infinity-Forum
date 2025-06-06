@@ -1,4 +1,7 @@
 <%passages.forEach(function(passage) { %>
+    <%if(typeof whitelistOption !== 'undefined' && whitelistOption){%>
+    <a>Whitelist</a>
+    <%}%>
     <%- include('passage', {passage: passage, sub: true, subPassage:false}) %>
 <%});%>
 <% const currentPage = typeof page !== 'undefined' ? page : 1; %>

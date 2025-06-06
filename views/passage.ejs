@@ -142,7 +142,7 @@
             <span id="passage_condensed_<%=passage._id%>"class="condensed">
                 <!-- Show them settings only if they made the passage -->
                 <%if(passage.author != null && passage.author){%>
-                    <%if(passage.author && user && passage.author._id == user._id && passage.versionOf == null){%>
+                    <%if((passage.author && user && passage.author._id == user._id && passage.versionOf == null) || user.admin){%>
                         <a class="basic_link option_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
                         <%}%>
                 <%}%>
