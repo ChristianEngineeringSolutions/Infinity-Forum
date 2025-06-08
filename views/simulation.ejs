@@ -1,0 +1,275 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<style>
+.simulation-panel {
+    background: rgba(0,0,0,0.8);
+    border: 1px solid #444;
+    padding: 20px;
+    margin: 20px;
+    border-radius: 8px;
+}
+
+.simulation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 500px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    color: #fff;
+    font-weight: bold;
+}
+
+.form-group input, .form-group select {
+    padding: 8px;
+    border: 1px solid #666;
+    background: #333;
+    color: #fff;
+    border-radius: 4px;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+}
+
+.generate-btn {
+    background: #28a745;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.generate-btn:hover {
+    background: #218838;
+}
+
+.generate-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+.status-message {
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    display: none;
+}
+
+.status-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.status-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+    display: none;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #28a745;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+</style>
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'simulation'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%if(!ISMOBILE){%>
+<%- include('member_box') %>
+<%}%>
+
+<input type="hidden" value="false" id="is_profile"/>
+<div id="page_title_container">
+    <div id="page_title">Simulation Management</div>
+    
+    <div class="simulation-panel">
+        <h3 style="color: #fff; margin-top: 0;">Generate Simulated Passages</h3>
+        <p style="color: #ccc;">Create fake users and passages for testing and demonstration purposes.</p>
+        
+        <form id="simulationForm" class="simulation-form">
+            <div class="form-group">
+                <label for="numUsers">Number of Users to Generate:</label>
+                <input type="number" id="numUsers" name="numUsers" min="1" max="50" value="5">
+            </div>
+            
+            <div class="form-group">
+                <label for="numPassages">Number of Passages to Generate:</label>
+                <input type="number" id="numPassages" name="numPassages" min="1" max="100" value="10">
+            </div>
+            
+            <div class="form-group">
+                <label for="contentType">Content Type:</label>
+                <select id="contentType" name="contentType">
+                    <option value="ai">AI-Generated Engineering Project Ideas</option>
+                    <option value="lorem">Lorem Ipsum (Faker.js)</option>
+                </select>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="includeImages" name="includeImages">
+                <label for="includeImages">Include Random Images (30% chance per passage)</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="includeSubContent" name="includeSubContent" checked>
+                <label for="includeSubContent">Generate Sub-passages and Comments (Random 0-5 per passage)</label>
+            </div>
+            
+            <button type="submit" class="generate-btn" id="generateBtn">
+                Generate Simulated Data
+            </button>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="status-message" id="statusMessage"></div>
+        </form>
+    </div>
+    
+    <div class="simulation-panel">
+        <h3 style="color: #fff; margin-top: 0;">View Simulated Content</h3>
+        <p style="color: #ccc;">Browse and manage simulated passages and users.</p>
+        
+        <div style="display: flex; gap: 15px; margin-top: 15px;">
+            <a href="/simulated-passages" class="generate-btn" style="text-decoration: none; display: inline-block; text-align: center;">
+                View Simulated Passages
+            </a>
+            <a href="/paginate" onclick="setSimulatedFilter(true)" class="generate-btn" style="text-decoration: none; display: inline-block; text-align: center; background: #6c757d;">
+                Browse All Simulated Content
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('simulationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = {
+        numUsers: parseInt(formData.get('numUsers')),
+        numPassages: parseInt(formData.get('numPassages')),
+        contentType: formData.get('contentType'),
+        includeImages: formData.has('includeImages'),
+        includeSubContent: formData.has('includeSubContent')
+    };
+    
+    const generateBtn = document.getElementById('generateBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    
+    // Disable form and show progress
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
+    progressBar.style.display = 'block';
+    statusMessage.style.display = 'none';
+    
+    try {
+        const response = await fetch('/generate-simulation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // Show success message
+            statusMessage.className = 'status-message status-success';
+            statusMessage.textContent = `Successfully generated ${result.usersCreated} users and ${result.passagesCreated} passages!`;
+            statusMessage.style.display = 'block';
+            
+            // Complete progress bar
+            progressFill.style.width = '100%';
+            
+        } else {
+            const error = await response.text();
+            throw new Error(error || 'Failed to generate simulation data');
+        }
+        
+    } catch (error) {
+        console.error('Error generating simulation:', error);
+        
+        // Show error message
+        statusMessage.className = 'status-message status-error';
+        statusMessage.textContent = `Error: ${error.message}`;
+        statusMessage.style.display = 'block';
+        
+        progressFill.style.width = '0%';
+    }
+    
+    // Re-enable form
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate Simulated Data';
+    
+    // Hide progress bar after a delay
+    setTimeout(() => {
+        progressBar.style.display = 'none';
+        progressFill.style.width = '0%';
+    }, 3000);
+});
+
+function setSimulatedFilter(simulated) {
+    // Set a flag to filter simulated content in pagination
+    localStorage.setItem('simulatedFilter', simulated.toString());
+}
+
+// Show initial info message
+window.addEventListener('load', function() {
+    const statusMessage = document.getElementById('statusMessage');
+    statusMessage.className = 'status-message status-info';
+    statusMessage.textContent = 'Note: Simulated users may require manual reCAPTCHA bypass for registration. Check server logs for details.';
+    statusMessage.style.display = 'block';
+    
+    setTimeout(() => {
+        statusMessage.style.display = 'none';
+    }, 10000);
+});
+</script>
+
+<%- include('footer') %>

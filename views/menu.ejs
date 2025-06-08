@@ -21,6 +21,9 @@
                 <li id="distraction_free"class="menu-option">Distraction Free Mode</li>
             <%}%>
             <li id="leaderboard_link"class="menu-option"><a href="/leaderboard" class="hard-link">Leaderboard</a></li>
+            <%if(user && user.admin){%>
+                <li id="simulation_link"class="menu-option"><a href="/simulation" class="hard-link">Simulation</a></li>
+            <%}%>
             <li id="nav_donate"class="menu-option"><a href="/donate" class="hard-link">Donate ($)</a></li>
             <% if(user != null){ %>
                 <li id="profile_link"class="menu-option"><a href="/profile" class="hard-link">Profile</a></li>

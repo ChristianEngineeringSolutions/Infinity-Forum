@@ -394,7 +394,7 @@
         res.locals.CESCONNECT = req.session.CESCONNECT;
         res.locals.fromOtro = req.query.fromOtro || false;
         //daemoncheck
-        if(['notifications', 'verify-identity', 'bank', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+        if(['simulation', 'simulated-passages', 'notifications', 'verify-identity', 'bank', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
             let daemons = [];
             if(req.session.user){
                 let user = await User.findOne({_id: req.session.user._id}).populate('daemons');
@@ -757,7 +757,7 @@
         var source = await Passage.findOne({_id:passage.sourceList.at(-1)});
         return source;
     }
-    async function addStarsToUser(user, amount){
+    async function addStarsToUser(user, amount, _session){
         if(user.borrowedStars > 0){
             user.borrowedStars -= amount;
             var remainder = user.borrowedStars;
@@ -770,261 +770,295 @@
         }else{
             user.stars += amount;
         }
-        await user.save();
+        await user.save({session: _session});
     }
-    async function starPassage(req, amount, passageID, userID, deplete=true, single=false){
+    async function starPassage(req, amount, passageID, userID, deplete=true, single=false, initialSession=null){
+        let _session = initialSession;
+        let shouldEndSession = false; // Flag to indicate if THIS call started the session
+        if (_session === null) { // Check if a session was not passed in
+            _session = await mongoose.startSession(); // Assign to the outer 'let' variable
+            shouldEndSession = true; // This instance of starPassage is responsible for ending the session
+        }
         try{
-            let user = await User.findOne({_id: userID});
-            if(isNaN(amount) || amount == 0){
-                return 'Please enter a number greater than 0.';
-            }
-            var starsTakenAway = 0;
-            if(deplete){
-                starsTakenAway = amount;
-                //infinite stars on a local sasame
-                //if single they can just incur a debt
-                if(((user.stars + user.borrowedStars + user.donationStars) < amount) && !single){
-                    return "Not enough stars.";
+            let passageResult = null;
+            
+            // Define the transaction logic as a separate function
+            const transactionLogic = async () => {
+                let user = await User.findOne({_id: userID}).session(_session);
+                if(isNaN(amount) || amount == 0){
+                    passageResult = 'Please enter a number greater than 0.';
+                    return;
                 }
-                var remainder = amount;
-                //spend borrowed stars first
-                if(user.borrowedStars > 0){
-                    user.borrowedStars -= amount;
-                    remainder = -1 * user.borrowedStars;
-                    if(user.borrowedStars < 0){
-                        user.borrowedStars = 0;
-                    }
-                }
-                starsTakenAway = remainder;
-                user.stars -= remainder;
-                console.log("REMAINDER:"+remainder);
-                if(user.donationStars > 0 && user.stars <= 0){
-                    user.donationStars -= (-1 * user.stars);
-                    //give back stars that weren't taken away from main stars
-                    starsTakenAway -= (-1 * user.stars);
-                    user.stars = 0;
-                }
-            }
-            let passage = await Passage.findOne({_id: passageID}).populate('author sourceList');
-            var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
-            //Give starring user stars for each logged stars at 1% rate
-            var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources');
-            var totalForStarrer = 0;
-            for(const loggedStar of loggedStars){
-                var starrer = loggedStar.user;
-                var sourceLog = [];
-                if(req.session.user._id.toString() != starrer._id.toString()){
-                    totalForStarrer = 0.01 * loggedStar.amount * amount;
-                    console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
-                }
-                // console.log("Logged sources: " + loggedStar.sources);
-                for(const source of loggedStar.sources){
-                    //if the author of the passage is not the one who did the starring
-                    // console.log(source.author._id.toString() != starrer._id.toString());
-                    //only give each starrer each source one time &&
-                    //a starrer will not get back stars from their own passages &&
-                    //you dont get stars back when starring a passage, only when others star it
-                    if(!sourceLog.includes(source) && 
-                        source.author._id.toString() != starrer._id.toString() && 
-                        req.session.user._id.toString() != starrer._id.toString()){
-                        console.log("working, " + starrer.name);
-                        //give the starrer 1% of each entry
-                        let subtotal = 0.01 * loggedStar.amount * amount;
-                        totalForStarrer += subtotal;
-                        console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
-                    }
-                    sourceLog.push(source);
-                }
-                // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
-                await addStarsToUser(starrer, totalForStarrer);
-            }
-            var lastSource = await getLastSource(passage);
-            var bonus = 0;
-            //calculate bonus
-            for(const source of passage.sourceList){
-                if(passage.author._id.toString() != source.author._id.toString()){
-                    var similarity = passageSimilarity(passage, source);
-                    bonus += similarity > 0.1 ? similarity : 0;
-                }
-            }
-            bonus = bonus * amount;
-            //log the amount starred
-            let loggedStarDebt = req.session.user._id.toString() == passage.author._id.toString() ? 0 : (amount + bonus);
-            await Star.create({
-                user: userID,
-                passage: passage._id,
-                passageAuthor: passage.author._id.toString(),
-                amount: amount,
-                sources: sources,
-                single: false,
-                debt: loggedStarDebt,
-                system: null //not relevant since we cant unstar these so just make it null
-            }); 
-            // if(lastSource != null){
-            //     bonus = passageSimilarity(passage, lastSource);
-            // }else{
-            //     bonus = 0;
-            // }
-            // if(lastSource && lastSource.author._id.toString() == req.session.user._id.toString()){
-            //     bonus = 0;
-            // }
-            //add stars to passage and sources
-            passage.stars += amount + bonus;
-            passage.verifiedStars += amount + bonus;
-            passage.lastCap = passage.verifiedStars;
-            //if bubbling star all sub passages (content is displayed in parent)
-            if(passage.bubbling && passage.passages && !passage.public){
-                for(const p of passage.passages){
-                    //also star sources for each sub passage
-                    passage.sourceList = [...passage.sourceList, ...p.sourceList];
-                    await starPassage(req, amount, p._id, userID, false);
-                }
-            }
-            await starMessages(passage._id, amount);
-            //each collaber inherits star debt from starrer (session user)
-            var starrerDebt = await Star.find({
-                passageAuthor: req.session.user._id.toString(),
-                single: false,
-                debt: {$gt:0}
-            });
-            //absorb amount of stars that goes to author and collaborators
-            //depending on "star debt"
-            //get stars given to the starrer by these collaborators
-            var allCollaborators = [passage.author, ...passage.collaborators];
-            var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
-            collaboratorsLoop:
-            for(const collaber of allCollaborators){
-                //only inherit debt, subtract debt, and create debt if we are actually starring the collaber
-                //you have to star someone elses passage to get stars
-                if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
-                    //get all debt owed by session user to specific collaber
-                    var stars  = await Star.find({
-                        //they got starred by collaber
-                        passageAuthor: req.session.user._id.toString(), //(owes the debt)
-                        user: collaber._id.toString(), //they starred session user
-                        single: false,
-                        debt: {$gt:0}
-                    });
-                    for(const star of stars){
-                        //filter out all old debt that was already added to this collaber in a previous starPassage()
-                        //before adding new debt
-                        starrerDebt = starrerDebt.filter(function(x){
-                            //this item comes from debt already added
-                            return x.trackToken != star.trackToken;
-                        });
-                        //reduce the amount we're giving collabers by the amount owed
-                        amountToGiveCollabers -= star.debt;
-                        star.debt -= (amount + bonus)/(passage.collaborators.length + 1);
-                        if(star.debt <= 0){
-                            star.debt = 0;
-                            await star.save();
-                            //they paid off this debt so continue to the next one
-                            continue;
-                        }else{
-                            //amountToGiveCollaborators should be <= 0
-                            await star.save();
-                            //they cant pay off their debt so stop
-                            //trying to pay it
-                            break collaboratorsLoop;
-                        }
-                    }
-                    //each collaber inherits star debt from starrer
-                    //this is so that the collaber has to pay off the debt before they can pay the debt.user
-                    for(const debt of starrerDebt){
-                        //create debt owed by collaber to starrer
-                        await Star.create({
-                            passageAuthor: collaber._id.toString(), //owes the debt
-                            user: debt.user._id.toString(), //to this user in the circle
-                            single: false,
-                            debt: debt.debt,
-                            system: null,
-                            passage: passage._id, //might not need this
-                            sources: sources, //might not need this
-                            trackToken: debt.trackToken
-                        });
-                    }
-                }
-                if(amountToGiveCollabers < 0){
-                    amountToGiveCollabers = 0;
-                }
-                user.starsGiven += starsTakenAway;
-                const SYSTEM = await System.findOne({});
+                var starsTakenAway = 0;
                 if(deplete){
-                    //only add to starsgiven count if they cant be associated with a user
-                    //thus deplete must be true because single stars don't add to starsGiven
-                    SYSTEM.totalStarsGiven += amount;
-                }
-                await SYSTEM.save();
-                // passage.author.stars += amountToGiveCollabers;
-                await addStarsToUser(passage.author, amountToGiveCollabers);
-                //give stars to collaborators if applicable
-                //split stars with collaborators
-                if(passage.collaborators.length > 0){
-                    for(const collaborator in passage.collaborators){
-                        if(collaborator._id.toString() == passage.author._id.toString()){
-                            //we already starred the author
-                            continue;
-                        }
-                        let collaber = await User.findOne({_id:collaborator._id.toString()});
-                        if(collaber != null){
-                            // collaber.stars += amountToGiveCollabers;
-                            await addStarsToUser(collaber, amountToGiveCollabers);
-                            // await collaber.save();
+                    starsTakenAway = amount;
+                    //infinite stars on a local sasame
+                    //if single they can just incur a debt
+                    if(((user.stars + user.borrowedStars + user.donationStars) < amount) && !single){
+                        return "Not enough stars.";
+                    }
+                    var remainder = amount;
+                    //spend borrowed stars first
+                    if(user.borrowedStars > 0){
+                        user.borrowedStars -= amount;
+                        remainder = -1 * user.borrowedStars;
+                        if(user.borrowedStars < 0){
+                            user.borrowedStars = 0;
                         }
                     }
+                    starsTakenAway = remainder;
+                    user.stars -= remainder;
+                    console.log("REMAINDER:"+remainder);
+                    if(user.donationStars > 0 && user.stars <= 0){
+                        user.donationStars -= (-1 * user.stars);
+                        //give back stars that weren't taken away from main stars
+                        starsTakenAway -= (-1 * user.stars);
+                        user.stars = 0;
+                    }
                 }
-                // await passage.author.save();
+                let passage = await Passage.findOne({_id: passageID}).populate('author sourceList').session(_session);
+                var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+                //Give starring user stars for each logged stars at 1% rate
+                var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources').session(_session);
+                var totalForStarrer = 0;
+                for(const loggedStar of loggedStars){
+                    var starrer = loggedStar.user;
+                    var sourceLog = [];
+                    if(req.session.user._id.toString() != starrer._id.toString()){
+                        totalForStarrer = 0.01 * loggedStar.amount * amount;
+                        console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
+                    }
+                    // console.log("Logged sources: " + loggedStar.sources);
+                    for(const source of loggedStar.sources){
+                        //if the author of the passage is not the one who did the starring
+                        // console.log(source.author._id.toString() != starrer._id.toString());
+                        //only give each starrer each source one time &&
+                        //a starrer will not get back stars from their own passages &&
+                        //you dont get stars back when starring a passage, only when others star it
+                        if(!sourceLog.includes(source) && 
+                            source.author._id.toString() != starrer._id.toString() && 
+                            req.session.user._id.toString() != starrer._id.toString()){
+                            console.log("working, " + starrer.name);
+                            //give the starrer 1% of each entry
+                            let subtotal = 0.01 * loggedStar.amount * amount;
+                            totalForStarrer += subtotal;
+                            console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                        }
+                        sourceLog.push(source);
+                    }
+                    // console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                    await addStarsToUser(starrer, totalForStarrer, _session);
+                }
+                var lastSource = await getLastSource(passage);
+                var bonus = 0;
+                //calculate bonus
+                for(const source of passage.sourceList){
+                    if(passage.author._id.toString() != source.author._id.toString()){
+                        var similarity = passageSimilarity(passage, source);
+                        bonus += similarity > 0.1 ? similarity : 0;
+                    }
+                }
+                bonus = bonus * amount;
+                //log the amount starred
+                let loggedStarDebt = req.session.user._id.toString() == passage.author._id.toString() ? 0 : (amount + bonus);
+                await Star.create([{
+                    user: userID,
+                    passage: passage._id,
+                    passageAuthor: passage.author._id.toString(),
+                    amount: amount,
+                    sources: sources,
+                    single: false,
+                    debt: loggedStarDebt,
+                    fromSingle: single,
+                    system: null //not relevant since we cant unstar these so just make it null
+                }], {session: _session}); 
+                // if(lastSource != null){
+                //     bonus = passageSimilarity(passage, lastSource);
+                // }else{
+                //     bonus = 0;
+                // }
+                // if(lastSource && lastSource.author._id.toString() == req.session.user._id.toString()){
+                //     bonus = 0;
+                // }
+                //add stars to passage and sources
+                passage.stars += amount + bonus;
+                passage.verifiedStars += amount + bonus;
+                passage.lastCap = passage.verifiedStars;
+                //if bubbling star all sub passages (content is displayed in parent)
+                if(passage.bubbling && passage.passages && !passage.public){
+                    for(const p of passage.passages){
+                        //also star sources for each sub passage
+                        passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                        await starPassage(req, amount, p._id, userID, false, single, _session);
+                    }
+                }
+                await starMessages(passage._id, amount);
+                //each collaber inherits star debt from starrer (session user)
+                var starrerDebt = await Star.find({
+                    passageAuthor: req.session.user._id.toString(),
+                    single: false,
+                    debt: {$gt:0}
+                });
+                //absorb amount of stars that goes to author and collaborators
+                //depending on "star debt"
+                //get stars given to the starrer by these collaborators
+                var allCollaborators = [passage.author, ...passage.collaborators];
+                var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
+                collaboratorsLoop:
+                for(const collaber of allCollaborators){
+                    //only inherit debt, subtract debt, and create debt if we are actually starring the collaber
+                    //you have to star someone elses passage to get stars
+                    if(passage.author._id.toString() != req.session.user._id.toString() && !passage.collaborators.includes(req.session.user._id.toString())){
+                        //get all debt owed by session user to specific collaber
+                        var stars  = await Star.find({
+                            //they got starred by collaber
+                            passageAuthor: req.session.user._id.toString(), //(owes the debt)
+                            user: collaber._id.toString(), //they starred session user
+                            single: false,
+                            debt: {$gt:0}
+                        }).session(_session);
+                        for(const star of stars){
+                            //filter out all old debt that was already added to this collaber in a previous starPassage()
+                            //before adding new debt
+                            starrerDebt = starrerDebt.filter(function(x){
+                                //this item comes from debt already added
+                                return x.trackToken != star.trackToken;
+                            });
+                            //reduce the amount we're giving collabers by the amount owed
+                            amountToGiveCollabers -= star.debt;
+                            star.debt -= (amount + bonus)/(passage.collaborators.length + 1);
+                            if(star.debt <= 0){
+                                star.debt = 0;
+                                await star.save({_session});
+                                //they paid off this debt so continue to the next one
+                                continue;
+                            }else{
+                                //amountToGiveCollaborators should be <= 0
+                                await star.save({_session});
+                                //they cant pay off their debt so stop
+                                //trying to pay it
+                                break collaboratorsLoop;
+                            }
+                        }
+                        //each collaber inherits star debt from starrer
+                        //this is so that the collaber has to pay off the debt before they can pay the debt.user
+                        for(const debt of starrerDebt){
+                            //create debt owed by collaber to starrer
+                            await Star.create([{
+                                passageAuthor: collaber._id.toString(), //owes the debt
+                                user: debt.user._id.toString(), //to this user in the circle
+                                single: false,
+                                debt: debt.debt,
+                                system: null,
+                                passage: passage._id, //might not need this
+                                sources: sources, //might not need this
+                                trackToken: debt.trackToken
+                            }], {session: _session});
+                        }
+                    }
+                    if(amountToGiveCollabers < 0){
+                        amountToGiveCollabers = 0;
+                    }
+                    user.starsGiven += starsTakenAway;
+                    const SYSTEM = await System.findOne({}).session(_session);
+                    if (!SYSTEM) {
+                        throw new Error('System document not found.');
+                    }
+                    if(deplete){
+                        //only add to starsgiven count if they cant be associated with a user
+                        //thus deplete must be true because single stars don't add to starsGiven
+                        SYSTEM.totalStarsGiven += amount;
+                        await SYSTEM.save({_session});
+                    }
+                    // passage.author.stars += amountToGiveCollabers;
+                    await addStarsToUser(passage.author, amountToGiveCollabers, _session);
+                    //give stars to collaborators if applicable
+                    //split stars with collaborators
+                    if(passage.collaborators.length > 0){
+                        for(const collaborator in passage.collaborators){
+                            if(collaborator._id.toString() == passage.author._id.toString()){
+                                //we already starred the author
+                                continue;
+                            }
+                            let collaber = await User.findOne({_id:collaborator._id.toString()}).session(_session);
+                            if(collaber != null){
+                                // collaber.stars += amountToGiveCollabers;
+                                await addStarsToUser(collaber, amountToGiveCollabers, _session);
+                                // await collaber.save();
+                            }
+                        }
+                    }
+                    // await passage.author.save();
+                }
+                await user.save({_session});
+                await passage.save({_session});
+                //star each source
+                var i = 0;
+                var authors = [];
+                //add sources for best,bestof,and mirror
+                if(passage.showBestOf){
+                    var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('parent author users sourceList collaborators versions subforums');;
+                    if(best != null){
+                        passage.sourceList.push(best);
+                    }
+                }
+                else{
+                    try{
+                        var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
+                        if(mirror != null)
+                        passage.sourceList.push(mirror);
+                    }
+                    catch(e){
+                    }
+                    try{
+                        var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
+                        if(bestOf != null)
+                            passage.sourceList.push(bestOf);
+                    }
+                    catch(e){
+                    }
+                }
+                //recursively star sources
+                await starSources(passage, passage, [], [], amount, req, _session);
+                passageResult = await fillUsedInListSingle(passage); 
+            };
+            
+            // Execute transaction logic - use withTransaction only if we created the session
+            if (shouldEndSession) {
+                // We created the session, so we need to manage the transaction
+                await _session.withTransaction(transactionLogic);
+            } else {
+                // Session was passed in, so we're already in a transaction
+                await transactionLogic();
             }
-            await user.save();
-            await passage.save();
-            //star each source
-            var i = 0;
-            var authors = [];
-            //add sources for best,bestof,and mirror
-            if(passage.showBestOf){
-                var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('parent author users sourceList collaborators versions subforums');;
-                if(best != null){
-                    passage.sourceList.push(best);
-                }
-            }
-            else{
-                try{
-                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
-                    if(mirror != null)
-                    passage.sourceList.push(mirror);
-                }
-                catch(e){
-                }
-                try{
-                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
-                    if(bestOf != null)
-                        passage.sourceList.push(bestOf);
-                }
-                catch(e){
-                }
-            }
-            //recursively star sources
-            await starSources(passage, passage, [], [], amount, req);
-            return await fillUsedInListSingle(passage);
+            
+            console.log("starPassage transaction result:", passageResult);
+            return passageResult;
         }
         catch(err){
-            console.log(err);
+            console.log("starPassage error:", err);
             console.log("err passageID"+passageID);
+            console.error('Transaction failed after retries or due to a non-transient error:', err);
+            return null; // Return null instead of undefined on error
+        }
+        finally {
+            if (shouldEndSession) { // Only end the session if *this* function call initiated it
+                _session.endSession();
+            }
         }
     }
-    async function starSources(passage, top, authors=[], starredPassages=[], amount, req){
+    async function starSources(passage, top, authors=[], starredPassages=[], amount, req, _session){
         var i = 0;
         var bonus;
-        console.log("length:"+passage.sourceList.length);
         for(const source of passage.sourceList){
-            var sourcePop = await Passage.findOne({_id:source._id}).populate('author users sourceList');
+            var sourcePop = await Passage.findOne({_id:source._id}).populate('author users sourceList').session(_session);
             //dont restar top passage
             if(sourcePop._id.toString() !== top._id.toString()){
                 //don't star same passage twice
                 if(!starredPassages.includes(sourcePop._id.toString())){
                     await starMessages(sourcePop._id, amount);
                     // console.log(passage.sourceList);
-                    let sourceAuthor = await User.findOne({_id: sourcePop.author._id});
+                    let sourceAuthor = await User.findOne({_id: sourcePop.author._id}).session(_session);
                     //you won't get extra stars for citing your own work
                     //also give author stars once per author
                     if(sourceAuthor._id.toString() != req.session.user._id.toString() 
@@ -1035,25 +1069,25 @@
                         sourcePop.stars += amount + bonus;
                         //dont give author stars if starrer is a collaborator
                         if(!sourcePop.collaborators.includes(req.session.user._id.toString())){
-                            if(!authors.includes(sourceAuthor._id)){
-                                await addStarsToUser(sourceAuthor, (amount + bonus/(sourcePop.collaborators.length + 1)));
+                            if(!authors.includes(sourceAuthor._id.toString())){
+                                await addStarsToUser(sourceAuthor, (amount + bonus/(sourcePop.collaborators.length + 1)), _session);
                             }
                         }
-                        authors.push(sourceAuthor._id);
-                        await sourcePop.save();
+                        authors.push(sourceAuthor._id.toString());
+                        await sourcePop.save({_session});
                         //dont give collaborators stars if starrer is a collaborator
                         if(!sourcePop.collaborators.includes(req.session.user._id.toString())){
                             //give stars to collaborators if applicable
                             //split stars with collaborators
                             if(sourcePop.collaborators.length > 0){
                                 for(const collaborator in sourcePop.collaborators){
-                                    if(collaborator == passage.author.email){
+                                    if(collaborator._id.toString() == passage.author._id.toString()){
                                         //we already starred the author
                                         continue;
                                     }
-                                    let collaber = await User.findOne({email:collaborator});
+                                    let collaber = await User.findOne({_id:collaborator._id.toString()}).session(_session);
                                     if(collaber != null){
-                                        await addStarsToUser(collaber, ((amount + bonus)/(sourcePop.collaborators.length + 1)));
+                                        await addStarsToUser(collaber, ((amount + bonus)/(sourcePop.collaborators.length + 1)), _session);
                                     }
                                 }
                             }   
@@ -1062,7 +1096,7 @@
                     starredPassages.push(sourcePop._id.toString());
                 }
                 if(sourcePop._id.toString() !== top._id.toString()){
-                    await starSources(sourcePop, passage, authors, starredPassages, amount, req);
+                    await starSources(sourcePop, passage, authors, starredPassages, amount, req, _session);
                 }else{
                     console.log("circular");
                 }
@@ -1156,16 +1190,16 @@
     });
     //get highest rank passage with title
     async function bestOf(title){
-        return await Passage.find({title:title, personal: false}).sort('-stars').limit(1)[0];
+        return await Passage.find({title:title, personal: false, simulated: false}).sort('-stars').limit(1)[0];
     }
     //get best passage in best module for passage
     //hard to tell the difference from the above function
     //still thinking about it...
     //but this is better (more useful), I think...
     async function bestOfPassage(title){
-        var parent = await Passage.find({title:title, public: true, personal: false}).sort('-stars').limit(1)[0];
+        var parent = await Passage.find({title:title, public: true, personal: false, simulated: false}).sort('-stars').limit(1)[0];
         if(parent != null){
-            var sub = await Passage.find({parent: parent._id, personal: false}).sort('-stars').limit(1);
+            var sub = await Passage.find({parent: parent._id, personal: false, simulated: false}).sort('-stars').limit(1);
             return sub;
         }
         return 'No public passage "' + title + '"';
@@ -1922,6 +1956,7 @@ async function getPassageLocation(passage, train){
             let passages = await Passage.find({
                 deleted: false,
                 personal: false,
+                simulated: false,
             }).populate('author users sourceList collaborators versions').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
             for(var i = 0; i < passages.length; ++i){
                 passages[i] = await getPassage(passages[i]);
@@ -2847,6 +2882,7 @@ async function getPassageLocation(passage, train){
             parent: parent,
             deleted: false,
             personal: false,
+            simulated: false,
             mimeType: 'image',
             title: {
             $regex: search,
@@ -2986,6 +3022,7 @@ async function getPassageLocation(passage, train){
             deleted: false,
             versionOf: null,
             personal: req.body.personal === 'true', // Convert string to boolean
+            simulated: false,
             title: {$regex:search,$options:'i'},
         };
 
@@ -5356,6 +5393,205 @@ async function getPassageLocation(passage, train){
             });
         }
     });
+
+    // Simulation Management Routes (Admin Only)
+    app.get('/simulation', requiresAdmin, async (req, res) => {
+        try {
+            const ISMOBILE = browser(req.headers['user-agent']).mobile;
+            res.render('simulation', {
+                ISMOBILE: ISMOBILE,
+                user: req.session.user,
+                page: 'simulation',
+                passageTitle: 'Simulation Management'
+            });
+        } catch (error) {
+            console.error('Error loading simulation page:', error);
+            res.status(500).send('Error loading simulation page');
+        }
+    });
+
+    app.post('/generate-simulation', requiresAdmin, async (req, res) => {
+        try {
+            const { numUsers, numPassages, contentType, includeImages, includeSubContent } = req.body;
+            const domain = process.env.DOMAIN || 'http://localhost:3000';
+            
+            // Import the fake data generator
+            const fakeGenerator = require('./dist/js/fake.js');
+            
+            // Validate input
+            if (!numUsers || !numPassages || numUsers < 1 || numPassages < 1) {
+                return res.status(400).json({ error: 'Invalid parameters' });
+            }
+            
+            if (numUsers > 50 || numPassages > 100) {
+                return res.status(400).json({ error: 'Too many users or passages requested' });
+            }
+            
+            console.log(`Admin ${req.session.user.username} requested simulation generation:`);
+            console.log(`Users: ${numUsers}, Passages: ${numPassages}, Content: ${contentType}`);
+            
+            // Generate the fake data
+            const result = await fakeGenerator.generateFakeData(
+                domain,
+                parseInt(numUsers),
+                parseInt(numPassages),
+                contentType === 'ai', // useAIContent
+                includeImages === true  // includeImages
+            );
+            
+            res.json({
+                success: true,
+                usersCreated: numUsers,
+                passagesCreated: numPassages,
+                message: 'Simulation data generated successfully'
+            });
+            
+        } catch (error) {
+            console.error('Error generating simulation data:', error);
+            res.status(500).json({ 
+                error: 'Failed to generate simulation data',
+                details: error.message 
+            });
+        }
+    });
+
+    // Simulated Passages View Route (Admin Only)
+    app.get('/simulated-passages', requiresAdmin, async (req, res) => {
+        try {
+            const ISMOBILE = browser(req.headers['user-agent']).mobile;
+            res.render('simulated-passages', {
+                ISMOBILE: ISMOBILE,
+                user: req.session.user,
+                page: 'simulated-passages',
+                passageTitle: 'Simulated Passages'
+            });
+        } catch (error) {
+            console.error('Error loading simulated passages page:', error);
+            res.status(500).send('Error loading simulated passages page');
+        }
+    });
+
+    // API endpoint for simulated passages with scoring
+    app.post('/api/simulated-passages', requiresAdmin, async (req, res) => {
+        try {
+            const { page = 1, sortBy = 'score', label = '', limit = 10 } = req.body;
+            const skip = (page - 1) * limit;
+
+            // Base query for simulated passages
+            let query = {
+                simulated: true,
+                deleted: false,
+                versionOf: null
+            };
+
+            // Add label filter if specified
+            if (label && label !== '') {
+                query.label = label;
+            }
+
+            // Get passages for scoring
+            const passages = await Passage.find(query)
+                .populate('author users sourceList')
+                .limit(1000); // Get more for scoring, then paginate
+
+            if (passages.length === 0) {
+                return res.json({ passages: [], hasMore: false });
+            }
+
+            // Apply scoring algorithm (same as generateGuestFeed)
+            const scoredPassages = await scoreSimulatedPassages(passages);
+
+            // Sort based on sortBy parameter
+            let sortedPassages;
+            switch (sortBy) {
+                case 'stars':
+                    sortedPassages = scoredPassages.sort((a, b) => b.stars - a.stars);
+                    break;
+                case 'recent':
+                    sortedPassages = scoredPassages.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    break;
+                case 'comments':
+                    sortedPassages = scoredPassages.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+                    break;
+                case 'score':
+                default:
+                    sortedPassages = scoredPassages.sort((a, b) => b.score - a.score);
+                    break;
+            }
+
+            // Paginate results
+            const paginatedPassages = sortedPassages.slice(skip, skip + limit);
+            const hasMore = skip + limit < sortedPassages.length;
+
+            // Process passages for display
+            const processedPassages = [];
+            for (const passage of paginatedPassages) {
+                const processedPassage = await getPassage(passage);
+                processedPassages.push(processedPassage);
+            }
+
+            res.json({
+                passages: processedPassages,
+                hasMore: hasMore,
+                total: sortedPassages.length
+            });
+
+        } catch (error) {
+            console.error('Error fetching simulated passages:', error);
+            res.status(500).json({ error: 'Failed to fetch simulated passages' });
+        }
+    });
+
+    // Scoring function for simulated passages (based on generateGuestFeed algorithm)
+    async function scoreSimulatedPassages(passages) {
+        const authorAppearances = {};
+        const scoredPassages = [];
+
+        for (const passage of passages) {
+            // Calculate recency score
+            const now = new Date();
+            const passageDate = new Date(passage.date);
+            const daysSinceCreation = (now - passageDate) / (1000 * 60 * 60 * 24);
+            const recencyScore = Math.max(0, Math.exp(-daysSinceCreation / 30)); // Decay over 30 days
+
+            // Calculate other scores
+            const starScore = Math.log10(passage.stars + 1) * 2;
+            const commentScore = Math.log10((passage.comments?.length || 0) + 1) * 1.5;
+
+            // Calculate usage score (how many times this passage is referenced)
+            const usedByAuthors = await Passage.find({
+                sourceList: { $in: [passage._id] },
+                versionOf: null,
+                author: { $ne: passage.author._id },
+                simulated: false // Don't count simulated references
+            }).distinct('author');
+            const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
+
+            // Author diversity penalty
+            const authorId = passage.author._id.toString();
+            authorAppearances[authorId] = (authorAppearances[authorId] || 0) + 1;
+            const authorDiversityFactor = 1 / (1 + authorAppearances[authorId] * 0.2);
+
+            // Add randomness
+            const randomnessFactor = 0.7 + (Math.random() * 0.6);
+
+            // Calculate final score (same weights as generateGuestFeed)
+            const score = (
+                (recencyScore * 0.3) +
+                (starScore * 0.3) +
+                (usedByScore * 0.2) +
+                (commentScore * 0.2)
+            ) * authorDiversityFactor * randomnessFactor;
+
+            scoredPassages.push({
+                ...passage.toObject(),
+                score: score
+            });
+        }
+
+        return scoredPassages;
+    }
+
     async function addSource(req, passage, source, reason){
         if(req.session.user.admin || req.session.user.moderator){
             var suggestion = false;
@@ -5400,7 +5636,7 @@ async function getPassageLocation(passage, train){
                 var user = await User.findOne({_id:source.moderators[index]._id.toString()});
                 if(vote === source.votes.at(-1)){
                     user.modPoints += 1;
-                    user.stars += 1;
+                    user.stars += 10;
                 }else if(vote === -1 * source.votes.at(-1)){
                     user.modPoints -= 2;
                 }
@@ -5415,8 +5651,8 @@ async function getPassageLocation(passage, train){
     }
     async function getContributors(passage){
         var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
-        var contributors = sources.map(source => source.author);
-        return contributors;
+        var contributors = sources.map(source => [source.author, ...source.contributors]);
+        return contributors.flat();
     }
     async function userExists(email){
         var member = await User.findOne({email: email});
@@ -5577,6 +5813,13 @@ async function getPassageLocation(passage, train){
                     personal: false,
                     versionOf: null,
                     title: new RegExp(search, "i"),
+                };
+                
+                // Add simulated filter based on request parameter
+                if (req.body.simulated === 'true') {
+                    find.simulated = true;
+                } else {
+                    find.simulated = false;
                 };
                 console.log("WHICH PAGE:"+whichPage);
                 console.log(profile);
@@ -5819,7 +6062,7 @@ async function getPassageLocation(passage, train){
     app.get('/passage_form/', (req, res) => {
         res.render('passage_form');
     });
-    async function createPassage(user, parentPassageId, subforums=false, comments=false){
+    async function createPassage(user, parentPassageId, subforums=false, comments=false, customDate=null, simulated=false){
         let users = null;
         let parentId = null;
         var isRoot = parentPassageId == 'root';
@@ -5879,8 +6122,10 @@ async function getPassageLocation(passage, train){
             lang: lang,
             fileStreamPath: fileStreamPath,
             personal: personal,
-            lastUpdated: Date.now(),
-            publicReply: publicReply
+            lastUpdated: customDate && simulated ? customDate : Date.now(),
+            date: customDate && simulated ? customDate : Date.now(),
+            publicReply: publicReply,
+            simulated: simulated || false
         });
         if(subforums == 'true'){
             passage.forumType = 'subforum';
@@ -5937,7 +6182,9 @@ async function getPassageLocation(passage, train){
             chief = 'root';
         }
         //create passage
-        var newPassage = await createPassage(user, chief.toString(), req.body.subforums, req.body.comments);
+        var customDate = req.body.simulated === 'true' && req.body.date ? new Date(req.body.date) : null;
+        var isSimulated = req.body.simulated === 'true';
+        var newPassage = await createPassage(user, chief.toString(), req.body.subforums, req.body.comments, customDate, isSimulated);
         if(newPassage == 'Not allowed.' || newPassage == 'Must be on userlist.'){
             return res.send(newPassage);
         }
@@ -6187,7 +6434,7 @@ async function getPassageLocation(passage, train){
         return res.send("Complete.");
     });
     app.post('/star_passage/', async (req, res) => {
-        console.log('star_passage');
+        console.log('star_passage3');
         // return res.send('Not enough stars.');
         var passage_id = req.body.passage_id;
         var user = req.session.user;
@@ -6195,7 +6442,7 @@ async function getPassageLocation(passage, train){
         //get user from db
         let sessionUser = await User.findOne({_id: user._id});
         var subPassage = req.body.parent == 'root' ? false : true;
-        if(req.session && user){
+        if(req.session.user && user){
             if((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount && process.env.REMOTE == 'true'){
                 console.log("Before star passage");
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, true);
@@ -6209,6 +6456,7 @@ async function getPassageLocation(passage, train){
                 return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
             }
             else if(process.env.REMOTE == 'false'){
+                console.log("TESTING");
                 let passage = await starPassage(req, amount, req.body.passage_id, sessionUser._id, true);
                 await sessionUser.save();
                 if(typeof passage === 'object' && passage !== null){
@@ -6225,137 +6473,185 @@ async function getPassageLocation(passage, train){
             }
         }
     });
-    async function singleStarSources(user, sources, passage, reverse=false){
+    async function singleStarSources(user, sources, passage, reverse=false, justRecord=false, _session){
         for(const source of sources){
             // Skip if this source is the same as the main passage to avoid version conflicts
             if(source._id.toString() === passage._id.toString()){
                 continue;
             }
             //check if starred already
-            var recordSingle = await Star.findOne({user: user._id, passage:source, single:true, system:false});
-            var recordSingleSystem = await Star.findOne({user: user._id, passage:source, single:true, system:true});
+            var recordSingle = await Star.findOne({user: user, passage:source, single:true, system:false}).session(_session);
+            var recordSingleSystem = await Star.findOne({user: user, passage:source, single:true, system:true}).session(_session);
             //unstar if no previous record of being directly starred
             if(reverse && recordSingle == null){
-                await Star.deleteOne({user: user, passage: source._id, single: true});
+                await Star.deleteOne({user: user, passage: source._id, single: true}).session(_session);
                 source.stars -= 1;
                 source.starrers = source.starrers.filter(u => {
                     return u != user;
                 });
-                await source.save();
+                await source.save({session: _session});
             }
             //star if hasnt been starred already
             else if(recordSingleSystem == null && recordSingle == null){
-                source.stars += 1;
+                if(!justRecord){
+                    source.stars += 1;
+                }
                 source.starrers.push(user);
                 var sources = await getRecursiveSourceList(source.sourceList, [], source);
-                var star = await Star.create({
+                var star = await Star.create([{
                     user: user,
                     passage: source,
                     amount: 1,
                     sources: sources,
                     single: true,
                     system: true
-                });
-                await source.save();
+                }], {session: _session});
+                await source.save({session: _session});
             }
         }
     }
-    async function singleStarPassage(req, passage, reverse=false, isSub=false){
-        var user = req.session.user._id.toString();
-        var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
-        //check if starred already
-        var recordSingle = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:false});
-        var recordSingleSystem = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:true});
-        if(!reverse){
-            //star mirror best and bestof and repost
-            //and add to sources
-            if(passage.showBestOf){
-                var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
-                if(best != null){
-                    sources.push(best);
-                }
-            }
-            else{
-                try{
-                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums');
-                    if(mirror != null)
-                    sources.push(mirror);
-                }
-                catch(e){
-                }
-                try{
-                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums');
-                    if(bestOf != null)
-                        sources.push(bestOf);
-                }
-                catch(e){
-                }
-            }
-            //star if hasn't been starred already
-            if((recordSingleSystem == null && recordSingle == null) || !isSub){
-                var system = isSub ? true : false;
-                //star each source recursively
-                var star = await Star.create({
-                    user: req.session.user._id,
-                    passage: passage._id,
-                    amount: 1,
-                    sources: sources,
-                    single: true,
-                    system: system
-                });
-                await singleStarSources(user, sources, passage);
-                console.log(passage.starrers);
-                //if user is verified and numVerifiedStars > lastCap give the passage a user star
-                if(req.session.user.identityVerified && (passage.verifiedStars + 1) > passage.lastCap){
-                    passage = await starPassage(req, 1, passage._id, req.session.user._id.toString(), true, true);
+    async function singleStarPassage(req, passage, reverse=false, isSub=false, initialSession=null){
+        let _session = initialSession;
+        let shouldEndSession = false;
+        if (_session === null) {
+            _session = await mongoose.startSession();
+            shouldEndSession = true;
+        }
+        
+        try {
+            let passageResult = null;
+            
+            // Define the transaction logic as a separate function
+            const transactionLogic = async () => {
+                var user = req.session.user._id.toString();
+                var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+                //check if starred already
+                var recordSingle = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:false}).session(_session);
+                var recordSingleSystem = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:true}).session(_session);
+                if(!reverse){
+                    //star mirror best and bestof and repost
+                    //and add to sources
+                    if(passage.showBestOf){
+                        var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).session(_session);
+                        if(best != null){
+                            sources.push(best);
+                        }
+                    }
+                    else{
+                        try{
+                            var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums').session(_session);
+                            if(mirror != null)
+                            sources.push(mirror);
+                        }
+                        catch(e){
+                        }
+                        try{
+                            var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums').session(_session);
+                            if(bestOf != null)
+                                sources.push(bestOf);
+                        }
+                        catch(e){
+                        }
+                    }
+                    //star if hasn't been starred already
+                    if((recordSingleSystem == null && recordSingle == null) || !isSub){
+                        var system = isSub ? true : false;
+                        //check if starred before by starPassage
+                        var starredBefore = await Star.findOne({user: req.session.user._id.toString(), passage: passage._id, fromSingle: true}).session(_session);
+                        //star each source recursively
+                        //if user is verified and numVerifiedStars > lastCap give the passage a user star
+                        if(req.session.user.identityVerified && !starredBefore/*(passage.verifiedStars + 1) > passage.lastCap*/){
+                            // Call starPassage without starting a new transaction since we're already in one
+                            let starResult = await starPassage(req, 1, passage._id, req.session.user._id.toString(), true, true, _session);
+                            if(starResult && typeof starResult === 'object'){
+                                passage = starResult;
+                            }
+                            //in the future maybe make sure we hard star new sources (TODO)
+                            await singleStarSources(user, sources, passage, false, true, _session);
+                        }
+                        else{
+                            //just add a star to passage but not collabers
+                            passage.stars += 1;
+                            await singleStarSources(user, sources, passage, false, false, _session);
+                        }
+                        // Check if passage is valid before accessing starrers
+                        if(passage && passage.starrers){
+                            passage.starrers.push(user);
+                        } else {
+                            console.error("Passage or passage.starrers is null/undefined:", passage);
+                            throw new Error("Invalid passage object");
+                        }
+                        console.log(passage.starrers);
+                        var star = await Star.create([{
+                            user: req.session.user._id,
+                            passage: passage._id,
+                            amount: 1,
+                            sources: sources,
+                            single: true,
+                            system: system
+                        }], {session: _session});
+                    }
+                    //if bubbling star all sub passages (content is displayed in parent)
+                    if(passage.bubbling && passage.passages && !passage.public){
+                        for(const p of passage.passages){
+                            //also star sources for each sub passage
+                            passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                            await singleStarPassage(req, p, false, true, _session);
+                        }
+                    }
                 }
                 else{
-                    //just add a star to passage but not collabers
-                    passage.stars += 1;
-                }
-                passage.starrers.push(user);
-                console.log(passage.starrers);
-            }
-            //if bubbling star all sub passages (content is displayed in parent)
-            if(passage.bubbling && passage.passages && !passage.public){
-                for(const p of passage.passages){
-                    //also star sources for each sub passage
-                    passage.sourceList = [...passage.sourceList, ...p.sourceList];
-                    await singleStarPassage(req, p, false, true);
-                }
-            }
-        }
-        else{
-            if(passage.starrers.includes(user)){
-                // recordSingle = await Star.findOne({user: user._id, passage:passage, single:true, system:false});
-                //unstar if no previous record of being directly starred or isnt a sub passage
-                if((recordSingle == null && recordSingleSystem != null) || !isSub){
-                    var record = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:false});
-                    await singleStarSources(user, sources, passage, true);
-                    passage.stars -= 1;
-                    if(req.session.user.identityVerified){
-                        passage.verifiedStars -= 1;
-                    }
-                    passage.starrers = passage.starrers.filter(u => {
-                        return u != user;
-                    });
-                    await Star.deleteOne({user: user, passage: passage._id, single: true});
-                }
+                    if(passage.starrers.includes(user)){
+                        // recordSingle = await Star.findOne({user: user._id, passage:passage, single:true, system:false});
+                        //unstar if no previous record of being directly starred or isnt a sub passage
+                        if((recordSingle == null && recordSingleSystem != null) || !isSub){
+                            var record = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:false}).session(_session);
+                            await singleStarSources(user, sources, passage, true, false, _session);
+                            passage.stars -= 1;
+                            if(req.session.user.identityVerified){
+                                passage.verifiedStars -= 1;
+                            }
+                            passage.starrers = passage.starrers.filter(u => {
+                                return u != user;
+                            });
+                            await Star.deleteOne({user: user, passage: passage._id, single: true}).session(_session);
+                        }
 
-                //if bubbling unstar all sub passages (content is displayed in parent)
-                if(passage.bubbling && passage.passages && !passage.public){
-                    for(const p of passage.passages){
-                        //also star sources for each sub passage
-                        passage.sourceList = [...passage.sourceList, ...p.sourceList];
-                        await singleStarPassage(req, p, true, true);
+                        //if bubbling unstar all sub passages (content is displayed in parent)
+                        if(passage.bubbling && passage.passages && !passage.public){
+                            for(const p of passage.passages){
+                                //also star sources for each sub passage
+                                passage.sourceList = [...passage.sourceList, ...p.sourceList];
+                                await singleStarPassage(req, p, true, true, _session);
+                            }
+                        }
                     }
                 }
+                passage.markModified("starrers");
+                await passage.save({session: _session});
+                passage = await getPassage(passage);
+                passageResult = passage;
+            };
+            
+            // Execute transaction logic - use withTransaction only if we created the session
+            if (shouldEndSession) {
+                // We created the session, so we need to manage the transaction
+                await _session.withTransaction(transactionLogic);
+            } else {
+                // Session was passed in, so we're already in a transaction
+                await transactionLogic();
+            }
+            
+            console.log("singleStarPassage transaction result:", passageResult);
+            return passageResult;
+        } catch (err) {
+            console.error('Transaction failed in singleStarPassage:', err);
+            return null; // Return null instead of throwing error for consistency
+        } finally {
+            if (shouldEndSession) {
+                _session.endSession();
             }
         }
-        passage.markModified("starrers");
-        await passage.save();
-        passage = await getPassage(passage);
-        return passage;
     }
     app.post('/single_star/', async (req, res) => {
         var user = req.session.user._id.toString();
@@ -6364,14 +6660,15 @@ async function getPassageLocation(passage, train){
             console.log(p.starrers.includes(user));
             //whether we are giving a star or taking it away
             if(req.body.on == 'false' && !p.starrers.includes(user)){
-                var passage = await singleStarPassage(req, p);
+                var passage = await singleStarPassage(req, p, false, false, null);
             }
             else if(req.body.on == 'true'){
-                var passage = await singleStarPassage(req, p, true);
+                var passage = await singleStarPassage(req, p, true, false, null);
             }
             else{
                 console.log("WHAT");
             }
+            console.log(passage);
             return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
         }
         else{

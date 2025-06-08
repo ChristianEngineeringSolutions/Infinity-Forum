@@ -1,0 +1,357 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<style>
+.simulated-header {
+    background: rgba(0,0,0,0.8);
+    border: 1px solid #444;
+    padding: 15px;
+    margin: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.simulated-badge {
+    background: #007bff;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-controls select, .filter-controls input {
+    padding: 8px;
+    border: 1px solid #666;
+    background: #333;
+    color: #fff;
+    border-radius: 4px;
+}
+
+.filter-controls label {
+    color: #fff;
+    font-weight: bold;
+}
+
+.score-info {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid #ffc107;
+    padding: 10px;
+    margin: 20px;
+    border-radius: 4px;
+    color: #ffc107;
+    font-size: 14px;
+}
+
+.passage-score {
+    float: right;
+    background: #17a2b8;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-left: 10px;
+}
+
+.no-results {
+    text-align: center;
+    color: #ccc;
+    padding: 40px;
+    font-style: italic;
+}
+
+.load-more-btn {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.load-more-btn:hover {
+    background: #218838;
+}
+
+.load-more-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+.simulated-passage {
+    background: rgba(0,0,0,0.8);
+    border: 1px solid #444;
+    padding: 15px;
+    margin: 10px 20px;
+    border-radius: 8px;
+}
+
+.passage-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.author-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    background-size: cover;
+    background-position: center;
+    background-color: #666;
+}
+
+.passage-meta {
+    color: #ccc;
+    font-size: 14px;
+}
+
+.passage-title {
+    color: #fff;
+    margin: 10px 0;
+}
+
+.passage-title a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.passage-title a:hover {
+    text-decoration: underline;
+}
+
+.passage-content {
+    color: #ddd;
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.passage-image {
+    max-width: 100%;
+    height: auto;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+</style>
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'simulated-passages'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%if(!ISMOBILE){%>
+<%- include('member_box') %>
+<%}%>
+
+<input type="hidden" value="false" id="is_profile"/>
+<div id="page_title_container">
+    <div id="page_title">Simulated Passages <span class="simulated-badge">DEMO CONTENT</span></div>
+    
+    <div class="simulated-header">
+        <h3 style="color: #fff; margin-top: 0;">Simulated Content Feed</h3>
+        <p style="color: #ccc; margin-bottom: 0;">
+            This feed shows AI-generated passages and users created for testing and demonstration. 
+            Content is ranked using the same scoring algorithm as the main feed.
+        </p>
+    </div>
+
+    <div class="filter-controls">
+        <label for="sortBy">Sort by:</label>
+        <select id="sortBy" onchange="updateFeed()">
+            <option value="score">Relevance Score</option>
+            <option value="stars">Most Stars</option>
+            <option value="recent">Most Recent</option>
+            <option value="comments">Most Comments</option>
+        </select>
+
+        <label for="labelFilter">Label:</label>
+        <select id="labelFilter" onchange="updateFeed()">
+            <option value="">All Labels</option>
+            <option value="Project">Project</option>
+            <option value="Challenge">Challenge</option>
+        </select>
+
+        <label for="showScores">
+            <input type="checkbox" id="showScores" onchange="toggleScores()" checked> Show Scores
+        </label>
+    </div>
+
+    <div class="score-info" id="scoreInfo">
+        <strong>Scoring Algorithm:</strong> Passages are ranked by relevance score (30% recency + 30% stars + 20% usage + 20% comments) 
+        × author diversity factor × randomness (0.7-1.3). Same algorithm used in the main guest feed.
+    </div>
+
+    <div id="passagesContainer">
+        <!-- Passages will be loaded here -->
+    </div>
+
+    <div class="no-results" id="noResults" style="display: none;">
+        No simulated passages found. Generate some using the <a href="/simulation" style="color: #007bff;">Simulation Management</a> panel.
+    </div>
+
+    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMorePassages()" style="display: none;">
+        Load More Passages
+    </button>
+</div>
+
+<script>
+let currentPage = 1;
+let hasMorePages = true;
+let isLoading = false;
+
+async function loadPassages(page = 1, reset = true) {
+    if (isLoading) return;
+    isLoading = true;
+
+    const sortBy = document.getElementById('sortBy').value;
+    const labelFilter = document.getElementById('labelFilter').value;
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const container = document.getElementById('passagesContainer');
+    const noResults = document.getElementById('noResults');
+
+    if (reset) {
+        container.innerHTML = '<div style="text-align: center; color: #ccc; padding: 20px;">Loading...</div>';
+        noResults.style.display = 'none';
+    }
+
+    try {
+        const response = await fetch('/api/simulated-passages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                page: page,
+                sortBy: sortBy,
+                label: labelFilter,
+                limit: 10
+            })
+        });
+
+        const data = await response.json();
+
+        if (reset) {
+            container.innerHTML = '';
+        }
+
+        if (data.passages && data.passages.length > 0) {
+            data.passages.forEach(passage => {
+                const passageElement = createPassageElement(passage);
+                container.appendChild(passageElement);
+            });
+
+            hasMorePages = data.hasMore;
+            loadMoreBtn.style.display = hasMorePages ? 'block' : 'none';
+            noResults.style.display = 'none';
+        } else if (reset) {
+            noResults.style.display = 'block';
+            loadMoreBtn.style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error('Error loading passages:', error);
+        if (reset) {
+            container.innerHTML = '<div style="text-align: center; color: #f00; padding: 20px;">Error loading passages</div>';
+        }
+    }
+
+    isLoading = false;
+}
+
+function createPassageElement(passage) {
+    const div = document.createElement('div');
+    div.className = 'simulated-passage';
+    
+    const scoreDisplay = document.getElementById('showScores').checked && passage.score !== undefined 
+        ? `<span class="passage-score">Score: ${passage.score.toFixed(2)}</span>` 
+        : '';
+    
+    const imageDisplay = passage.filename && passage.filename.length > 0 && passage.mimeType && passage.mimeType[0] === 'image'
+        ? `<img src="${passage.filename[0]}" alt="" class="passage-image">`
+        : '';
+    
+    const simulatedBadge = '<span class="simulated-badge">SIMULATED</span>';
+    
+    const authorThumbnail = passage.author && passage.author.thumbnail 
+        ? `<div class="author-avatar" style="background-image: url('${passage.author.thumbnail}');"></div>`
+        : '<div class="author-avatar"></div>';
+    
+    const passageDate = new Date(passage.date).toLocaleDateString();
+    const authorName = passage.author ? (passage.author.username || passage.author.name || 'Unknown') : 'Unknown';
+    
+    div.innerHTML = `
+        <div class="passage-header">
+            <div class="author-info">
+                ${authorThumbnail}
+                <div class="passage-meta">
+                    ${authorName}, ${passageDate}<br>
+                    <span style="color: ${passage.public ? 'green' : 'red'};">● ${passage.label}</span> ${simulatedBadge}
+                </div>
+            </div>
+            ${scoreDisplay}
+        </div>
+        <div class="passage-title">
+            <h3>
+                <a href="/passage/${encodeURIComponent(passage.title || 'Untitled')}/${passage._id}">
+                    ${passage.title || 'Untitled'}
+                </a>
+            </h3>
+        </div>
+        <div class="passage-content">
+            ${passage.content || ''}
+        </div>
+        ${imageDisplay}
+    `;
+
+    return div;
+}
+
+function updateFeed() {
+    currentPage = 1;
+    hasMorePages = true;
+    loadPassages(1, true);
+}
+
+function loadMorePassages() {
+    if (hasMorePages && !isLoading) {
+        currentPage++;
+        loadPassages(currentPage, false);
+    }
+}
+
+function toggleScores() {
+    const passages = document.querySelectorAll('.passage-score');
+    const showScores = document.getElementById('showScores').checked;
+    
+    passages.forEach(score => {
+        score.style.display = showScores ? 'inline' : 'none';
+    });
+    
+    const scoreInfo = document.getElementById('scoreInfo');
+    scoreInfo.style.display = showScores ? 'block' : 'none';
+}
+
+// Load initial data
+window.addEventListener('load', function() {
+    loadPassages(1, true);
+});
+</script>
+
+<%- include('footer') %>

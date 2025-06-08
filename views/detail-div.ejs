@@ -4,7 +4,8 @@
             <div class="toppings">
             <div style=""class="p-image-container">
             <%if(passage.author && passage.author.thumbnail != null && passage.author.thumbnail != ''){%>
-                <div class="p-thumbnail"style="display:block;background:url('/uploads/<%=passage.author.thumbnail%>');background-size:cover;background-position: center center;"id="profile_settings_image" src="/uploads/<%=passage.author.thumbnail%>"></div>
+                <%var thumbnailUrl = passage.author.thumbnail.startsWith('http') ? passage.author.thumbnail : '/uploads/' + passage.author.thumbnail;%>
+                <div class="p-thumbnail"style="display:block;background:url('<%=thumbnailUrl%>');background-size:cover;background-position: center center;"id="profile_settings_image" src="<%=thumbnailUrl%>"></div>
                 <%}else{%>
                     <ion-icon style=""class="profile_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
                 <%}%>
@@ -110,13 +111,21 @@
         <%}%>
         <%for(var i = 0; i < passage.filename.length; ++i){%>
             <%if(!passage.isSVG && passage.mimeType[i] == 'image'){%>
-                <%var filename = '';%>
-                <%if(passage.medium[i] == 'true'){%>
-                    <%filename = addToFilePath(passage.filename[i], '_medium');%>
+                <%var imageUrl = '';%>
+                <%if(passage.filename[i].startsWith('http')){%>
+                    <%// External URL for simulated passages%>
+                    <%imageUrl = passage.filename[i];%>
                 <%}else{%>
-                    <%filename = addToFilePath(passage.filename[i], '_orig');%>
+                    <%// Local file handling%>
+                    <%var filename = '';%>
+                    <%if(passage.medium[i] == 'true'){%>
+                        <%filename = addToFilePath(passage.filename[i], '_medium');%>
+                    <%}else{%>
+                        <%filename = addToFilePath(passage.filename[i], '_orig');%>
+                    <%}%>
+                    <%imageUrl = '/' + getUploadFolder(passage) + '/' + filename;%>
                 <%}%>
-                <img class="passage-file-<%=passage._id%> uploadedImage"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=filename%>" alt="">
+                <img class="passage-file-<%=passage._id%> uploadedImage"id="passage-file-<%=passage._id%>"src="<%=imageUrl%>" alt="">
            <%}if(passage.isSVG){%>
                <img class="passage-file-<%=passage._id%>"id="passage-file-<%=passage._id%>"src="/<%=getUploadFolder(passage)%>/<%=passage.filename[i]%>" alt="">
            <%}if(passage.mimeType[i] == 'model'){%>

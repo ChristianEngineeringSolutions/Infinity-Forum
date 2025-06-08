@@ -36,6 +36,7 @@ async function generateFeedWithPagination(user, page = 1, limit = 20) {
       versionOf: null,
       personal: false,
       deleted: false,
+      simulated: false,
       $or: [
         { author: { $in: followedAuthors } }, // From followed authors
         { createdAt: { $gte: veryRecentCutoff } }, // Very recent content
@@ -296,6 +297,7 @@ async function getRelevantPassagesForUser(user, limit = 1000) {
     versionOf: null,
     deleted: false,
     personal: false,
+    simulated: false,
     $or: [
       { author: { $in: followedAuthors } }, // From followed authors
       { createdAt: { $gte: veryRecentCutoff } }, // Very recent content
