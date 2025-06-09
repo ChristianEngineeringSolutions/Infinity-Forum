@@ -51,7 +51,7 @@
   </div>
   <div id="profile_stars">
     <%var money = user && user._id == profile._id ? "($"+usd+")" : ''%>
-    <p><%=parseInt(profile.stars+profile.donationStars)%> Star<%-parseInt(profile.stars) == 1 ? '' : 's'%>. <%=profile.starsGiven%> Contribution Point<%-profile.starsGiven == 1 ? '' : 's'%> <%=money%></p>
+    <p><%=parseInt(profile.stars+profile.donationStars+profile.borrowedStars)%> Star<%-parseInt(profile.stars) == 1 ? '' : 's'%>. <%=profile.starsGiven%> Contribution Point<%-profile.starsGiven == 1 ? '' : 's'%> <%=money%></p>
   </div>
 
 </div>

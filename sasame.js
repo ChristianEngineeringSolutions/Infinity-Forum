@@ -105,6 +105,157 @@
     const Visitor = require('./models/Visitor');
     const Follower = require('./models/Follower');
     const Notification = require('./models/Notification');
+    
+    // Import fake data generation functions
+    const fakeDataGenerator = require('./dist/js/fake.js');
+    
+    // Server-side function to create fake passages directly (expects users to already be registered via HTTP)
+    async function createFakePassageDirectly(fakeUserData, useAIContent = true, includeImage = false, parent='root') {
+        try {
+            // Find the fake user in database (should already exist from HTTP registration)
+            let user = await User.findOne({ username: (fakeUserData.username + '.1') });
+            if (!user) {
+                console.error(`Fake user ${fakeUserData.username} not found in database after HTTP registration`);
+                return null;
+            }
+            
+            // Generate passage data
+            const passageData = fakeDataGenerator.generateFakePassage(user, useAIContent, includeImage);
+            
+            // Create passage directly in database using createPassage function
+            const mockReq = {
+                session: { user: user },
+                body: {
+                    ...passageData,
+                    customDate: passageData.date
+                }
+            };
+            
+            // Use the existing createPassage function
+            const passage = await createPassage(user, parent, false, true, passageData.date, true);
+            for (let key in passageData) {
+              if (passageData.hasOwnProperty(key)) {
+                passage[key] = passageData[key];
+              }
+            }
+
+            if (passage && passage._id) {
+                // Apply create_initial_passage logic for public/forum determination
+                const labelOptions = [
+                    "Project", 'Idea', 'Database', "Social", "Question", 
+                    "Comment", "Task", "Forum", "Challenge", "Article"
+                ];
+                
+                // Validate label
+                if (!labelOptions.includes(passage.label)) {
+                    passage.label = "Project"; // Default fallback
+                }
+                
+                // Set public and forum properties based on label
+                switch(passage.label) {
+                    case 'Project':
+                    case 'Idea':
+                    case 'Database':
+                    case 'Article':
+                        passage.public = false;
+                        passage.forum = false;
+                        break;
+                    case 'Social':
+                    case 'Question':
+                    case 'Comment':
+                    case 'Task':
+                    case 'Challenge':
+                        passage.public = true;
+                        passage.forum = false;
+                        break;
+                    case 'Forum':
+                        passage.public = true;
+                        passage.forum = true;
+                        break;
+                    default:
+                        passage.public = false;
+                        passage.forum = false;
+                }
+                
+                // Save the updated passage with public/forum properties
+                await passage.save();
+                
+                console.log(`Created fake passage: "${passageData.title}" by ${user.username} (${passage.label}, public: ${passage.public}, forum: ${passage.forum})`);
+                return passage;
+            } else {
+                console.error('Failed to create fake passage');
+                return null;
+            }
+            
+        } catch (error) {
+            console.error('Error creating fake passage directly:', error);
+            return null;
+        }
+    }
+    
+    // Server-side function to create fake sub-passages directly
+    async function createFakeSubPassagesDirectly(parentPassage, users, maxSubPassages = 5, parent) {
+        try {
+            const numSubPassages = Math.floor(Math.random() * maxSubPassages) + 1;
+            const createdSubPassages = [];
+            
+            for (let i = 0; i < numSubPassages; i++) {
+                const randomUser = users[Math.floor(Math.random() * users.length)];
+                
+                // Generate sub-passage data
+                const subPassageData = {
+                    chief: parentPassage._id.toString(),
+                    parent: parentPassage._id,
+                    title: '', // Sub-passages typically have no title
+                    content: fakeDataGenerator.getRandomAIPost ? 
+                        fakeDataGenerator.getRandomAIPost() : 
+                        require('@faker-js/faker').faker.lorem.sentences(Math.floor(Math.random() * 3) + 1),
+                    label: 'Comment',
+                    lang: 'rich',
+                    simulated: true,
+                    customDate: require('@faker-js/faker').faker.date.recent({ days: 30 }).toISOString()
+                };
+                
+                const mockReq = {
+                    session: { user: randomUser },
+                    body: subPassageData
+                };
+                
+                // const subPassage = await createPassage(mockReq);
+                const subPassage = await createPassage(user, parent, false, true, passageData.date, true);
+                for (let key in passageData) {
+                  if (passageData.hasOwnProperty(key)) {
+                    passage[key] = passageData[key];
+                  }
+                }
+                
+                if (subPassage && subPassage._id) {
+                    // Set comment and public properties based on parent label
+                    if (parentPassage.label === 'Challenge') {
+                        subPassage.comment = false;
+                        subPassage.public = false;
+                    } else if (parentPassage.label === 'Project') {
+                        subPassage.comment = true;
+                        subPassage.public = true;
+                    } else {
+                        // Default for other parent types
+                        subPassage.comment = true;
+                        subPassage.public = true;
+                    }
+                    
+                    await subPassage.save();
+                    
+                    createdSubPassages.push(subPassage);
+                    console.log(`Created sub-passage for: "${parentPassage.title}" by ${randomUser.username} (comment: ${subPassage.comment}, public: ${subPassage.public})`);
+                }
+            }
+            
+            return createdSubPassages;
+        } catch (error) {
+            console.error('Error creating fake sub-passages directly:', error);
+            return [];
+        }
+    }
     const Star = require('./models/Star');
     const JTI = require('./models/JTI');
     const System = require('./models/System');
@@ -287,7 +438,7 @@
     //     }
       // });
     // Enable trust proxy
-    app.set('trust proxy', true);
+    // app.set('trust proxy', true);
     app.use(express.urlencoded({ extended: true, limit: '250mb' }));
     app.use(compression());
     app.use(cors());
@@ -791,29 +942,56 @@
                 }
                 var starsTakenAway = 0;
                 if(deplete){
-                    starsTakenAway = amount;
-                    //infinite stars on a local sasame
-                    //if single they can just incur a debt
+                    // Check if user has enough total stars (skip check if single)
                     if(((user.stars + user.borrowedStars + user.donationStars) < amount) && !single){
-                        return "Not enough stars.";
+                        passageResult = "Not enough stars.";
+                        return passageResult;
                     }
+                    
                     var remainder = amount;
-                    //spend borrowed stars first
+                    
+                    // First, spend borrowed stars
                     if(user.borrowedStars > 0){
-                        user.borrowedStars -= amount;
-                        remainder = -1 * user.borrowedStars;
-                        if(user.borrowedStars < 0){
-                            user.borrowedStars = 0;
-                        }
+                        var borrowedUsed = Math.min(user.borrowedStars, remainder);
+                        user.borrowedStars -= borrowedUsed;
+                        remainder -= borrowedUsed;
                     }
-                    starsTakenAway = remainder;
-                    user.stars -= remainder;
-                    console.log("REMAINDER:"+remainder);
-                    if(user.donationStars > 0 && user.stars <= 0){
-                        user.donationStars -= (-1 * user.stars);
-                        //give back stars that weren't taken away from main stars
-                        starsTakenAway -= (-1 * user.stars);
-                        user.stars = 0;
+                    
+                    // If there's still remainder, spend from user.stars or donationStars
+                    if(remainder > 0){
+                        if(user.stars > 0){
+                            // Take from user.stars first (can go to 0 or negative)
+                            var starsUsed = Math.min(user.stars, remainder);
+                            user.stars -= starsUsed;
+                            starsTakenAway += starsUsed;
+                            remainder -= starsUsed;
+                            
+                            // If still remainder and user.stars is now 0, take from donationStars
+                            if(remainder > 0 && user.donationStars > 0){
+                                var donationUsed = Math.min(user.donationStars, remainder);
+                                user.donationStars -= donationUsed;
+                                remainder -= donationUsed;
+                            }
+                            
+                            // Any final remainder goes to user.stars (making it negative)
+                            if(remainder > 0){
+                                user.stars -= remainder;
+                                starsTakenAway += remainder;
+                            }
+                        } else {
+                            // user.stars is 0 or negative, take from donationStars first
+                            if(user.donationStars > 0){
+                                var donationUsed = Math.min(user.donationStars, remainder);
+                                user.donationStars -= donationUsed;
+                                remainder -= donationUsed;
+                            }
+                            
+                            // Any remainder after donation stars should be taken from user.stars
+                            if(remainder > 0){
+                                user.stars -= remainder;
+                                starsTakenAway = remainder;
+                            }
+                        }
                     }
                 }
                 let passage = await Passage.findOne({_id: passageID}).populate('author sourceList').session(_session);
@@ -852,12 +1030,12 @@
                 var lastSource = await getLastSource(passage);
                 var bonus = 0;
                 //calculate bonus
-                for(const source of passage.sourceList){
-                    if(passage.author._id.toString() != source.author._id.toString()){
-                        var similarity = passageSimilarity(passage, source);
-                        bonus += similarity > 0.1 ? similarity : 0;
-                    }
-                }
+                // for(const source of passage.sourceList){
+                //     if(passage.author._id.toString() != source.author._id.toString()){
+                //         var similarity = passageSimilarity(passage, source);
+                //         bonus += similarity > 0.1 ? similarity : 0;
+                //     }
+                // }
                 bonus = bonus * amount;
                 //log the amount starred
                 let loggedStarDebt = req.session.user._id.toString() == passage.author._id.toString() ? 0 : (amount + bonus);
@@ -882,6 +1060,7 @@
                 // }
                 //add stars to passage and sources
                 passage.stars += amount + bonus;
+                console.log("BONUS:"+bonus);
                 passage.verifiedStars += amount + bonus;
                 passage.lastCap = passage.verifiedStars;
                 //if bubbling star all sub passages (content is displayed in parent)
@@ -959,7 +1138,9 @@
                     if(amountToGiveCollabers < 0){
                         amountToGiveCollabers = 0;
                     }
-                    user.starsGiven += starsTakenAway;
+                    if(!single){
+                        user.starsGiven += starsTakenAway;
+                    }
                     const SYSTEM = await System.findOne({}).session(_session);
                     if (!SYSTEM) {
                         throw new Error('System document not found.');
@@ -3191,6 +3372,9 @@ async function getPassageLocation(passage, train){
     // });
     //same as citing
     app.post('/transfer_bookmark', async (req, res) => {
+        if(!req.session.user){
+                return res.send("<h2 style='text-align:center;color:red;'>You must be logged in.</h2>");
+            }
         let _id = req.body._id;
         let parent = req.body.parent;
         //first check if parent allow submissions (is Public)
@@ -3233,6 +3417,9 @@ async function getPassageLocation(passage, train){
             var title = passage.title == '' ? 'Untitled' : passage.title;
             //add passage to sourcelist
             parent = await Passage.findOne({_id: req.body.parent});
+            if((!req.session.user && !req.session.user.admin) || ((req.session.user._id.toString() !== parent.author._id.toString()) && !req.session.user.admin)){
+                return res.send("<h2 style='text-align:center;color:red;'>You can only add sources to your own passages.</h2>");
+            }
             var parentUsageList = await Passage.find({
                 sourceList: {
                     $in: [parent._id]
@@ -5430,20 +5617,73 @@ async function getPassageLocation(passage, train){
             console.log(`Admin ${req.session.user.username} requested simulation generation:`);
             console.log(`Users: ${numUsers}, Passages: ${numPassages}, Content: ${contentType}`);
             
-            // Generate the fake data
-            const result = await fakeGenerator.generateFakeData(
-                domain,
-                parseInt(numUsers),
-                parseInt(numPassages),
-                contentType === 'ai', // useAIContent
-                includeImages === true  // includeImages
-            );
+            // Generate the fake data using HTTP registration for users and direct database creation for passages
+            const useAIContent = contentType === 'ai';
+            const includeImagesFlag = includeImages === true;
+            const totalUsers = parseInt(numUsers);
+            const totalPassages = parseInt(numPassages);
+            
+            console.log('Registering fake users via HTTP and creating passages directly in database...');
+            
+            // Generate fake users first using HTTP registration
+            const createdUsers = [];
+            for (let i = 0; i < totalUsers; i++) {
+                console.log(`Registering fake user ${i + 1}/${totalUsers}...`);
+                const fakeUserData = await fakeGenerator.registerFakeUser(domain);
+                if (fakeUserData) {
+                    createdUsers.push(fakeUserData);
+                } else {
+                    console.warn(`Failed to register fake user ${i + 1}, skipping...`);
+                }
+                // Small delay to avoid overwhelming the server
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            if (createdUsers.length === 0) {
+                return res.status(500).json({ 
+                    error: 'Failed to create any fake users via HTTP registration',
+                    details: 'Check reCAPTCHA bypass or registration endpoint'
+                });
+            }
+            
+            console.log(`Successfully registered ${createdUsers.length} fake users via HTTP`);
+            
+            // Create passages for each user
+            let createdPassagesCount = 0;
+            const createdPassages = [];
+            const passagesPerUser = Math.ceil(totalPassages / totalUsers);
+            
+            for (const userData of createdUsers) {
+                for (let j = 0; j < passagesPerUser && createdPassagesCount < totalPassages; j++) {
+                    const passage = await createFakePassageDirectly(userData, useAIContent, includeImagesFlag);
+                    if (passage) {
+                        createdPassagesCount++;
+                        createdPassages.push(passage);
+                    }
+                }
+            }
+            
+            // Create sub-passages if includeSubContent is true
+            let totalSubPassagesCreated = 0;
+            if (includeSubContent === true && createdPassages.length > 0) {
+                console.log('Creating sub-passages for main passages...');
+                
+                for (const passage of createdPassages) {
+                    const subPassages = await createFakeSubPassagesDirectly(passage, createdUsers, passage._id);
+                    totalSubPassagesCreated += subPassages.length;
+                }
+                
+                console.log(`Created ${totalSubPassagesCreated} sub-passages`);
+            }
+            
+            console.log(`Completed: Registered ${createdUsers.length} users via HTTP, created ${createdPassagesCount} passages, and ${totalSubPassagesCreated} sub-passages`);
             
             res.json({
                 success: true,
-                usersCreated: numUsers,
-                passagesCreated: numPassages,
-                message: 'Simulation data generated successfully'
+                usersCreated: createdUsers.length,
+                passagesCreated: createdPassagesCount,
+                subPassagesCreated: totalSubPassagesCreated,
+                message: 'Simulation data generated successfully using HTTP registration for users and direct database creation for passages'
             });
             
         } catch (error) {
@@ -5459,11 +5699,85 @@ async function getPassageLocation(passage, train){
     app.get('/simulated-passages', requiresAdmin, async (req, res) => {
         try {
             const ISMOBILE = browser(req.headers['user-agent']).mobile;
-            res.render('simulated-passages', {
-                ISMOBILE: ISMOBILE,
-                user: req.session.user,
-                page: 'simulated-passages',
-                passageTitle: 'Simulated Passages'
+            const { page = 1, sortBy = 'score', label = '', limit = 10 } = req.body;
+            const skip = (page - 1) * limit;
+
+            // Base query for simulated passages
+            let query = {
+                simulated: true,
+                deleted: false,
+                versionOf: null
+            };
+
+            // Add label filter if specified
+            if (label && label !== '') {
+                query.label = label;
+            }
+
+            // Get passages for scoring
+            const passages = await Passage.find(query)
+                .populate('author users sourceList')
+                .limit(1000); // Get more for scoring, then paginate
+
+            if (passages.length === 0) {
+                return res.json({ passages: [], hasMore: false });
+            }
+
+            // Apply scoring algorithm (same as generateGuestFeed)
+            const scoredPassages = await scoreSimulatedPassages(passages);
+
+            // Sort based on sortBy parameter
+            let sortedPassages;
+            switch (sortBy) {
+                case 'stars':
+                    sortedPassages = scoredPassages.sort((a, b) => b.stars - a.stars);
+                    break;
+                case 'recent':
+                    sortedPassages = scoredPassages.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    break;
+                case 'comments':
+                    sortedPassages = scoredPassages.sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0));
+                    break;
+                case 'score':
+                default:
+                    sortedPassages = scoredPassages.sort((a, b) => b.score - a.score);
+                    break;
+            }
+
+            // Paginate results
+            const paginatedPassages = sortedPassages.slice(skip, skip + limit);
+            const hasMore = skip + limit < sortedPassages.length;
+
+            // Process passages for display
+            const processedPassages = [];
+            for (const passage of paginatedPassages) {
+                const processedPassage = await getPassage(passage);
+                console.log(processedPassage.starrers);
+                console.log(passage.stars)
+                processedPassages.push(processedPassage);
+            }
+            // res.render('simulated-passages', {
+            //     ISMOBILE: ISMOBILE,
+            //     user: req.session.user,
+            //     page: 'simulated-passages',
+            //     passageTitle: 'Simulated Passages'
+            // });
+            return res.render("stream", {
+              subPassages: false,
+              passageTitle: false, 
+              scripts: scripts, 
+              passages: processedPassages, 
+              passage: {
+                id: 'root', 
+                author: {
+                  _id: 'root',
+                  username: 'Sasame'
+                }
+              },
+              ISMOBILE: ISMOBILE,
+              page: 'posts',
+              whichPage: 'stream',
+              thread: false,
             });
         } catch (error) {
             console.error('Error loading simulated passages page:', error);
@@ -5557,7 +5871,6 @@ async function getPassageLocation(passage, train){
             // Calculate other scores
             const starScore = Math.log10(passage.stars + 1) * 2;
             const commentScore = Math.log10((passage.comments?.length || 0) + 1) * 1.5;
-
             // Calculate usage score (how many times this passage is referenced)
             const usedByAuthors = await Passage.find({
                 sourceList: { $in: [passage._id] },
@@ -5670,24 +5983,29 @@ async function getPassageLocation(passage, train){
           && req.body["g-recaptcha-response"]
           && !(await userExists(req.body.email))) {  
 
+            var fake = req.body.fake || false;
+
             const name = req.body.name;
-            const response_key = req.body["g-recaptcha-response"];
-            const secret_key = await accessSecret("RECAPTCHA_SECRET_KEY");
-            const options = {
-            url: `https://www.google.com/recaptcha/api/siteverify?secret=${secret_key}&response=${response_key}`,
-            headers: { "Content-Type": "application/x-www-form-urlencoded", 'json': true }
-            }
-            try {
-            const re = await request(options);
-            if (!JSON.parse(re.body)['success']) {
-                return res.send({ response: "Failed" });
-            }
-            else{
-                console.log("SUCCESS");
-            }
-            // return res.send({ response: "Successful" });
-            } catch (error) {
-                return res.send({ response: "Failed" });
+            if(process.env.REMOTE === 'true'){
+                //handle recaptcha
+                const response_key = req.body["g-recaptcha-response"];
+                const secret_key = await accessSecret("RECAPTCHA_SECRET_KEY");
+                const options = {
+                url: `https://www.google.com/recaptcha/api/siteverify?secret=${secret_key}&response=${response_key}`,
+                headers: { "Content-Type": "application/x-www-form-urlencoded", 'json': true }
+                }
+                try {
+                const re = await request(options);
+                if (!JSON.parse(re.body)['success']) {
+                    return res.send({ response: "Failed" });
+                }
+                else{
+                    console.log("SUCCESS");
+                }
+                // return res.send({ response: "Successful" });
+                } catch (error) {
+                    return res.send({ response: "Failed" });
+                }
             }
 
             let numUsers = await User.countDocuments({username: req.body.username.trim()}) + 1;
@@ -5703,6 +6021,12 @@ async function getPassageLocation(passage, train){
           if(req.body.email != ''){
             userData.email = req.body.email;
           }
+          const { faker } = require('@faker-js/faker');
+          if(fake){
+            userData.about = faker.lorem.sentences(2);
+            userData.thumbnail = faker.image.avatar();
+            userData.simulated = true;
+          }
           User.create(userData, async function (err, user) {
             if (err) {
               console.log(err);
@@ -5717,7 +6041,7 @@ async function getPassageLocation(passage, train){
                 user.save();
               });
               //send verification email
-              if(user.email && user.email.length > 1){
+              if(user.email && user.email.length > 1 && !fake){
                 await sendEmail(user.email, 'Verify Email for Infinity Forum.', 
                     `
                         https://infinity-forum.org/verify/`+user._id+`/`+user.token+`
@@ -6915,7 +7239,7 @@ async function getPassageLocation(passage, train){
         var formData = req.body;
         var subforums = formData.subforums;
         var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
-        if(passage.author._id.toString() != req.session.user._id.toString()){
+        if(passage.author._id.toString() != req.session.user._id.toString() && !req.session.user.admin){
             return res.send("You can only update your own passages.");
         }
         else if(passage.public_daemon == 2 || passage.default_daemon){
@@ -8729,7 +9053,7 @@ async function getPassageLocation(passage, train){
             user.starsBorrowedThisMonth = 0;
         }
         if(user.starsBorrowedThisMonth < 50){
-            if( req.body.quantity + user.starsBorrowedThisMonth < 50){
+            if( parseInt(req.body.quantity) + user.starsBorrowedThisMonth < 50){
                 user.borrowedStars += Number(req.body.quantity);
                 user.starsBorrowedThisMonth += Number(req.body.quantity);
             }else{
@@ -9521,6 +9845,7 @@ async function getPassageLocation(passage, train){
           versionOf: null,
           deleted: false,
           personal: false,
+          simulated: false,
           $or: [
             { date: { $gte: veryRecentCutoff } }, // Very recent content
             { stars: { $gte: 0 } }, // Popular content would be 5

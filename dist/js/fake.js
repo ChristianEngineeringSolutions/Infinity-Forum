@@ -1,7 +1,8 @@
-const faker = require('faker');
+const { faker } = require('@faker-js/faker');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const {User, UserSchema} = require('../../models/User');
 
 // Read AI-generated posts from file
 function getRandomAIPost() {
@@ -19,9 +20,9 @@ function getRandomAIPost() {
 
 // Generate fake user data for registration
 function generateFakeUserRegistration() {
-    const firstName = faker.name.firstName();
-    const lastName = faker.name.lastName();
-    const username = faker.internet.userName(firstName, lastName);
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const username = faker.internet.username(firstName, lastName);
     
     return {
         username: username,
@@ -29,6 +30,7 @@ function generateFakeUserRegistration() {
         password: 'password123',
         passwordConf: 'password123',
         name: `${firstName} ${lastName}`,
+        fake: true,
         'g-recaptcha-response': 'fake-token' // This will need bypass for testing
     };
 }
@@ -43,7 +45,8 @@ function generateFakeUserSettings(existingUser) {
         password: 'password123',
         passwordConf: 'password123',
         email: existingUser.email,
-        newUsername: existingUser.username
+        newUsername: existingUser.username,
+        fake: true
     };
 }
 
@@ -56,9 +59,9 @@ async function registerFakeUser(domain) {
         // You may need to temporarily bypass reCAPTCHA for testing
         const response = await axios.post(`${domain}/register/`, userData);
         
-        if (response.data && response.data._id) {
+        if (response.data) {
             console.log(`Created fake user: ${userData.username} (${userData.email})`);
-            return response.data;
+            return userData;
         } else {
             console.error('Failed to create fake user:', response.data);
             return null;
@@ -78,6 +81,7 @@ async function updateFakeUserSettings(domain, user) {
         
         if (response.status === 200) {
             console.log(`Updated settings for fake user: ${user.username}`);
+
             return {
                 ...user,
                 about: settingsData.about,
@@ -99,25 +103,25 @@ function generateFakePassage(fakeUser, useAIContent = true, includeImage = false
     const randomLabel = labels[Math.floor(Math.random() * labels.length)];
     
     // Generate random date in the past (up to 365 days ago)
-    const randomPastDate = faker.date.past(1);
+    const randomPastDate = faker.date.past({ years: 1 });
     
     const passageData = {
         chief: 'root',
         // Don't set subforums or comments values as requested
-        whichPage: 'index',
+        // whichPage: 'index',
         label: randomLabel,
         title: faker.company.catchPhrase(),
         content: useAIContent ? getRandomAIPost() : faker.lorem.paragraphs(3),
         tags: faker.lorem.words(3).split(' ').join(','),
         lang: 'rich',
         date: randomPastDate.toISOString(), // Send as ISO string
-        simulated: 'true', // Send as string for form compatibility
-        author: fakeUser._id
+        simulated: true,
+        author: fakeUser._id.toString()
     };
     
     // Add image if requested
     if (includeImage) {
-        passageData.filename = [faker.image.technics(800, 600)]; // External image URL
+        passageData.filename = [faker.image.urlPicsumPhotos({ width: 800, height: 600 })]; // External image URL
         passageData.mimeType = ['image'];
     }
     
@@ -131,8 +135,9 @@ async function createFakePassage(domain, fakeUser, useAIContent = true, includeI
     try {
         const response = await axios.post(`${domain}/create_initial_passage/`, passageData);
         
-        if (response.data && response.data._id) {
+        if (response.data) {
             console.log(`Created fake passage: "${passageData.title}" by ${fakeUser.username}`);
+            console.log(response.data);
             return response.data;
         } else {
             console.error('Failed to create fake passage:', response.data);
@@ -162,7 +167,7 @@ async function createFakeSubPassages(domain, parentPassage, fakeUsers, maxSubPas
             title: isComment ? '' : faker.hacker.phrase(),
             content: faker.lorem.sentences(Math.floor(Math.random() * 3) + 1),
             lang: 'rich',
-            date: faker.date.recent(30).toISOString(), // Within last 30 days
+            date: faker.date.recent({ days: 30 }).toISOString(), // Within last 30 days
             simulated: 'true',
             author: randomUser._id
         };
