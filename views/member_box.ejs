@@ -8,9 +8,9 @@
         <div class="box_cont">
             <form action="/login/" method="post" id="login_frm">
                 Username or Email:<br/>
-                <input class="m-box-input" type="text" tabindex="1" name="username" required pattern=".{3,16}" placeholder="Enter your username" id="login_usr" maxlength="20" /><br/>
+                <input class="m-box-input" type="text" tabindex="1" name="username" required pattern=".{3,16}" placeholder="Enter your username" id="login_usr" maxlength="100" /><br/>
                 Password:<br/>
-                <input class="m-box-input" type="password" tabindex="2" name="password" required pattern=".{3,16}" placeholder="Enter your password" id="login_pwd" autocomplete="off" maxlength="30" /><br />
+                <input class="m-box-input" type="password" tabindex="2" name="password" required pattern=".{3,16}" placeholder="Enter your password" id="login_pwd" autocomplete="off" maxlength="100" /><br />
                 <input class="m-box-input" type="hidden" name="token" value="<?php echo $token; ?>" />
             <input id="box-login"class="m-box-input" type="submit" tabindex="3" class="login_btn" value="Login"><br />
             <a id="rec-pwd-link"href="/recover"class="rec-pwd-link">Recover Password</a>

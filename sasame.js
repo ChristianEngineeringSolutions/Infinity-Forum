@@ -4931,7 +4931,7 @@ async function getPassageLocation(passage, train){
     app.post('/login', async function(req, res) {
         //check if email has been verified
         var user = await authenticateUsername(req.body.username, req.body.password);
-        if(user){
+        if(user && !user.simulated){
             // Update last login time
             user.lastLogin = new Date();
             await user.save();
@@ -6071,7 +6071,7 @@ async function getPassageLocation(passage, train){
             //     await profile.save();
             //   });
 
-            if(user){
+            if(user && !user.simulated){
                 req.session.user = user;
                 user.name = req.body.name;
                 user.about = req.body.about;
@@ -9031,6 +9031,9 @@ async function getPassageLocation(passage, train){
     app.post('/borrow-stars', async (req, res) => {
       if (!req.session.user) {
         return res.redirect('/loginform');
+      }
+      if(req.session.user.phone == '' && !user.identityVerified){
+        return res.send("You need a form of validation for that.");
       }
         var SYSTEM = await System.findOne({});
         // if(SYSTEM.userAmount == 0){
