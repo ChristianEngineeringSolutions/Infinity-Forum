@@ -35,6 +35,11 @@ const starSchema = mongoose.Schema({
         type: Boolean,
         default: true
     },
+    //was this a non-single star triggered by a single star event?
+    fromSingle:{
+        type: Boolean,
+        default: false
+    },
     //recursive sources at the time of being starred
     sources: [{
         type: mongoose.Schema.Types.ObjectId,
