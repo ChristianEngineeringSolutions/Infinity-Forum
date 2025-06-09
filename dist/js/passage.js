@@ -1011,6 +1011,7 @@ $(function(){
                 data: data,
                 success: function(data2){
                     if(data2 == 'Not enough stars.' || data2 == 'Please enter a number greater than 0.'){
+                        thiz.text("Give");
                         alert(data2);
                     }
                     else{

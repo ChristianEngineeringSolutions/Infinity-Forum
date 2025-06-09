@@ -83,7 +83,7 @@
             <%}%>
         </div>
         <%}%>
-        <%if(user && user._id == passage.author._id){%>
+        <%if(user && ((user._id == passage.author._id) || user.admin)){%>
             <div class="add-source"id="add-source-<%=passage._id%>">+ Add Source</div>
             <div class="new-sources"id="new-sources-<%=passage._id%>">
                 <br>
@@ -126,7 +126,7 @@
     </div>
     <ul class="passage_options">
         <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || (passage.passages && passage.passages.length > 0) || passage.public || passage.parent == null)) || sub === true){%>
-        <li class="passage_option"><a class="hard-link"href="/passage/<%=passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)%>/<%=passage.id%>">Details</a></li>
+        <li class="passage_option"><a class="hard-link"href="/passage/<%=passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)%>/<%=passage._id%>">Details</a></li>
         <%}%>
         <%if((typeof comments == 'undefined' || !comments) && !passage.public && !passage.forum){%>
             <% var commentsLink = ''; %>
@@ -135,7 +135,7 @@
             <%}else{%>
                 <%commentsLink = '/comments/' + (passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)) + '/' + passage._id;%>
             <%}%>
-            <li id="passage_comments_<%=passage.id%>" class="passage_option"><a class="hard-link" href="<%-commentsLink%>">Comments</a></li>
+            <li id="passage_comments_<%=passage._id%>" class="passage_option"><a class="hard-link" href="<%-commentsLink%>">Comments</a></li>
         <%}%>
         <%if(user){%>
             <li id="passage_expand_<%=passage._id%>" class="passage_option passage_option_expand">Options</li>
@@ -143,30 +143,30 @@
                 <!-- Show them settings only if they made the passage -->
                 <%if(passage.author != null && passage.author){%>
                     <%if((passage.author && user && passage.author._id == user._id && passage.versionOf == null) || user.admin){%>
-                        <a class="basic_link option_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage.id%>" class="passage_option">Settings</li></a>
+                        <a class="basic_link option_link" href="#passage_settings_modal_<%=passage._id%>" rel="modal:open"><li id="passage_settings_<%=passage._id%>" class="passage_option">Settings</li></a>
                         <%}%>
                 <%}%>
-                <a class="basic_link option_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
+                <a class="basic_link option_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage._id%>" class="passage_option">Sources</li></a>
                 <!-- Shift passage location -->
-                <!-- <li id="passage_download_<%=passage.id%>" class="passage_option">Download</li> -->
+                <!-- <li id="passage_download_<%=passage._id%>" class="passage_option">Download</li> -->
                 <%if(user){%>
-                <li id="passage_bookmark_<%=passage.id%>" class="passage_option">Bookmark</li>
+                <li id="passage_bookmark_<%=passage._id%>" class="passage_option">Bookmark</li>
                 <%}%>
                 <%if(!passage.public && !passage.forum){%>
                     <input type="hidden" id="passage_private_<%=passage._id%>"name=""value="true">
                 <%}%>
-                <%if(passage.author && user && passage.author._id.toString() == user._id.toString()){%>
+                <%if(passage.author && user && (passage.author._id.toString() == user._id.toString()) || user.admin){%>
                     <%if(passage.public_daemon != 2 && passage.default_daemon != true && passage.versionOf == null){%>
-                        <li id="passage_edit_<%=passage.id%>" data-quill="false"class="passage_option">Edit</li>
-                        <li id="passage_update_<%=passage.id%>" class="passage_option">Update</li>
-                        <li id="passage_delete_<%=passage.id%>" class="passage_option passage_delete">Delete</li>
+                        <li id="passage_edit_<%=passage._id%>" data-quill="false"class="passage_option">Edit</li>
+                        <li id="passage_update_<%=passage._id%>" class="passage_option">Update</li>
+                        <li id="passage_delete_<%=passage._id%>" class="passage_option passage_delete">Delete</li>
                     <%}%>
                     <div id="passage-share-modal-<%=passage._id%>" class="modal">
                         <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
                     </div>
-                    <a class="basic_link option_link" href="#passage-share-modal-<%=passage._id%>" rel="modal:open"><li id="passage_share_<%=passage.id%>" class="passage_option">Share</li></a>
+                    <a class="basic_link option_link" href="#passage-share-modal-<%=passage._id%>" rel="modal:open"><li id="passage_share_<%=passage._id%>" class="passage_option">Share</li></a>
                     <%if(user && user.admin){%>
-                        <li style="<%=passage.stickied ? 'color:gold' : ''%>"id="passage_sticky_<%=passage.id%>" class="passage_option">Sticky</li>
+                        <li style="<%=passage.stickied ? 'color:gold' : ''%>"id="passage_sticky_<%=passage._id%>" class="passage_option">Sticky</li>
                     <%}%>
                     <%/*%>
                     <li id="passage-show-more-<%=passage._id%>" class="passage_option">More</li>
@@ -174,19 +174,19 @@
                         <li id="passage-flag-<%=passage._id%>" class="passage_option">Flag</li>
                         <%if(LOCAL == 'true'){%>
                             <!-- Push passage to server -->
-                            <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
+                            <li id="passage_push_<%=passage._id%>" class="passage_option">Push</li>
                             <input type="hidden" id="full_push_passage_<%=passage._id%>" value="<%=JSON.stringify(passage)%>">
                             <!-- Install to FileSystem -->
-                            <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
+                            <li id="passage_install_<%=passage._id%>" class="passage_option">Install</li>
                         <%}%>
                     </span>
                     <%*/%>
                     <%if(LOCAL == 'true'){%>
                         <!-- Push passage to server -->
-                        <li id="passage_push_<%=passage.id%>" class="passage_option">Push</li>
+                        <li id="passage_push_<%=passage._id%>" class="passage_option">Push</li>
                         <input type="hidden" id="full_push_passage_<%=passage._id%>" value="<%=JSON.stringify(passage)%>">
                         <!-- Install to FileSystem -->
-                        <li id="passage_install_<%=passage.id%>" class="passage_option">Install</li>
+                        <li id="passage_install_<%=passage._id%>" class="passage_option">Install</li>
                     <%}%>
                 <%}%>
                 <%if(fromOtro){%>
@@ -201,13 +201,13 @@
                 <%}%>
             </span>
         <%}else{%>
-            <a class="basic_link option_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage.id%>" class="passage_option">Sources</li></a>
+            <a class="basic_link option_link" href="#passage_sources_modal_<%=passage._id%>" rel="modal:open"><li id="passage_sources_<%=passage._id%>" class="passage_option">Sources</li></a>
         <%}%>
         <%if(sub == true && subPassages){%>
             <li id="passage_alternate_<%=passage._id%>" class="passage_option">Alt</li>
         <%}%>
         <%if(user){%>
-            <li style="display:none;"id="save-alternate-<%=passage.id%>" class="passage_option">Save Alt</li>
+            <li style="display:none;"id="save-alternate-<%=passage._id%>" class="passage_option">Save Alt</li>
         <%}%>
     </ul>
     <%-include('detail-div', {
@@ -227,7 +227,7 @@
     <%}%>
    <div class="bottom-bar <%=bottom%>">
         <%if(user && passage.starrers){%>
-        <%var gold = passage.starrers.includes(user._id.toString()) ? 'color:gold;' : ''%>
+        <%var gold = passage.starrers.toString().includes(user._id.toString()) ? 'color:gold;' : ''%>
         <%}%>
         <%if(user){%>
             <ion-icon class="repost"id="repost-<%=passage._id%>"style="font-size:1.4em;margin-right:20px;"title="Star Passage"src="/images/ionicons/repeat-sharp.svg"></ion-icon>

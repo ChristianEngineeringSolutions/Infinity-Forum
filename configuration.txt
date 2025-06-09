@@ -18,7 +18,7 @@ Edit your mongod.conf file. (Common locations: /etc/mongod.conf on Linux, /usr/l
     YAML:
 
     replication:
-      replSetName: "rs0" # Choose your replica set name
+      replSetName: "rs0"
 
 Start mongod using the configuration file.
 
