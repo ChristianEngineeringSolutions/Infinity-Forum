@@ -437,8 +437,6 @@
     //       credentials: true
     //     }
       // });
-    // Enable trust proxy
-    // app.set('trust proxy', true);
     app.use(express.urlencoded({ extended: true, limit: '250mb' }));
     app.use(compression());
     app.use(cors());
@@ -2600,7 +2598,7 @@ async function getPassageLocation(passage, train){
         console.log(passage.sourceList.length);
         return bigRes;
     }
-    async function logVisit(req){
+    async function logVisit(req, passageID){
         let ipAddress = req.ip; // Default to req.ip
 
         // Check Cloudflare headers for real client IP address
@@ -2620,14 +2618,14 @@ async function getPassageLocation(passage, train){
 
         if (!existingVisitor) {
         // Create a new visitor entry
-        const newVisitor = new Visitor({ ipAddress: ipAddress, user: req.session.user || null, visited: passage._id });
+        const newVisitor = new Visitor({ ipAddress: ipAddress, user: req.session.user || null, visited: passageID });
         await newVisitor.save();
         }
     }
     app.get('/thread', async (req, res) => {
         // ALT
         var bigRes = await getBigPassage(req, res);
-        await logVisit(req);
+        await logVisit(req, bigRes.passage._id);
         if(!res.headersSent){
             await getRecursiveSpecials(bigRes.passage);
             res.render("thread", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
@@ -6021,7 +6019,8 @@ async function getPassageLocation(passage, train){
             }
 
             let numUsers = await User.countDocuments({username: req.body.username.trim()}) + 1;
-            let ipNumber = req.ip.split('.').map(Number).reduce((a, b) => (a << 8) + b, 0);
+            var ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress 
+            let ipNumber = ip.split('.').map(Number).reduce((a, b) => (a << 8) + b, 0);
             var userData = {
             name: req.body.username || req.body.email,
             username: req.body.username.split(' ').join('.') + '.' + numUsers || '',
