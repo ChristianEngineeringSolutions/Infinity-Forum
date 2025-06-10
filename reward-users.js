@@ -163,9 +163,9 @@ async function processRewardDistribution(job) {
                         }
                         user.top = top;
                         user.rank = rank;
-                        if(user.identityVerified){
-                            user.stars += 50; //give monthly allotment
-                        }
+                        // if(user.identityVerified){
+                        //     user.stars += 50; //give monthly allotment
+                        // }
                         if(top <= 10 && user.starsGiven > 0){
                             user.moderator = true;
                             //give free subscription tier 1

@@ -1228,6 +1228,13 @@
             }
         }
     }
+    function overlaps(arr1, arr2) {
+      if (!arr1.length || !arr2.length) {
+        return false; // Handle empty arrays
+      }
+      const set1 = new Set(arr1);
+      return arr2.some(element => set1.has(element));
+    }
     async function starSources(passage, top, authors=[], starredPassages=[], amount, req, _session){
         var i = 0;
         var bonus;
@@ -1244,6 +1251,8 @@
                     //also give author stars once per author
                     if(sourceAuthor._id.toString() != req.session.user._id.toString() 
                         && sourceAuthor._id.toString() != passage.author._id.toString()
+                        && !sourcePop.collaborators.toString().includes(passage.author._id.toString()
+                        && !overlaps(sourcePop.collaborators, passage.collaborators))
                         /*&& !authors.includes(sourceAuthor._id)*/){
                         bonus = passageSimilarity(top, sourcePop);
                         bonus = 0; //bonuses are to reward users for citing
@@ -1255,6 +1264,9 @@
                             }
                         }
                         authors.push(sourceAuthor._id.toString());
+                        for(const collaber of sourcePop.collaborators){
+                            authors.push(collaber._id.toString());
+                        }
                         await sourcePop.save({_session});
                         //dont give collaborators stars if starrer is a collaborator
                         if(!sourcePop.collaborators.includes(req.session.user._id.toString())){
