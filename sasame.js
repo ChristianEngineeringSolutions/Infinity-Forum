@@ -3753,12 +3753,6 @@ async function getPassageLocation(passage, train){
     }
     app.post('/remove_bookmark', async (req, res) => {
         let _id = req.body._id;
-        // let user = await User.findOne({_id: req.session.user._id});
-        // user.bookmarks.forEach((bookmark, i) => {
-        //     if(bookmark._id.toString() == _id.toString()){
-        //         user.bookmarks.splice(i, 1);
-        //     }
-        // });
         await Bookmark.deleteOne({_id:_id});
         // await user.save();
         res.send("Done.");
@@ -8506,92 +8500,9 @@ async function getPassageLocation(passage, train){
         });
         return true;
     }
-
-    //AI
-    // (async function(){
-    //     await PrimeEngine();
-    // })();
-    //run every minute
-    // cron.schedule('* * * * *', async () => {
-    //     await PrimeEngine();
-    // });
-    //clean engine every 10 minutes
-    // cron.schedule('*/10 * * * *', async () => {
-    //     await cleanEngine();
-    //     console.log('Cleaned AI.');
-    // });
-    //return synthetically annealled random passage
-    //in other words, bias towards a greater number of stars
-    async function anneal(){
-        var numDaemons = await Passage.countDocuments();
-        //bias towards later records (more stars)
-        var random1 = Math.floor(Math.random() * numDaemons * 3.3333333);
-        //go back some
-        var random2 = Math.floor(Math.random() * numDaemons);
-        var slide = random1 - random2;
-        if(slide >= numDaemons){
-            slide = numDaemons - 1;
-        }
-        else if(slide < 0){
-            slide = 0;
-        }
-        return slide;
-    }
-    //just treats all passages as daemons
-    async function PrimeEngine(){
-        var passage;
-        //Get random passage from database
-        var numDaemons = await Passage.countDocuments();
-        // Get a random entry
-        // var random = Math.floor(Math.random() * numDaemons);
-        var slide = await anneal();
-        var passage = await Passage.findOne().sort('stars').skip(slide).exec();
-        //modify daemon with another daemon
-        var modifiedPassage = await BetaEngine(passage);
-        console.log('Synthetic Passage Created: ' + modifiedPassage.title);
-    }
-
-    //beta engine makes passage into daemon and feeds PrimeEngine
-    //anneal by rank
-    async function BetaEngine(original){
-        var titleEnd = " - Sasame AI";
-        var author = await User.findOne({admin:true});
-        //get random passage as daemon
-        var numDaemons = await Passage.countDocuments();
-        // Get a random entry
-        var slide = await anneal();
-        // var random = Math.floor(Math.random() * numDaemons);
-        var daemon = await Passage.findOne().sort('stars').skip(slide).exec();
-        //personalize daemon to affect target passage
-        var personalDaemon = await passageController.copyPassage(daemon, [author], null, async function(){
-            
-        }, true);
-        personalDaemon.synthetic = true;
-        personalDaemon.param = JSON.stringify(original);
-        personalDaemon.title = personalDaemon.title.split(' - Sasame AI')[0] + titleEnd;
-        var paramTitle = '';
-        if(JSON.parse(personalDaemon.param) != null){
-            paramTitle += JSON.parse(personalDaemon.param).title;
-        }
-        //might need to stringify personalDaemon.params
-        //anyway; this makes it easy for a daemon to access its parameters
-        //then, might I suggest NOHTML?
-        personalDaemon.libs = 'const PARAMTITLE =   "'+paramTitle+'";\n';
-        personalDaemon.libs +=  'const PARAM = '+personalDaemon.param+';\n'; //wont show in editor (long) but they can access the var
-        personalDaemon.javascript = '//const PARAMTITLE = "'+paramTitle+'";\n// ex. var paramDetails = JSON.stringify(PARAM); // (PARAM is a passage)\n' + (personalDaemon.javascript || '');
-        //ex. var button = params[0].title; //make button from param
-        await personalDaemon.save();
-        //in iframe will be a modification of the original passage
-        return personalDaemon;
-    }
-    async function cleanEngine(){
-        //delete all synthetic passage with 0 stars
-        //and all sub passages
-        await Passage.deleteMany({synthetic: true, stars: 0});
-        console.log("Cleaned AI.");
-    }
-    //remove all passages with 0 stars, and no sub passages within a public parent or root
-    async function filterPassages(){
+    //remove all root passages with 0 stars, and no sub passages within a public parent or root
+    async function prune(lt){
+        //TODO delete passages with less stars than lt
         await Passage.deleteMany({
             stars: 0,
             parent: null,
