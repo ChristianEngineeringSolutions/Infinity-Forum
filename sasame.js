@@ -6141,6 +6141,7 @@ async function getPassageLocation(passage, train){
                 let find = {
                     personal: false,
                     versionOf: null,
+                    forumType: {$in: ['', null]},
                     title: new RegExp(search, "i"),
                 };
                 
@@ -9268,6 +9269,8 @@ async function getPassageLocation(passage, train){
           versionOf: null,
           personal: false,
           deleted: false,
+          simulation: false,
+          forumType: {in: ['', null]},
           $or: [
             { author: { $in: followedAuthors } }, // From followed authors
             { date: { $gte: veryRecentCutoff } }, // Very recent content
@@ -9771,6 +9774,7 @@ async function getPassageLocation(passage, train){
           deleted: false,
           personal: false,
           simulated: false,
+          forumType: {$in: ['', null]},
           $or: [
             { date: { $gte: veryRecentCutoff } }, // Very recent content
             { stars: { $gte: 0 } }, // Popular content would be 5
