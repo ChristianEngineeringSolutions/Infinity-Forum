@@ -934,6 +934,13 @@
             // Define the transaction logic as a separate function
             const transactionLogic = async () => {
                 let user = await User.findOne({_id: userID}).session(_session);
+                let passage = await Passage.findOne({_id: passageID}).populate('author sourceList').session(_session);
+                var shouldGetContributionPoints = true;
+                //if a collaborator
+                if(req.session.user._id.toString() == passage.author._id.toString()
+                    || passage.collaborators.toString().includes(req.session.user._id.toString())){
+                    shouldGetContributionPoints = false;
+                }
                 if(isNaN(amount) || amount == 0){
                     passageResult = 'Please enter a number greater than 0.';
                     return;
@@ -992,7 +999,6 @@
                         }
                     }
                 }
-                let passage = await Passage.findOne({_id: passageID}).populate('author sourceList').session(_session);
                 var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
                 //Give starring user stars for each logged stars at 1% rate
                 var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources').session(_session);
@@ -1081,6 +1087,9 @@
                 //get stars given to the starrer by these collaborators
                 var allCollaborators = [passage.author, ...passage.collaborators];
                 var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
+                if(!shouldGetContributionPoints){
+                    amountToGiveCollabers = 0;
+                }
                 collaboratorsLoop:
                 for(const collaber of allCollaborators){
                     //only inherit debt, subtract debt, and create debt if we are actually starring the collaber
@@ -1136,7 +1145,7 @@
                     if(amountToGiveCollabers < 0){
                         amountToGiveCollabers = 0;
                     }
-                    if(!single){
+                    if(!single && shouldGetContributionPoints){
                         user.starsGiven += starsTakenAway;
                     }
                     const SYSTEM = await System.findOne({}).session(_session);
@@ -3731,7 +3740,7 @@ async function getPassageLocation(passage, train){
         let passageID = req.body.passageID;
         let sourceID = req.body.sourceID;
         let passage = await Passage.findOne({_id: passageID});
-        if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        if(req.session.user && (req.session.user._id.toString() == passage.author._id.toString() || req.session.user.admin)){
             var index = 0;
             for(const s of passage.sourceList){
                 if(s == sourceID){
@@ -6855,6 +6864,12 @@ async function getPassageLocation(passage, train){
             const transactionLogic = async () => {
                 var user = req.session.user._id.toString();
                 var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+                var shouldGetContributionPoints = true;
+                //if a collaborator
+                if(req.session.user._id.toString() == passage.author._id.toString()
+                    || passage.collaborators.toString().includes(req.session.user._id.toString())){
+                    shouldGetContributionPoints = false;
+                }
                 //check if starred already
                 var recordSingle = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:false}).session(_session);
                 var recordSingleSystem = await Star.findOne({user: req.session.user._id, passage:passage._id, single:true, system:true}).session(_session);
@@ -6890,7 +6905,8 @@ async function getPassageLocation(passage, train){
                         var starredBefore = await Star.findOne({user: req.session.user._id.toString(), passage: passage._id, fromSingle: true}).session(_session);
                         //star each source recursively
                         //if user is verified and numVerifiedStars > lastCap give the passage a user star
-                        if(req.session.user.identityVerified && !starredBefore/*(passage.verifiedStars + 1) > passage.lastCap*/){
+                        if(req.session.user.identityVerified && !starredBefore/*(passage.verifiedStars + 1) > passage.lastCap*/
+                        && shouldGetContributionPoints){
                             // Call starPassage without starting a new transaction since we're already in one
                             let starResult = await starPassage(req, 1, passage._id, req.session.user._id.toString(), true, true, _session);
                             if(starResult && typeof starResult === 'object'){
@@ -6987,7 +7003,6 @@ async function getPassageLocation(passage, train){
         var user = req.session.user._id.toString();
         if(req.session && req.session.user){
             var p = await Passage.findOne({_id: req.body._id});
-            console.log(p.starrers.includes(user));
             //whether we are giving a star or taking it away
             if(req.body.on == 'false' && !p.starrers.includes(user)){
                 var passage = await singleStarPassage(req, p, false, false, null);

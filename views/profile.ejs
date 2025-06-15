@@ -20,8 +20,9 @@
 <input type="hidden" value="<%=profile._id%>", id="is_profile"/>
 <div id="profile_header">
   <div>
+    <%var imageURL = profile.thumbnail.startsWith('http') ? profile.thumbnail : '/uploads/'+profile.thumbnail%>
     <%if(profile.thumbnail != '' && profile.thumbnail != null){%>
-      <div style="width:140px;height:140px;background:url('/uploads/<%=profile.thumbnail%>');background-size:cover;background-position:center center;border-radius:5px;margin:auto;"id="profile_settings_image" src="/uploads/<%=profile.thumbnail%>"></div>
+      <div style="width:140px;height:140px;background:url(<%=imageURL%>);background-size:cover;background-position:center center;border-radius:5px;margin:auto;"id="profile_settings_image" src="/uploads/<%=profile.thumbnail%>"></div>
       <%}else{%>
         <ion-icon style="font-size:5em;"id="profile_page_image"src="/images/ionicons/person-circle-outline.svg"></ion-icon>
       <%}%>
