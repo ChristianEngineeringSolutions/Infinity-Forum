@@ -1249,6 +1249,10 @@
             var sourcePop = await Passage.findOne({_id:source._id}).populate('author users sourceList').session(_session);
             //dont restar top passage
             if(sourcePop._id.toString() !== top._id.toString()){
+                // Skip if this source is the same as the current passage to prevent circular citations
+                if(sourcePop._id.toString() === passage._id.toString()){
+                    continue;
+                }
                 //don't star same passage twice
                 if(!starredPassages.includes(sourcePop._id.toString())){
                     await starMessages(sourcePop._id, amount);
@@ -2835,6 +2839,10 @@ async function getPassageLocation(passage, train){
                 // console.log(sourcePassage._id);
                 if(sources.includes(sourcePassage)){
                     continue;
+                }
+                // Skip if this source is the same as the original passage to prevent circular citations
+                if(sourcePassage._id.toString() === passage._id.toString()){
+                    continue;
                 }                
                 sources.push(sourcePassage);
                 if(source.showBestOf == true){
@@ -3439,15 +3447,8 @@ async function getPassageLocation(passage, train){
             if((!req.session.user && !req.session.user.admin) || ((req.session.user._id.toString() !== parent.author._id.toString()) && !req.session.user.admin)){
                 return res.send("<h2 style='text-align:center;color:red;'>You can only add sources to your own passages.</h2>");
             }
-            var parentUsageList = await Passage.find({
-                sourceList: {
-                    $in: [parent._id]
-                },
-                versionOf: null
-            }, {_id:1, author:0, passages:0}).lean();
-            parentUsageList = parentUsageList.map(item => item._id.toString());
-            if(parent._id == passage._id || parentUsageList.includes(passage._id.toString())){
-                return res.send('<div data-token="'+passage._id+'"data-title="'+title+'"class="new-source">"'+title+'" Could not be added. Circular citation.</div>');
+            if(parent._id.toString() == passage._id.toString()){
+                return res.send('<div data-token="'+passage._id+'"data-title="'+title+'"class="new-source">"'+title+'" Could not be added. A passage can not directly cite itself.</div>');
             }
             parent.sourceList.push(passage._id);
             //remove duplicates
@@ -6830,8 +6831,15 @@ async function getPassageLocation(passage, train){
                 });
                 await source.save({session: _session});
             }
-            //star if hasnt been starred already
-            else if(recordSingleSystem == null && recordSingle == null){
+            //star if hasnt been starred already and not a collaborator
+            //you won't get extra stars for citing your own work
+            //also give author stars once per author
+            else if(recordSingleSystem == null && recordSingle == null
+                && source.author._id.toString() != user 
+                && source.author._id.toString() != passage.author._id.toString()
+                && !source.collaborators.toString().includes(passage.author._id.toString())
+                && !overlaps(source.collaborators, passage.collaborators)
+                && !source.collaborators.includes(user)){
                 if(!justRecord){
                     source.stars += 1;
                 }
