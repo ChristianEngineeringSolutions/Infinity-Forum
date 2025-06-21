@@ -40,18 +40,18 @@
 
     // Initialize Redis client with promisification
     let redisClient;
-    if (process.env.REDIS_URL) {
-      redisClient = redis.createClient({
-        url: process.env.REDIS_URL
-      });
-    } else {
-      redisClient = redis.createClient();
-    }
+    // if (process.env.REDIS_URL) {
+    //   redisClient = redis.createClient({
+    //     url: process.env.REDIS_URL
+    //   });
+    // } else {
+    //   redisClient = redis.createClient();
+    // }
 
-    // Promisify Redis methods
-    const redisGet = promisify(redisClient.get).bind(redisClient);
-    const redisSet = promisify(redisClient.set).bind(redisClient);
-    const redisDel = promisify(redisClient.del).bind(redisClient);
+    // // Promisify Redis methods
+    // const redisGet = promisify(redisClient.get).bind(redisClient);
+    // const redisSet = promisify(redisClient.set).bind(redisClient);
+    // const redisDel = promisify(redisClient.del).bind(redisClient);
 
     // Create a Bull queue for feed generation
     const feedQueue = new Queue('feed-generation', process.env.REDIS_URL || 'redis://localhost:6379');
@@ -6774,8 +6774,6 @@ async function getPassageLocation(passage, train){
         return res.send("Complete.");
     });
     app.post('/star_passage/', async (req, res) => {
-        console.log('star_passage3');
-        // return res.send('Not enough stars.');
         var passage_id = req.body.passage_id;
         var user = req.session.user;
         var amount = Number(req.body.amount);

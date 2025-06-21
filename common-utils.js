@@ -134,4 +134,19 @@ const scripts = {};
         return totalStarsGivenAmount;
 
     }
-module.exports = {accessSecret, scripts, percentStarsGiven, percentUSD, totalUSD, totalStarsGiven};
+
+// Helper function to sort arrays (from sasame.js line 2189)
+function sortArray(arr, to){
+    var reordered = Array(arr.length).fill(0);
+    for(var i = 0; i < to.length; ++i){
+        for(var j = 0; j < arr.length; ++j){
+            if(arr[j]._id.toString() == to[i]._id.toString()){
+                reordered[i] = arr[j];
+            }
+        }
+    }
+    reordered = reordered.filter(x => x !== 0);
+    return reordered;
+}
+
+module.exports = {accessSecret, scripts, percentStarsGiven, percentUSD, totalUSD, totalStarsGiven, sortArray};

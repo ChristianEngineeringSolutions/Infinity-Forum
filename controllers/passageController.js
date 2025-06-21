@@ -1,179 +1,243 @@
-"use strict";
+'use strict';
+
 const { Passage, PassageSchema } = require('../models/Passage');
+const bookmarkService = require('../services/bookmarkService');
+const { User } = require('../models/User');
+const { Message } = require('../models/Message');
+const { Follower } = require('../models/Follower');
+const { deleteOldUploads } = require('./fileController');
+const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis');
 //Call in Scripts
-const scripts = {};
+const { scripts } = require('../common-utils');
+const browser = require('browser-detect');
 var fs = require('fs'); 
 
-module.exports = {
-    deletePassage: async function(req, res, callback) {
-        let passageID = req.body._id;
-        let passage = await Passage.findOne({_id: passageID});
-        if(passage.author._id.toString() != req.session.user._id.toString()){
-            return res.send("Only passage author can delete.");
-        }
-        //delete uploads too
-        for(const filename of passage.filename){
-            //make sure no other passages are using the file
-            var passages = await Passage.find({
-                filename: {
-                    $in: [filename]
-                }
-            });
-            if(passages.length == 1){
-                var where = passage.personal ? 'protected': 'uploads';
-                fs.unlink('dist/'+where+'/'+filename, function(err){
-                    if (err && err.code == 'ENOENT') {
-                        // file doens't exist
-                        console.info("File doesn't exist, won't remove it.");
-                    } else if (err) {
-                        // other errors, e.g. maybe we don't have enough permission
-                        console.error("Error occurred while trying to remove file");
-                    } else {
-                        console.info(`removed upload for deleted passage`);
-                    }
-                });
-            }
-        }
-        await Passage.deleteOne({_id: passageID.trim()});
-        callback();
-        // async function deleteRecursively(passage, arrToDelete){
-        //     var arrToDelete = [];
-        //     //delete uploads too
-        //     for(const filename of passage.filename){
-        //         //make sure no other passages are using the file
-        //         var passages = await Passage.find({
-        //             filename: {
-        //                 $in: [filename]
-        //             }
-        //         });
-        //         if(passages.length == 1){
-        //             var where = passage.personal ? 'protected': 'uploads';
-        //             fs.unlink('dist/'+where+'/'+filename, function(err){
-        //                 if (err && err.code == 'ENOENT') {
-        //                     // file doens't exist
-        //                     console.info("File doesn't exist, won't remove it.");
-        //                 } else if (err) {
-        //                     // other errors, e.g. maybe we don't have enough permission
-        //                     console.error("Error occurred while trying to remove file");
-        //                 } else {
-        //                     console.info(`removed upload for deleted passage`);
-        //                 }
-        //             });
-        //         }
-        //     }
-        //     for(const p of passage.passages){
-        //         arrToDelete.push(p._id);
-        //         deleteRecursively(p, arrToDelete);
-        //     }
-        //     for(const p of arrToDelete){
-        //         await Passage.deleteOne({_id: p._id()});
-        //     }
-        //     await Passage.deleteOne({_id: passage._id()});
-        // }
-    },
-    copyPassage: async function(passage, user, parent, callback, synthetic=false, comment=false){
-        //add source
-        let sourceList = passage.sourceList;
-        sourceList.push(passage._id);
-        if(passage.showBestOf){
-            var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
-            copy.best = best;
-        }
-        //duplicate main passage
-        let copy = await Passage.create({
-            parent: parent,
-            author: user[0],
-            users: user,
-            sourceList: sourceList,
-            title: passage.title,
-            content: passage.content,
-            html: passage.html,
-            css: passage.css,
-            javascript: passage.javascript,
-            filename: passage.filename,
-            code: passage.code,
-            lang: passage.lang,
-            isSVG: passage.isSVG,
-            license: passage.license,
-            mimeType: passage.mimeType,
-            thumbnail: passage.thumbnail,
-            metadata: passage.metadata,
-            sourceLink: passage.sourceLink,
-            personal: passage.personal,
-            synthetic: synthetic,
-            mirror: passage.mirror,
-            bestOf: passage.bestOf,
-            mirrorEntire: passage.mirrorEntire,
-            mirrorContent: passage.mirrorContent,
-            bestOfEntire: passage.bestOfEntire,
-            bestOfContent: passage.bestOfContent,
-            comment: comment
-        });
-        //Add copy to passage it was duplicated into
-        if(parent != "root" && parent != null){
-            let parentPassage = await Passage.findOne({_id: parent});
-            copy.parent = parentPassage;
-            parentPassage.passages.push(copy);
-            await copy.save();
-            await parentPassage.save();
-        }
-        //copy children
-        async function copyPassagesRecursively(passage, copy){
-            let copySubPassages = [];
-            //copy children
-            if(!passage.public && !passage.forum){
-                for(const p of passage.passages){
-                    let sourceList = p.sourceList;
-                    sourceList.push(p._id);
-                    let pcopy = await Passage.create({
-                        author: user[0],
-                        users: user,
-                        parent: copy,
-                        sourceList: sourceList,
-                        title: p.title,
-                        content: p.content,
-                        html: p.html,
-                        css: p.css,
-                        javascript: p.javascript,
-                        filename: p.filename,
-                        code: p.code,
-                        lang: p.lang,
-                        isSVG: p.isSVG,
-                        license: p.license,
-                        mimeType: p.mimeType,
-                        thumbnail: p.thumbnail,
-                        metadata: p.metadata,
-                        sourceLink: p.sourceLink,
-                        synthetic: synthetic,
-                        personal: p.personal
-                    });
-                    copy.passages.push(pcopy._id);
-                    await copy.save();
-                    //copy children's children
-                    if(p.passages && !p.public && !p.forum){
-                        await copyPassagesRecursively(p, pcopy);
-                    }
-                }
-            }
-            // console.log(copy.title);
-            let update = await Passage.findOneAndUpdate({_id: copy._id}, {
-                passages: copy.passages
-            }, {
-                new: true
-            });
-            let check = await Passage.findOne({_id: copy._id});
-            return update;
-            // console.log(done.title + '\n' + done.passages[0]);
-        }
-        let result = '';
-        if(passage.passages.length >= 1){
-            let result = await copyPassagesRecursively(passage, copy);
-        }
-        else{
-            console.log('false');
-        }
-        let ret = await Passage.findOne({_id: copy._id}).populate('parent author users sourceList subforums collaborators versions mirror bestOf best');
-        return ret;
-        // res.render('passage', {passage: copy, sub: true});
-    },
+// Constants
+const DOCS_PER_PAGE = 10; 
+
+async function deletePassage(req, res) {
+    var passage = await Passage.findOne({_id: req.body._id});
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("Only passage author can delete.");
+    }
+    if(passage.versionOf != null){
+        return res.send("Not allowed.");
+    }
+    await passageService.deletePassage(passage);
+    return res.send("Deleted.");
 }
+
+async function postsPage(req, res) {
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    const page = parseInt(req.query.page || '1');
+    const limit = DOCS_PER_PAGE;
+    if(req.session.CESCONNECT){
+        getRemotePage(req, res);
+    }
+    else{
+        try {
+        // Generate feed for guest users
+        const feedResult = await passageService.generateGuestFeed(page, limit);
+        
+        // Check if we need to redirect (e.g., page number is beyond available results)
+        if (feedResult.redirect) {
+          return res.redirect(`/discover?page=${feedResult.page}`);
+        }
+        
+        // Process each passage to get complete data
+        const passages = [];
+        for (let i = 0; i < feedResult.feed.length; i++) {
+          const processedPassage = await passageService.getPassage(feedResult.feed[i]);
+          passages.push(processedPassage);
+        }
+        
+        // Render the feed page
+        return res.render("stream", {
+          subPassages: false,
+          passageTitle: false, 
+          scripts: scripts, 
+          passages: passages, 
+          passage: {
+            id: 'root', 
+            author: {
+              _id: 'root',
+              username: 'Sasame'
+            }
+          },
+          ISMOBILE: ISMOBILE,
+          page: 'posts',
+          whichPage: 'stream',
+          thread: false,
+          currentPage: feedResult.currentPage,
+          totalPages: feedResult.totalPages
+        });
+      } catch (error) {
+        console.error('Error generating guest feed:', error);
+        return res.status(500).send('Error generating feed. Please try again later.');
+      }
+    }
+}
+
+async function forumPage(req, res) {
+    const { getUserBookmarks } = require('../controllers/bookmarkController');
+    // await clearForum();
+    // await fillForum(req);
+    let bookmarks = [];
+    if(req.session.user){
+        bookmarks = bookmarkService.getUserBookmarks(req.session.user);
+    }
+    var infinity = await Passage.findOne({forumType: 'header'});
+    var categories = await Passage.find({forumType: 'category'});
+    var subcats = await Passage.find({forumType: 'subcat'}).populate('passages.author');
+    var subforums = await Passage.find({forumType: 'subforum'});
+    //get categories and subofrums in order as sorted
+    var header = await Passage.findOne({forumType: 'header'});
+    categories = sortArray(categories, infinity.passages);
+    categories = categories.filter(function(value, index, array){
+        return (value.title == 'VIP' || value.title == 'Admins') ? false : true;
+    });
+    var sortedSubcats = [];
+    //sort subcats
+    //get list of all subcats in order from category passages
+    for(const cat of categories){
+        for(const c of cat.passages){
+            sortedSubcats.push(c);
+        }
+    }
+    subcats = sortArray(subcats, sortedSubcats);
+    var sortedSubforums = [];
+    //sort subforums
+    //get list of all subforums in order from subcat passages
+    for(const sub of subcats){
+        for(const s of sub.subforums){
+            sortedSubforums.push(s);
+        }
+    }
+    subforums = sortArray(subforums, sortedSubforums);
+    if(req.query._id){
+        return res.render("forum_body", {
+            scripts: scripts,
+            bookmarks: bookmarks,
+            categories: categories,
+            subcats: subcats,
+            subforums: subforums,
+        });
+    }
+    res.render("forum", {
+        scripts: scripts,
+        bookmarks: bookmarks,
+        categories: categories,
+        subcats: subcats,
+        subforums: subforums,
+    });
+    // await Subforum.deleteMany({});
+    // fillForum();
+}
+
+async function personalPage(req, res) {
+    const { getUserBookmarks } = require('../controllers/bookmarkController');
+    if(!req.session.user || req.session.user._id != req.params.user_id){
+        return res.redirect('/');
+    }
+    else{
+        var passages = await Passage.find({
+            //author: req.params.user_id, 
+            personal: true,
+            users: {
+                $in: [req.params.user_id]
+            }
+        }).populate('author users sourcelist collaborators versions parent').limit(DOCS_PER_PAGE);
+        for(var i = 0; i < passages.length; ++i){
+            passages[i] = await passageService.getPassage(passages[i]);
+        }
+        let bookmarks = [];
+        // if(req.session.user){
+        //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+        // }
+        if(req.session.user){
+            bookmarks = bookmarkServicegetUserBookmarks(req.session.user);
+        }
+        passages = await passageService.fillUsedInList(passages);
+        const ISMOBILE = browser(req.headers['user-agent']).mobile;
+        return res.render("stream", {
+            subPassages: false,
+            passageTitle: false, 
+            scripts: scripts, 
+            passages: passages, 
+            page: 'personal',
+            passage: {id:'root', author: {
+                _id: 'root',
+                username: 'Sasame'
+            }},
+            bookmarks: bookmarks,
+            ISMOBILE: ISMOBILE,
+            whichPage: 'personal'
+        });
+    }
+}
+
+async function feedPage(req, res) {
+    if (!req.session.user) {
+      return res.redirect('/loginform');
+    }
+
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    const page = parseInt(req.query.page || '1');
+    const limit = DOCS_PER_PAGE;
+    
+    try {
+      // Get feed with pagination
+      const result = await passageController.generateFeedWithPagination(req.session.user, page, limit);
+      
+      // If we need to redirect to a different page (e.g., if requested page is beyond results)
+      if (result.redirect) {
+        return res.redirect(`/feed?page=${result.page}`);
+      }
+      
+      // Process passages with getPassage to get all required data
+      const passages = [];
+      for (let i = 0; i < result.feed.length; i++) {
+        const processedPassage = await passageController.getPassage(result.feed[i]);
+        passages.push(processedPassage);
+      }
+      
+      // Get bookmarks for sidebar
+      let bookmarks = [];
+      if (req.session.user) {
+        bookmarks = await getUserBookmarks(req.session.user);
+      }
+      
+      // Render the stream view with feed data
+      return res.render("stream", {
+        subPassages: false,
+        passageTitle: false, 
+        scripts: scripts, 
+        passages: passages, 
+        passage: {
+          id: 'root', 
+          author: {
+            _id: 'root',
+            username: 'Sasame'
+          }
+        },
+        bookmarks: bookmarks,
+        ISMOBILE: ISMOBILE,
+        page: 'feed',
+        whichPage: 'feed',
+        thread: false,
+        currentPage: result.currentPage,
+        totalPages: result.totalPages
+      });
+    } catch (error) {
+      console.error('Error generating feed:', error);
+      return res.status(500).send('Error generating feed. Please try again later.');
+    }
+}
+
+module.exports = {
+    deletePassage,
+    postsPage,
+    forumPage,
+    personalPage,
+    feedPage
+};
