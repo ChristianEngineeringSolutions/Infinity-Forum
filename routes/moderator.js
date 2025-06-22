@@ -11,7 +11,7 @@ const router = express.Router();
 // These will be filled with the specific moderator routes from sasame.js
 
 router.post('/moderate_content', async (req, res) => {
-  // This route logic will be moved from sasame.js (lines 5921-5978)
+  // This route logic will be moved from sasame.js (lines 5921-5978) (starting with addSource)
   // Placeholder for now
   res.json({ message: 'Moderate content placeholder' });
 });

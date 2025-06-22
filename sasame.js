@@ -2144,7 +2144,6 @@ async function getPassageLocation(passage, train){
     });
     //index.html
     app.get('/', async (req, res) => {
-        //REX
         if(req.session.CESCONNECT){
             getRemotePage(req, res);
         }
@@ -2186,6 +2185,7 @@ async function getPassageLocation(passage, train){
             });
         }
     });
+    //sort arr to match to
     function sortArray(arr, to){
         var reordered = Array(arr.length).fill(0);
         for(var i = 0; i < to.length; ++i){

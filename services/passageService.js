@@ -1,3 +1,6 @@
+const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis.js');
+const { Passage } = require('../models/Passage');
+const { User } = require('../models/User');
 async function deletePassage(passage){
     //delete old versions
     await Passage.deleteMany({versionOf: passage});
@@ -545,7 +548,6 @@ async function generateFeedWithPagination(user, page = 1, limit = 10) {
 }
 
 async function getPassage(passage, small=true){
-    console.log('test9');
     passage.originalSourceList = passage.sourceList.slice();
     // var passage = await Passage.findOne({_id: _id.toString()}).populate('parent author users sourceList subforums collaborators');
     if(passage == null){
@@ -1421,6 +1423,102 @@ async function getRecursiveSpecials(passage){
     }
 }
 
+async function clearForum(){
+    await Passage.deleteMany({forumSpecial: true});
+}
+//fill forum with presets
+async function fillForum(req){
+    const fsp = require('fs').promises;
+    var file = await fsp.readFile('../dist/json/forum.json');
+    var json = JSON.parse(file);
+    //create over directory passage
+    var infinity = await Passage.create({
+        author: req.session.user,
+        users: [req.session.user],
+        parent: null,
+        title: "Infinity Forum",
+        forumSpecial: true,
+        tracker: 0,
+        forumType: 'header'
+    });
+    infinity = await Passage.findOne({forumType: 'header'});
+    for(const category of json.categories){
+        var passage = await Passage.create({
+            author: req.session.user,
+            users: [req.session.user],
+            parent: infinity._id.toString(),
+            title: category.name,
+            forumSpecial: true,
+            tracker: category.tracker,
+            forumType: 'category'
+        });
+        infinity.passages.push(passage);
+        infinity.markModified('passages');
+        await infinity.save();
+        for(const cat of json.subcats){
+            if(cat.parentTracker == category.tracker){
+                var passage2 = await Passage.create({
+                    author: req.session.user,
+                    users: [req.session.user],
+                    parent: passage._id,
+                    forum: true,
+                    title: cat.name,
+                    forumSpecial: true,
+                    content: cat.desc,
+                    tracker:cat.tracker,
+                    parentTracker: category.tracker,
+                    forumType: 'subcat'
+                });
+                passage.passages.push(passage2);
+                passage.markModified('passages');
+                await passage.save();
+                for(const sub of json.subforum){
+                    if(sub.parentTracker == cat.tracker){
+                        var passage3 = await Passage.create({
+                            author: req.session.user,
+                            users: [req.session.user],
+                            parent: passage2._id,
+                            forum: true,
+                            title: sub.name,
+                            forumSpecial: true,
+                            parentTracker: cat.tracker,
+                            tracker: sub.tracker,
+                            forumType: 'subforum',
+                            sub: true
+                        });
+                        passage2.subforums.push(passage3);
+                        passage2.markModified('subforums');
+                        await passage2.save();
+                    }
+                }
+            }
+        }
+    }
+    // for(const category of json.categories){
+    //     await Category.create({
+    //         name: category.name,
+    //         tracker: category.tracker
+    //     });
+    // }
+    // for(const cat of json.subcats){
+    //     await Subcat.create({
+    //         parentTracker: cat.parentTracker,
+    //         name: cat.name,
+    //         desc: cat.desc,
+    //         tracker: cat.tracker
+    //     });
+    // }
+    // for(const sub of json.subforum){
+    //     await Subforum.create({
+    //         parentTracker: sub.parentTracker,
+    //         tracker: sub.tracker,
+    //         name: sub.name,
+    //         desc: sub.desc
+    //     });
+    // }
+    console.log("DONE.");
+}
+
 module.exports = {
     deletePassage,
     copyPassage,
@@ -1443,5 +1541,7 @@ module.exports = {
     afterPassageCreation,
     handlePassageLink,
     getBigPassage,
-    getRecursiveSpecials
+    getRecursiveSpecials,
+    fillForum,
+    clearForum
 };

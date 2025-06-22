@@ -1,88 +1,10 @@
 'use strict';
 
-const { Bookmark } = require('../models/Bookmark');
+const Bookmark = require('../models/Bookmark');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
 const { scripts } = require('../common-utils');
 const passageController = require('./passageController');
-
-// Helper function to get bookmarks for a user (from sasame.js line 3365)
-async function getUserBookmarks(user){
-    return await Bookmark.find({user:user._id}).populate('passage');
-}
-
-// Helper function to bookmark a passage (from sasame.js line 3368)
-async function createBookmark(_id, _for){
-    let user = await User.findOne({_id: _for});
-    // user.bookmarks.push(_id);
-    // await user.save();
-    var passage = await Passage.findOne({_id: _id});
-    let bookmark = await Bookmark.create({
-        user: user,
-        passage: passage
-    });
-    return "Done.";
-}
-
-// Get user's bookmarks route handler (from sasame.js line 657)
-async function getBookmarks(req, res) {
-    // let bookmarks = [];
-    // if(req.session.user){
-    //     let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
-    //     bookmarks = user.bookmarks;
-    // }
-    // for(const bookmark of bookmarks){
-    //     bookmarks[bookmark] = bubbleUpAll(bookmark);
-    // }
-    var bookmarks = await Bookmark.find({user: req.session.user}).sort('-_id').populate('passage');
-    // for(const bookmark of bookmarks){
-    //     bookmarks[bookmark].passage = bubbleUpAll(bookmark.passage);
-    // }
-    for(const bookmark of bookmarks){
-        try{
-        if(bookmark.passage != null){
-            if(bookmark.passage.mirror != null){
-                if(bookmark.passage.mirrorEntire){
-                    var mirror = await Passage.findOne({_id:bookmark.passage.mirror._id});
-                    if(mirror != null){
-                        bookmark.passage.title = mirror.title;
-                    }else{
-                        bookmark.mirror.title = 'Error (Working on it)';
-                    }
-                }
-            }
-            if(bookmark.passage.bestOf != null){
-                if(bookmark.passage.bestOfEntire){
-                    var mirror = await Passage.findOne({parent:bookmark.passage.bestOf._id}).sort('-stars');
-                    if(mirror != null){
-                        bookmark.passage.title = mirror.title;
-                    }else{
-                        bookmark.mirror.title = 'Error (Working on it)';
-                    }
-                }
-            }
-        }
-        }catch(e){
-            console.log(e);
-        }
-    }
-    res.render('bookmarks', {bookmarks: bookmarks});
-}
-
-// Bookmark a passage route handler (from sasame.js line 3379)
-async function bookmarkPassage(req, res) {
-    if(req.body.content == ''){
-        await createBookmark(req.body._id, req.session.user._id);
-    }
-    else{
-        let passage = await Passage.findOne({_id: req.body._id});
-        let copy = await passageController.copyPassage(passage, [req.session.user], null, function(){});
-        copy[req.body.which] = req.body.content;
-        await copy.save();
-        await createBookmark(copy._id, req.session.user._id);
-    }
-    res.send('Done.');
-}
 
 // Transfer bookmark route handler (from sasame.js line 3401)
 async function transferBookmark(req, res) {
@@ -169,9 +91,69 @@ async function passageFromJson(req, res) {
     await createBookmark(copy._id, req.session.user._id);
 }
 
+// Get user's bookmarks route handler (from sasame.js line 657)
+async function getBookmarks(req, res) {
+    // let bookmarks = [];
+    // if(req.session.user){
+    //     let user = await User.findOne({_id: req.session.user._id}).populate('bookmarks');
+    //     bookmarks = user.bookmarks;
+    // }
+    // for(const bookmark of bookmarks){
+    //     bookmarks[bookmark] = bubbleUpAll(bookmark);
+    // }
+    var bookmarks = await Bookmark.find({user: req.session.user}).sort('-_id').populate('passage');
+    // for(const bookmark of bookmarks){
+    //     bookmarks[bookmark].passage = bubbleUpAll(bookmark.passage);
+    // }
+    for(const bookmark of bookmarks){
+        try{
+        if(bookmark.passage != null){
+            if(bookmark.passage.mirror != null){
+                if(bookmark.passage.mirrorEntire){
+                    var mirror = await Passage.findOne({_id:bookmark.passage.mirror._id});
+                    if(mirror != null){
+                        bookmark.passage.title = mirror.title;
+                    }else{
+                        bookmark.mirror.title = 'Error (Working on it)';
+                    }
+                }
+            }
+            if(bookmark.passage.bestOf != null){
+                if(bookmark.passage.bestOfEntire){
+                    var mirror = await Passage.findOne({parent:bookmark.passage.bestOf._id}).sort('-stars');
+                    if(mirror != null){
+                        bookmark.passage.title = mirror.title;
+                    }else{
+                        bookmark.mirror.title = 'Error (Working on it)';
+                    }
+                }
+            }
+        }
+        }catch(e){
+            console.log(e);
+        }
+    }
+    res.render('bookmarks', {bookmarks: bookmarks});
+}
+
+// Bookmark a passage route handler (from sasame.js line 3379)
+async function bookmarkPassage(req, res) {
+    if(req.body.content == ''){
+        await createBookmark(req.body._id, req.session.user._id);
+    }
+    else{
+        let passage = await Passage.findOne({_id: req.body._id});
+        let copy = await passageController.copyPassage(passage, [req.session.user], null, function(){});
+        copy[req.body.which] = req.body.content;
+        await copy.save();
+        await createBookmark(copy._id, req.session.user._id);
+    }
+    res.send('Done.');
+}
+
 module.exports = {
-    getUserBookmarks,
-    createBookmark,
+    getBookmarks,
+    bookmarkPassage,
     getBookmarks,
     bookmarkPassage,
     transferBookmark,

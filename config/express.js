@@ -4,15 +4,18 @@ const express = require('express');
 const helmet = require('helmet');
 const compression = require('compression');
 const cors = require('cors');
-const session = require('express-session');
+// const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const { uploadConfig } = require('../middleware/upload');
 const { updateActivityTimestamp } = require('../middleware/auth');
 const { getUploadFolder } = require('../utils/fileUtils');
+const { accessSecret } = require('../common-utils');
+const { Passage } = require('../models/Passage');
+const { User } = require('../models/User');
 
 // Express app configuration
 
-function configureExpress() {
+async function configureExpress() {
     const app = express();
     
     // Basic middleware
@@ -26,6 +29,22 @@ function configureExpress() {
     
     // Session configuration (will need to be moved from sasame.js)
     // app.use(session({...}));
+    var mongoUrl = await accessSecret("MONGODB_CONNECTION_URL");
+    const session = require('express-session')({
+        secret: "ls",
+        resave: false,
+        saveUninitialized: false,
+        store: MongoStore.create({ 
+            mongoUrl: mongoUrl,
+            ttl: 30 * 24 * 60 * 60, // 30 days TTL (in seconds)
+            autoRemove: 'native',
+            touchAfter: 24 * 3600 // Only update sessions every 24 hours
+        }),
+        cookie: {
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days (in milliseconds)
+        }
+    });
+    app.use(session);
     
     // Set view engine
     app.set('view engine', 'ejs');
@@ -131,6 +150,13 @@ const enforceUnderConstruction = (req, res, next) => {
 const sendUnderConstruction = (req, res) => {
   return res.status(503).send('<h1>Under Construction</h1><p>We are currently working on the site. Please check back later.</p>');
 };
+
+async function regenerateSession(req){
+        if(req.session.user){
+            let user = await User.findOne({_id: req.session.user._id});
+            req.session.user = user;
+        }
+    }
 module.exports = {
     configureExpress
 };

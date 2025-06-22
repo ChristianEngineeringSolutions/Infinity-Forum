@@ -13,6 +13,7 @@ const { initializeRedis } = require('./config/redis');
 const { setupGracefulShutdown } = require('./config/server');
 
 // Import route modules
+const pageRoutes = require('./routes/pages');
 const authRoutes = require('./routes/auth');
 const verificationRoutes = require('./routes/verification');
 const starRoutes = require('./routes/stars');
@@ -39,7 +40,7 @@ async function startServer() {
         }
         
         // Configure Express app
-        const app = configureExpress();
+        const app = await configureExpress();
         const server = http.Server(app);
         
         // Socket.IO setup (from sasame.js line 416)
@@ -57,6 +58,7 @@ async function startServer() {
         });
         
         // Mount route modules
+        app.use('/', pageRoutes);
         app.use('/', authRoutes);
         app.use('/', verificationRoutes);
         app.use('/', starRoutes);

@@ -6,7 +6,7 @@ const { Passage } = require('../models/Passage');
 const { Star } = require('../models/Star');
 const { System } = require('../models/System');
 const { Message } = require('../models/Message');
-const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageController');
+const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageService');
 const { getPassage } = require('../services/passageService');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 

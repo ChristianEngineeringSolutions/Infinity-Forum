@@ -1,313 +1,544 @@
+const adminService = require('../services/adminService.js');
+const passageService = require('../services/passageService.js');
+const fileService = require('../services/fileService.js');
+const { getRedisClient, getRedisOps } = require('../config/redis.js');
+const { exec } = require('child_process');
+const fs = require('fs');
+const fsp = require('fs').promises;
+const path = require('path');
+const { Passage } = require('../models/Passage');
+const { User } = require('../models/User');
+const Queue = require('bull');
 
-// Helper function to get a formatted date/time string for folder names
-function getFormattedDateTime() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
-}
+// Initialize Redis and Bull Queue
+const redisClient = getRedisClient();
+const redis = getRedisOps();
+const feedQueue = new Queue('feed-generation', process.env.REDIS_URL || 'redis://localhost:6379');
 
-// Create a folder in Google Cloud Storage
-async function createGcsFolder(folderPath, bucketName) {
-  try {
-    // In GCS, folders are simulated by creating a 0-byte object with a trailing slash
-    const folderObject = storage.bucket(bucketName).file(`${folderPath}/`);
-    
-    // Check if folder already exists
-    const [exists] = await folderObject.exists();
-    if (!exists) {
-      // Create the folder by writing an empty file with folder metadata
-      await folderObject.save('', {
-        metadata: {
-          contentType: 'application/x-directory'
-        }
-      });
-      console.log(`Created GCS folder: ${folderPath}/`);
-    } else {
-      console.log(`GCS folder already exists: ${folderPath}/`);
+// Controller functions
+const runFile = (req, res) => {
+    var file = req.body.file;
+    var ext = file.split('.')[file.split('.').length - 1];
+    var bash = 'ls';
+    switch(ext){
+        case 'js':
+        bash = 'node ' + file;
+        break;
+        case 'sh':
+        bash = 'sh ' + file;
+        break;
     }
-    
-    return true;
-  } catch (error) {
-    console.error(`Error creating GCS folder ${folderPath}:`, error);
-    throw error;
-  }
-}
-
-// Helper function to determine content type based on file extension
-async function getContentType(filePath) {
-  const fsp = require('fs').promises;
-  try {
-    const ext = path.extname(filePath).toLowerCase();
-
-    // MIME types based on file extensions
-    const extToMime = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.txt': 'text/plain',
-      '.pdf': 'application/pdf',
-      '.zip': 'application/zip',
-      '.mp3': 'audio/mpeg',
-      '.mp4': 'video/mp4',
-      // Add more extensions as needed
-    };
-
-    if (extToMime[ext]) {
-      return extToMime[ext];
-    }
-
-    // Magic number detection (for more accurate MIME type)
-    try {
-      const buffer = await fsp.readFile(filePath);
-      const mime = magic(buffer);  // You'll need to ensure 'magic' is properly defined/imported
-
-      if (mime) {
-        return mime;
+    exec(bash, (err, stdout, stderr) => {
+      if (err) {
+        // node couldn't execute the command
+        res.send(JSON.stringify(err));
+        return;
       }
-    } catch (magicError) {
-      console.error('Error with magic number detection:', magicError);
-    }
-
-    return 'application/octet-stream'; // Default if MIME type cannot be determined
-  } catch (error) {
-    console.error('Error determining content type:', error);
-    return 'application/octet-stream'; // Default on error
-  }
-}
-
-// Helper function to upload a file with retry logic
-async function uploadFileWithRetry(filePath, gcsFilePath, bucketName) {
-  const { default: pRetry } = await import('p-retry');
-  
-  const operation = async () => {
-    try {
-      const contentType = await getContentType(filePath);
-      const fileContent = await fsp.readFile(filePath);
-      
-      // Upload directly to GCS using the Storage client
-      await storage.bucket(bucketName).file(gcsFilePath).save(fileContent, {
-        contentType: contentType,
-        metadata: {
-          contentType: contentType
-        }
-      });
-      
-      console.log(`Uploaded to GCS path ${gcsFilePath} successfully.`);
-      return true;
-    } catch (error) {
-      console.error(`Error during upload attempt for ${gcsFilePath}:`, error);
-      throw error; // Throw to trigger retry
-    }
-  };
-  
-  return pRetry(operation, { 
-    retries: 3, 
-    onFailedAttempt: error => console.log(`Attempt ${error.attemptNumber} failed for ${gcsFilePath}. Retrying...`) 
-  });
-}
-
-// Function to recursively process a directory and its subdirectories
-async function processDirectory(localDirPath, gcsFolderBase, bucketName, basePath = '') {
-  const { default: pLimit } = await import('p-limit');
-  const limit = pLimit(5); // Concurrency limit
-  
-  try {
-    // Read the contents of the directory
-    const entries = await fsp.readdir(path.join(localDirPath, basePath), { withFileTypes: true });
-    const uploadPromises = [];
-    
-    // Process each entry (file or directory)
-    for (const entry of entries) {
-      const entryRelativePath = path.join(basePath, entry.name);
-      const entryFullPath = path.join(localDirPath, entryRelativePath);
-      
-      if (entry.isDirectory()) {
-        // Create the corresponding GCS subfolder
-        const gcsSubfolderPath = `${gcsFolderBase}/${entryRelativePath}`;
-        await createGcsFolder(gcsSubfolderPath, bucketName);
-        
-        // Recursively process subdirectory
-        await processDirectory(localDirPath, gcsFolderBase, bucketName, entryRelativePath);
-      } else if (entry.isFile()) {
-        // Upload file with limited concurrency
-        uploadPromises.push(limit(async () => {
-          try {
-            // Determine the GCS path for this file
-            const gcsFilePath = `${gcsFolderBase}/${entryRelativePath}`;
-            await uploadFileWithRetry(entryFullPath, gcsFilePath, bucketName);
-          } catch (error) {
-            console.error(`Error processing file ${entryRelativePath}:`, error);
-          }
-        }));
-      }
-    }
-    
-    // Wait for all file uploads at this level to complete
-    await Promise.all(uploadPromises);
-    
-  } catch (error) {
-    console.error(`Error processing directory ${path.join(localDirPath, basePath)}:`, error);
-    throw error;
-  }
-}
-
-// Main function to upload a directory and all its subdirectories to GCS
-async function uploadDirectoryToGCS(directoryPath, bucketName) {
-  try {
-    // Get directory name from path
-    const dirName = path.basename(directoryPath);
-    
-    // Create GCS folder with directory name and timestamp
-    const timestamp = getFormattedDateTime();
-    const gcsFolderBase = `${dirName}_${timestamp}`;
-    
-    // Create the root GCS folder
-    await createGcsFolder(gcsFolderBase, bucketName);
-    
-    console.log(`Starting upload of ${directoryPath} to GCS folder: ${gcsFolderBase}`);
-    
-    // Process the directory and all its subdirectories
-    await processDirectory(directoryPath, gcsFolderBase, bucketName);
-    
-    console.log(`Finished processing directory: ${directoryPath} to GCS folder: ${gcsFolderBase}`);
-    return true;
-  } catch (error) {
-    console.error('Error uploading files from directory:', error);
-    throw error;
-  }
-}
-
-/**
- * Downloads the most recent backup of a specified folder type from GCS
- * @param {string} bucketName - The name of the GCS bucket
- * @param {string} folderType - One of 'uploads', 'protected', or 'dump'
- * @param {string} localBaseDir - Base local directory (usually __dirname)
- * @param {boolean} deleteExisting - Whether to delete existing files before downloading
- * @returns {Promise<void>}
- */
-async function downloadMostRecentBackup(bucketName, folderType, localBaseDir, deleteExisting = false) {
-  try {
-    // Validate folder type
-    if (!['uploads', 'protected', 'dump'].includes(folderType)) {
-      throw new Error(`Invalid folder type: ${folderType}. Must be one of 'uploads', 'protected', or 'dump'`);
-    }
-    
-    // Map local directories based on folder type
-    const folderPaths = {
-      'uploads': path.join(localBaseDir, 'dist/uploads'),
-      'protected': path.join(localBaseDir, 'protected'),
-      'dump': path.join(localBaseDir, 'dump')
-    };
-    
-    const localDirectory = folderPaths[folderType];
-    
-    // Initialize the Google Cloud Storage client
-    const storage = new Storage();
-    
-    // Get a reference to the bucket
-    const bucket = storage.bucket(bucketName);
-    
-    // List all folders starting with the folderType
-    const [files] = await bucket.getFiles({ prefix: `${folderType}_` });
-    
-    // Extract unique folder names
-    const folderNames = new Set();
-    files.forEach(file => {
-      const folderName = file.name.split('/')[0];
-      if (folderName.startsWith(`${folderType}_`)) {
-        folderNames.add(folderName);
-      }
+      res.send(stdout);
     });
+};
+
+const makeMainFile = async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body.passageID});
+    var passage = await passageService.getPassage(passage);
+    //check if file/dir already exists
+    var exists = await Passage.findOne({fileStreamPath: req.body.fileStreamPath});
+    if(exists != null){
+        exists.mainFile = false;
+        await exists.save();
+    }
+    passage.mainFile = true;
+    await passage.save();
+    //restart server to apply changes
+    fileService.updateFile(req.body.fileStreamPath, passage.all);
+};
+
+const removeFile = async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body._id});
+    passage.filename = '';
+    passage.mimeType = '';
+    await passage.save();
+    res.send("Done.");
+};
+
+const updateFile = (req, res) => {
+    var file = req.body.file;
+    var content = req.body.content;
+    fs.writeFile(file, content, function(err){
+      if (err) return console.log(err);
+      res.send('Done');
+    });
+};
+
+const updateFileStream = async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body.passageID});
+    passage.fileStreamPath = req.body.fileStreamPath;
+    await passage.save();
+    //create file if not exists
+    //else update
+    //check if directory or file
+    var isDirectory = false;
+    var isFile = false;
+    if(passage.fileStreamPath.at(-1) == '/'){
+        isDirectory = true;
+    }
+    else{
+        isFile = true;
+    }
+    //TODO: check if need to check for exists or if fsp handles this
+    if(isDirectory){
+        await fsp.mkdir(__dirname + passage.fileStreamPath);
+    }
+    else if(isFile){
+        await fsp.writeFile(__dirname + passage.fileStreamPath);
+    }
+};
+
+const syncFileStreamController = async (req, res) => {
+    await adminService.syncFileStream();
+    res.send("Done.");
+};
+
+const serverEval = (req, res) => {
+    if(process.env.DOMAIN == 'localhost'){
+        eval(req.code);
+    }
+};
+
+const clearAllFeedCaches = async (req, res) => {
+  try {
+    // Get all feed cache keys
+    const keys = await redisClient.keys('user_feed:*');
     
-    // Convert to array and sort chronologically (newest first)
-    const sortedFolders = Array.from(folderNames).sort().reverse();
-    
-    if (sortedFolders.length === 0) {
-      console.log(`No backup folders found starting with "${folderType}_"`);
-      return;
+    if (keys.length > 0) {
+      // Delete all feed caches
+      await redisClient.del(keys);
+      console.log(`Cleared ${keys.length} feed caches`);
     }
     
-    // Get the most recent folder
-    const mostRecentFolder = sortedFolders[0];
-    console.log(`Most recent backup folder: ${mostRecentFolder}`);
-    
-    // Get all files in the most recent folder
-    const [folderFiles] = await bucket.getFiles({ prefix: `${mostRecentFolder}/` });
-    
-    // Delete existing directory if requested
-    if (deleteExisting) {
-      try {
-        console.log(`Deleting existing directory: ${localDirectory}`);
-        await fsp.rm(localDirectory, { recursive: true, force: true });
-      } catch (err) {
-        // If directory doesn't exist, that's fine
-        if (err.code !== 'ENOENT') {
-          console.warn(`Warning: Could not delete directory: ${err.message}`);
-        }
-      }
-    }
-    
-    // Make sure the local directory exists
-    await fsp.mkdir(localDirectory, { recursive: true });
-    
-    // Download each file
-    console.log(`Downloading ${folderFiles.length} files to ${localDirectory}...`);
-    
-    // Set to track directories we've already created
-    const createdDirs = new Set();
-    createdDirs.add(localDirectory);
-    
-    for (const file of folderFiles) {
-      // Skip the folder placeholder object (ends with '/')
-      if (file.name.endsWith('/')) continue;
-      
-      // Get the file path without the folder prefix
-      const relativePath = file.name.replace(`${mostRecentFolder}/`, '');
-      const localFilePath = path.join(localDirectory, relativePath);
-      
-      // Create subdirectories if needed
-      const dir = path.dirname(localFilePath);
-      if (!createdDirs.has(dir)) {
-        await fsp.mkdir(dir, { recursive: true });
-        createdDirs.add(dir);
-      }
-      
-      // Download the file
-      await file.download({ destination: localFilePath });
-      console.log(`Downloaded: ${relativePath}`);
-    }
-    
-    console.log(`Download completed successfully for ${folderType}!`);
-    
+    res.json({ success: true, cleared: keys.length });
   } catch (error) {
-    console.error(`Error downloading ${folderType} from GCS:`, error);
-    throw error;
+    console.error('Error clearing feed caches:', error);
+    res.status(500).json({ error: 'Failed to clear feed caches' });
   }
+};
+
+const invalidateFeedCache = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing userId parameter' });
+    }
+    
+    const cacheKey = `user_feed:${userId}`;
+    await redisClient.del(cacheKey);
+    
+    // Queue a job to regenerate the feed
+    await feedQueue.add(
+      { userId },
+      { priority: 1 } // High priority
+    );
+    
+    res.json({ success: true, message: 'Feed cache invalidated and regeneration queued' });
+  } catch (error) {
+    console.error('Error invalidating feed cache:', error);
+    res.status(500).json({ error: 'Failed to invalidate feed cache' });
+  }
+};
+
+const dbBackupZip = async (req, res) => {
+  if(!req.session.user || !req.session.user.admin){
+      return res.redirect('/');
+  }
+  exec("mongodump", async function(){
+      return res.send('Database backed up in /dump');
+  });
+};
+
+const uploadsBackupZip = async (req, res) => {
+  if(!req.session.user || !req.session.user.admin){
+      return res.redirect('/');
+  }
+  var directory1 = __dirname + '/dist/uploads';
+  var AdmZip = require("adm-zip");
+  var zip1 = new AdmZip();
+  //compress /dump and /dist/uploads then send
+  const files = await fsp.readdir(directory1);
+  for(const file of files){
+      console.log(file);
+      zip1.addLocalFile(__dirname + '/dist/uploads/' + file);
+  }
+  return res.send(zip1.toBuffer());
+};
+
+const protectedBackupZip = async (req, res) => {
+  if(!req.session.user || !req.session.user.admin){
+      return res.redirect('/');
+  }
+  var directory1 = __dirname + '/protected';
+  var AdmZip = require("adm-zip");
+  var zip1 = new AdmZip();
+  //compress /dump and /dist/uploads then send
+  const files = await fsp.readdir(directory1);
+  for(const file of files){
+      console.log(file);
+      zip1.addLocalFile(__dirname + '/protected/' + file);
+  }
+  return res.send(zip1.toBuffer());
+};
+
+const restoreDatabase = async (req, res) => {
+  var AdmZip = require("adm-zip");
+  var files = req.files;
+  // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+  var fileToUpload = req.files.file;
+fileToUpload.mv('./tmp/db.zip', async function(err) {
+if (err) {
+  console.error("Error moving uploaded file:", err);
+  return res.status(500).send("Error uploading and processing file.");
 }
 
-/**
- * Download multiple folder types
- * @param {string} bucketName - The name of the GCS bucket
- * @param {Array<string>} folderTypes - Array of folder types to download ('uploads', 'protected', 'dump')
- * @param {string} localBaseDir - Base local directory
- * @param {boolean} deleteExisting - Whether to delete existing files before downloading
- * @returns {Promise<void>}
- */
-async function downloadMultipleFolders(bucketName, folderTypes, localBaseDir, deleteExisting = false) {
-  for (const folderType of folderTypes) {
-    console.log(`\n==== Processing ${folderType} ====`);
-    await downloadMostRecentBackup(bucketName, folderType, localBaseDir, deleteExisting);
-  }
-  console.log('\nAll requested folders have been processed!');
+try {
+  const zip1 = new AdmZip(__dirname + '/tmp/db.zip');
+  zip1.extractAllTo(__dirname + '/dump/sasame/');
+  await fsp.rename(__dirname + "/dump/sasame/system.version.bson", __dirname + "/dump/admin/system.version.bson");
+  await fsp.rename(__dirname + "/dump/sasame/system.version.metadata.json", __dirname + "/dump/admin/system.version.metadata.json");
+  await fsp.unlink(__dirname + "/tmp/db.zip");
+var pwd = await accessSecret("MONGO_PASSWORD");
+let mongorestore;
+if (process.env.REMOTE == 'true') {
+mongorestore = `mongorestore --username ${process.env.MONGO_USER} --password '${req.body.password}'`;
+} else {
+mongorestore = 'mongorestore';
 }
+  exec(`${mongorestore} --authenticationDatabase admin`, async function(error, stdout, stderr) {
+      if (error) {
+          console.error("Error during mongorestore:", error);
+          return res.status(500).send("Error restoring database.");
+      }
+      console.log("mongorestore stdout:", stdout);
+      console.error("mongorestore stderr:", stderr);
+      return res.send("Database restored.");
+  });
+} catch (error) {
+  console.error("Error processing ZIP file:", error);
+  // Handle the AdmZip or file system errors
+  if (error.message === 'Invalid filename') {
+      return res.status(400).send("Invalid ZIP file provided.");
+  } else {
+      return res.status(500).send("Error processing ZIP file.");
+  }
+}
+});
+};
 
+const restoreUploads = async (req, res) => {
+var AdmZip = require("adm-zip");
+  try {
+      // Check if files were uploaded
+      if (!req.files || Object.keys(req.files).length === 0 || !req.files.file) {
+          return res.status(400).send('No files were uploaded.');
+      }
+      
+      const fileToUpload = req.files.file;
+      const uploadPath = path.join(__dirname, 'tmp', 'uploads.zip');
+      const extractPath = path.join(__dirname, 'dist', 'uploads');
+      
+      // Move the file
+      await new Promise((resolve, reject) => {
+          fileToUpload.mv(uploadPath, (err) => {
+              if (err) {
+                  console.error("Error moving uploaded file:", err);
+                  reject(err);
+              } else {
+                  resolve();
+              }
+          });
+      });
+      
+      // Process the ZIP file
+      const zip1 = new AdmZip(uploadPath);
+      zip1.extractAllTo(extractPath);
+      await fsp.unlink(uploadPath);
+      
+      // Send response after all operations are complete
+      res.send("Uploads restored.");
+      
+  } catch (error) {
+      console.error("Error processing request:", error);
+      // Only send response if one hasn't been sent already
+      if (!res.headersSent) {
+          res.status(500).send("An error occurred during the upload and restore process.");
+      }
+  }
+};
+
+const restoreProtected = async (req, res) => {
+  var AdmZip = require("adm-zip");
+  var files = req.files;
+  // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+  var fileToUpload = req.files.file;
+  fileToUpload.mv('./tmp/protected.zip', async function(err) {
+      var zip1 = new AdmZip(__dirname + '/tmp/protected.zip');
+      zip1.extractAllTo(__dirname + '/protected/');
+      await fsp.unlink(__dirname + "/tmp/protected.zip");
+      return res.send("Protected Uploads restored.");
+  });
+};
+
+const getAdmin = async (req, res) => {
+  var focus = req.params.focus || false;
+  // await mongoSnap('./backup/collections.tar'); // backup
+  // await mongoSnap('./backups/collections.tar', true); // restore
+  const ISMOBILE = browser(req.headers['user-agent']).mobile;
+  if(!req.session.user || !req.session.user.admin){
+      return res.redirect('/');
+  }
+  else{
+      var whitelistOption = false;
+      if(focus == 'requested-daemons' || focus == false){
+          whitelistOption = false;
+          //view all passages requesting to be a public daemon
+          var passages = await Passage.find({public_daemon:1}).sort('-stars').populate('users author sourceList');
+      }else if(focus == 'blacklisted'){
+          whitelistOption = true;
+          var blacklisted = [
+              "whatsapp", 'btn', 'tokopedia', 'gopay',
+              'dbs', 'call center', 'indodax'
+          ];
+          var passages = await Passage.aggregate([
+              {
+                  $match: {
+                      $or: [
+                          { title: { $in: blacklisted } },
+                          { content: { $in: blacklisted } }
+                      ]
+                  }
+              },
+              {
+                  $lookup: {
+                      from: 'Users', // <--- Changed from 'users' to 'Users'
+                      localField: 'author',
+                      foreignField: '_id',
+                      as: 'user'
+                  }
+              },
+              {
+                  $unwind: {
+                      path: '$user',
+                      preserveNullAndEmptyArrays: true
+                  }
+              },
+              {
+                  $match: {
+                      $or: [
+                          { 'user.whitelisted': { $ne: true } },
+                          { user: { $exists: false } }
+                      ]
+                  }
+              },
+              {
+                  $sort: { _id: -1 }
+              },
+              {
+                  $project: {
+                      user: 0
+                  }
+              }
+          ]);
+
+      }
+      let bookmarks = [];
+      // if(req.session.user){
+      //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+      // }
+      if(req.session.user){
+          bookmarks = getBookmarks(req.session.user);
+      }
+      passages = await fillUsedInList(passages);
+      // bcrypt.hash('test', 10, function (err, hash){
+      //     if (err) {
+      //       console.log(err);
+      //     }
+      //     console.log(hash);
+      //   });
+      return res.render("admin", {
+          subPassages: false,
+          ISMOBILE: ISMOBILE,
+          test: 'test',
+          whitelistOption: whitelistOption,
+          passageTitle: 'Infinity Forum', 
+          scripts: scripts, 
+          passages: passages, 
+          passage: {id:'root', author: {
+              _id: 'root',
+              username: 'Sasame'
+          }},
+          bookmarks: bookmarks,
+
+      });
+  }
+};
+
+const getSimulation = async (req, res) => {
+  try {
+      const ISMOBILE = browser(req.headers['user-agent']).mobile;
+      res.render('simulation', {
+          ISMOBILE: ISMOBILE,
+          user: req.session.user,
+          page: 'simulation',
+          passageTitle: 'Simulation Management'
+      });
+  } catch (error) {
+      console.error('Error loading simulation page:', error);
+      res.status(500).send('Error loading simulation page');
+  }
+};
+
+const generateSimulation = async (req, res) => {
+  try {
+      const { numUsers, numPassages, contentType, includeImages, includeSubContent } = req.body;
+      const domain = process.env.DOMAIN || 'http://localhost:3000';
+      
+      // Import the fake data generator
+      const fakeGenerator = require('./dist/js/fake.js');
+      
+      // Validate input
+      if (!numUsers || !numPassages || numUsers < 1 || numPassages < 1) {
+          return res.status(400).json({ error: 'Invalid parameters' });
+      }
+      
+      if (numUsers > 50 || numPassages > 100) {
+          return res.status(400).json({ error: 'Too many users or passages requested' });
+      }
+      
+      console.log(`Admin ${req.session.user.username} requested simulation generation:`);
+      console.log(`Users: ${numUsers}, Passages: ${numPassages}, Content: ${contentType}`);
+      
+      // Generate the fake data using HTTP registration for users and direct database creation for passages
+      const useAIContent = contentType === 'ai';
+      const includeImagesFlag = includeImages === true;
+      const totalUsers = parseInt(numUsers);
+      const totalPassages = parseInt(numPassages);
+      
+      console.log('Registering fake users via HTTP and creating passages directly in database...');
+      
+      // Generate fake users first using HTTP registration
+      const createdUsers = [];
+      for (let i = 0; i < totalUsers; i++) {
+          console.log(`Registering fake user ${i + 1}/${totalUsers}...`);
+          const fakeUserData = await fakeGenerator.registerFakeUser(domain);
+          if (fakeUserData) {
+              createdUsers.push(fakeUserData);
+          } else {
+              console.warn(`Failed to register fake user ${i + 1}, skipping...`);
+          }
+          // Small delay to avoid overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      if (createdUsers.length === 0) {
+          return res.status(500).json({ 
+              error: 'Failed to create any fake users via HTTP registration',
+              details: 'Check reCAPTCHA bypass or registration endpoint'
+          });
+      }
+      
+      console.log(`Successfully registered ${createdUsers.length} fake users via HTTP`);
+      
+      // Create passages for each user
+      let createdPassagesCount = 0;
+      const createdPassages = [];
+      const passagesPerUser = Math.ceil(totalPassages / totalUsers);
+      
+      for (const userData of createdUsers) {
+          for (let j = 0; j < passagesPerUser && createdPassagesCount < totalPassages; j++) {
+              const passage = await createFakePassageDirectly(userData, useAIContent, includeImagesFlag);
+              if (passage) {
+                  createdPassagesCount++;
+                  createdPassages.push(passage);
+              }
+          }
+      }
+      
+      // Create sub-passages if includeSubContent is true
+      let totalSubPassagesCreated = 0;
+      if (includeSubContent === true && createdPassages.length > 0) {
+          console.log('Creating sub-passages for main passages...');
+          
+          for (const passage of createdPassages) {
+              const subPassages = await createFakeSubPassagesDirectly(passage, createdUsers, passage._id);
+              totalSubPassagesCreated += subPassages.length;
+          }
+          
+          console.log(`Created ${totalSubPassagesCreated} sub-passages`);
+      }
+      
+      console.log(`Completed: Registered ${createdUsers.length} users via HTTP, created ${createdPassagesCount} passages, and ${totalSubPassagesCreated} sub-passages`);
+      
+      res.json({
+          success: true,
+          usersCreated: createdUsers.length,
+          passagesCreated: createdPassagesCount,
+          subPassagesCreated: totalSubPassagesCreated,
+          message: 'Simulation data generated successfully using HTTP registration for users and direct database creation for passages'
+      });
+      
+  } catch (error) {
+      console.error('Error generating simulation data:', error);
+      res.status(500).json({ 
+          error: 'Failed to generate simulation data',
+          details: error.message 
+      });
+  }
+};
+
+const uploadToGcs = async (req, res) => {
+  if (!req.session.user || !req.session.user.admin) {
+    return res.redirect('/');
+  } else {
+    try {
+      const bucketName = 'infinity-forum-backup';
+      
+      const folderPath1 = path.join(__dirname, 'dump');
+      const folderPath2 = path.join(__dirname, 'dist/uploads');
+      const folderPath3 = path.join(__dirname, 'protected');
+      
+      // Upload directories in parallel
+      await Promise.all([
+        adminService.uploadDirectoryToGCS(folderPath1, bucketName),
+        adminService.uploadDirectoryToGCS(folderPath2, bucketName),
+        adminService.uploadDirectoryToGCS(folderPath3, bucketName)
+      ]);
+      
+      return res.send('Backup process completed successfully.');
+    } catch (error) {
+      console.error('Error uploading to GCS:', error);
+      res.status(500).send('Upload failed: ' + error.message);
+    }
+  }
+};
+
+// Export controller functions
 module.exports = {
-    getFormattedDateTime,
-    createGcsFolder,
-    getContentType,
-    uploadFileWithRetry,
-    processDirectory,
-    uploadDirectoryToGCS,
-    downloadMostRecentBackup,
-    downloadMultipleFolders
+    runFile,
+    makeMainFile,
+    removeFile,
+    updateFile,
+    updateFileStream,
+    syncFileStreamController,
+    serverEval,
+    clearAllFeedCaches,
+    invalidateFeedCache,
+    dbBackupZip,
+    uploadsBackupZip,
+    protectedBackupZip,
+    restoreDatabase,
+    restoreUploads,
+    restoreProtected,
+    getAdmin,
+    getSimulation,
+    generateSimulation,
+    uploadToGcs
 };
