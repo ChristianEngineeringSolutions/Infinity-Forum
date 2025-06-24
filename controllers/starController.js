@@ -3,9 +3,9 @@
 const mongoose = require('mongoose');
 const { User } = require('../models/User');
 const { Passage } = require('../models/Passage');
-const { Star } = require('../models/Star');
-const { System } = require('../models/System');
-const { Message } = require('../models/Message');
+const Star = require('../models/Star');
+const System = require('../models/System');
+const Message = require('../models/Message');
 const starService = require('../services/starService');
 const passageService = require('../services/passageService');
 const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageController');

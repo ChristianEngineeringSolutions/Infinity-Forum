@@ -7,8 +7,8 @@ const { scripts, accessSecret } = require('../common-utils');
 const { promisify } = require('util');
 const request = promisify(require('request'));
 
-// Import user functions that will be in userController
-const { userExists, sendEmail } = require('./userController');
+const { userExists } = require('../services/userService');
+const { sendEmail } = require('../services/systemService');
 
 // Authentication helper function (from sasame.js line 8461)
 async function authenticateUsername(username, password){

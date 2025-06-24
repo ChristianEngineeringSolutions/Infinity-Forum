@@ -1,36 +1,22 @@
 'use strict';
 
 const express = require('express');
+const bodyParser = require('body-parser');
 const router = express.Router();
-// Will need stripe controller
-// const stripeController = require('../controllers/stripeController');
+const stripeController = require('../controllers/stripeController');
 
 // Stripe payment routes
 
 // Subscription routes
-router.post('/create-subscription-checkout', async (req, res) => {
-  // This route logic will be moved from sasame.js
-  // Placeholder for now
-  res.json({ message: 'Create subscription checkout placeholder' });
-});
+router.post('/create-subscription-checkout', stripeController.createSubscriptionCheckout);
+router.post('/unsubscribe', stripeController.unsubscribe);
 
-router.post('/unsubscribe', async (req, res) => {
-  // This route logic will be moved from sasame.js
-  // Placeholder for now
-  res.json({ message: 'Unsubscribe placeholder' });
-});
+// Verification routes
+router.post('/create-verification-session', stripeController.createVerificationSession);
+router.get('/stripeOnboarded', stripeController.stripeOnboarded);
 
-// Webhook routes
-router.post('/stripe_webhook', async (req, res) => {
-  // This route logic will be moved from sasame.js
-  // Placeholder for now
-  res.json({ message: 'Stripe webhook placeholder' });
-});
-
-router.post('/stripe_connect_webhook', async (req, res) => {
-  // This route logic will be moved from sasame.js
-  // Placeholder for now
-  res.json({ message: 'Stripe connect webhook placeholder' });
-});
+// Webhook routes (need raw body parser)
+router.post('/stripe_webhook', bodyParser.raw({ type: 'application/json' }), stripeController.stripeWebhook);
+router.post('/stripe_connect_webhook', bodyParser.raw({ type: 'application/json' }), stripeController.stripeConnectWebhook);
 
 module.exports = router;

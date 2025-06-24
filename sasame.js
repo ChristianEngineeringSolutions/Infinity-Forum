@@ -371,7 +371,7 @@
     }
     setupDatabaseIndexes();
     // Controllers
-    const passageController = require('./controllers/passageController');
+    const passageController = require('./services/passageService');
      // Routes
     // const passageRoutes = require('./routes/passage');
 
@@ -2826,6 +2826,7 @@ async function getPassageLocation(passage, train){
     //     res.render("projects");
     // });
     async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor=false){
+        console.log('recursive');
         for(const source of sourceList){
             if(getAuthor){
                 var sourcePassage = await Passage.findOne({_id:source}).populate('author');
@@ -2837,7 +2838,7 @@ async function getPassageLocation(passage, train){
             if(sourcePassage != null){
                 var special = null;
                 // console.log(sourcePassage._id);
-                if(sources.includes(sourcePassage)){
+                if(sources.some(s => s._id.toString() === sourcePassage._id.toString())){
                     continue;
                 }
                 // Skip if this source is the same as the original passage to prevent circular citations
@@ -3453,6 +3454,7 @@ async function getPassageLocation(passage, train){
             parent.sourceList.push(passage._id);
             //remove duplicates
             parent.sourceList = Object.values(parent.sourceList.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
+            // parent.sourceList = [...new Set(parent.sourceList.map(source => source.toString()))];
             parent.markModified('sourceList');
             await parent.save();
             //passage usage list has grown so put it higher in feed

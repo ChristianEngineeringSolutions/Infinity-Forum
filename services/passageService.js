@@ -1,6 +1,9 @@
 const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis.js');
 const { Passage } = require('../models/Passage');
+const Visitor = require('../models/Visitor');
 const { User } = require('../models/User');
+const { DOCS_PER_PAGE, scripts } = require('../common-utils');
+const browser = require('browser-detect');
 async function deletePassage(passage){
     //delete old versions
     await Passage.deleteMany({versionOf: passage});
@@ -140,7 +143,7 @@ async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor
         if(sourcePassage != null){
             var special = null;
             // console.log(sourcePassage._id);
-            if(sources.includes(sourcePassage)){
+            if(sources.some(s => s._id.toString() === sourcePassage._id.toString())){
                 continue;
             }
             // Skip if this source is the same as the original passage to prevent circular citations
@@ -1519,8 +1522,34 @@ async function fillForum(req){
     console.log("DONE.");
 }
 
+async function logVisit(req, passageID){
+    let ipAddress = req.ip; // Default to req.ip
+
+    // Check Cloudflare headers for real client IP address
+    if (req.headers['cf-connecting-ip']) {
+    ipAddress = req.headers['cf-connecting-ip'];
+    } else if (req.headers['x-forwarded-for']) {
+    // Use X-Forwarded-For header if available
+    ipAddress = req.headers['x-forwarded-for'].split(',')[0];
+    }
+
+
+    // Check other custom headers if needed
+
+
+    const existingVisitor = await Visitor.findOne({ ipAddress });
+
+
+    if (!existingVisitor) {
+    // Create a new visitor entry
+    const newVisitor = new Visitor({ ipAddress: ipAddress, user: req.session.user || null, visited: passageID });
+    await newVisitor.save();
+    }
+}
+
 module.exports = {
     deletePassage,
+    logVisit,
     copyPassage,
     getRecursiveSourceList,
     fillUsedInList,

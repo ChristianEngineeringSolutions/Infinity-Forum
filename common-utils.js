@@ -2,6 +2,7 @@ const {User, UserSchema} = require('./models/User');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const System = require('./models/System');
 const Visitor = require('./models/Visitor');
+const DOCS_PER_PAGE = 10; // Documents per Page Limit (Pagination)
 let client;
 async function accessSecret(secretName) {
   if (process.env.REMOTE == 'true') {
@@ -134,7 +135,13 @@ const scripts = {};
         return totalStarsGivenAmount;
 
     }
-
+function monthDiff(d1, d2) {
+        var months;
+        months = (d2.getFullYear() - d1.getFullYear()) * 12;
+        months -= d1.getMonth();
+        months += d2.getMonth();
+        return months <= 0 ? 0 : months;
+    }
 // Helper function to sort arrays (from sasame.js line 2189)
 function sortArray(arr, to){
     var reordered = Array(arr.length).fill(0);
@@ -149,4 +156,4 @@ function sortArray(arr, to){
     return reordered;
 }
 
-module.exports = {accessSecret, scripts, percentStarsGiven, percentUSD, totalUSD, totalStarsGiven, sortArray};
+module.exports = {accessSecret, scripts, percentStarsGiven, percentUSD, totalUSD, totalStarsGiven, sortArray, monthDiff, DOCS_PER_PAGE};

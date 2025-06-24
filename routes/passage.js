@@ -43,6 +43,10 @@ router.get('/get_passage', passageController.getPassage);
 // Passage form route - from sasame.js line 6402
 router.get('/passage_form/', passageController.passageForm);
 
+router.get('/thread', passageController.thread);
+
+router.get('/cat', passageController.cat);
+
 // Create routes
 
 // Create passage route - from sasame.js line 6496
@@ -84,5 +88,9 @@ router.post('/install_passage', passageController.installPassage);
 
 // Passage from JSON route - from sasame.js line 1863
 router.post('/passage_from_json', passageController.passageFromJSON);
+
+router.post('/watch', passageController.watch);
+
+
 
 module.exports = router;

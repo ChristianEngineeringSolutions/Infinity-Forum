@@ -4,8 +4,8 @@ const { Passage, PassageSchema } = require('../models/Passage');
 const bookmarkService = require('../services/bookmarkService');
 const passageService = require('../services/passageService');
 const { User } = require('../models/User');
-const { Message } = require('../models/Message');
-const { Follower } = require('../models/Follower');
+const Message = require('../models/Message');
+const Follower = require('../models/Follower');
 const { deleteOldUploads } = require('../services/fileService');
 const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis');
 //Call in Scripts
@@ -26,6 +26,25 @@ async function deletePassage(req, res) {
     }
     await passageService.deletePassage(passage);
     return res.send("Deleted.");
+}
+
+async function watch(req, res) {
+    var passage = await Passage.findOne({_id: req.body.passage.toString()});
+    // console.log('what'+passage);
+    if(!passage.watching.includes(req.session.user._id)){
+        passage.watching.push(req.session.user._id);
+    }
+    else{
+        passage.watching = passage.watching.filter(function(person){
+            if(person._id == req.session.user._id){
+                return false;
+            }
+            return true;
+        });
+    }
+    passage.markModified('watching');
+    await passage.save();
+    return res.send("Done");
 }
 
 async function postsPage(req, res) {
@@ -684,7 +703,97 @@ async function installPassage(req, res) {
 async function passageFromJSON(req, res) {
     res.render('passage_form');
 }
-
+async function thread(req, res) {
+    // ALT
+    var bigRes = await passageService.getBigPassage(req, res);
+    await passageService.logVisit(req, bigRes.passage._id);
+    if(!res.headersSent){
+        await passageService.getRecursiveSpecials(bigRes.passage);
+        res.render("thread", {subPassages: bigRes.passage.passages, passageTitle: bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: true,
+            parentID: bigRes.parentID,
+            topicID: bigRes.passage._id,
+            subPassage: true
+        });
+    }
+}
+async function cat(req, res) {
+    var pNumber = req.query.pNumber;
+    var search = req.query.search || '';
+    var find = {
+        parent: req.query._id.toString(),
+        title: {$regex:search,$options:'i'},
+        // $or: [
+        //     {title: {$regex:search,$options:'i'}},
+        //     {content: {$regex:search,$options:'i'}},
+        //     {code: {$regex:search,$options:'i'}},
+        // ],
+    };
+    if(search == ''){
+        find = {
+            parent: req.query._id.toString()
+        };
+    }
+    var parent = await Passage.findOne({_id: req.query._id});
+    var topics = await Passage.paginate(find, {sort: '-date', page: pNumber, limit: 20, populate: 'passages.author'});
+    var totalDocuments = await Passage.countDocuments(find);
+    var totalPages = Math.floor(totalDocuments/20) + 1;
+    for (const topic of topics.docs){
+        topic.numViews = await scripts.getNumViews(topic._id);
+        if(topic.passages && topic.passages.length > 0){
+            topic.lastPost = 'by ' + topic.passages.at(-1).author.name + '<br>' + topic.passages.at(-1).date.toLocaleDateString();
+        }else{
+            topic.lastPost = 'No Posts Yet.';
+        }
+    }
+    topics = topics.docs;
+    var stickieds = await Passage.find({parent:req.query._id.toString(), stickied: true});
+    return res.render('cat', {
+        _id: parent._id,
+        name: parent.title,
+        topics: topics,
+        postCount: topics.length,
+        totalPages: totalPages,
+        stickieds: stickieds
+    });
+    // var s = false;
+    // var categories = await Passage.find({forumType: 'category'});
+    // var subcats = await Passage.find({forumType: 'subcat'});
+    // var subforums = await Passage.find({forumType: 'subforum'});
+    // var focus;
+    // if(req.query.s){
+    //     s = true;
+    //     var subForum = await Passage.findOne({_id: req.query.s});
+    // }
+    // if(s == false){
+    //     var topics = await Passage.find({
+    //         parent: req.query.f,
+    //         sub: false
+    //     });
+    // }
+    // else{
+    //     var topics = await Passage.find({
+    //         parent: req.query.s,
+    //         sub: true
+    //     });
+    // }
+    // console.log(req.query);
+    // if(!req.query.f && !req.query.s){
+    //     console.log('TEST2');
+    //     return res.render("forum_body", {
+    //         categories: categories,
+    //         subcats: subcats,
+    //         subforums: subforums
+    //     });
+    // }
+    // var parent = await Passage.findOne({_id: req.query.f});
+    // res.render('cat', {
+    //     name: subForum ? subForum.title : false || parent.title || '',
+    //     topics: topics,
+    //     postCount: topics.length
+    // })
+}
 
 
 module.exports = {
@@ -705,5 +814,8 @@ module.exports = {
     addCollaborator,
     removeCollaber,
     installPassage,
-    passageFromJSON
+    passageFromJSON,
+    watch,
+    thread,
+    cat
 };

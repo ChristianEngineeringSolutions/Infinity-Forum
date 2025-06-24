@@ -2,8 +2,8 @@
 
 const { accessSecret } = require('../common-utils');
 const { User } = require('../models/User');
-const { System } = require('../models/System');
-const { VerificationSession } = require('../models/VerificationSession');
+const System = require('../models/System');
+const VerificationSession = require('../models/VerificationSession');
 const { createDocumentHash, checkForDuplicateDocuments } = require('../services/verificationService');
 const { canReceivePayouts } = require('../services/paymentService');
 
