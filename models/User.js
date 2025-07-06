@@ -4,8 +4,8 @@ const mongoosePaginate = require('mongoose-paginate');
 const bcrypt = require('bcrypt');
 
 const userSchema = mongoose.Schema({
-    joined: {type: Date, default: Date.now},
-    lastLogin: {type: Date, default: Date.now},
+    joined: {type: Date},
+    lastLogin: {type: Date},
     age: {
       type: Number,
       default: 0

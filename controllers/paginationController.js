@@ -9,7 +9,7 @@ const {
     generateFeedWithPagination, 
     getPassage, 
     getPassagesByUsage 
-} = require('./passageController');
+} = require('../services/passageService');
 
 // Constants (this should be imported from a config file)
 const DOCS_PER_PAGE = 10;

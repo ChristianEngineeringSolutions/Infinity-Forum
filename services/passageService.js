@@ -1,7 +1,9 @@
 const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis.js');
 const { Passage } = require('../models/Passage');
 const Visitor = require('../models/Visitor');
+const Follower = require('../models/Follower');
 const { User } = require('../models/User');
+const { getFeedQueue } = require('../config/redis');
 const { DOCS_PER_PAGE, scripts } = require('../common-utils');
 const browser = require('browser-detect');
 async function deletePassage(passage){
@@ -430,69 +432,10 @@ async function generateFeedWithPagination(user, page = 1, limit = 10) {
     // If cache doesn't exist or is expired, generate the feed scores
     if (!feedCache) {
         console.log(`Generating new feed for user ${user._id}`);
-        
-        // Get filtering parameters
-        const recentCutoff = new Date(Date.now() - (90 * 24 * 60 * 60 * 1000)); // Last 90 days
-        const veryRecentCutoff = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)); // Last 7 days
-        
-        // Get followed authors (placeholder - this would need Follower model)
-        const followedAuthors = []; // await Follower.find({ user: user._id }).distinct('following');
-        
-        // Initial filtering query to reduce the dataset
-        const passageQuery = { 
-            versionOf: null,
-            personal: false,
-            deleted: false,
-            simulated: false,
-            forumType: {$in: ['', null]},
-            $or: [
-                { author: { $in: followedAuthors } }, // From followed authors
-                { date: { $gte: veryRecentCutoff } }, // Very recent content
-                { "stars": { $gte: 0 } }, // Content with engagement
-                { 
-                    date: { $gte: recentCutoff },
-                    "stars": { $gte: 0 } // Recent with some engagement
-                }
-            ],
-            $or: [
-                { content: { $ne: '' } },
-                { code: { $ne: '' } }
-            ]
-        };
-        
-        // Get passages with initial filtering
-        const passages = await Passage.find(passageQuery)
-            .populate([
-                { path: 'author' },
-                { path: 'users' },
-                { path: 'sourceList' },
-                { path: 'parent' },
-                { path: 'collaborators' },
-                { path: 'versions' },
-                { path: 'mirror' }
-            ])
-            .sort('-stars -date')
-            .limit(1000);
-        
-        // Score and rank passages (simplified version - can be enhanced with more sophisticated algorithms)
-        const scoredPassages = passages.map(passage => {
-            const recencyScore = calculateRecencyScore(passage.date);
-            const starScore = Math.log10(passage.stars + 1) * 2;
-            const randomnessFactor = 0.7 + (Math.random() * 0.6);
-            
-            // Boost score if from followed author
-            const followBoost = followedAuthors.includes(passage.author._id.toString()) ? 1.5 : 1.0;
-            
-            const score = (starScore * 0.6) + (recencyScore * 0.4) * randomnessFactor * followBoost;
-            
-            return {
-                passage,
-                score
-            };
-        });
-        
-        // Sort and extract IDs
-        scoredPassages.sort((a, b) => b.score - a.score);
+        // Get filtered passages for this user
+        const relevantPassages = await getRelevantPassagesForUser(user);
+        // Score passages
+        const scoredPassages = await scorePassages(relevantPassages, user);
         feedIds = scoredPassages.map(item => item.passage._id.toString());
         
         // Cache the feed IDs
@@ -1159,7 +1102,6 @@ async function updatePassage(_id, attributes) {
     return 'Done';
 }
 
-// After passage creation function (from sasame.js line 9118)
 async function afterPassageCreation(newPassage) {
     try {
         const redis = getRedisOps();
@@ -1300,7 +1242,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         else{ 
             //private passages
             var subPassages = await Passage.find({parent: passage_id, comment: false, author: {
-                $in: [passageUsers]
+                $in: passageUsers
             }}).populate('author users sourceList collaborators versions mirror bestOf best');  
             subPassages = subPassages.filter(function(p){
                 return ((p.personal && (!req.session.user || p.author._id.toString() != req.session.user._id.toString())) || p.comment) ? false : true;
@@ -1329,7 +1271,6 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         reordered = subPassages;
     }
     passage.passages = reordered;
-    
     for(var i = 0; i < passage.passages.length; ++i){
         passage.passages[i] = await getPassage(passage.passages[i]);
     }
@@ -1523,32 +1464,336 @@ async function fillForum(req){
 }
 
 async function logVisit(req, passageID){
-    let ipAddress = req.ip; // Default to req.ip
-
-    // Check Cloudflare headers for real client IP address
-    if (req.headers['cf-connecting-ip']) {
-    ipAddress = req.headers['cf-connecting-ip'];
-    } else if (req.headers['x-forwarded-for']) {
-    // Use X-Forwarded-For header if available
-    ipAddress = req.headers['x-forwarded-for'].split(',')[0];
-    }
+    let ipAddress = req.clientIp; // Default to req.ip
+    let ipNumber = ipAddress.split('.').map(Number).reduce((a, b) => (a << 8) + b, 0);
 
 
     // Check other custom headers if needed
 
 
-    const existingVisitor = await Visitor.findOne({ ipAddress });
+    const existingVisitor = await Visitor.findOne({ ipNumber });
 
 
     if (!existingVisitor) {
     // Create a new visitor entry
-    const newVisitor = new Visitor({ ipAddress: ipAddress, user: req.session.user || null, visited: passageID });
+    const newVisitor = new Visitor({ ipNumber: ipNumber, user: req.session.user || null, visited: passageID });
     await newVisitor.save();
     }
 }
 
+//for daemons access to help code
+function DAEMONLIBS(passage, USERID){
+    return `
+    
+    var THIS = `+JSON.stringify(passage)+`;
+    var USERID = "`+(USERID)+`";
+    // async function INTERACT(content){
+    //     const result = await $.ajax({
+    //         type: 'post',
+    //         url: '`+process.env.DOMAIN+`/interact',
+    //         data: {
+    //             _id: _id
+    //         }});
+    //     return result;
+    // }
+    async function GETDAEMON(daemon, param){
+        var passage = await GETPASSAGE(daemon);
+        var code = passage.code;
+        var parameter = await GETPASSAGE(param);
+        //add Param Line
+        code = "const PARAM = " + JSON.stringify(parameter) + ';' + code;
+        
+        //then eval code
+        return code;
+    }
+    async function GETPASSAGE(_id){
+        //run ajax
+        const result = await $.ajax({
+            type: 'get',
+            url: '`+process.env.DOMAIN+`/get_passage',
+            data: {
+                _id: _id
+            }});
+        return result;
+    }
+    
+    `;
+}
+
+/**
+     * Updates the feed in the background
+     * This should be called from a cron job or similar
+     */
+async function scheduleBackgroundFeedUpdates() {
+  try {
+    // Find active users who have logged in recently
+    const activeTimeThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
+    const activeUsers = await User.find({
+      lastLogin: { $gte: activeTimeThreshold }
+    });
+    
+    console.log(`Scheduling feed updates for ${activeUsers.length} active users`);
+    
+    // Process users in batches to avoid overwhelming the system
+    const batchSize = 50;
+    
+    for (let i = 0; i < activeUsers.length; i += batchSize) {
+      const batch = activeUsers.slice(i, i + batchSize);
+      
+      // Process each user in the batch
+      await Promise.all(batch.map(async (user) => {
+        try {
+          const hoursSinceLastLogin = (Date.now() - new Date(user.lastLogin)) / (1000 * 60 * 60);
+          
+          // Determine refresh frequency based on activity
+          let refreshInterval;
+          if (hoursSinceLastLogin < 24) {
+            refreshInterval = 3 * 60 * 60 * 1000; // 3 hours for very active users
+          } else if (hoursSinceLastLogin < 72) {
+            refreshInterval = 6 * 60 * 60 * 1000; // 6 hours for moderately active users
+          } else {
+            refreshInterval = 12 * 60 * 60 * 1000; // 12 hours for less active users
+          }
+          
+          // Use the job queue system to schedule feed updates
+          var feedQueue = getFeedQueue();
+          await feedQueue.add(
+            { userId: user._id.toString() },
+            { 
+              repeat: { every: refreshInterval },
+              jobId: `feed-update-${user._id}`
+            }
+          );
+          
+          // Add immediate job for testing
+          // await feedQueue.add(
+          //   { userId: user._id.toString() },
+          //   { delay: 0 }  // Run immediately, no jobId so it doesn't conflict
+          // );
+        } catch (error) {
+          console.error(`Error scheduling feed update for user ${user._id}:`, error);
+        }
+      }));
+      
+      // Small delay between batches to reduce database load
+      if (i + batchSize < activeUsers.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    console.log(`Completed scheduling feed updates`);
+  } catch (error) {
+    console.error('Error in scheduleBackgroundFeedUpdates:', error);
+  }
+}
+/**
+ * Get relevant passages for a user's feed with efficient filtering
+ */
+async function getRelevantPassagesForUser(user, limit = 1000) {
+  // Get followed authors
+  const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+  
+  // Time windows
+  const veryRecentCutoff = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)); // 1 week
+  const recentCutoff = new Date(Date.now() - (90 * 24 * 60 * 60 * 1000)); // 3 months
+  
+  // First-stage filtering
+  const passageQuery = { 
+      versionOf: null,
+      personal: false,
+      deleted: false,
+      simulated: false,
+      forumType: {$in: ['', null]},
+      $and: [
+        {
+          $or: [
+            { author: { $in: followedAuthors } }, // From followed authors
+            { date: { $gte: veryRecentCutoff } }, // Very recent content
+            { stars: { $gte: 0 } }, // Content with engagement
+            { 
+              date: { $gte: recentCutoff },
+              stars: { $gte: 0 } // Recent with some engagement
+            }
+          ]
+        },
+        {
+          $or: [
+            { content: { $ne: '' } },
+            { code: { $ne: '' } }
+          ]
+        }
+      ]
+    };
+  
+  // Get passages with filtered query
+  const passages = await Passage.find(passageQuery)
+    .populate([
+        { path: 'author' },
+        { path: 'users' },
+        { path: 'sourceList' },
+        { path: 'parent' },
+        { path: 'collaborators' },
+        { path: 'versions' },
+        { path: 'mirror' },
+        { path: 'comments', select: 'author' }, // Only need author field from comments
+        { path: 'passages', select: 'author' }  // Only need author field from sub-passages
+      ])
+    .sort('-stars -date')
+    .limit(1000);
+  console.log("LENGTH:"+passages.length);
+  return passages;
+}
+/**
+ * Process the feed generation job from the queue
+ */
+async function processFeedGenerationJob(job) {
+  const { userId } = job.data;
+  
+  try {
+    console.log(`Processing feed update for user ${userId}`);
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      console.error(`User ${userId} not found when processing feed update`);
+      return { success: false, error: 'User not found' };
+    }
+    
+    // Get filtered passages for this user
+    const relevantPassages = await getRelevantPassagesForUser(user);
+    
+    // Score passages
+    const scoredPassages = await scorePassages(relevantPassages, user);
+    
+    // Extract IDs and cache the feed
+    const feedIds = scoredPassages.map(item => item.passage._id.toString());
+    const cacheKey = `user_feed:${userId}`;
+
+    const redis = getRedisOps();
+    
+    await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', 3600); // 1 hour cache
+    
+    return { 
+      success: true, 
+      userId,
+      feedSize: feedIds.length
+    };
+  } catch (error) {
+    console.error(`Error in processFeedGenerationJob for user ${userId}:`, error);
+    return { 
+      success: false, 
+      userId,
+      error: error.message
+    };
+  }
+}
+/**
+ * Scores passages for feed ranking
+ * 
+ * @param {Array} passages - Array of passage objects to score
+ * @param {Object} user - Current user
+ * @return {Array} Scored and sorted passages
+ */
+async function scorePassages(passages, user=null) {
+  // Get list of authors the user follows
+    if(user != null){
+        var followedAuthors = await Follower.find({ user: user._id }).distinct('following');
+    }
+  // Track author counts as we go through the scoring
+  const authorAppearances = {};
+  const scoredPassages = [];
+
+  
+  for (const passage of passages) {
+    const authorId = passage.author._id.toString();
+    // Count this appearance (start at 0)
+    authorAppearances[authorId] = (authorAppearances[authorId] || 0);
+    // Get distinct authors who used this passage (excluding the original author)
+    const usedByAuthors = await Passage.find({
+      sourceList: { $in: [passage._id] },
+      versionOf: null,
+      author: { $ne: passage.author._id }
+    }).distinct('author');
+    
+    // Calculate comment count based on passage type, excluding author's own comments
+    let commentCount = 0;
+    
+    if (passage.private === true && passage.comments) {
+      commentCount = passage.comments.filter(comment => 
+        comment.author && comment.author.toString() !== passage.author._id.toString()
+      ).length;
+    } else if (passage.private === false && passage.passages) {
+      commentCount = passage.passages.filter(subPassage => 
+        subPassage.author && subPassage.author.toString() !== passage.author._id.toString()
+      ).length;
+    }
+    
+    // Apply logarithmic scaling to prevent dominance by any one factor
+    const dateField = passage.createdAt || passage.date;
+    const recencyScore = calculateRecencyScore(dateField);
+    const starScore = Math.log10(passage.stars + 1) * 1.5; // Logarithmic scaling
+    const usedByScore = Math.log10(usedByAuthors.length + 1) * 1.5;
+    const commentScore = Math.log10(commentCount + 1) * 1.5;
+    
+    // Apply social factor bonuses
+    if(user != null){
+        var followedAuthorBonus = followedAuthors.includes(passage.author._id.toString()) ? 1.3 : 1;
+    }else{
+        console.log("FLAIR");
+        var followedAuthorBonus = 1;
+    }
+
+    // Apply author diversity penalty - stronger with each appearance
+    // First appearance has no penalty (factor = 1.0)
+    const authorDiversityFactor = 1 / (1 + authorAppearances[authorId] * 0.2);
+    
+    // Stronger randomness factor (between 0.6 and 1.4)
+    const randomnessFactor = 0.6 + (Math.random() * 0.8);
+    
+    // Calculate final score with weighted components
+    const score = (
+      (recencyScore * 0.35) +      // 35% weight for recency
+      (starScore * 0.2) +          // 20% weight for stars
+      (usedByScore * 0.25) +       // 15% weight for usage
+      (commentScore * 0.15)        // 15% weight for comments
+    ) * followedAuthorBonus * authorDiversityFactor * randomnessFactor;
+    
+    scoredPassages.push({
+      passage,
+      score,
+      // Add debug info to help understand scoring (remove in production)
+      // debug: {
+      //   recency: recencyScore * 0.35,
+      //   stars: starScore * 0.2,
+      //   usedBy: usedByScore * 0.15,
+      //   comments: commentScore * 0.15,
+      //   authorBonus: followedAuthorBonus,
+      //   random: randomnessFactor
+      // }
+    });
+    // Increment author appearance count for next time
+    authorAppearances[authorId]++;
+  }
+  
+  // Add an additional shuffle step to further randomize when scores are close
+  scoredPassages.sort((a, b) => {
+    // If scores are within 10% of each other, randomize their order
+    if (Math.abs(a.score - b.score) < (a.score * 0.1)) {
+      return Math.random() - 0.5;
+    }
+    return b.score - a.score; // Otherwise use score order
+  });
+  
+  console.log("Score distribution:", 
+    scoredPassages.slice(0, 10).map(p => 
+      JSON.stringify({id: p.passage._id.toString().substr(-4), score: p.score.toFixed(2)})
+    )
+  );
+  
+  return scoredPassages;
+}
 module.exports = {
     deletePassage,
+    scheduleBackgroundFeedUpdates,
     logVisit,
     copyPassage,
     getRecursiveSourceList,
@@ -1572,5 +1817,9 @@ module.exports = {
     getBigPassage,
     getRecursiveSpecials,
     fillForum,
-    clearForum
+    clearForum,
+    DAEMONLIBS,
+    getRelevantPassagesForUser,
+    processFeedGenerationJob,
+    scorePassages
 };

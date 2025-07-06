@@ -6,7 +6,7 @@ const passageService = require('../services/passageService');
 const { User } = require('../models/User');
 const Message = require('../models/Message');
 const Follower = require('../models/Follower');
-const { deleteOldUploads } = require('../services/fileService');
+const { deleteOldUploads, uploadFile } = require('../services/fileService');
 const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis');
 //Call in Scripts
 const { scripts } = require('../common-utils');
@@ -234,7 +234,7 @@ async function feedPage(req, res) {
       // Get bookmarks for sidebar
       let bookmarks = [];
       if (req.session.user) {
-        bookmarks = await bookmarkService,getBookmarks(req.session.user);
+        bookmarks = await bookmarkService.getBookmarks(req.session.user);
       }
       
       // Render the stream view with feed data
@@ -264,7 +264,7 @@ async function feedPage(req, res) {
     }
 }
 
-async function getPassage(req, res) {
+async function getPassageJSON(req, res) {
     //run authentication for personal passages
     var passage = await Passage.findOne({_id: req.query._id})
     if(!passage.personal || (passage.personal && req.session.user._id.toString() == passage.author._id.toString())){
@@ -794,11 +794,376 @@ async function cat(req, res) {
     //     postCount: topics.length
     // })
 }
+async function removeSource(req, res) {
+    let passageID = req.body.passageID;
+    let sourceID = req.body.sourceID;
+    let passage = await Passage.findOne({_id: passageID});
+    if(req.session.user && (req.session.user._id.toString() == passage.author._id.toString() || req.session.user.admin)){
+        var index = 0;
+        for(const s of passage.sourceList){
+            if(s == sourceID){
+                //remove source
+                passage.sourceList.splice(index, 1);
+            }
+            ++index;
+        }
+        passage.markModified('sourceList');
+        await passage.save();
+        res.send("Done.");
+    }
+}
+async function passage(req, res) {
+    if(req.session.CESCONNECT){
+            return systemService.getRemotePage(req, res);
+        }
+    var bigRes = await passageService.getBigPassage(req, res, true);
+    // console.log('TEST'+bigRes.passage.title);
+    // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
+    // console.log('TEST'+bigRes.passage.usedIn);
+    if(!res.headersSent){
+        // var location = ['test'];
+        var location = await passageService.getPassageLocation(bigRes.passage);
+        await passageService.getRecursiveSpecials(bigRes.passage);
+        return res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            page: 'more',
+            whichPage: 'sub',
+            location: location
+        });
+    }
+}
+async function changeLabel(req, res){
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var _id = req.body._id;
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
+    passage.label = req.body.label;
+    if(!labelOptions.includes(passage.label)){
+        return res.send("Not an option.");
+    }
+    switch(passage.label){
+        case 'Project':
+        case 'Idea':
+        case 'Database':
+        case 'Article':
+            passage.public = false;
+            passage.forum = false;
+            break;
+        case 'Social':
+        case 'Question':
+        case 'Comment':
+        case 'Task':
+        case 'Challenge':
+            passage.public = true;
+            passage.forum = false;
+            break;
+        case 'Forum':
+            passage.public = true;
+            passage.forum = true;
+            break;
 
+    }
+    await passage.save();
+    passage = await passageService.getPassage(passage);
+    var subPassage = req.body.parent == 'root' ? false : true;
+    return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
+}
+async function _eval(req, res){
+    if(req.session.CESCONNECT){
+        return getRemotePage(req, res);
+    }
+    var passage_id = req.params.passage_id;
+    var passage = await Passage.findOne({_id: passage_id});
+    if(passage !== null){
+        passage.all = '';
+    }
+    // console.log(passage);
+    //stick together code for all sub passages
+    var all = {
+        html: passage.html,
+        css: passage.css,
+        javascript: passage.javascript
+    };
+    if(passage.lang == 'daemon'){
+        all.javascript = passage.code;
+    }
+    var userID = null;
+    if(req.session.user){
+        userID = req.session.user._id.toString();
+    }
+    all.javascript = passageService.DAEMONLIBS(passage, userID) + all.javascript;
+    if(!passage.public){
+        passage.code = passageService.DAEMONLIBS(passage, userID) + passage.code;
+        passage = await passageService.getPassage(passage);
+    }
+    res.render("eval", {passage: passage, all: all});
+}
+// Add user to passage
+const addUser = async (req, res) => {
+    let passageId = req.body.passageId;
+    let username = req.body.username;
+    let user = await User.findOne({username: username});
+    let passage = await Passage.findOne({_id: passageId});
+    if(user && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        passage.users.push(user._id.toString());
+        passage.markModified('users');
+        await passage.save();
+        res.send("User Added");
+    }
+    else{
+        res.send("User not found.");
+    }
+};
+// Remove user from passage
+const removeUser = async (req, res) => {
+    let passageID = req.body.passageID;
+    let userID = req.body.userID;
+    let passage = await Passage.findOne({_id: passageID});
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        var index = 0;
+        for(const u of passage.users){
+            if(u == userID){
+                //remove user
+                passage.users.splice(index, 1);
+            }
+            ++index;
+        }
+        passage.markModified('users');
+        await passage.save();
+        res.send("Done.");
+    }
+};
+
+// Show best-of toggle
+const showBestOf = async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var _id = req.body._id;
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
+    console.log(req.body.checked);
+    passage.showBestOf = req.body.checked;
+    await passage.save();
+    passage = await passageService.getPassage(passage);
+    var subPassage = req.body.parent == 'root' ? false : true;
+    return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
+};
+
+// Same users setting
+const sameUsers = async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var _id = req.body._id;
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
+    passage.sameUsers = req.body.checked;
+    await passage.save();
+    return res.send("Complete.");
+};
+
+// Same collaborators setting
+const sameCollabers = async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var _id = req.body._id;
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
+    passage.sameCollabers = req.body.checked;
+    await passage.save();
+    return res.send("Complete.");
+};
+
+// Same sources setting
+const sameSources = async (req, res) => {
+    if(!req.session.user){
+        return res.send("Not logged in.");
+    }
+    var _id = req.body._id;
+    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    if(passage.author._id.toString() != req.session.user._id.toString()){
+        return res.send("You can only update your own passages.");
+    }
+    passage.sameSources = req.body.checked;
+    await passage.save();
+    return res.send("Complete.");
+};
+
+// Update mirroring settings
+const updateMirroring = async (req, res) => {
+    let passage = await Passage.findOne({_id: req.body._id});
+    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        try{
+            var mirror = await Passage.findOne({_id:req.body.mirror.trim()});
+        }
+        catch(e){
+            console.log("Null value");
+            var mirror = null;
+        }
+        try{
+            var bestOf = await Passage.findOne({_id:req.body.bestOf.trim()});
+        }
+        catch(e){
+            console.log("Null value");
+            var bestOf = null;
+        }
+        if(mirror != null){
+            passage.mirror = mirror._id;
+        }
+        else{
+            passage.mirror = null;
+        }
+        if(bestOf != null){
+            passage.bestOf = bestOf._id;
+        }
+        else{
+            passage.bestOf = null;
+        }
+        passage.mirrorContent = req.body.mirrorContent;
+        passage.mirrorEntire = req.body.mirrorEntire;
+        passage.bestOfContent = req.body.bestOfContent;
+        passage.bestOfEntire = req.body.bestOfEntire;
+        await passage.save();
+        return res.send("Done.");
+    }
+    else{
+        return res.send("Not your passage.");
+    }
+};
+
+// Sticky toggle
+const sticky = async (req, res) => {
+    var passage = await Passage.findOne({_id: req.body._id});
+    if(passage.stickied){
+        passage.stickied = false;
+    }
+    else{
+        passage.stickied = true;
+    }
+    await passage.save();
+    return res.send("Done.");
+};
+
+// Comments view
+const comments = async (req, res) => {
+    const systemService = require('../services/systemService');
+    if(req.session.CESCONNECT){
+        return systemService.getRemotePage(req, res);
+    }
+    var bigRes = await passageService.getBigPassage(req, res, true, false, true);
+    if(!bigRes){
+        return res.redirect('/');
+    }
+    if(!res.headersSent){
+        bigRes.subPassages = await passageService.fillUsedInList(bigRes.subPassages);
+        var location = await passageService.getPassageLocation(bigRes.passage);
+        await passageService.getRecursiveSpecials(bigRes.passage);
+        res.render("stream", {
+            subPassages: bigRes.subPassages, 
+            passageTitle: bigRes.passage.title, 
+            passageUsers: bigRes.passageUsers, 
+            Passage: Passage, 
+            scripts: scripts, 
+            sub: false, 
+            passage: bigRes.passage, 
+            passages: false, 
+            totalPages: bigRes.totalPages, 
+            docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            page: 'more',
+            whichPage: 'comments',
+            location: location,
+            comments: true
+        });
+    }
+};
+
+// Subforums view
+const subforums = async (req, res) => {
+    const systemService = require('../services/systemService');
+    if(req.session.CESCONNECT){
+        return systemService.getRemotePage(req, res);
+    }
+    var bigRes = await passageService.getBigPassage(req, res, true, true);
+    if(!bigRes){
+        return res.redirect('/');
+    }
+    if(!res.headersSent){
+        bigRes.subPassages = await passageService.fillUsedInList(bigRes.subPassages);
+        var location = await passageService.getPassageLocation(bigRes.passage);
+        await passageService.getRecursiveSpecials(bigRes.passage);
+        res.render("stream", {
+            subPassages: bigRes.subPassages, 
+            passageTitle: bigRes.passage.title, 
+            passageUsers: bigRes.passageUsers, 
+            Passage: Passage, 
+            scripts: scripts, 
+            sub: false, 
+            passage: bigRes.passage, 
+            passages: false, 
+            totalPages: bigRes.totalPages, 
+            docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            page: 'more',
+            whichPage: 'subforums',
+            location: location,
+            subforums: true
+        });
+    }
+};
+
+// Get big passage
+const getBigPassage = async (req, res) => {
+    console.log(req.query._id);
+    var bigRes = await passageService.getBigPassage(req, res);
+    if(!bigRes){
+        return res.redirect('/');
+    }
+    if(!res.headersSent){
+        bigRes.subPassages = await passageService.fillUsedInList(bigRes.subPassages);
+        var location = await passageService.getPassageLocation(bigRes.passage);
+        await passageService.getRecursiveSpecials(bigRes.passage);
+        res.render("passage", {
+            subPassages: bigRes.subPassages, 
+            passageTitle: bigRes.passage.title, 
+            passageUsers: bigRes.passageUsers, 
+            Passage: Passage, 
+            scripts: scripts, 
+            sub: false, 
+            passage: bigRes.passage, 
+            passages: false, 
+            totalPages: bigRes.totalPages, 
+            docsPerPage: DOCS_PER_PAGE,
+            ISMOBILE: bigRes.ISMOBILE,
+            thread: false,
+            sub: true,
+            page: 'more',
+            whichPage: 'sub',
+            location: location,
+            subPassage: true
+        });
+    }
+};
 
 module.exports = {
+    passage,
     deletePassage,
-    getPassage,
+    getPassageJSON,
     postsPage,
     forumPage,
     personalPage,
@@ -817,5 +1182,19 @@ module.exports = {
     passageFromJSON,
     watch,
     thread,
-    cat
+    cat,
+    removeSource,
+    changeLabel,
+    _eval,
+    addUser,
+    removeUser,
+    showBestOf,
+    sameUsers,
+    sameCollabers,
+    sameSources,
+    updateMirroring,
+    sticky,
+    comments,
+    subforums,
+    getBigPassage,
 };

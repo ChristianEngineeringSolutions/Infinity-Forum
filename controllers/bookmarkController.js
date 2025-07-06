@@ -4,7 +4,8 @@ const Bookmark = require('../models/Bookmark');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
 const { scripts } = require('../common-utils');
-const passageController = require('./passageController');
+const passageService = require('../services/passageService');
+const bookmarkService = require('../services/bookmarkService');
 
 // Transfer bookmark route handler (from sasame.js line 3401)
 async function transferBookmark(req, res) {
@@ -39,10 +40,10 @@ async function transferBookmark(req, res) {
             var comment = false;
         }
         console.log(comment);
-        let copy = await passageController.copyPassage(passage, user, parent, function(){
+        let copy = await passageService.copyPassage(passage, user, parent, function(){
             
         }, false, comment);
-        copy = await passageController.getPassage(copy);
+        copy = await passageService.getPassage(copy);
         if(req.body.which && req.body.which == 'cat'){
             return res.render('cat_row', {subPassages: false, topic: copy, sub: true});
         }
@@ -85,10 +86,10 @@ async function removeBookmark(req, res) {
 // Create passage from JSON and bookmark it (from sasame.js line 1863)
 async function passageFromJson(req, res) {
     //copy passage
-    var copy = passageController.copyPassage(req.params.passage, [req.session.user], null, function(){
+    var copy = passageService.copyPassage(req.params.passage, [req.session.user], null, function(){
         
     });
-    await createBookmark(copy._id, req.session.user._id);
+    await bookmarkService.createBookmark(copy._id, req.session.user._id);
 }
 
 // Get user's bookmarks route handler (from sasame.js line 657)
@@ -139,14 +140,14 @@ async function getBookmarks(req, res) {
 // Bookmark a passage route handler (from sasame.js line 3379)
 async function bookmarkPassage(req, res) {
     if(req.body.content == ''){
-        await createBookmark(req.body._id, req.session.user._id);
+        await bookmarkService.createBookmark(req.body._id, req.session.user._id);
     }
     else{
         let passage = await Passage.findOne({_id: req.body._id});
-        let copy = await passageController.copyPassage(passage, [req.session.user], null, function(){});
+        let copy = await passageService.copyPassage(passage, [req.session.user], null, function(){});
         copy[req.body.which] = req.body.content;
         await copy.save();
-        await createBookmark(copy._id, req.session.user._id);
+        await bookmarkService.createBookmark(copy._id, req.session.user._id);
     }
     res.send('Done.');
 }

@@ -147,3 +147,37 @@ when a starrer stars a passage,
 the author of that passage also inherits all the starrers debt.
 
 you can pay off the debt owed for each transaction before adding new debt 
+
+
+/forum posts feed personal in passage routes
+
+Almost!
+get remote page should go in the systemController (new)
+sharePassage, updatePassage, afterPassageCreation, handlePassageLink, getBigPassage, getRecursiveSpecials, labelOptions, can go in the passageController
+bookmarkPassage is already in the bookmarkController
+starPassage is already in the starController
+uploadFile is already in the fileController
+updateFile, getDirectoryStructure, decodeDirectoryStructure can go in the fileController
+copyPassage is already in the passageController
+The star_passage route is already in routes/stars.js
+
+You cut out a lot of logic from getAdminDashboard (you got rid of my aggregate query, for example), uploadtogcs needs the full implementation, 
+
+
+
+Good but syncFileStream should go in adminService.js. You can call updateFile from services/fileService.js (its not there yet but i will add it). GetPassage is in passageService.js. You dont need to export the adminService functions in adminController. You can use const redisClient = getRedisClient();
+    const redis = getRedisOps(); from config/redis.js for handling the redis stuff. 
+
+router.post('/create-subscription-checkout', stripeController.createSubscriptionCheckout);
+
+
+bank
+admin 
+notifications
+messages
+logout
+settings update
+passage settings
+login/register
+
+move create verification session to verification MVC

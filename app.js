@@ -9,7 +9,7 @@ const http = require('http');
 // Import configurations
 const { connectDatabase } = require('./config/database');
 const { configureExpress } = require('./config/express');
-const { initializeRedis } = require('./config/redis');
+const { initializeRedis, getFeedQueue } = require('./config/redis');
 const { setupGracefulShutdown } = require('./config/server');
 
 // Import route modules
@@ -18,6 +18,7 @@ const authRoutes = require('./routes/auth');
 const verificationRoutes = require('./routes/verification');
 const starRoutes = require('./routes/stars');
 const bookmarkRoutes = require('./routes/bookmarks');
+const messageRoutes = require('./routes/messages');
 const userRoutes = require('./routes/users');
 const searchRoutes = require('./routes/search');
 const paginationRoutes = require('./routes/pagination');
@@ -29,15 +30,15 @@ const staticRoutes = require('./routes/static');
 const passageRoutes = require('./routes/passage');
 const simulationRoutes = require('./routes/simulation');
 
+const passageService = require('./services/passageService');
+
 async function startServer() {
     try {
         // Initialize database connection
         await connectDatabase();
         
-        // Initialize Redis (optional)
-        if (process.env.REDIS_URL) {
-            initializeRedis();
-        }
+        const redisInitialized = await initializeRedis();
+        console.log('Redis initialization result:', redisInitialized);
         
         // Configure Express app
         const app = await configureExpress();
@@ -63,6 +64,7 @@ async function startServer() {
         app.use('/', verificationRoutes);
         app.use('/', starRoutes);
         app.use('/', bookmarkRoutes);
+        app.use('/', messageRoutes);
         app.use('/', userRoutes);
         app.use('/', searchRoutes);
         app.use('/', paginationRoutes);
@@ -79,8 +81,33 @@ async function startServer() {
         
         // Start server (from sasame.js line 10286)
         const PORT = process.env.PORT || 3000;
+        
+        //cron jobs
+        const rewardUsers = require('./cron/rewardUsers');
+        const feedUpdates = require('./cron/feedUpdates');
+
+        //feed updates
+        var feedQueue = getFeedQueue();
+        // Process feed generation jobs
+        feedQueue.process(async (job) => {
+          return await passageService.processFeedGenerationJob(job);
+        });
+        // Schedule initial feed updates for active users
+        const startupDelay = 10 * 1000; // 10 seconds
+        setTimeout(async () => {
+          try {
+            await passageService.scheduleBackgroundFeedUpdates();
+            console.log('Initial feed updates scheduled');
+          } catch (error) {
+            console.error('Error scheduling initial feed updates:', error);
+          }
+        }, startupDelay);
+        
+        console.log('Feed system initialized');
         server.listen(PORT, () => {
             console.log(`Sasame started on Port ${PORT}`);
+            rewardUsers.start();
+            feedUpdates.start();
             io.sockets.emit("serverRestart", "Test");
         });
         

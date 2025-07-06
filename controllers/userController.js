@@ -7,10 +7,12 @@ const Follower = require('../models/Follower');
 const Notification = require('../models/Notification');
 const userService = require('../services/userService');
 const systemService = require('../services/systemService');
+const bookmarkService = require('../services/bookmarkService');
 const bcrypt = require('bcrypt');
 const { exec } = require('child_process');
 const fsp = require('fs').promises;
 const { v4 } = require('uuid');
+const browser = require('browser-detect');
 
 // Helper function to upload profile photo
 async function uploadProfilePhoto(req, res){
@@ -84,43 +86,6 @@ const follow = async (req, res) => {
     return res.send("Unfollowed");
 };
 
-// Add user to passage
-const addUser = async (req, res) => {
-    let passageId = req.body.passageId;
-    let username = req.body.username;
-    let user = await User.findOne({username: username});
-    let passage = await Passage.findOne({_id: passageId});
-    if(user && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        passage.users.push(user._id.toString());
-        passage.markModified('users');
-        await passage.save();
-        res.send("User Added");
-    }
-    else{
-        res.send("User not found.");
-    }
-};
-
-// Remove user from passage
-const removeUser = async (req, res) => {
-    let passageID = req.body.passageID;
-    let userID = req.body.userID;
-    let passage = await Passage.findOne({_id: passageID});
-    if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        var index = 0;
-        for(const u of passage.users){
-            if(u == userID){
-                //remove user
-                passage.users.splice(index, 1);
-            }
-            ++index;
-        }
-        passage.markModified('users');
-        await passage.save();
-        res.send("Done.");
-    }
-};
-
 // Change profile picture
 const changeProfilePicture = async (req, res) => {
     await uploadProfilePhoto(req, res);
@@ -182,8 +147,8 @@ const getUsernameNumber = async (req, res) => {
 
 // Get user profile
 const getProfile = async (req, res) => {
-    const { getPassage, fillUsedInList } = require('./passageController');
-    const { getBookmarks } = require('./bookmarkController');
+    const { getPassage, fillUsedInList } = require('../services/passageService');
+    const { getBookmarks } = require('../services/bookmarkService');
     const { scripts } = require('../common-utils');
     const DOCS_PER_PAGE = 10;
 
@@ -280,7 +245,7 @@ const getNotifications = async (req, res) => {
         for: req.session.user
     }).sort({_id: -1}).limit(20);
     if(req.session.user){
-        var bookmarks = getBookmarks(req.session.user);
+        var bookmarks = bookmarkService.getBookmarks(req.session.user);
     }
     return res.render('notifications', {
             subPassages: false,
@@ -298,15 +263,38 @@ const getNotifications = async (req, res) => {
             notifications: notifications
         });
 };
+async function leaderboard(req, res) {
+    const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    if(req.session.CESCONNECT){
+        return systemService.getRemotePage(req, res);
+    }
+    var page = req.query.page || 1;
+    var limit = DOCS_PER_PAGE * 2;
+    // limit = 2;
+    // let users = await User.find().sort('-starsGiven');
+    let users = await User.paginate({}, {sort: '-starsGiven _id', page: page, limit: limit});
+    users = users.docs;
+    var i = 1;
+    for(const user of users){
+        user.rank = i + ((page-1)*limit);
+        ++i;
+    }
+    if(page == 1){
+        return res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts,
+    ISMOBILE: ISMOBILE, page: page, rank: true});
+    }
+    else{
+        return res.render('leaders', {users: users, page: page, rank: false});
+    }
+}
 
 module.exports = {
     follow,
-    addUser,
-    removeUser,
     changeProfilePicture,
     deleteProfileController,
     updateSettings,
     getUsernameNumber,
     getProfile,
-    getNotifications
+    getNotifications,
+    leaderboard,
 };

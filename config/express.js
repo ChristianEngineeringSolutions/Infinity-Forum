@@ -12,6 +12,7 @@ const { getUploadFolder } = require('../utils/fileUtils');
 const { accessSecret } = require('../common-utils');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
+const fileUpload = require('express-fileupload');
 
 // Express app configuration
 
@@ -23,6 +24,15 @@ async function configureExpress() {
     app.use(compression());
     app.use(cors());
     app.use(express.urlencoded({ extended: true, limit: '250mb' }));
+    app.use(express.json({
+        verify: function (req, res, buf) {
+            var url = req.originalUrl;
+            if (url.startsWith('/stripe')) {
+                req.rawBody = buf.toString();
+            }
+        }
+    }));
+    app.use(fileUpload());
     
     // File upload middleware
     app.use(uploadConfig);
@@ -53,6 +63,26 @@ async function configureExpress() {
     // Static files
     // app.use('/dist', express.static('dist'));
     app.use(express.static('./dist'));
+
+    // Middleware to get client IP
+    app.use((req, res, next) => {
+        // Get IP from X-Real-IP header, which Nginx sets directly from $remote_addr
+        const clientIp = req.headers['x-real-ip'];
+
+        if (!clientIp) {
+            // Fallback for direct connections or if X-Real-IP isn't set for some reason
+            // This might be the Nginx server's IP if it's a direct connection
+            console.warn('X-Real-IP header not found, falling back to req.connection.remoteAddress');
+            req.clientIp = req.connection.remoteAddress;
+        } else {
+            req.clientIp = clientIp;
+        }
+
+        // Log the client IP (for demonstration)
+        // console.log(`Client IP: ${req.clientIp}`);
+
+        next();
+    });
     
     // Global middleware for EJS locals
     app.use(async function(req, res, next) {

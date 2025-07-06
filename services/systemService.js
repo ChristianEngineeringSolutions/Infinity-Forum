@@ -104,7 +104,7 @@ const { accessSecret } = require('../common-utils');
 
 async function sendEmail(to, subject, body){
     const EMAIL_PASSWORD = await accessSecret("EMAIL_PASSWORD");
-    var transporter = nodemailer.createTransporter({
+    var transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USERNAME,

@@ -1,3 +1,4 @@
+//LEGACY CODE: Has been refactored into app.js
 'use strict';
 (async function(){
     const {accessSecret, 
@@ -9548,6 +9549,11 @@ async function getPassageLocation(passage, train){
                   jobId: `feed-update-${user._id}`
                 }
               );
+              // Add immediate job for testing
+          await feedQueue.add(
+            { userId: user._id.toString() },
+            { delay: 0 }  // Run immediately, no jobId so it doesn't conflict
+          );
             } catch (error) {
               console.error(`Error scheduling feed update for user ${user._id}:`, error);
             }
@@ -9619,23 +9625,29 @@ async function getPassageLocation(passage, train){
       const recentCutoff = new Date(Date.now() - (90 * 24 * 60 * 60 * 1000)); // 3 months
       
       // First-stage filtering
-      const query = {
-        versionOf: null,
-        deleted: false,
-        personal: false,
-        $or: [
-          { author: { $in: followedAuthors } }, // From followed authors
-          { date: { $gte: veryRecentCutoff } }, // Very recent content
-          { "stars": { $gte: 0 } }, // Content with engagement
-          { 
-            date: { $gte: recentCutoff },
-            stars: { $gte: 0 } // Recent with some engagement
-          }
-        ]
-      };
+      const passageQuery = { 
+          versionOf: null,
+          personal: false,
+          deleted: false,
+          simulation: false,
+          forumType: {in: ['', null]},
+          $or: [
+            { author: { $in: followedAuthors } }, // From followed authors
+            { date: { $gte: veryRecentCutoff } }, // Very recent content
+            { "stars": { $gte: 0 } }, // Content with engagement
+            { 
+              date: { $gte: recentCutoff },
+              "stars": { $gte: 0 } // Recent with some engagement
+            }
+          ],
+          $or: [
+            { content: { $ne: '' } },
+            { code: { $ne: '' } }
+          ]
+        };
       
       // Get passages with filtered query
-      const passages = await Passage.find(query)
+      const passages = await Passage.find(passageQuery)
         .populate([
             { path: 'author' },
             { path: 'users' },

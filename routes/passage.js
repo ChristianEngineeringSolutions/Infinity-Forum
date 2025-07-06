@@ -23,6 +23,10 @@ const intialPassageLimiter = rateLimit({
   message: 'Too many passages created, please try again after a minute.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  keyGenerator: (req, res) => {
+        // Use the X-Real-IP header, which Nginx sets with the actual client IP
+        return req.headers['x-real-ip'] || req.socket.remoteAddress;
+    }
 });
 
 // Main passage display routes - from sasame.js
@@ -38,7 +42,7 @@ router.get('/feed', passageController.feedPage);
 // GET routes for passage display
 
 // Get passage route - from sasame.js line 1853
-router.get('/get_passage', passageController.getPassage);
+router.get('/get_passage_JSON', passageController.getPassageJSON);
 
 // Passage form route - from sasame.js line 6402
 router.get('/passage_form/', passageController.passageForm);
@@ -46,6 +50,9 @@ router.get('/passage_form/', passageController.passageForm);
 router.get('/thread', passageController.thread);
 
 router.get('/cat', passageController.cat);
+
+router.get('/passage/:passage_title/:passage_id/:page?', passageController.passage);
+
 
 // Create routes
 
@@ -91,6 +98,26 @@ router.post('/passage_from_json', passageController.passageFromJSON);
 
 router.post('/watch', passageController.watch);
 
+router.post('/remove-source', passageController.removeSource);
 
+router.post('/change_label', passageController.changeLabel);
+
+router.post('/eval/:passage_id', passageController._eval);
+
+router.post('/add_user', passageController.addUser);
+router.post('/remove_user', passageController.removeUser);
+
+// Passage display and mirroring settings
+router.post('/show-bestof', passageController.showBestOf);
+router.post('/same-users', passageController.sameUsers);
+router.post('/same-collabers', passageController.sameCollabers);
+router.post('/same-sources', passageController.sameSources);
+router.post('/update_mirroring', passageController.updateMirroring);
+
+// Additional passage routes
+router.post('/sticky', passageController.sticky);
+router.get('/comments/:passage_title/:passage_id/:page?', passageController.comments);
+router.get('/subforums/:passage_title/:passage_id/:page?', passageController.subforums);
+router.get('/get_big_passage', passageController.getBigPassage);
 
 module.exports = router;

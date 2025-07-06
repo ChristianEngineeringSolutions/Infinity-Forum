@@ -50,7 +50,6 @@ async function initializeRedis() {
         feedQueue.on('error', (error) => {
             console.error('Feed queue error:', error);
         });
-        
         console.log('Redis initialized successfully');
         return true;
     } catch (error) {

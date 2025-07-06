@@ -11,9 +11,11 @@ const stripeController = require('../controllers/stripeController');
 router.post('/create-subscription-checkout', stripeController.createSubscriptionCheckout);
 router.post('/unsubscribe', stripeController.unsubscribe);
 
-// Verification routes
-router.post('/create-verification-session', stripeController.createVerificationSession);
+// Onboarding routes
 router.get('/stripeOnboarded', stripeController.stripeOnboarded);
+
+// Authorization route
+router.get('/stripeAuthorize', stripeController.stripeAuthorize);
 
 // Webhook routes (need raw body parser)
 router.post('/stripe_webhook', bodyParser.raw({ type: 'application/json' }), stripeController.stripeWebhook);

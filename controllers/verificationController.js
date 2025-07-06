@@ -2,155 +2,115 @@
 
 const { accessSecret } = require('../common-utils');
 const { User } = require('../models/User');
-const System = require('../models/System');
 const VerificationSession = require('../models/VerificationSession');
-const { createDocumentHash, checkForDuplicateDocuments } = require('../services/verificationService');
-const { canReceivePayouts } = require('../services/paymentService');
+const verificationService = require('../services/verificationService');
 
-// These will be initialized when the controller is required
-let client, serviceSid;
-
-// Initialize Twilio client and service SID
-async function initializeTwilio() {
-    if (!client) {
-        const twilio = require('twilio');
-        const accountSid = await accessSecret('TWILIO_ACCOUNT_SID');
-        const authToken = await accessSecret('TWILIO_AUTH_TOKEN');
-        serviceSid = await accessSecret('TWILIO_VERIFY_SERVICE_SID');
-        client = twilio(accountSid, authToken);
+// Render verify identity page
+const verifyIdentity = async (req, res) => {
+    if(req.session.user){
+        return res.render('verify-identity', {publishableKey: process.env.STRIPE_PUBLISHABLE_KEY});
+    }else{
+        return res.redirect('/loginform');
     }
-}
+};
 
-async function startVerification(phoneNumber, channel = 'sms') {
-  await initializeTwilio();
-  try {
-    const verification = await client.verify.v2.services(serviceSid)
-      .verifications
-      .create({
-        to: phoneNumber,
-        channel: channel, // 'sms' or 'call'
-      });
-    console.log('Verification initiated:', verification.sid);
-    return { success: true, verificationSid: verification.sid };
-  } catch (error) {
-    console.error('Error initiating verification:', error);
-    return { success: false, error: error.message };
-  }
-}
+// SMS verification start handler
+const smsVerifyStart = async (req, res) => {
+  const { phoneNumber, channel } = req.body;
+  const result = await verificationService.startVerification(phoneNumber, channel);
+  res.json(result);
+};
 
-async function checkVerification(phoneNumber, code, verificationSid) {
-  await initializeTwilio();
-  try {
-    const verificationCheck = await client.verify.v2.services(serviceSid)
-      .verificationChecks
-      .create({
-        to: phoneNumber,
-        code: code,
-        verificationSid: verificationSid // Optional, but recommended for security
-      });
-    console.log('Verification check status:', verificationCheck.status);
-    return { success: verificationCheck.status === 'approved', status: verificationCheck.status };
-  } catch (error) {
-    console.error('Error checking verification:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-async function processVerificationResult(verificationSessionId) {
-  try {
-    const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
-    const stripe = require("stripe")(STRIPE_SECRET_KEY);
-    const SYSTEM = await System.findOne({});
-    // Retrieve the verification details from Stripe
-    const verificationSession = await stripe.identity.verificationSessions.retrieve(
-      verificationSessionId, 
-      { expand: ['verified_outputs'] }
-    );
-    
-    // Find our internal record for this verification
-    const internalRecord = await VerificationSession
-      .findOne({ stripeVerificationId: verificationSessionId });
-    
-    if (!internalRecord) {
-      console.error('Verification record not found for session:', verificationSessionId);
-      return;
+// SMS verification check handler
+const smsVerifyCheck = async (req, res) => {
+  const { phoneNumber, code, verificationSid } = req.body;
+  var result;
+  var phones = await User.find({phone:phoneNumber});
+    if(phones.length > 0){
+        result = {failed:true};
+        return res.json(result);
     }
-    
-    // If verification was successful
-    if (verificationSession.status === 'verified') {
-      // Get document details (available in verified_outputs)
-      const documentDetails = verificationSession.verified_outputs?.document?.dob ?
-        {
-          documentType: verificationSession.verified_outputs.document.type,
-          documentNumber: verificationSession.verified_outputs.document.number,
-          firstName: verificationSession.verified_outputs.document.first_name,
-          lastName: verificationSession.verified_outputs.document.last_name,
-          dob: verificationSession.verified_outputs.document.dob.day + 
-               '/' + verificationSession.verified_outputs.document.dob.month +
-               '/' + verificationSession.verified_outputs.document.dob.year,
-          expiryDate: verificationSession.verified_outputs.document.expiration_date ?
-            verificationSession.verified_outputs.document.expiration_date.day +
-            '/' + verificationSession.verified_outputs.document.expiration_date.month +
-            '/' + verificationSession.verified_outputs.document.expiration_date.year : null
-        } : null;
-      
-      // Create a unique identifier based on document details
-      const documentHash = await createDocumentHash(documentDetails);
-      
-      await VerificationSession.updateOne({
-        userId: internalRecord.userId
-      }, {$set: {
-        documentHash: documentHash,
-        documentType: documentDetails?.documentType,
-        verifiedAt: new Date(),
-        status: 'verified'
-      }});
-      console.log("Saved document hash.");
-      // Check for duplicate documents across users
-      const duplicateResults = await checkForDuplicateDocuments(documentHash, internalRecord.userId);
-      
-      if (duplicateResults.isDuplicate) {
-        // Flag accounts for review
-        // await flagDuplicateAccounts(internalRecord.userId, duplicateResults.existingUserIds);
-        
-        // Update session with duplicate info
-        await VerificationSession.updateOne(
-          { stripeVerificationId: verificationSessionId },
-          { $set: { duplicateDetected: true } }
-        );
-      } else {
-        // Update user's verification status
-        await User.updateOne(
-          { _id: internalRecord.userId },
-          { 
-            $set: { 
-              identityVerified: true,
-              verificationLevel: 'full',
-              lastVerifiedAt: new Date()
-            } 
-          }
-        );
-        var user = await User.findOne({_id: internalRecord.userId});
-        user.stars += 100;
-        if(user.stripeOnboardingComplete && user.stripeAccountId){
-            const account = await stripe.account.retrieve(user.stripeAccountId);
-            user.canReceivePayouts = canReceivePayouts(account);
-            if(user.canReceivePayouts){
-                SYSTEM.numUsersOnboarded += 1;
-                await SYSTEM.save();
-            }
+  result = await verificationService.checkVerification(phoneNumber, code, verificationSid);
+  if(result.success){
+    var user = await User.findOne({_id: req.session.user._id});
+    user.phone = phoneNumber;
+    await user.save();
+    req.session.user.phone = phoneNumber;
+  }
+  return res.json(result);
+};
+
+// Create verification session handler
+const createVerificationSession = async (req, res) => {
+    if(req.session.user){
+        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+        const stripe = require("stripe")(STRIPE_SECRET_KEY);
+
+        // Check if user already has a pending or completed verification
+        const existingVerification = await VerificationSession
+          .findOne({
+            userId: req.session.user._id.toString(),
+            status: { $in: ['requires_input', 'processing', 'verified'] }
+          });
+
+        // If there's an active verification, return it instead of creating a new one
+        if (existingVerification) {
+          // Retrieve the verification details from Stripe
+          const verificationSession = await stripe.identity.verificationSessions.retrieve(
+            existingVerification.stripeVerificationId
+          );
+          return res.json({
+            success: true,
+            existingSession: true,
+            url: verificationSession.url,
+            clientSecret: verificationSession.client_secret,
+            status: verificationSession.status
+          });
         }
-        await user.save();
 
-      }
+        // Create the session.
+        const verificationSession = await stripe.identity.verificationSessions.create
+        ({
+          type: 'document',
+          provided_details: {
+            email: req.session.user.email,
+          },
+          metadata: {
+            user_id: req.session.user._id.toString(),
+          },
+          options: {
+            document: {
+              allowed_types: ['driving_license', 'passport', 'id_card'],
+              require_id_number: true,
+              require_live_capture: true,
+              require_matching_selfie: true
+            }
+          }
+        });
+        
+        // Store session info in database
+        await VerificationSession.create({
+          userId: req.session.user._id.toString(),
+          stripeVerificationId: verificationSession.id,
+          status: verificationSession.status,
+          created: new Date(),
+          lastUpdated: new Date()
+        });
+        
+        // Return the details needed for the frontend
+        return res.json({
+          success: true,
+          url: verificationSession.url,
+          clientSecret: verificationSession.client_secret
+        });
+    }else{
+        return res.send("Error.");
     }
-  } catch (error) {
-    console.error('Error processing verification result:', error);
-  }
-}
+};
 
 module.exports = {
-  startVerification,
-  checkVerification,
-  processVerificationResult
+  verifyIdentity,
+  createVerificationSession,
+  smsVerifyStart,
+  smsVerifyCheck
 };

@@ -1,6 +1,6 @@
 $(function(){
     // $('#tab_panel').hide();
-    $(document).on('keyup', '#register_username', function(){
+    $(document).on('keyup', '#settings_username', function(){
         var name = $(this).val();
         $('#register_username_load').text(name);
         $.ajax({

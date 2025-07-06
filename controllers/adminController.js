@@ -9,6 +9,11 @@ const path = require('path');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
 const Queue = require('bull');
+const bookmarkService = require('../services/bookmarkService');
+const browser = require('browser-detect');
+const { scripts } = require('../common-utils');
+
+
 
 // Initialize Redis and Bull Queue
 const redisClient = getRedisClient();
@@ -354,9 +359,9 @@ const getAdmin = async (req, res) => {
       //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
       // }
       if(req.session.user){
-          bookmarks = getBookmarks(req.session.user);
+          bookmarks = bookmarkService.getBookmarks(req.session.user);
       }
-      passages = await fillUsedInList(passages);
+      passages = await passageService.fillUsedInList(passages);
       // bcrypt.hash('test', 10, function (err, hash){
       //     if (err) {
       //       console.log(err);

@@ -7,10 +7,6 @@ const userController = require('../controllers/userController');
 // Follow route
 router.post('/follow', userController.follow);
 
-// User management routes
-router.post('/add_user', userController.addUser);
-router.post('/remove_user', userController.removeUser);
-
 // Profile management
 router.post('/change_profile_picture/', userController.changeProfilePicture);
 router.post('/delete-profile', userController.deleteProfileController);
@@ -26,5 +22,7 @@ router.get("/profile/:username?/:_id?/", userController.getProfile);
 
 // Notifications route
 router.get('/notifications', userController.getNotifications);
+
+router.get('/leaderboard', userController.leaderboard);
 
 module.exports = router;

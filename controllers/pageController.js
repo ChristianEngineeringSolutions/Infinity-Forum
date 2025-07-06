@@ -41,27 +41,6 @@ async function index(req, res) {
         });
     }
 }
-async function passage(req, res) {
-    if(req.session.CESCONNECT){
-            return systemService.getRemotePage(req, res);
-        }
-    var bigRes = await passageService.getBigPassage(req, res, true);
-    // console.log('TEST'+bigRes.passage.title);
-    // bigRes.passage = await fillUsedInListSingle(bigRes.passage);
-    // console.log('TEST'+bigRes.passage.usedIn);
-    if(!res.headersSent){
-        // var location = ['test'];
-        var location = await passageService.getPassageLocation(bigRes.passage);
-        await passageService.getRecursiveSpecials(bigRes.passage);
-        return res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
-            ISMOBILE: bigRes.ISMOBILE,
-            thread: false,
-            page: 'more',
-            whichPage: 'sub',
-            location: location
-        });
-    }
-}
 async function terms(req, res) {
     res.render('terms');
 }
@@ -84,36 +63,81 @@ async function donate(req, res) {
         subscriptionQuantity: subscriptionQuantity,
     });
 }
-async function leaderboard(req, res) {
-    const ISMOBILE = browser(req.headers['user-agent']).mobile;
-    if(req.session.CESCONNECT){
-        return systemService.getRemotePage(req, res);
+async function bank(req, res){
+    if (!req.session.user) {
+    return res.redirect('/loginform');
+  }
+  var user = await User.findOne({_id:req.session.user._id});
+  return res.render('bank', {borrowedAmount:user.borrowedStars, starsBorrowedThisMonth: user.starsBorrowedThisMonth});
+}
+async function fileStream(req, res){
+     const ISMOBILE = browser(req.headers['user-agent']).mobile;
+    //output passages in directory / or req.body.directory
+    var directory = req.params.directory || __dirname;
+    //get passages where fileStreamPath starts with directory
+    var viewMainFile;
+    if(req.params.viewMainFile === 'false'){
+        viewMainFile = false;
     }
-    var page = req.query.page || 1;
-    var limit = DOCS_PER_PAGE * 2;
-    // limit = 2;
-    // let users = await User.find().sort('-starsGiven');
-    let users = await User.paginate({}, {sort: '-starsGiven _id', page: page, limit: limit});
-    users = users.docs;
-    var i = 1;
-    for(const user of users){
-        user.rank = i + ((page-1)*limit);
-        ++i;
-    }
-    if(page == 1){
-        return res.render('leaderboard', {passage: {id: 'root'},users: users, scripts: scripts,
-    ISMOBILE: ISMOBILE, page: page, rank: true});
+    else if(req.params.viewMainFile === 'true'){
+        viewMainFile = true;
     }
     else{
-        return res.render('leaders', {users: users, page: page, rank: false});
+        viewMainFile = true;
     }
+    var passages;
+    if(viewMainFile){
+        passages = await Passage.find({
+            fileStreamPath: {
+                $regex: '^' + directory + '/[^/]*(/?)$',
+                $options: 'i'
+            },
+            mainFile: viewMainFile
+        }).collation({locale: 'en', strength: 2}).sort({title: 1}); //sort alphabetically
+    }
+    else{
+        //there may be duplicates so sort by stars
+        passages = await Passage.find({
+            fileStreamPath: {
+                $regex: '^' + directory + '/[^/]*(/[^/]*)?$',
+                $options: 'i'
+            },
+            // mainFile: viewMainFile
+        }).sort({stars: '-1'}).limit(10);
+    }
+    let bookmarks = [];
+    // if(req.session.user){
+    //     bookmarks = await User.find({_id: req.session.user._id}).populate('bookmarks').passages;
+    // }
+    if(req.session.user){
+        bookmarks = bookmarkService.getBookmarks(req.session.user);
+    }
+    for(var i = 0; i < passages.length; ++i){
+        passages[i] = await passageService.getPassage(passages[i]);
+    }
+    res.render("filestream", {
+        subPassages: false,
+        passageTitle: false, 
+        scripts: scripts, 
+        passages: passages, 
+        mainFiles: viewMainFile,
+        passage: {id:'root', author: {
+            _id: 'root',
+            username: 'Sasame'
+        }},
+        bookmarks: bookmarks,
+        ISMOBILE: ISMOBILE
+    });
+    // return res.render('passages', {
+    //     passages: passages,
+    //     subPassages: false
+    // });
+    //on directory click just run same route with different directory
 }
-// Add other moderator-specific controller functions here
-
 module.exports = {
     index,
     terms,
-    leaderboard,
     donate,
-    passage
+    bank,
+    fileStream
 };

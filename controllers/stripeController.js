@@ -335,73 +335,6 @@ const createSubscriptionCheckout = async (req, res) => {
   }
 };
 
-// Create verification session handler
-const createVerificationSession = async (req, res) => {
-    if(req.session.user){
-        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
-        const stripe = require("stripe")(STRIPE_SECRET_KEY);
-
-        // Check if user already has a pending or completed verification
-        const existingVerification = await VerificationSession
-          .findOne({
-            userId: req.session.user._id.toString(),
-            status: { $in: ['requires_input', 'processing', 'verified'] }
-          });
-
-        // If there's an active verification, return it instead of creating a new one
-        if (existingVerification) {
-          // Retrieve the verification details from Stripe
-          const verificationSession = await stripe.identity.verificationSessions.retrieve(
-            existingVerification.stripeVerificationId
-          );
-          return res.json({
-            success: true,
-            existingSession: true,
-            url: verificationSession.url,
-            clientSecret: verificationSession.client_secret,
-            status: verificationSession.status
-          });
-        }
-
-        // Create the session.
-        const verificationSession = await stripe.identity.verificationSessions.create
-        ({
-          type: 'document',
-          provided_details: {
-            email: req.session.user.email,
-          },
-          metadata: {
-            user_id: req.session.user._id.toString(),
-          },
-          options: {
-            document: {
-              allowed_types: ['driving_license', 'passport', 'id_card'],
-              require_id_number: true,
-              require_live_capture: true,
-              require_matching_selfie: true
-            }
-          }
-        });
-        
-        // Store session info in database
-        await VerificationSession.create({
-          userId: req.session.user._id.toString(),
-          stripeVerificationId: verificationSession.id,
-          status: verificationSession.status,
-          created: new Date(),
-          lastUpdated: new Date()
-        });
-        
-        // Return the details needed for the frontend
-        return res.json({
-          success: true,
-          url: verificationSession.url,
-          clientSecret: verificationSession.client_secret
-        });
-    }else{
-        return res.send("Error.");
-    }
-};
 
 // Stripe onboarded handler
 const stripeOnboarded = async (req, res, next) => {
@@ -432,11 +365,70 @@ const stripeOnboarded = async (req, res, next) => {
     }
 };
 
+// Stripe authorization handler
+const stripeAuthorize = async (req, res) => {
+    if(req.session.user){
+        // Generate a random string as `state` to protect from CSRF and include it in the session
+        req.session.state = Math.random()
+        .toString(36)
+        .slice(2);
+        var user = req.session.user;
+        try {
+            let accountId = user.stripeAccountId;
+            let onboardingComplete = user.stripeOnboardingComplete;
+            const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+            const stripe = require("stripe")(STRIPE_SECRET_KEY);
+            // Create a Stripe account for this user if one does not exist already
+            if (onboardingComplete === false) {
+                console.log("No Account yet.");
+                const account = await stripe.accounts.create({
+                    type: 'express',
+                    capabilities: {
+                        transfers: {requested: true},
+                    },
+                  });
+                try{
+                    await User.updateOne({_id: user._id}, {stripeAccountId: account.id});
+                }
+                catch(error){
+                    console.error(error);
+                }
+                if(process.env.LOCAL){
+                    var refresh_url = 'http://localhost:3000/stripeAuthorize';
+                    var return_url = 'http://localhost:3000/stripeOnboarded';
+                }else{
+                    var refresh_url = 'https://infinity-forum.org/stripeAuthorize';
+                    var return_url = 'https://infinity-forum.org/stripeOnboarded';
+                }
+                // Create an account link for the user's Stripe account
+                const accountLink = await stripe.accountLinks.create({
+                    account: account.id,
+                    refresh_url: refresh_url,
+                    return_url: return_url,
+                    type: 'account_onboarding'
+                });
+                // Redirect to Stripe to start the Express onboarding flow
+                res.redirect(accountLink.url);
+            }
+            else{
+                console.log("Already has account.");
+                let account = await User.findOne({_id: user._id});
+                console.log(account);
+                const loginLink = await stripe.accounts.createLoginLink(account.stripeAccountId);
+                res.redirect(loginLink.url);
+            }
+          } catch (err) {
+            console.log('Failed to create a Stripe account.');
+            console.log(err);
+          }
+    }
+};
+
 module.exports = {
     stripeWebhook,
     stripeConnectWebhook,
     unsubscribe,
     createSubscriptionCheckout,
-    createVerificationSession,
-    stripeOnboarded
+    stripeOnboarded,
+    stripeAuthorize
 };

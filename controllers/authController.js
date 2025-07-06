@@ -6,34 +6,8 @@ const { User } = require('../models/User');
 const { scripts, accessSecret } = require('../common-utils');
 const { promisify } = require('util');
 const request = promisify(require('request'));
-
-const { userExists } = require('../services/userService');
-const { sendEmail } = require('../services/systemService');
-
-// Authentication helper function (from sasame.js line 8461)
-async function authenticateUsername(username, password){
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    let obj = {};
-    let search = '';
-    if(username.match(regex) === null){
-        //it's a username
-        search = "username";
-    }
-    else{
-        //it's an email
-        search = "email";
-    }
-    obj[search] = username;
-    var user = await User.findOne(obj);
-    if(!user){
-        return false;
-    }
-    var result = await bcrypt.compare(password, user.password);
-    if(result === true){
-        return user;
-    }
-    return false;
-}
+const userService = require('../services/userService');
+const systemService = require('../services/systemService');
 
 // Render login form (from sasame.js line 654)
 async function renderLoginForm(req, res) {
@@ -43,7 +17,7 @@ async function renderLoginForm(req, res) {
 // Handle login (from sasame.js line 4945)
 async function handleLogin(req, res) {
     //check if email has been verified
-    var user = await authenticateUsername(req.body.username, req.body.password);
+    var user = await userService.authenticateUsername(req.body.username, req.body.password);
     if(user && !user.simulated){
         // Update last login time
         user.lastLogin = new Date();
@@ -56,18 +30,15 @@ async function handleLogin(req, res) {
     }
 }
 
-// Handle registration (from sasame.js line 5991)
-async function handleRegister(req, res) {
-    // Import userExists when userController is created
-    const { userExists, sendEmail } = require('./userController');
-    
-    if ((req.body.email ||
-      req.body.username) &&
+async function handleRegister(req, res) {    
+    if (req.body.email &&
+      req.body.name &&
+      req.body.hiddenUsername &&
       req.body.password &&
       req.body.passwordConf && 
       req.body.password == req.body.passwordConf
       && req.body["g-recaptcha-response"]
-      && !(await userExists(req.body.email))) {  
+      && !(await userService.userExists(req.body.email))) {  
 
         var fake = req.body.fake || false;
 
@@ -93,17 +64,17 @@ async function handleRegister(req, res) {
                 return res.send({ response: "Failed" });
             }
         }
-
-        let numUsers = await User.countDocuments({username: req.body.username.trim()}) + 1;
-        var ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress 
-        let ipNumber = ip.split('.').map(Number).reduce((a, b) => (a << 8) + b, 0);
+        let ipNumber = req.clientIp.split('.').map(Number).reduce((a, b) => (a << 8) + b, 0);
+        var lastLogin = new Date();
         var userData = {
-        name: req.body.username || req.body.email,
-        username: req.body.username.split(' ').join('.') + '.' + numUsers || '',
+        name: req.body.name,
+        username: req.body.hiddenUsername,
         password: req.body.password,
         stars: 0,
         token: v4(),
-        IP: ipNumber
+        lastLogin: lastLogin,
+        joined: lastLogin
+        // IP: ipNumber
         }  //use schema.create to insert data into the db
       if(req.body.email != ''){
         userData.email = req.body.email;
@@ -129,7 +100,7 @@ async function handleRegister(req, res) {
           });
           //send verification email
           if(user.email && user.email.length > 1 && !fake){
-            await sendEmail(user.email, 'Verify Email for Infinity Forum.', 
+            await systemService.sendEmail(user.email, 'Verify Email for Infinity Forum.', 
                 `
                     https://infinity-forum.org/verify/`+user._id+`/`+user.token+`
                 `);
@@ -139,7 +110,30 @@ async function handleRegister(req, res) {
       });
     }
     else{
-        res.redirect('/loginform');
+        if(!req.body.email ||
+      !req.body.name ||
+      !req.body.hiddenUsername ||
+      !req.body.password ||
+      !req.body.passwordConf){
+            var str = JSON.stringify({
+                email: req.body.email,
+                name: req.body.name,
+                hiddenUsername: req.body.hiddenUsername,
+                password: req.body.password,
+                passwordConf: req.body.passwordConf
+            });
+            str = '';
+            res.send('Missing field.' + str);
+        }else if(req.body.password !== req.body.passwordConf){
+            res.send("Passwords don't match.")
+        }else if(!req.body["g-recaptcha-response"]){
+            res.send("Missign RECAPTCHA");
+        }else if ((await userService.userExists(req.body.email))){
+            res.send("Email already exists. Try recovering password.");
+        }else{
+            console.log(req.body.hiddenUsername + ' test');
+            res.send("Mysterious issue.");
+        }
     }
 }
 
@@ -173,7 +167,7 @@ async function handleRecover(req, res) {
         user.recoveryExp = Date.now();
         user.recoveryExp = user.recoveryExp.setHours(user.recoveryExp.getHours() + 1);
         await user.save();
-        await sendEmail(req.body.email, 'Recover Password: Infinity-Forum.org', 
+        await systemService.sendEmail(req.body.email, 'Recover Password: Infinity-Forum.org', 
         'Expires in one hour: https://infinity-forum.org/recoverpassword/'+user._id+'/'+user.recoveryToken);
         return res.render('recover_password', {token: null});
     }
@@ -262,7 +256,6 @@ async function requiresAdmin(req, res, next){
 }
 
 module.exports = {
-    authenticateUsername,
     renderLoginForm,
     handleLogin,
     handleRegister,

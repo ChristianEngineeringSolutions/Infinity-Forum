@@ -8,7 +8,7 @@
         <div class="box_cont">
             <form action="/login/" method="post" id="login_frm">
                 Username or Email:<br/>
-                <input class="m-box-input" type="text" tabindex="1" name="username" required pattern=".{3,16}" placeholder="Enter your username" id="login_usr" maxlength="100" /><br/>
+                <input class="m-box-input" type="text" tabindex="1" name="username" required pattern=".{3,16}" placeholder="Enter your username or email" id="login_usr" maxlength="100" /><br/>
                 Password:<br/>
                 <input class="m-box-input" type="password" tabindex="2" name="password" required pattern=".{3,16}" placeholder="Enter your password" id="login_pwd" autocomplete="off" maxlength="100" /><br />
                 <input class="m-box-input" type="hidden" name="token" value="<?php echo $token; ?>" />
@@ -24,15 +24,16 @@
         </div>
         <div class="box_cont">
            <form action="/register/" method="post" id="reg_form">
+                <input type="hidden"id="hidden-username"name="hiddenUsername"/>
                Name:<br/>
-               <input class="m-box-input" type="text" name="username" id="reg_usr" maxlength="16" required placeholder="Enter a username"/><br/>
+               <input class="m-box-input register_username" type="text" name="name" id="reg_usr" required placeholder="Enter your name" autocomplete="off"/><br/>
                Password:<br/>
                <input class="m-box-input" type="password" name="password" id="reg_pwd" autocomplete="off" required placeholder="Enter a password" title="The password be between 6 and 25 chars and must contain a capitalized and lower-case letter, and a number."/><br />
                Confirm Password:<br/>
                <input class="m-box-input" type="password" name="passwordConf" id="reg_pwd2" autocomplete="off" required placeholder="Confirm password"/><br />
                Email:<br/>
                <input class="m-box-input" type="email" name="email" id="reg_email" onblur="validate.checkDub(this)" autocomplete="off" required placeholder="Enter your email" title="Enter a valid email"/><br />
-               <input class="m-box-input" type="checkbox" name="reg_terms" id="reg_term" value="yes" required /><label> Yes i accept the <a href="/terms" target="__blank"id="show_terms">Terms</a></label><br /><br />
+               <input class="m-box-input" type="checkbox" name="reg_terms" id="reg_term" value="yes" required autocomplete="off" /><label> Yes i accept the <a href="/terms" target="__blank"id="show_terms">Terms</a></label><br /><br />
                Code:<br />
                <div class="g-recaptcha" data-sitekey="6Ldgf0gpAAAAAFY_v7hYut-fjEyU6MUfsKZax6hj"></div>
                <br />
