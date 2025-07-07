@@ -95,26 +95,35 @@ async function handleCompression(err, stdout, stderr, passage, partialpath, uplo
     console.log(stdout);
     console.log(stderr);
     console.log("=Ok actually finished compressing img");
-    passage.medium = passage.medium || [];
-    passage.compressed = passage.compressed || [];
+    
+    // Initialize arrays if needed (for atomic update)
+    const medium = passage.medium || [];
+    const compressed = passage.compressed || [];
+    const filename = [...passage.filename];
+    
     var filepath = partialpath + '/' + uploadTitle;
     // Get project root directory (remove /services from __dirname)
     const projectRoot = path.join(__dirname, '..');
     
+    // Prepare update data
+    const updateData = {};
+    
     //change filename extension and mimetype if necessary (converted png to jpg)
     if(stdout.includes("pngconvert " + projectRoot + '/' +  filepath)){
         var pf = passage.filename[index].split('.'); //test.png
-        passage.filename[index] = pf.slice(0, -1).join('.') + '.jpg'; //test.jpg
-        console.log(passage.filename[index]);
+        filename[index] = pf.slice(0, -1).join('.') + '.jpg'; //test.jpg
+        console.log(filename[index]);
+        updateData[`filename.${index}`] = filename[index];
     }
     
     //update database with medium if applicable
     if(stdout.includes("medium " + projectRoot + '/' + filepath)){
         console.log("PASSAGE.MEDIUM=TRUE");
-        passage.medium[index] = 'true';
+        medium[index] = 'true';
     }else{
-        passage.medium[index] = 'false';
+        medium[index] = 'false';
     }
+    updateData[`medium.${index}`] = medium[index];
     
     console.log("NODEJS FILEPATH: " + "medium " + projectRoot + '/' + filepath);
     console.log(stdout.includes("medium " + projectRoot + '/' + filepath));
@@ -122,9 +131,9 @@ async function handleCompression(err, stdout, stderr, passage, partialpath, uplo
     
     //if error set compressed to false and use original filepath (no appendage)
     if(stdout.includes("error " + filepath)){
-        passage.compressed[index] = 'false';
+        compressed[index] = 'false';
     }else{
-        passage.compressed[index] = 'true';
+        compressed[index] = 'true';
         try{
             await fsp.unlink(projectRoot + '/' + filepath);
             console.log('Removed original upload');
@@ -132,11 +141,20 @@ async function handleCompression(err, stdout, stderr, passage, partialpath, uplo
             console.log("Couldn't remove original upload.");
         }
     }
+    updateData[`compressed.${index}`] = compressed[index];
     
-    passage.markModified('medium');
-    passage.markModified('compressed');
-    passage.markModified('filename');
-    await passage.save();
+    // Perform atomic update
+    await Passage.updateOne(
+        { _id: passage._id },
+        { $set: updateData }
+    );
+    
+    // Update the passage object to reflect changes (for use in uploadFile)
+    if(updateData[`filename.${index}`]) {
+        passage.filename[index] = updateData[`filename.${index}`];
+    }
+    passage.medium = medium;
+    passage.compressed = compressed;
 }
 
 // Upload file function
@@ -146,7 +164,10 @@ async function uploadFile(req, res, passage) {
     var passages = await Passage.find({}).limit(20);
     var files = req.files;
     var fileToUpload = req.files.file;
-    passage.filename = [];
+    
+    // Initialize arrays for atomic updates
+    const filenames = [];
+    const mimeTypes = passage.mimeType || [];
     
     if (!Array.isArray(fileToUpload)) {
         fileToUpload = [fileToUpload];
@@ -190,7 +211,7 @@ async function uploadFile(req, res, passage) {
         const partialpath = where === 'protected' ? where : 'dist/' + where;
         const simplepath = where;
 
-        passage.filename[index] = uploadTitle;
+        filenames[index] = uploadTitle;
         
         // Wrap mv() in a Promise
         await new Promise((resolve, reject) => {
@@ -250,9 +271,12 @@ async function uploadFile(req, res, passage) {
                                     console.log('STDERR:', stderr);
                                     
                                     try {
-                                        passage.filename[currentIndex] = newfilename;
-                                        passage.markModified('filename');
-                                        await passage.save();
+                                        // Update filename atomically
+                                        await Passage.updateOne(
+                                            { _id: passage._id },
+                                            { $set: { [`filename.${currentIndex}`]: newfilename } }
+                                        );
+                                        filenames[currentIndex] = newfilename;
 
                                         if (newfilename !== uploadTitle) {
                                             await new Promise((resolveUnlink) => {
@@ -287,26 +311,29 @@ async function uploadFile(req, res, passage) {
                         }
                     }
 
-                    if (mimeType.split('/')[0] === 'image' && mimeType.split('+')[0].split('/')[1] === 'svg') {
-                        passage.isSVG = true;
-                    } else {
-                        passage.isSVG = false;
-                    }
-
-                    passage.mimeType[index] = mimeType.split('/')[0];
+                    const isSVG = (mimeType.split('/')[0] === 'image' && mimeType.split('+')[0].split('/')[1] === 'svg');
+                    mimeTypes[index] = mimeType.split('/')[0];
                     
-                    if (passage.mimeType[index] === 'model' || passage.isSVG) {
+                    // Prepare update data for this iteration
+                    const iterationUpdate = {
+                        [`mimeType.${index}`]: mimeTypes[index],
+                        isSVG: isSVG
+                    };
+                    
+                    if (mimeTypes[index] === 'model' || isSVG) {
                         const data = req.body.thumbnail.replace(/^data:image\/\w+;base64,/, "");
                         const buf = Buffer.from(data, 'base64');
                         await fsp.writeFile(fullpath + '/' + thumbnailTitle, buf);
-                        passage.thumbnail = thumbnailTitle;
+                        iterationUpdate.thumbnail = thumbnailTitle;
                     } else {
-                        passage.thumbnail = null;
+                        iterationUpdate.thumbnail = null;
                     }
-
-                    passage.markModified('filename');
-                    passage.markModified('mimeType');
-                    await passage.save();
+                    
+                    // Update atomically for this file
+                    await Passage.updateOne(
+                        { _id: passage._id },
+                        { $set: iterationUpdate }
+                    );
                     
                     resolve();
                 } catch (error) {
@@ -318,8 +345,17 @@ async function uploadFile(req, res, passage) {
         index++;
     }
     
-    await passage.save();
-    console.log(passage.filename + "TEST");
+    // Final atomic update with all filenames
+    await Passage.updateOne(
+        { _id: passage._id },
+        { $set: { filename: filenames } }
+    );
+    
+    // Update passage object to reflect changes
+    passage.filename = filenames;
+    passage.mimeType = mimeTypes;
+    
+    console.log(filenames + "TEST");
 }
 
 // Update file function

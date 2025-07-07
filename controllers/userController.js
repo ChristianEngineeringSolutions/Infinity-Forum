@@ -19,8 +19,11 @@ async function uploadProfilePhoto(req, res){
     var user = await User.findOne({_id: req.session.user._id});
     if(req.files == null){
         await fsp.unlink('./dist/uploads/'+user.thumbnail);
-        user.thumbnail = '';
-        await user.save();
+        // Use atomic update to clear thumbnail
+        await User.updateOne(
+            { _id: req.session.user._id },
+            { $set: { thumbnail: '' } }
+        );
     }else{
         // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
         var fileToUpload = req.files.photo;
@@ -43,8 +46,13 @@ async function uploadProfilePhoto(req, res){
                         console.log(err + stdout + stderr);
                         console.log("Profile Image compressed.");
                         var oldThumbnail = user.thumbnail;
-                        user.thumbnail = uploadTitle;
-                        await user.save();
+                        
+                        // Use atomic update to set new thumbnail
+                        await User.updateOne(
+                            { _id: req.session.user._id },
+                            { $set: { thumbnail: uploadTitle } }
+                        );
+                        
                         console.log("Old thumbnail:"+oldThumbnail);
                         console.log("Upload Title:"+uploadTitle);
                         try{
@@ -59,8 +67,6 @@ async function uploadProfilePhoto(req, res){
                 );
             });
         });
-        user.thumbnail = uploadTitle;
-        await user.save();
     }
 }
 
@@ -113,20 +119,33 @@ const updateSettings = async (req, res) => {
         
         if(user && !user.simulated){
             req.session.user = user;
-            user.name = req.body.name;
-            user.about = req.body.about;
-            user.username = req.body.newUsername;
-            user.safeMode = req.body['safe-mode'] && req.body['safe-mode'] == 'on' ? true : false;
+            
+            // Prepare update data
+            const updateData = {
+                name: req.body.name,
+                about: req.body.about,
+                username: req.body.newUsername,
+                safeMode: req.body['safe-mode'] && req.body['safe-mode'] == 'on' ? true : false
+            };
+            
             var sameEmail = await User.findOne({email: req.body.email});
             if(sameEmail._id.toString() != user._id.toString()){
                 return res.send("An Account with that email already exists.");
             }
-            user.email = req.body.email;
+            updateData.email = req.body.email;
+            
             if(req.body.password.length > 0){
-                user.password = await bcrypt.hash(req.body.password, 10);
+                updateData.password = await bcrypt.hash(req.body.password, 10);
             }
-            await user.save();
-            req.session.user = user;
+            
+            // Use atomic update
+            await User.updateOne(
+                { _id: user._id },
+                { $set: updateData }
+            );
+            
+            // Refresh user in session
+            req.session.user = await User.findOne({_id: user._id});
             return res.redirect('/profile/');
         }
         else{

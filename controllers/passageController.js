@@ -29,21 +29,28 @@ async function deletePassage(req, res) {
 }
 
 async function watch(req, res) {
-    var passage = await Passage.findOne({_id: req.body.passage.toString()});
-    // console.log('what'+passage);
-    if(!passage.watching.includes(req.session.user._id)){
-        passage.watching.push(req.session.user._id);
+    const passageId = req.body.passage.toString();
+    const userId = req.session.user._id;
+    
+    // First check if user is already watching
+    const passage = await Passage.findOne({_id: passageId});
+    const isWatching = passage.watching.some(person => person._id.toString() === userId.toString());
+    
+    if(!isWatching){
+        // Add user to watching list
+        await Passage.updateOne(
+            { _id: passageId },
+            { $push: { watching: userId } }
+        );
     }
     else{
-        passage.watching = passage.watching.filter(function(person){
-            if(person._id == req.session.user._id){
-                return false;
-            }
-            return true;
-        });
+        // Remove user from watching list
+        await Passage.updateOne(
+            { _id: passageId },
+            { $pull: { watching: userId } }
+        );
     }
-    passage.markModified('watching');
-    await passage.save();
+    
     return res.send("Done");
 }
 
@@ -452,17 +459,21 @@ async function createInitialPassage(req, res) {
 }
 
 async function updatePassageOrder(req, res) {
+    // First verify the passage exists and user has permission
     let passage = await Passage.findOne({_id: req.body._id});
+    
     //Only for private passages
-    if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        var passageOrder = [];
+    if(passage && passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
         if(typeof req.body.passageOrder != 'undefined'){
             var passageOrder = JSON.parse(req.body.passageOrder);
             let trimmedPassageOrder = passageOrder.map(str => str.trim());
             console.log(trimmedPassageOrder);
-            passage.passages = trimmedPassageOrder;
-            passage.markModified('passages');
-            await passage.save();
+            
+            // Use atomic update
+            await Passage.updateOne(
+                { _id: req.body._id },
+                { $set: { passages: trimmedPassageOrder } }
+            );
         }
     }
     //give back updated passage
@@ -486,6 +497,27 @@ async function updatePassage(req, res) {
     if(passage.versionOf != null){
         return res.send("Not allowed.");
     }
+    
+    // Prepare update object
+    const updateData = {
+        $set: {
+            yt: formData.yt,
+            html: formData.html,
+            css: formData.css,
+            javascript: formData.js,
+            title: formData.title,
+            content: formData.content,
+            tags: formData.tags,
+            code: formData.code,
+            bibliography: formData.bibliography,
+            lang: formData.lang,
+            fileStreamPath: formData.filestreampath,
+            previewLink: formData['editor-preview'],
+            synthetic: false,
+            lastUpdated: Date.now()
+        }
+    };
+    
     //if the passage has changed (formdata vs passage)
     //save the old version in a new passage
     if(formData.html != passage.html || formData.css != passage.css || formData.javascript
@@ -526,61 +558,41 @@ async function updatePassage(req, res) {
             yt: passage.yt
         });
         //now add to versions of new passage
-        passage.versions.push(oldVersion);
+        updateData.$push = { versions: oldVersion._id };
     }
-    passage.yt = formData.yt;
-    passage.html = formData.html;
-    passage.css = formData.css;
-    passage.javascript = formData.js;
-    passage.title = formData.title;
-    passage.content = formData.content;
-    passage.tags = formData.tags;
-    passage.code = formData.code;
-    passage.bibliography = formData.bibliography;
-    passage.lang = formData.lang;
-    passage.fileStreamPath = formData.filestreampath;
-    passage.previewLink = formData['editor-preview'];
-    //no longer synthetic if it has been edited
-    passage.synthetic = false;
-    passage.lastUpdated = Date.now();
-    var uploadTitle = '';
-    if (!req.files || Object.keys(req.files).length === 0) {
-        //no files uploaded
-        console.log("No files uploaded.");
-        passage.filename = passage.filename;
-    }
-    else{
+    
+    // Handle file uploads
+    if (req.files && Object.keys(req.files).length > 0) {
         console.log('File uploaded');
         await uploadFile(req, res, passage);
     }
-    if(subforums == 'true'){
-        console.log(3);
-    }
+    
     //Only for private passages
     if(passage.public == false && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        var passageOrder = [];
         if(req.body.passageOrder != 'false' && req.body.isChief != 'false'){
             var passageOrder = JSON.parse(req.body.passageOrder);
             let trimmedPassageOrder = passageOrder.map(str => str.trim());
             console.log(trimmedPassageOrder);
             if(subforums == 'true'){
                 console.log(2);
-                passage.subforums = trimmedPassageOrder;
-                passage.markModified('subforums');
+                updateData.$set.subforums = trimmedPassageOrder;
             }
             else{
-                passage.passages = trimmedPassageOrder;
-                passage.markModified('passages');
+                updateData.$set.passages = trimmedPassageOrder;
             }
         }
     }
-    passage.markModified('versions');
-    await passage.save();
+    
+    // Perform atomic update
+    await Passage.updateOne({ _id: _id }, updateData);
+    
     if(passage.mainFile && req.session.user.admin){
         //also update file and server
         // updateFile(passage.fileStreamPath, passage.code);
     }
-    passage = await passageService.getPassage(passage);
+    
+    // Fetch updated passage
+    passage = await passageService.getPassage(await Passage.findOne({_id: _id}));
     var subPassage = formData.parent == 'root' ? false : true;
     //give back updated passage
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
@@ -597,59 +609,71 @@ async function setPassageSetting(req, res) {
     let setting = req.body.setting;
     let user = await User.findOne({_id: req.session.user._id});
     let passage = await Passage.findOne({_id: _id}).populate('author');
+    
+    // Prepare update object
+    const updateData = {};
+    
     switch(setting){
         case 'private':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.public = !passage.public;
+                updateData.public = !passage.public;
             }
             break;
         case 'public':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.public = !passage.public;
+                updateData.public = !passage.public;
             }
             break;
         case 'forum':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.forum = !passage.forum;
+                updateData.forum = !passage.forum;
             }
             break;
         case 'personal':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.personal = !passage.personal;
+                updateData.personal = !passage.personal;
             }
             break;
         case 'cross-origin-allowed':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.personal_cross_origin = !passage.personal_cross_origin;
+                updateData.personal_cross_origin = !passage.personal_cross_origin;
             }
             break;
         case 'request-public-daemon':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.public_daemon = 1;
+                updateData.public_daemon = 1;
             }
             break;
         case 'admin-make-public-daemon':
             if(user.admin){
-                passage.public_daemon == 2 ? 1 :  2;
+                updateData.public_daemon = passage.public_daemon == 2 ? 1 : 2;
             }
             break;
         case 'admin-make-default-daemon':
             if(user.admin){
-                passage.default_daemon = !passage.default_daemon;
+                updateData.default_daemon = !passage.default_daemon;
             }
             break;
         case 'distraction-free':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.distraction_free = !passage.distraction_free;
+                updateData.distraction_free = !passage.distraction_free;
             }
             break;
         case 'bubbling':
             if(passage.author._id.toString() == user._id.toString()){
-                passage.bubbling = !passage.bubbling;
+                updateData.bubbling = !passage.bubbling;
             }
             break;
     }
-    await passage.save();
+    
+    // Only update if there's something to update
+    if(Object.keys(updateData).length > 0) {
+        await Passage.updateOne(
+            { _id: _id },
+            { $set: updateData }
+        );
+    }
+    
     res.send("Done");
 }
 async function addCollaborator(req, res) {
@@ -663,13 +687,15 @@ async function addCollaborator(req, res) {
         console.log(req.session.user._id.toString());
         console.log(collaborator._id.toString() != req.session.user._id.toString());
         if(!passage.collaborators.includes(collaborator._id.toString()) && collaborator._id.toString() != req.session.user._id.toString()){
-            passage.collaborators.push(collaborator._id.toString());
-            passage.markModified('collaborators');
+            // Use atomic update to add collaborator
+            await Passage.updateOne(
+                { _id: req.body.passageID },
+                { $push: { collaborators: collaborator._id.toString() } }
+            );
+            return res.send("Collaborator Added");
         }else{
             return res.send("Not allowed. Can't add author or user already added.");
         }
-        await passage.save();
-        return res.send("Collaborator Added");
     }
     else{
         return res.send("Wrong permissions.");
@@ -680,16 +706,11 @@ async function removeCollaber(req, res) {
     let userID = req.body.userID;
     let passage = await Passage.findOne({_id: passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        var index = 0;
-        for(const u of passage.collaborators){
-            if(u == userID){
-                //remove user
-                passage.collaborators.splice(index, 1);
-            }
-            ++index;
-        }
-        passage.markModified('collaborators');
-        await passage.save();
+        // Use atomic update to remove collaborator
+        await Passage.updateOne(
+            { _id: passageID },
+            { $pull: { collaborators: userID } }
+        );
         res.send("Done.");
     }
 }
@@ -799,16 +820,11 @@ async function removeSource(req, res) {
     let sourceID = req.body.sourceID;
     let passage = await Passage.findOne({_id: passageID});
     if(req.session.user && (req.session.user._id.toString() == passage.author._id.toString() || req.session.user.admin)){
-        var index = 0;
-        for(const s of passage.sourceList){
-            if(s == sourceID){
-                //remove source
-                passage.sourceList.splice(index, 1);
-            }
-            ++index;
-        }
-        passage.markModified('sourceList');
-        await passage.save();
+        // Use atomic update to remove source
+        await Passage.updateOne(
+            { _id: passageID },
+            { $pull: { sourceList: sourceID } }
+        );
         res.send("Done.");
     }
 }
@@ -838,38 +854,48 @@ async function changeLabel(req, res){
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    var passage = await Passage.findOne({_id: _id}).populate('author');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
-    passage.label = req.body.label;
-    if(!labelOptions.includes(passage.label)){
+    
+    const label = req.body.label;
+    if(!labelOptions.includes(label)){
         return res.send("Not an option.");
     }
-    switch(passage.label){
+    
+    // Prepare update data
+    const updateData = { label: label };
+    
+    switch(label){
         case 'Project':
         case 'Idea':
         case 'Database':
         case 'Article':
-            passage.public = false;
-            passage.forum = false;
+            updateData.public = false;
+            updateData.forum = false;
             break;
         case 'Social':
         case 'Question':
         case 'Comment':
         case 'Task':
         case 'Challenge':
-            passage.public = true;
-            passage.forum = false;
+            updateData.public = true;
+            updateData.forum = false;
             break;
         case 'Forum':
-            passage.public = true;
-            passage.forum = true;
+            updateData.public = true;
+            updateData.forum = true;
             break;
-
     }
-    await passage.save();
-    passage = await passageService.getPassage(passage);
+    
+    // Use atomic update
+    await Passage.updateOne(
+        { _id: _id },
+        { $set: updateData }
+    );
+    
+    passage = await passageService.getPassage(await Passage.findOne({_id: _id}));
     var subPassage = req.body.parent == 'root' ? false : true;
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
 }
@@ -910,9 +936,11 @@ const addUser = async (req, res) => {
     let user = await User.findOne({username: username});
     let passage = await Passage.findOne({_id: passageId});
     if(user && req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        passage.users.push(user._id.toString());
-        passage.markModified('users');
-        await passage.save();
+        // Use atomic update to add user
+        await Passage.updateOne(
+            { _id: passageId },
+            { $push: { users: user._id.toString() } }
+        );
         res.send("User Added");
     }
     else{
@@ -925,16 +953,11 @@ const removeUser = async (req, res) => {
     let userID = req.body.userID;
     let passage = await Passage.findOne({_id: passageID});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
-        var index = 0;
-        for(const u of passage.users){
-            if(u == userID){
-                //remove user
-                passage.users.splice(index, 1);
-            }
-            ++index;
-        }
-        passage.markModified('users');
-        await passage.save();
+        // Use atomic update to remove user
+        await Passage.updateOne(
+            { _id: passageID },
+            { $pull: { users: userID } }
+        );
         res.send("Done.");
     }
 };
@@ -945,14 +968,19 @@ const showBestOf = async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    var passage = await Passage.findOne({_id: _id}).populate('author');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
     console.log(req.body.checked);
-    passage.showBestOf = req.body.checked;
-    await passage.save();
-    passage = await passageService.getPassage(passage);
+    
+    // Use atomic update
+    await Passage.updateOne(
+        { _id: _id },
+        { $set: { showBestOf: req.body.checked } }
+    );
+    
+    passage = await passageService.getPassage(await Passage.findOne({_id: _id}));
     var subPassage = req.body.parent == 'root' ? false : true;
     return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: subPassage});
 };
@@ -963,12 +991,17 @@ const sameUsers = async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    var passage = await Passage.findOne({_id: _id}).populate('author');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
-    passage.sameUsers = req.body.checked;
-    await passage.save();
+    
+    // Use atomic update
+    await Passage.updateOne(
+        { _id: _id },
+        { $set: { sameUsers: req.body.checked } }
+    );
+    
     return res.send("Complete.");
 };
 
@@ -978,12 +1011,17 @@ const sameCollabers = async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    var passage = await Passage.findOne({_id: _id}).populate('author');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
-    passage.sameCollabers = req.body.checked;
-    await passage.save();
+    
+    // Use atomic update
+    await Passage.updateOne(
+        { _id: _id },
+        { $set: { sameCollabers: req.body.checked } }
+    );
+    
     return res.send("Complete.");
 };
 
@@ -993,12 +1031,17 @@ const sameSources = async (req, res) => {
         return res.send("Not logged in.");
     }
     var _id = req.body._id;
-    var passage = await Passage.findOne({_id: _id}).populate('author users sourceList collaborators versions');
+    var passage = await Passage.findOne({_id: _id}).populate('author');
     if(passage.author._id.toString() != req.session.user._id.toString()){
         return res.send("You can only update your own passages.");
     }
-    passage.sameSources = req.body.checked;
-    await passage.save();
+    
+    // Use atomic update
+    await Passage.updateOne(
+        { _id: _id },
+        { $set: { sameSources: req.body.checked } }
+    );
+    
     return res.send("Complete.");
 };
 
@@ -1006,37 +1049,38 @@ const sameSources = async (req, res) => {
 const updateMirroring = async (req, res) => {
     let passage = await Passage.findOne({_id: req.body._id});
     if(req.session.user && req.session.user._id.toString() == passage.author._id.toString()){
+        let mirror = null;
+        let bestOf = null;
+        
         try{
-            var mirror = await Passage.findOne({_id:req.body.mirror.trim()});
+            mirror = await Passage.findOne({_id:req.body.mirror.trim()});
         }
         catch(e){
             console.log("Null value");
-            var mirror = null;
         }
         try{
-            var bestOf = await Passage.findOne({_id:req.body.bestOf.trim()});
+            bestOf = await Passage.findOne({_id:req.body.bestOf.trim()});
         }
         catch(e){
             console.log("Null value");
-            var bestOf = null;
         }
-        if(mirror != null){
-            passage.mirror = mirror._id;
-        }
-        else{
-            passage.mirror = null;
-        }
-        if(bestOf != null){
-            passage.bestOf = bestOf._id;
-        }
-        else{
-            passage.bestOf = null;
-        }
-        passage.mirrorContent = req.body.mirrorContent;
-        passage.mirrorEntire = req.body.mirrorEntire;
-        passage.bestOfContent = req.body.bestOfContent;
-        passage.bestOfEntire = req.body.bestOfEntire;
-        await passage.save();
+        
+        // Prepare update data
+        const updateData = {
+            mirror: mirror ? mirror._id : null,
+            bestOf: bestOf ? bestOf._id : null,
+            mirrorContent: req.body.mirrorContent,
+            mirrorEntire: req.body.mirrorEntire,
+            bestOfContent: req.body.bestOfContent,
+            bestOfEntire: req.body.bestOfEntire
+        };
+        
+        // Use atomic update
+        await Passage.updateOne(
+            { _id: req.body._id },
+            { $set: updateData }
+        );
+        
         return res.send("Done.");
     }
     else{
@@ -1047,13 +1091,11 @@ const updateMirroring = async (req, res) => {
 // Sticky toggle
 const sticky = async (req, res) => {
     var passage = await Passage.findOne({_id: req.body._id});
-    if(passage.stickied){
-        passage.stickied = false;
-    }
-    else{
-        passage.stickied = true;
-    }
-    await passage.save();
+    // Use atomic update to toggle stickied status
+    await Passage.updateOne(
+        { _id: req.body._id },
+        { $set: { stickied: !passage.stickied } }
+    );
     return res.send("Done.");
 };
 

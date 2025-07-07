@@ -1,3 +1,6 @@
+Update uploadFile() and all passageController functions to use atomic updates, and user settings and uploadprofilephoto
+changeLabel(), removeSource(), addUser, removeUser, showbestof, sameUsers, sameCollabers, sameSources, updateMirroring, sticky
+
 Last Stable Commit: 6ae15968cd27ed1f05a40914fd237cf8177c5ee5
 TODO:
 *=priority
