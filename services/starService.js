@@ -110,7 +110,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                 }
             }
             var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
-            //Give starring user stars for each logged stars at 1% rate
+            //Give starring user stars for each logged stars at 1% rate (rebate)
             var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources').session(_session);
             var totalForStarrer = 0;
             for(const loggedStar of loggedStars){
@@ -236,7 +236,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                             break collaboratorsLoop;
                         }
                     }
-                    //each collaber inherits star debt from starrer
+                    //each collaber inherits star debt from starrer to prevent collusion rings
                     //this is so that the collaber has to pay off the debt before they can pay the debt.user
                     for(const debt of starrerDebt){
                         //create debt owed by collaber to starrer

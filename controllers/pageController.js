@@ -6,6 +6,7 @@ const passageService = require('../services/passageService');
 const systemService = require('../services/systemService');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
+const {monthsBetween} = require('../common-utils');
 const { scripts, totalUSD, totalStarsGiven, DOCS_PER_PAGE } = require('../common-utils');
 async function index(req, res) {
     if(req.session.CESCONNECT){
@@ -68,6 +69,13 @@ async function bank(req, res){
     return res.redirect('/loginform');
   }
   var user = await User.findOne({_id:req.session.user._id});
+  var today = new Date();
+    //its been more than a month since they last got stars so reset the month we're looking at
+    if(monthsBetween(user.monthStarsBorrowed, today) > 0){
+        user.monthStarsBorrowed = Date.now();
+        user.starsBorrowedThisMonth = 0;
+        await user.save();
+    }
   return res.render('bank', {borrowedAmount:user.borrowedStars, starsBorrowedThisMonth: user.starsBorrowedThisMonth});
 }
 async function fileStream(req, res){

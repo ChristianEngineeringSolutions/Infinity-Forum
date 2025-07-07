@@ -12,7 +12,6 @@ const { getUploadFolder } = require('../utils/fileUtils');
 const { accessSecret } = require('../common-utils');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
-const fileUpload = require('express-fileupload');
 
 // Express app configuration
 
@@ -32,9 +31,8 @@ async function configureExpress() {
             }
         }
     }));
-    app.use(fileUpload());
     
-    // File upload middleware
+    // File upload middleware (only use uploadConfig, not both)
     app.use(uploadConfig);
     
     // Session configuration (will need to be moved from sasame.js)

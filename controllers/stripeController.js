@@ -15,7 +15,7 @@ const stripeWebhook = async (request, response) => {
     const payload = request.body;
     const SYSTEM = await System.findOne({});
 
-    console.log("Got payload: " + payload);
+    console.log("Got payload: " + JSON.stringify(payload));
     const sig = request.headers['stripe-signature'];
     let event;
     try {
@@ -52,11 +52,15 @@ const stripeWebhook = async (request, response) => {
                         if (totalStarsGivenAmount == 0) {
                             amountToAdd = 100;
                         }
-                        user.donationStars += amountToAdd;
-                        SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
-                        SYSTEM.userAmount += Math.floor(amount * 0.45);
-                        await SYSTEM.save();
-                        await user.save();
+                        await User.updateOne({_id: user._id.toString()}, 
+                          {$inc: {
+                            donationStars: amountToAdd
+                        }});
+                        await System.updateOne({_id: SYSTEM._id.toString()}, 
+                          {$inc: {
+                            platformAmount: Math.floor((amount * 0.55) - fee),
+                            userAmount: Math.floor(amount * 0.45)
+                        }});
                     }
                 }
             } else {
@@ -121,9 +125,7 @@ const stripeWebhook = async (request, response) => {
           } else {
             console.log('  Invoice paid without an associated Charge or PaymentIntent (e.g., credit balance used).');
           }
-        console.log("UNDER TEST");
-        if (email != null) {
-            console.log("OVER TEST");
+        if (email != null && subscriber) {
             console.log(email);
             var subscriptionQuantity = 1;
             if (invoice.lines && invoice.lines.data) {
@@ -135,32 +137,64 @@ const stripeWebhook = async (request, response) => {
               } else {
                 console.log('  No line items found on this invoice.');
               }
-            if(!subscriber.subscribed){
-                subscriber.lastSubscribed = new Date();
-            }
             console.log("Subscription Quantity:"+subscriptionQuantity);
-            subscriber.subscriptionQuantity = subscriptionQuantity;
-            subscriber.subscriptionID = payload.data.object.subscription;
-            subscriber.subscribed = true;
-            subscriber.subscriptionPendingCancellation = false;
             let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
             var subscriptionReward = (await percentUSD(500 * subscriber.subscriptionQuantity * 100 * (monthsSubscribed + 1))) * (await totalStarsGiven());
             var amountToAdd = (await percentUSD(500 * subscriber.subscriptionQuantity * 100)) * (await totalStarsGiven());
             subscriber.donationStars += subscriptionReward;
             var amount = 500 * subscriptionQuantity;
-            SYSTEM.platformAmount += Math.floor((amount * 0.55) - fee);
-            SYSTEM.userAmount += Math.floor(amount * 0.45);
-            await SYSTEM.save();
-            await subscriber.save();
+            if(!subscriber.subscribed){
+              await User.updateOne({_id: subscriber._id.toString()}, 
+                {
+                  $inc: {
+                    donationStars: subscriptionReward,
+                  },
+                  $set: {
+                    lastSubscribed: new Date(),
+                    subscriptionQuantity: subscriptionQuantity,
+                    subscriptionID: payload.data.object.subscription,
+                    subscribed: true,
+                    subscriptionPendingCancellation: false
+                  }
+                }
+              );
+            }else{
+              await User.updateOne({_id: subscriber._id.toString()}, 
+                {
+                  $inc: {
+                    donationStars: subscriptionReward,
+                  },
+                  $set: {
+                    subscriptionQuantity: subscriptionQuantity,
+                    subscriptionID: payload.data.object.subscription,
+                    subscribed: true,
+                    subscriptionPendingCancellation: false
+                  }
+                }
+              );
+            }
+            await System.updateOne({_id: SYSTEM._id.toString()}, 
+              {$inc: {
+                platformAmount: Math.floor((amount * 0.55) - fee),
+                userAmount: Math.floor(amount * 0.45)
+            }});
         }
     } else if (event.type == "invoice.payment_failed") {
         var email = payload.data.object.customer_email;
         if (email != null) {
             var subscriber = await User.findOne({ email: email });
-            subscriber.subscribed = false;
-            subscriber.subscriptionID = null;
-            subscriber.lastSubscribed = null;
-            await subscriber.save();
+            await User.updateOne({_id: subscriber._id.toString()}, 
+              {
+                $set: {
+                  lastSubscribed: null,
+                  subscriptionQuantity: 0,
+                  subscriptionID: null,
+                  subscribed: false,
+                  //need to check if this makes a difference
+                  //subscriptionPendingCancellation: false
+                }
+              }
+            );
         }
     } else if (event.type == "customer.subscription.deleted") {
         const deletedSubscription = event.data.object;
@@ -172,10 +206,18 @@ const stripeWebhook = async (request, response) => {
               if(customerEmail != null){
                 var subscriber = await User.findOne({ email: customerEmail });
                 if(subscriber && subscriber.subscriptionPendingCancellation){
-                    subscriber.subscribed = false;
-                    subscriber.subscriptionID = null;
-                    subscriber.lastSubscribed = null;
-                    await subscriber.save();
+                    await User.updateOne({_id: subscriber._id.toString()}, 
+                      {
+                        $set: {
+                          lastSubscribed: null,
+                          subscriptionQuantity: 0,
+                          subscriptionID: null,
+                          subscribed: false,
+                          //need to check if this makes a difference
+                          //subscriptionPendingCancellation: false
+                        }
+                      }
+                    );
                 }
                 console.log("Subscription deleted.");
               }
@@ -239,14 +281,30 @@ const stripeConnectWebhook = async (request, response) => {
             var couldReceivePayouts = user.canReceivePayouts;
             user.canReceivePayouts = paymentService.canReceivePayouts(updatedAccount);
             if(couldReceivePayouts && !user.canReceivePayouts){
-                SYSTEM.numUsersOnboarded -= 1;
+                await System.updateOne({_id: SYSTEM._id.toString()}, 
+                  {
+                    $inc: {
+                      numUsersOnboarded: -1
+                    }
+                  }
+                );
             }
             else if(!couldReceivePayouts && user.canReceivePayouts && user.identityVerified){
-                SYSTEM.numUsersOnboarded += 1;
+                await System.updateOne({_id: SYSTEM._id.toString()}, 
+                  {
+                    $inc: {
+                      numUsersOnboarded: 1
+                    }
+                  }
+                );
             }
-
-            await user.save();
-            await SYSTEM.save();
+            await User.updateOne({_id: user._id.toString()}, 
+              {
+                $set: {
+                  canReceivePayouts: paymentService.canReceivePayouts(updatedAccount)
+                }
+              }
+            );
           break;
         default:
           console.log(`Unhandled event type ${event.type}`);

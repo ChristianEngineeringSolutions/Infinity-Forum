@@ -8,6 +8,7 @@ const System = require('../models/System');
 const Message = require('../models/Message');
 const starService = require('../services/starService');
 const passageService = require('../services/passageService');
+const {monthsBetween} = require('../common-utils');
 const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageController');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 
@@ -73,6 +74,7 @@ async function borrowStars(req, res){
     if (!req.session.user) {
         return res.redirect('/loginform');
       }
+      var user = await User.findOne({_id:req.session.user._id});
       if(req.session.user.phone == '' && !user.identityVerified){
         return res.send("You need a form of validation for that.");
       }
@@ -85,13 +87,13 @@ async function borrowStars(req, res){
         // }
         var allowedQuantity = 50;
       if(!isNaN(req.body.quantity) && req.body.quantity > 0 && req.body.quantity <= allowedQuantity){
-        var user = await User.findOne({_id:req.session.user._id});
         //check number of stars borrowed this month
         if(user.monthStarsBorrowed == null){
             user.monthStarsBorrowed = Date.now();
         }
         var today = new Date();
         //its been more than a month since they last got stars so reset the month we're looking at
+        //TODO: Change to calculate if more than a month since they FIRST got stars
         if(monthsBetween(user.monthStarsBorrowed, today) > 0){
             user.monthStarsBorrowed = Date.now();
             user.starsBorrowedThisMonth = 0;

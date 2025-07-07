@@ -154,24 +154,39 @@ async function processRewardDistribution(job) {
                         var top = parseInt((rank / users.length) * 100);
                         console.log(user.name+" TOP:"+top+'%');
                         var percentile = parseInt((users.length - rank + 1) / users.length * 100);
-                        user.percentile = percentile;
                         if(top < 1){
                             top = 1;
                         }
                         if(top > 99){
                             top = 99;
                         }
-                        user.top = top;
-                        user.rank = rank;
                         // if(user.identityVerified){
                         //     user.stars += 50; //give monthly allotment
                         // }
                         if(top <= 10 && user.starsGiven > 0){
-                            user.moderator = true;
+                            await User.updateOne({_id: user._id.toString()}, 
+                              {
+                                $set: {
+                                  percentile: percentile,
+                                  top: top,
+                                  rank: rank,
+                                  //TODO: check if theyve been blacklisted as a moderator before
+                                  moderator: true
+                                }
+                              }
+                            );
                             //give free subscription tier 1
                             //...
                         }
-                        await user.save();
+                        await User.updateOne({_id: user._id.toString()}, 
+                          {
+                            $set: {
+                              percentile: percentile,
+                              top: top,
+                              rank: rank
+                            }
+                          }
+                        );
                         console.log(user.name+': '+user.top+'%');
                         var test = await User.findOne({_id:user._id});
                         console.log(test.name+': '+test.top+'%');
@@ -261,8 +276,9 @@ async function processRewardDistribution(job) {
         );
 
         try {
-            SYSTEM.userAmount = 0;
-            await SYSTEM.save();
+            await System.updateOne({}, {$set:{
+                userAmount: 0
+            }});
             // const payout = await withRetry(
             //     () => stripe.payouts.create({
             //         amount: Math.floor(totalCut),

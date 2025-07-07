@@ -182,7 +182,11 @@ async function uploadFile(req, res, passage) {
         const thumbnailTitle = v4() + ".jpg";
         const where = passage.personal ? 'protected' : 'uploads';
         
-        const fullpath = where === 'protected' ? './' + where : './dist/' + where;
+        // Adjust paths for new location in services directory
+        const projectRoot = path.join(__dirname, '..');
+        const fullpath = where === 'protected' ? 
+            path.join(projectRoot, where) : 
+            path.join(projectRoot, 'dist', where);
         const partialpath = where === 'protected' ? where : 'dist/' + where;
         const simplepath = where;
 
@@ -202,6 +206,7 @@ async function uploadFile(req, res, passage) {
                 try {
                     if (mimeType.split('/')[0] === 'image') {
                         await new Promise((resolveCompress) => {
+                            // exec runs from project root, not from services directory
                             exec('python3 compress.py "' + partialpath + '/' + uploadTitle + '" ' + 
                                  mimeType.split('/')[1] + ' ' + passage._id,
                                 async (err, stdout, stderr) => {
@@ -318,9 +323,9 @@ async function uploadFile(req, res, passage) {
 }
 
 // Update file function
-async function updateFile(path, code) {
+async function updateFile(filePath, code) {
     return new Promise((resolve, reject) => {
-        fs.writeFile(path, code, function(err){
+        fs.writeFile(filePath, code, function(err){
             if (err) {
                 console.log(err);
                 reject(err);
@@ -332,7 +337,7 @@ async function updateFile(path, code) {
                 var shell = require('shelljs');
                 //in sudo visudo
                 //user ALL = NOPASSWD: /home/user/Infinity-Forum/restart.sh
-                var bash = 'bash ' + __dirname + 'restart.sh';
+                var bash = 'bash ' + path.join(__dirname, '..', 'restart.sh');
                 shell.exec(bash, function(code, output) {
                     console.log('Exit code:', code);
                     console.log('Program output:', output);
@@ -365,18 +370,24 @@ function getDirectoryStructure(passage){
 }
 
 // Decode directory structure function
-async function decodeDirectoryStructure(directory, location="./dist/filesystem"){
+async function decodeDirectoryStructure(directory, location){
+    // Set default location to dist/filesystem relative to project root
+    if (!location) {
+        location = path.join(__dirname, '..', 'dist', 'filesystem');
+    }
+    
     //clear filesystem
-    await fsp.rmdir('./dist/filesystem', {recursive: true, force: true});
+    const filesystemPath = path.join(__dirname, '..', 'dist', 'filesystem');
+    await fsp.rmdir(filesystemPath, {recursive: true, force: true});
     //regenerate
-    await fsp.mkdir("./dist/filesystem");
+    await fsp.mkdir(filesystemPath);
     //add new directory
-    await fsp.mkdir(location + '/' + directory.title);
-    await fsp.writeFile(location + '/' + directory.title + '/index' + directory.ext, directory.code);
+    await fsp.mkdir(path.join(location, directory.title));
+    await fsp.writeFile(path.join(location, directory.title, 'index' + directory.ext), directory.code);
     
     for(const item of directory.contents){
         if(item instanceof Directory){
-            await decodeDirectoryStructure(item, location + '/' + directory.title);
+            await decodeDirectoryStructure(item, path.join(location, directory.title));
         }
         else if(item instanceof File){
             var ext = item.ext;
@@ -400,7 +411,7 @@ async function decodeDirectoryStructure(directory, location="./dist/filesystem")
                 `;
                 ext = 'html';
             }
-            await fsp.writeFile(location + '/' + directory.title + '/' + item.title + '.' + ext, item.code);
+            await fsp.writeFile(path.join(location, directory.title, item.title + '.' + ext), item.code);
         }
     }
 }

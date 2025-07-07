@@ -156,4 +156,10 @@ function sortArray(arr, to){
     return reordered;
 }
 
-module.exports = {accessSecret, scripts, percentStarsGiven, percentUSD, totalUSD, totalStarsGiven, sortArray, monthDiff, DOCS_PER_PAGE};
+function monthsBetween(date1, date2) {
+      const yearDiff = date2.getFullYear() - date1.getFullYear();
+      const monthDiff = date2.getMonth() - date1.getMonth();
+      return (yearDiff * 12) + monthDiff;
+    }
+
+module.exports = {monthsBetween, accessSecret, scripts, percentStarsGiven, percentUSD, totalUSD, totalStarsGiven, sortArray, monthDiff, DOCS_PER_PAGE};
