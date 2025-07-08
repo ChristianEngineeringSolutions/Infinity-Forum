@@ -110,18 +110,14 @@
             <%-passage.bibliography.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/\n/g, "<br>")%>
             <br>
         <%}%>
-        <%if(passage.author != null && passage.author){%>
-            <%if(passage.author && user && (passage.author._id == user._id || user.admin)){%>
-                <br>
-                <b>Versions:</b>
-                <%if(passage.versions.length == 0){ %>
-                    No Versions
-                <%}%>
-                <%passage.versions.forEach(function(version) { %>
-                    <div class="passage_version_<%=passage._id%>"><a target="_blank"href="/passage/<%=version.title == '' ? 'Untitled' : version.title%>/<%=version._id%>"><%=version.title == '' ? "Untitled" : version.title%></a></div>
-                <%});%>
-            <%}%>
+        <br>
+        <b>Versions:</b>
+        <%if(passage.versions.length == 0){ %>
+            No Versions
         <%}%>
+        <%passage.versions.forEach(function(version) { %>
+            <div class="passage_version_<%=passage._id%>"><a target="_blank"href="/passage/<%=version.title == '' ? 'Untitled' : version.title%>/<%=version._id%>"><%=version.title == '' ? "Untitled" : version.title%></a></div>
+        <%});%>
 
     </div>
     <ul class="passage_options">
