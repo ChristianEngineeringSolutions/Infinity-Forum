@@ -1,3 +1,6 @@
+auto add parent passage as source
+
+
 Update uploadFile() and all passageController functions to use atomic updates, and user settings and uploadprofilephoto
 changeLabel(), removeSource(), addUser, removeUser, showbestof, sameUsers, sameCollabers, sameSources, updateMirroring, sticky
 

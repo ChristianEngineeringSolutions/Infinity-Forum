@@ -56,6 +56,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                 return;
             }
             var starsTakenAway = 0;
+            var amountForRebate = amount;
             if(deplete){
                 // Check if user has enough total stars (skip check if single)
                 if(((user.stars + user.borrowedStars + user.donationStars) < amount) && !single){
@@ -86,6 +87,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                             var donationUsed = Math.min(user.donationStars, remainder);
                             user.donationStars -= donationUsed;
                             remainder -= donationUsed;
+                            amountForRebate -= donationUsed;
                         }
                         
                         // Any final remainder goes to user.stars (making it negative)
@@ -99,6 +101,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                             var donationUsed = Math.min(user.donationStars, remainder);
                             user.donationStars -= donationUsed;
                             remainder -= donationUsed;
+                            amountForRebate -= donationUsed;
                         }
                         
                         // Any remainder after donation stars should be taken from user.stars
@@ -117,7 +120,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                 var starrer = loggedStar.user;
                 var sourceLog = [];
                 if(sessionUser._id.toString() != starrer._id.toString()){
-                    totalForStarrer = 0.01 * loggedStar.amount * amount;
+                    totalForStarrer = 0.01 * loggedStar.amount * amountForRebate;
                     console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
                 }
                 // console.log("Logged sources: " + loggedStar.sources);
@@ -132,7 +135,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                         sessionUser._id.toString() != starrer._id.toString()){
                         console.log("working, " + starrer.name);
                         //give the starrer 1% of each entry
-                        let subtotal = 0.01 * loggedStar.amount * amount;
+                        let subtotal = 0.01 * loggedStar.amount * amountForRebate;
                         totalForStarrer += subtotal;
                         console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
                     }

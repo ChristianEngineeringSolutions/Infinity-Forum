@@ -31,6 +31,11 @@ async function copyPassage(passage, user, parent, callback, synthetic=false, com
     //add source
     let sourceList = passage.sourceList;
     sourceList.push(passage._id);
+    if(parent !== null){
+        sourceList.push(parent);
+    }
+    //remove duplicates
+    sourceList = Object.values(sourceList.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
     if(passage.showBestOf){
         var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}});
         copy.best = best;
@@ -1032,6 +1037,7 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
         author: user,
         users: users,
         parent: parentId,
+        sourceList: [parentId],
         // forum: forum,
         lang: lang,
         fileStreamPath: fileStreamPath,
