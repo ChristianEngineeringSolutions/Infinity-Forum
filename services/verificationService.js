@@ -35,8 +35,7 @@ async function checkForDuplicateDocuments(documentHash, currentUserId) {
     .find({ 
       documentHash,
       userId: { $ne: currentUserId } // Exclude current user
-    })
-    .toArray();
+    });
   
   const existingUserIds = existingVerifications.map(v => v.userId);
   
@@ -104,13 +103,17 @@ async function processVerificationResult(verificationSessionId) {
   const { canReceivePayouts } = require('./paymentService');
   
   try {
-    const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
-    const stripe = require("stripe")(STRIPE_SECRET_KEY);
+    const STRIPE_IDENTITY_VERIFICATION_SECRET_KEY = await accessSecret("STRIPE_IDENTITY_VERIFICATION_SECRET_KEY");
+    const stripe = require("stripe")(STRIPE_IDENTITY_VERIFICATION_SECRET_KEY);
     const SYSTEM = await System.findOne({});
+    
     // Retrieve the verification details from Stripe
     const verificationSession = await stripe.identity.verificationSessions.retrieve(
       verificationSessionId, 
-      { expand: ['verified_outputs'] }
+      { expand: [
+      'verified_outputs.dob',
+      'verified_outputs.id_number',
+    ] }
     );
     
     // Find our internal record for this verification
@@ -124,76 +127,117 @@ async function processVerificationResult(verificationSessionId) {
     
     // If verification was successful
     if (verificationSession.status === 'verified') {
-      // Get document details (available in verified_outputs)
-      const documentDetails = verificationSession.verified_outputs?.document?.dob ?
-        {
-          documentType: verificationSession.verified_outputs.document.type,
-          documentNumber: verificationSession.verified_outputs.document.number,
-          firstName: verificationSession.verified_outputs.document.first_name,
-          lastName: verificationSession.verified_outputs.document.last_name,
-          dob: verificationSession.verified_outputs.document.dob.day + 
-               '/' + verificationSession.verified_outputs.document.dob.month +
-               '/' + verificationSession.verified_outputs.document.dob.year,
-          expiryDate: verificationSession.verified_outputs.document.expiration_date ?
-            verificationSession.verified_outputs.document.expiration_date.day +
-            '/' + verificationSession.verified_outputs.document.expiration_date.month +
-            '/' + verificationSession.verified_outputs.document.expiration_date.year : null
-        } : null;
+      // Log the structure to debug
+      console.log('Full verification session:', JSON.stringify(verificationSession, null, 2));
+      console.log('Verified outputs:', JSON.stringify(verificationSession.verified_outputs, null, 2));
       
-      // Create a unique identifier based on document details
-      const documentHash = await createDocumentHash(documentDetails);
+      // Access the correct fields from verified_outputs
+      const verifiedOutputs = verificationSession.verified_outputs;
       
-      await VerificationSession.updateOne({
-        userId: internalRecord.userId
-      }, {$set: {
-        documentHash: documentHash,
-        documentType: documentDetails?.documentType,
-        verifiedAt: new Date(),
-        status: 'verified'
-      }});
-      console.log("Saved document hash.");
-      // Check for duplicate documents across users
-      const duplicateResults = await checkForDuplicateDocuments(documentHash, internalRecord.userId);
+      // Build DOB string if available
+      const dob = verifiedOutputs?.dob ? 
+        `${verifiedOutputs.dob.day}/${verifiedOutputs.dob.month}/${verifiedOutputs.dob.year}` : 
+        null;
       
-      if (duplicateResults.isDuplicate) {
-        // Flag accounts for review
-        // await flagDuplicateAccounts(internalRecord.userId, duplicateResults.existingUserIds);
-        
-        // Update session with duplicate info
-        await VerificationSession.updateOne(
-          { stripeVerificationId: verificationSessionId },
-          { $set: { duplicateDetected: true } }
-        );
-        console.log("Duplicate detected.");
-      } else {
-        // Update user's verification status
-        await User.updateOne(
-          { _id: internalRecord.userId },
-          { 
-            $set: { 
-              identityVerified: true,
-              verificationLevel: 'full',
-              lastVerifiedAt: new Date()
-            } 
+      // Build document details object
+      const documentDetails = verifiedOutputs ? {
+        documentType: verifiedOutputs.id_number_type || null,  // e.g., 'us_ssn', 'driving_license'
+        documentNumber: verifiedOutputs.id_number || null,
+        firstName: verifiedOutputs.first_name || null,
+        lastName: verifiedOutputs.last_name || null,
+        dob: dob,
+        // Address fields if available
+        address: verifiedOutputs.address ? {
+          line1: verifiedOutputs.address.line1,
+          line2: verifiedOutputs.address.line2,
+          city: verifiedOutputs.address.city,
+          state: verifiedOutputs.address.state,
+          postalCode: verifiedOutputs.address.postal_code,
+          country: verifiedOutputs.address.country
+        } : null
+      } : null;
+      
+      // Update user with verified information
+      if (verifiedOutputs) {
+        await User.updateOne({
+          _id: internalRecord.userId.toString()
+        }, {
+          $set: {
+            verifiedfirstName: verifiedOutputs.first_name || null,
+            verifiedlastName: verifiedOutputs.last_name || null,
+            verifiedDOB: dob
           }
-        );
-        console.log("Identity Verified set to true.");
-        var user = await User.findOne({_id: internalRecord.userId});
-        user.stars += 100;
-        if(user.stripeOnboardingComplete && user.stripeAccountId){
+        });
+      }
+      
+      // Only create hash and check duplicates if we have document details
+      if (documentDetails && documentDetails.documentNumber) {
+        // Create a unique identifier based on document details
+        const documentHash = await createDocumentHash(documentDetails);
+        
+        await VerificationSession.updateOne({
+          userId: internalRecord.userId
+        }, {
+          $set: {
+            documentHash: documentHash,
+            documentType: documentDetails.documentType,
+            verifiedAt: new Date(),
+            status: 'verified'
+          }
+        });
+        console.log("Saved document hash.");
+        
+        // Check for duplicate documents across users
+        const duplicateResults = await checkForDuplicateDocuments(documentHash, internalRecord.userId);
+        
+        if (duplicateResults.isDuplicate) {
+          // Update session with duplicate info
+          await VerificationSession.updateOne(
+            { stripeVerificationId: verificationSessionId },
+            { $set: { duplicateDetected: true } }
+          );
+          console.log("Duplicate detected.");
+        } else {
+          // Update user's verification status
+          await User.updateOne(
+            { _id: internalRecord.userId },
+            { 
+              $set: { 
+                identityVerified: true,
+                verificationLevel: 'full',
+                lastVerifiedAt: new Date()
+              } 
+            }
+          );
+          console.log("Identity Verified set to true.");
+          
+          const user = await User.findOne({_id: internalRecord.userId});
+          await User.updateOne({_id:internalRecord.userId}, {$inc: {
+              stars: 100
+            }});
+          
+          if(user.stripeOnboardingComplete && user.stripeAccountId){
             const account = await stripe.account.retrieve(user.stripeAccountId);
             user.canReceivePayouts = canReceivePayouts(account);
+            await User.updateOne({_id:internalRecord.userId}, {$set: {
+              canReceivePayouts: canReceivePayouts(account)
+            }});
             if(user.canReceivePayouts){
-                SYSTEM.numUsersOnboarded += 1;
-                await SYSTEM.save();
+              await System.updateOne({_id:SYSTEM._id.toString()}, {$inc:{
+                numUsersOnboarded: 1
+              }});
+              await SYSTEM.save();
             }
+          }
         }
-        await user.save();
-
+      } else {
+        console.warn('No document details available in verified outputs');
       }
     }
   } catch (error) {
     console.error('Error processing verification result:', error);
+    // Log more details for debugging
+    console.error('Error stack:', error.stack);
   }
 }
 

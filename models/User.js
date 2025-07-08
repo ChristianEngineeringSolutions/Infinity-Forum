@@ -42,6 +42,9 @@ const userSchema = mongoose.Schema({
       default: '',
       maxLength: 50
     },
+    verifiedFirstName: String,
+    verifiedLastName: String,
+    verifiedDOB: String,
     thumbnail: {
       type: String,
       default: ''

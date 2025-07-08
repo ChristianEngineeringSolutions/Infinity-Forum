@@ -53,11 +53,18 @@ async function withRetry(fn, context, maxRetries = RATE_LIMIT.RETRY_DELAYS.lengt
     }
 }
 
-// Generate idempotency key
-function generateIdempotencyKey(userId, transactionType, timestamp) {
+// Generate idempotency key based on reward period
+function generateIdempotencyKey(userId, transactionType, rewardPeriod) {
     return crypto.createHash('sha256')
-        .update(`${userId}-${transactionType}-${timestamp}`)
+        .update(`${userId}-${transactionType}-${rewardPeriod}`)
         .digest('hex');
+}
+
+// Get reward period string (e.g., "2024-01" for January 2024)
+function getRewardPeriod(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
 }
 
 // Rate limiter
@@ -109,7 +116,7 @@ async function processBatchWithConcurrency(items, batchProcessor, concurrencyLim
 
 // Main reward logic (extracted for queue processing)
 async function processRewardDistribution(job) {
-    const { jobId, timestamp } = job.data;
+    const { jobId, timestamp, rewardPeriod } = job.data;
     const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
     const stripe = require("stripe")(STRIPE_SECRET_KEY);
     
@@ -202,7 +209,7 @@ async function processRewardDistribution(job) {
                             const idempotencyKey = generateIdempotencyKey(
                                 user._id,
                                 'transfer',
-                                timestamp // Use job timestamp for consistency
+                                rewardPeriod // Use reward period for true idempotency
                             );
 
                             // Rate limiting
@@ -272,7 +279,7 @@ async function processRewardDistribution(job) {
         const payoutIdempotencyKey = generateIdempotencyKey(
             'platform',
             'payout',
-            timestamp
+            rewardPeriod
         );
 
         try {
@@ -334,14 +341,18 @@ rewardQueue.on('progress', (job, progress) => {
 
 // Public API function to queue reward distribution
 async function queueRewardDistribution() {
+    const rewardPeriod = getRewardPeriod();
     const timestamp = Date.now().toString();
+    const jobId = `reward-distribution-${rewardPeriod}`;
+    
     const job = await rewardQueue.add({
-        jobId: `reward-distribution-${timestamp}`,
+        jobId: jobId,
         timestamp: timestamp,
+        rewardPeriod: rewardPeriod,
     }, {
         priority: 1,
         attempts: 3,
-        jobId: `reward-distribution-${timestamp}`, // Prevents duplicate jobs
+        jobId: jobId, // Prevents duplicate jobs for same period
     });
 
     console.log(`Queued reward distribution job ${job.id}`);
