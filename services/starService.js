@@ -3,17 +3,20 @@
 const mongoose = require('mongoose');
 const { User } = require('../models/User');
 const { Passage } = require('../models/Passage');
-const { Star } = require('../models/Star');
-const { System } = require('../models/System');
-const { Message } = require('../models/Message');
+const Star = require('../models/Star');
+const System = require('../models/System');
+const Message = require('../models/Message');
 const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageService');
 const { getPassage } = require('../services/passageService');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 
-async function starMessages(passageId, amount) {
-    // This function will be extracted from sasame.js
-    // Placeholder for now
-    return;
+async function starMessages(passage, stars=1) {
+    //keep message stars aligned with passage
+    var messages = await Message.find({passage: passage});
+    for(const message of messages){
+        message.stars += stars;
+        await message.save();
+    }
 }
 async function addStarsToUser(user, amount, _session){
     if(user.borrowedStars > 0){
@@ -203,6 +206,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
             if(!shouldGetContributionPoints){
                 amountToGiveCollabers = 0;
             }
+            var totalAbsorbed = 0;
             collaboratorsLoop:
             for(const collaber of allCollaborators){
                 //only inherit debt, subtract debt, and create debt if we are actually starring the collaber
@@ -225,6 +229,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                         });
                         //reduce the amount we're giving collabers by the amount owed
                         amountToGiveCollabers -= star.debt;
+                        totalAbsorbed += star.debt;
                         star.debt -= (amount + bonus)/(passage.collaborators.length + 1);
                         if(star.debt <= 0){
                             star.debt = 0;
@@ -258,10 +263,18 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                 if(amountToGiveCollabers < 0){
                     amountToGiveCollabers = 0;
                 }
-                if(!single && shouldGetContributionPoints){
-                    user.starsGiven += starsTakenAway;
-                }
                 const SYSTEM = await System.findOne({}).session(_session);
+                if(!single && shouldGetContributionPoints){
+                    var numContributionPoints = starsTakenAway;
+                    //reduce the numcontributionpoints by an amount
+                    //that makes it equal to if they were starring
+                    //a group of users that didn't star them first
+                    var dockingAmount = 
+                    ((user.starsGiven+starsTakenAway) * totalAbsorbed) / 
+                    (SYSTEM.totalStarsGiven + starsTakenAway - user.starsGiven);
+                    numContributionPoints -= dockingAmount;
+                    user.starsGiven += numContributionPoints;
+                }
                 if (!SYSTEM) {
                     throw new Error('System document not found.');
                 }

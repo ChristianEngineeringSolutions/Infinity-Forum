@@ -3,7 +3,7 @@
 const { User } = require('../models/User');
 const { Passage } = require('../models/Passage');
 const { createFakePassageDirectly, createFakeSubPassagesDirectly, scoreSimulatedPassages } = require('../services/simulationService');
-const { getPassage } = require('./passageController');
+const passageService = require('../services/passageService');
 const browser = require('browser-detect');
 
 async function renderSimulation(req, res) {
@@ -174,7 +174,7 @@ async function getSimulatedPassages(req, res) {
         // Process passages for display
         const processedPassages = [];
         for (const passage of paginatedPassages) {
-            const processedPassage = await getPassage(passage);
+            const processedPassage = await passageService.getPassage(passage);
             console.log(processedPassage.starrers);
             console.log(passage.stars)
             processedPassages.push(processedPassage);
@@ -259,7 +259,7 @@ async function getSimulatedPassagesAPI(req, res) {
         // Process passages for display
         const processedPassages = [];
         for (const passage of paginatedPassages) {
-            const processedPassage = await getPassage(passage);
+            const processedPassage = await passageService.getPassage(passage);
             processedPassages.push(processedPassage);
         }
 
