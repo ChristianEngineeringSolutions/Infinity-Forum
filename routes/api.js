@@ -18,12 +18,7 @@ router.post('/api/track-engagement', async (req, res) => {
   res.json({ message: 'Track engagement API placeholder' });
 });
 
-// Generate simulation API
-router.post('/generate-simulation', async (req, res) => {
-  // This route logic will be moved from sasame.js
-  // Placeholder for now
-  res.json({ message: 'Generate simulation placeholder' });
-});
+// Generate simulation API - moved to simulation.js
 
 // Test route
 router.post('/test/', async (req, res) => {

@@ -30,6 +30,7 @@ function generateFakeUserRegistration() {
         password: 'password123',
         passwordConf: 'password123',
         name: `${firstName} ${lastName}`,
+        hiddenUsername: `${firstName}.${lastName}.1`,
         fake: true,
         'g-recaptcha-response': 'fake-token' // This will need bypass for testing
     };
@@ -60,7 +61,7 @@ async function registerFakeUser(domain) {
         const response = await axios.post(`${domain}/register/`, userData);
         
         if (response.data) {
-            console.log(`Created fake user: ${userData.username} (${userData.email})`);
+            console.log(`Created fake user: ${userData.hiddenUsername} (${userData.email})`);
             return userData;
         } else {
             console.error('Failed to create fake user:', response.data);

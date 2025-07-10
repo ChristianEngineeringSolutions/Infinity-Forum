@@ -31,6 +31,7 @@ async function handleLogin(req, res) {
 }
 
 async function handleRegister(req, res) {    
+    console.log("Handling register");
     if (req.body.email &&
       req.body.name &&
       req.body.hiddenUsername &&
@@ -41,6 +42,7 @@ async function handleRegister(req, res) {
       && !(await userService.userExists(req.body.email))) {  
 
         var fake = req.body.fake || false;
+        console.log("TESTING TESTING TESTING");
 
         const name = req.body.name;
         if(process.env.REMOTE === 'true'){
@@ -85,11 +87,15 @@ async function handleRegister(req, res) {
         userData.thumbnail = faker.image.avatar();
         userData.simulated = true;
       }
+      console.log("Before user created");
       User.create(userData, async function (err, user) {
+        console.log("User created");
         if (err) {
           console.log(err);
         } else {
-          req.session.user = user;
+            if(!fake){
+                req.session.user = user;
+            }
           //hash password
           bcrypt.hash(user.password, 10, function (err, hash){
             if (err) {
@@ -104,6 +110,10 @@ async function handleRegister(req, res) {
                 `
                     https://infinity-forum.org/verify/`+user._id+`/`+user.token+`
                 `);
+          }
+          if(fake){
+            console.log("ALL DONE WITH FAKE");
+            return res.send('Done.');
           }
           res.redirect('/profile/');
         }

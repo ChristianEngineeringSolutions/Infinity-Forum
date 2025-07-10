@@ -2,7 +2,7 @@
 
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
-const { createPassage } = require('../controllers/passageController');
+const { createPassage } = require('../services/passageService');
 // Import fake data generation functions
 const fakeDataGenerator = require('../dist/js/fake.js');
 
@@ -10,9 +10,9 @@ const fakeDataGenerator = require('../dist/js/fake.js');
 async function createFakePassageDirectly(fakeUserData, useAIContent = true, includeImage = false, parent='root') {
     try {
         // Find the fake user in database (should already exist from HTTP registration)
-        let user = await User.findOne({ username: (fakeUserData.username + '.1') });
+        let user = await User.findOne({ username: (fakeUserData.hiddenUsername) });
         if (!user) {
-            console.error(`Fake user ${fakeUserData.username} not found in database after HTTP registration`);
+            console.error(`Fake user ${fakeUserData.hiddenUsername} not found in database after HTTP registration`);
             return null;
         }
         
@@ -30,6 +30,7 @@ async function createFakePassageDirectly(fakeUserData, useAIContent = true, incl
         
         // Use the existing createPassage function
         const passage = await createPassage(user, parent, false, true, passageData.date, true);
+        console.log(JSON.stringify(passage));
         for (let key in passageData) {
           if (passageData.hasOwnProperty(key)) {
             passage[key] = passageData[key];

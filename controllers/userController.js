@@ -8,6 +8,7 @@ const Notification = require('../models/Notification');
 const userService = require('../services/userService');
 const systemService = require('../services/systemService');
 const bookmarkService = require('../services/bookmarkService');
+const {DOCS_PER_PAGE, scripts} = require('../common-utils');
 const bcrypt = require('bcrypt');
 const { exec } = require('child_process');
 const fsp = require('fs').promises;
@@ -169,7 +170,6 @@ const getProfile = async (req, res) => {
     const { getPassage, fillUsedInList } = require('../services/passageService');
     const { getBookmarks } = require('../services/bookmarkService');
     const { scripts } = require('../common-utils');
-    const DOCS_PER_PAGE = 10;
 
     let bookmarks = [];
     let profile;

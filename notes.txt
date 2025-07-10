@@ -187,3 +187,8 @@ passage settings
 login/register
 
 move create verification session to verification MVC
+
+
+star passage change log
+
+removed !single in contribution points check

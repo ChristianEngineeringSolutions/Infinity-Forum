@@ -12,9 +12,15 @@ const requiresLogin = (req, res, next) => {
 };
 
 const requiresAdmin = (req, res, next) => {
+  console.log('=== requiresAdmin middleware ===');
+  console.log('Session user:', req.session.user ? req.session.user.username : 'No user');
+  console.log('Is admin:', req.session.user ? req.session.user.admin : 'N/A');
+  
   if (!req.session.user || !req.session.user.admin) {
+    console.log('Access denied - not admin');
     return res.status(403).send("<h2 style='text-align:center;color:red;'>Admin access required.</h2>");
   }
+  console.log('Access granted - user is admin');
   next();
 };
 

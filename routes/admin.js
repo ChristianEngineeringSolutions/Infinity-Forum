@@ -31,10 +31,6 @@ router.post('/restoreprotected', requiresAdmin, adminController.restoreProtected
 // Admin panel routes
 router.get('/admin/:focus?/', requiresAdmin, adminController.getAdmin);
 
-// Simulation Management Routes (Admin Only)
-router.get('/simulation', requiresAdmin, adminController.getSimulation);
-router.post('/generate-simulation', requiresAdmin, adminController.generateSimulation);
-
 // Route to trigger the GCS upload process
 router.get('/upload-to-gcs', requiresAdmin, adminController.uploadToGcs);
 

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Application Architecture
 
-This is a **Node.js/Express forum application** called "Infinity-Forum" (IF) - a collaborative platform for engineering solutions.
+This is a **Node.js/Express forum application** called "Infinity-Forum" (IF) - a collaborative platform for engineering solutions. The codebase has been refactored from a monolithic structure to a more modular MVC architecture.
 
 ### Core Technology Stack
 - **Backend**: Express.js with MongoDB (Mongoose ODM)
@@ -18,13 +18,17 @@ This is a **Node.js/Express forum application** called "Infinity-Forum" (IF) - a
 - **Real-time**: Socket.IO for live features
 - **Authentication**: Passport.js with local strategy
 - **Sessions**: MongoDB-backed sessions with 30-day TTL
-- **Background Jobs**: Redis + Bull Queue for feed generation
-- **Payments**: Stripe integration
+- **Background Jobs**: Redis + Bull Queue for feed generation and star processing
+- **Distributed Locking**: Redlock for queue concurrency control
+- **Payments**: Stripe integration with webhooks
 - **File Processing**: Sharp (images), FFmpeg (video), file uploads
+- **Identity Verification**: Stripe Identity API integration
 
 ### Key Application Structure
 
-**Main Entry Point**: `sasame.js` - Contains most business logic in a monolithic pattern
+**Main Entry Points**:
+- `app.js` - New modular main application file (refactored from sasame.js)
+- `sasame.js` - Legacy monolithic file (deprecated, kept for reference)
 
 **Data Models** (all in `/models/`):
 - **Passage**: Central content model (posts/articles with rich media)
@@ -35,10 +39,46 @@ This is a **Node.js/Express forum application** called "Infinity-Forum" (IF) - a
 - **Notification**: Real-time notifications
 - **Star/Bookmark**: Content rating and saving
 - **Follower**: Social following relationships
+- **VerificationSession**: Identity verification tracking
+- **System**: Global system state and metrics
+- **Visitor**: Anonymous user tracking
 
-**MVC Pattern**:
-- **Controllers**: Limited to `passageController.js` (most logic in main file)
-- **Routes**: Basic routing in `/routes/` (index.js, passage.js)
+**Refactored MVC Pattern**:
+- **Controllers** (`/controllers/`): 
+  - `passageController.js` - Passage CRUD operations (uses atomic updates)
+  - `userController.js` - User management and settings (uses atomic updates)
+  - `authController.js` - Authentication and registration
+  - `adminController.js` - Admin panel operations
+  - `stripeController.js` - Payment processing and webhooks
+  - `verificationController.js` - Identity verification
+  - `bookmarkController.js` - Bookmark management
+  - `pageController.js` - Static page rendering
+  - `paginationController.js` - Pagination utilities
+  - `messageController.js` - Private messaging
+- **Services** (`/services/`):
+  - `passageService.js` - Business logic for passages and feed generation
+  - `userService.js` - User-related business logic
+  - `starService.js` - Star/rating operations (original synchronous)
+  - `starServiceQueued.js` - Queue-based star operations
+  - `starQueueProcessor.js` - Bull queue processor with Redlock
+  - `fileService.js` - File upload and processing
+  - `systemService.js` - System-wide operations
+  - `verificationService.js` - Identity verification processing
+  - `bookmarkService.js` - Bookmark operations
+  - `messageService.js` - Message handling
+  - `paymentService.js` - Stripe payment utilities
+- **Routes** (`/routes/`): RESTful API endpoints
+- **Configuration** (`/config/`):
+  - `database.js` - MongoDB connection setup
+  - `express.js` - Express middleware configuration
+  - `redis.js` - Redis and Bull queue initialization
+  - `socket.js` - Socket.IO configuration
+- **Middleware** (`/middleware/`):
+  - `auth.js` - Authentication middleware
+  - `upload.js` - File upload configuration
+- **Background Jobs** (`/cron/`):
+  - `rewardUsers.js` - Monthly reward distribution
+  - Other scheduled tasks
 - **Views**: Extensive EJS template system with modular components
 
 ### Environment Configuration

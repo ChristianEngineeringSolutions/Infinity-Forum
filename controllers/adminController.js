@@ -385,120 +385,6 @@ const getAdmin = async (req, res) => {
       });
   }
 };
-
-const getSimulation = async (req, res) => {
-  try {
-      const ISMOBILE = browser(req.headers['user-agent']).mobile;
-      res.render('simulation', {
-          ISMOBILE: ISMOBILE,
-          user: req.session.user,
-          page: 'simulation',
-          passageTitle: 'Simulation Management'
-      });
-  } catch (error) {
-      console.error('Error loading simulation page:', error);
-      res.status(500).send('Error loading simulation page');
-  }
-};
-
-const generateSimulation = async (req, res) => {
-  try {
-      const { numUsers, numPassages, contentType, includeImages, includeSubContent } = req.body;
-      const domain = process.env.DOMAIN || 'http://localhost:3000';
-      
-      // Import the fake data generator
-      const fakeGenerator = require('./dist/js/fake.js');
-      
-      // Validate input
-      if (!numUsers || !numPassages || numUsers < 1 || numPassages < 1) {
-          return res.status(400).json({ error: 'Invalid parameters' });
-      }
-      
-      if (numUsers > 50 || numPassages > 100) {
-          return res.status(400).json({ error: 'Too many users or passages requested' });
-      }
-      
-      console.log(`Admin ${req.session.user.username} requested simulation generation:`);
-      console.log(`Users: ${numUsers}, Passages: ${numPassages}, Content: ${contentType}`);
-      
-      // Generate the fake data using HTTP registration for users and direct database creation for passages
-      const useAIContent = contentType === 'ai';
-      const includeImagesFlag = includeImages === true;
-      const totalUsers = parseInt(numUsers);
-      const totalPassages = parseInt(numPassages);
-      
-      console.log('Registering fake users via HTTP and creating passages directly in database...');
-      
-      // Generate fake users first using HTTP registration
-      const createdUsers = [];
-      for (let i = 0; i < totalUsers; i++) {
-          console.log(`Registering fake user ${i + 1}/${totalUsers}...`);
-          const fakeUserData = await fakeGenerator.registerFakeUser(domain);
-          if (fakeUserData) {
-              createdUsers.push(fakeUserData);
-          } else {
-              console.warn(`Failed to register fake user ${i + 1}, skipping...`);
-          }
-          // Small delay to avoid overwhelming the server
-          await new Promise(resolve => setTimeout(resolve, 200));
-      }
-      
-      if (createdUsers.length === 0) {
-          return res.status(500).json({ 
-              error: 'Failed to create any fake users via HTTP registration',
-              details: 'Check reCAPTCHA bypass or registration endpoint'
-          });
-      }
-      
-      console.log(`Successfully registered ${createdUsers.length} fake users via HTTP`);
-      
-      // Create passages for each user
-      let createdPassagesCount = 0;
-      const createdPassages = [];
-      const passagesPerUser = Math.ceil(totalPassages / totalUsers);
-      
-      for (const userData of createdUsers) {
-          for (let j = 0; j < passagesPerUser && createdPassagesCount < totalPassages; j++) {
-              const passage = await createFakePassageDirectly(userData, useAIContent, includeImagesFlag);
-              if (passage) {
-                  createdPassagesCount++;
-                  createdPassages.push(passage);
-              }
-          }
-      }
-      
-      // Create sub-passages if includeSubContent is true
-      let totalSubPassagesCreated = 0;
-      if (includeSubContent === true && createdPassages.length > 0) {
-          console.log('Creating sub-passages for main passages...');
-          
-          for (const passage of createdPassages) {
-              const subPassages = await createFakeSubPassagesDirectly(passage, createdUsers, passage._id);
-              totalSubPassagesCreated += subPassages.length;
-          }
-          
-          console.log(`Created ${totalSubPassagesCreated} sub-passages`);
-      }
-      
-      console.log(`Completed: Registered ${createdUsers.length} users via HTTP, created ${createdPassagesCount} passages, and ${totalSubPassagesCreated} sub-passages`);
-      
-      res.json({
-          success: true,
-          usersCreated: createdUsers.length,
-          passagesCreated: createdPassagesCount,
-          subPassagesCreated: totalSubPassagesCreated,
-          message: 'Simulation data generated successfully using HTTP registration for users and direct database creation for passages'
-      });
-      
-  } catch (error) {
-      console.error('Error generating simulation data:', error);
-      res.status(500).json({ 
-          error: 'Failed to generate simulation data',
-          details: error.message 
-      });
-  }
-};
-
 const uploadToGcs = async (req, res) => {
   if (!req.session.user || !req.session.user.admin) {
     return res.redirect('/');
@@ -543,7 +429,5 @@ module.exports = {
     restoreUploads,
     restoreProtected,
     getAdmin,
-    getSimulation,
-    generateSimulation,
     uploadToGcs
 };

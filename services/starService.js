@@ -115,6 +115,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                     }
                 }
             }
+            console.log("REMAINDER:"+remainder);
             var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
             //Give starring user stars for each logged stars at 1% rate (rebate)
             var loggedStars = await Star.find({passage:passage._id, single: false}).populate('user passage sources').session(_session);
@@ -264,7 +265,7 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                     amountToGiveCollabers = 0;
                 }
                 const SYSTEM = await System.findOne({}).session(_session);
-                if(!single && shouldGetContributionPoints){
+                if(shouldGetContributionPoints){
                     var numContributionPoints = starsTakenAway;
                     //reduce the numcontributionpoints by an amount
                     //that makes it equal to if they were starring
@@ -532,6 +533,7 @@ async function singleStarPassage(sessionUser, passage, reverse=false, isSub=fals
                     //if user is verified and numVerifiedStars > lastCap give the passage a user star
                     if(sessionUser.identityVerified && !starredBefore/*(passage.verifiedStars + 1) > passage.lastCap*/
                     && shouldGetContributionPoints){
+                        console.log("IN HERE");
                         // Call starPassage without starting a new transaction since we're already in one
                         let starResult = await starPassage(sessionUser, 1, passage._id, sessionUser._id.toString(), true, true, _session);
                         if(starResult && typeof starResult === 'object'){
@@ -539,6 +541,14 @@ async function singleStarPassage(sessionUser, passage, reverse=false, isSub=fals
                         }
                         //in the future maybe make sure we hard star new sources (TODO)
                         await singleStarSources(user, sources, passage, false, true, _session);
+                    }
+                    else if(sessionUser.identityVerified && !starredBefore){
+                        //just add a star to passage but not collabers
+                        passage.stars += 1;
+                        let userDoc = await User.findOne({_id:user}).session(_session);
+                        userDoc.stars -= 1;
+                        await userDoc.save(_session);
+                        await singleStarSources(user, sources, passage, false, false, _session);
                     }
                     else{
                         //just add a star to passage but not collabers
@@ -600,8 +610,10 @@ async function singleStarPassage(sessionUser, passage, reverse=false, isSub=fals
             }
             passage.markModified("starrers");
             await passage.save({session: _session});
+            console.log('lol');
             passage = await getPassage(passage);
             passageResult = passage;
+            console.log('lol2');
         };
         
         // Execute transaction logic - use withTransaction only if we created the session
@@ -613,7 +625,7 @@ async function singleStarPassage(sessionUser, passage, reverse=false, isSub=fals
             await transactionLogic();
         }
         
-        console.log("singleStarPassage transaction result:", passageResult);
+        // console.log("singleStarPassage transaction result:", passageResult);
         return passageResult;
     } catch (err) {
         console.error('Transaction failed in singleStarPassage:', err);

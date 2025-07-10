@@ -7,6 +7,7 @@ const { promisify } = require('util');
 // Initialize Redis client and Bull queue
 let redisClient;
 let feedQueue;
+let starQueue;
 
 // Promisified Redis methods object
 const redisOps = {};
@@ -50,6 +51,23 @@ async function initializeRedis() {
         feedQueue.on('error', (error) => {
             console.error('Feed queue error:', error);
         });
+        
+        // Initialize star queue for sequential star processing
+        starQueue = new Queue('star-processing', process.env.REDIS_URL || 'redis://localhost:6379', {
+            defaultJobOptions: {
+                removeOnComplete: false,  // Keep completed jobs for idempotency checks
+                removeOnFail: false,      // Keep failed jobs for debugging
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 2000
+                }
+            }
+        });
+        
+        starQueue.on('error', (error) => {
+            console.error('Star queue error:', error);
+        });
         console.log('Redis initialized successfully');
         return true;
     } catch (error) {
@@ -71,6 +89,10 @@ function getFeedQueue() {
     return feedQueue;
 }
 
+function getStarQueue() {
+    return starQueue;
+}
+
 // Check if Redis is available and ready
 function isRedisReady() {
     return redisClient && redisClient.ready;
@@ -81,5 +103,6 @@ module.exports = {
     getRedisClient,
     getRedisOps,
     getFeedQueue,
+    getStarQueue,
     isRedisReady
 };

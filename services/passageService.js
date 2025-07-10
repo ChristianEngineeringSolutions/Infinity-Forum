@@ -1033,11 +1033,12 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
     if(parent && parent.forum){
         forum = parent.forum;
     }
+    var sourceList = parentId == null ? [] : [parentId];
     let passage = await Passage.create({
         author: user,
         users: users,
         parent: parentId,
-        sourceList: [parentId],
+        sourceList: sourceList,
         // forum: forum,
         lang: lang,
         fileStreamPath: fileStreamPath,

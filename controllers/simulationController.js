@@ -22,6 +22,12 @@ async function renderSimulation(req, res) {
 }
 
 async function generateSimulation(req, res) {
+    console.log('=== generateSimulation called ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', req.headers);
+    console.log('Request body:', req.body);
+    console.log('Request body type:', typeof req.body);
+    
     try {
         const { numUsers, numPassages, contentType, includeImages, includeSubContent } = req.body;
         const domain = process.env.DOMAIN || 'http://localhost:3000';
@@ -196,7 +202,7 @@ async function getSimulatedPassages(req, res) {
           },
           ISMOBILE: ISMOBILE,
           page: 'posts',
-          whichPage: 'stream',
+          whichPage: 'simulation',
           thread: false,
         });
     } catch (error) {
