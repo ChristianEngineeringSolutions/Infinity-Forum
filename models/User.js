@@ -218,6 +218,41 @@ const userSchema = mongoose.Schema({
       type: Boolean,
       default: false
     },
+    // Chat status fields
+    chatStatus: {
+      type: String,
+      enum: ['available', 'away', 'busy', 'invisible'],
+      default: 'available'
+    },
+    lastSeenAt: {
+      type: Date,
+      default: Date.now
+    },
+    statusMessage: {
+      type: String,
+      default: '',
+      maxLength: 100
+    },
+    // Socket ID for real-time features
+    socketId: {
+      type: String,
+      default: null
+    },
+    // Chat preferences
+    chatPreferences: {
+      soundEnabled: {
+        type: Boolean,
+        default: true
+      },
+      desktopNotifications: {
+        type: Boolean,
+        default: true
+      },
+      showOnlineStatus: {
+        type: Boolean,
+        default: true
+      }
+    }
 });
 
 userSchema.plugin(mongoosePaginate);

@@ -271,6 +271,7 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                 await addStarsToUser(starrer, totalForStarrer, session);
             }
             
+            var lastSource = await getLastSource(passage);
             var bonus = 0;
             bonus = bonus * amount;
             
@@ -376,27 +377,25 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                         }], {session: session});
                     }
                 }
-                
-                if(amountToGiveCollabers < 0){
-                    amountToGiveCollabers = 0;
-                }
             }
-            
+            if(amountToGiveCollabers < 0){
+                amountToGiveCollabers = 0;
+            }
             // Process contribution points
-            const SYSTEM = await System.findOne({}).session(session);
-            if(shouldGetContributionPoints){
+            if(shouldGetContributionPoints && deplete && starsTakenAway > 0){
+                const SYSTEM = await System.findOne({}).session(session);
+                if (!SYSTEM) {
+                    throw new Error('System document not found.');
+                }
                 var numContributionPoints = starsTakenAway;
-                // Reduce the numcontributionpoints by an amount
-                // that makes it equal to if they were starring
-                // a group of users that didn't star them first
+                //reduce the numcontributionpoints by an amount
+                //that makes it equal to if they were starring
+                //a group of users that didn't star them first
                 var dockingAmount = 
-                    ((user.starsGiven + starsTakenAway) * totalAbsorbed) / 
-                    (SYSTEM.totalStarsGiven + starsTakenAway - user.starsGiven);
+                ((user.starsGiven+starsTakenAway) * totalAbsorbed) / 
+                (SYSTEM.totalStarsGiven + starsTakenAway - user.starsGiven);
                 numContributionPoints -= dockingAmount;
                 user.starsGiven += numContributionPoints;
-            }
-            
-            if(deplete){
                 SYSTEM.totalStarsGiven += amount;
                 await SYSTEM.save({session});
             }
@@ -417,6 +416,34 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                     if(collaber != null){
                         await addStarsToUser(collaber, amountToGiveCollabers, session);
                     }
+                }
+            }
+            
+            // Star each source
+            var i = 0;
+            var authors = [];
+            
+            // Add sources for best, bestOf, and mirror
+            if(passage.showBestOf){
+                var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('parent author users sourceList collaborators versions subforums').session(session);
+                if(best != null){
+                    passage.sourceList.push(best);
+                }
+            }
+            else{
+                try{
+                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums').session(session);
+                    if(mirror != null)
+                        passage.sourceList.push(mirror);
+                }
+                catch(e){
+                }
+                try{
+                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums').session(session);
+                    if(bestOf != null)
+                        passage.sourceList.push(bestOf);
+                }
+                catch(e){
                 }
             }
             
@@ -632,6 +659,14 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                         
                         // Process sources
                         await processSingleStarSources(user, sources, passage, false, true, session);
+                    }
+                    else if(sessionUser.identityVerified && !starredBefore){
+                        //just add a star to passage but not collabers
+                        passage.stars += 1;
+                        let userDoc = await User.findOne({_id:user}).session(session);
+                        userDoc.stars -= 1;
+                        await userDoc.save(session);
+                        await processSingleStarSources(user, sources, passage, false, false, session);
                     }
                     else{
                         // Just add a star to passage but not collaborators

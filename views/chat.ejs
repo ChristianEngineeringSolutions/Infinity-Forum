@@ -1,0 +1,210 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<link rel="stylesheet" type="text/css" href="/css/chat.css">
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="chat-page">
+<%- include('header') %>
+<%- include('header2', { page: 'more' }) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+
+<div class="chat-container">
+    <!-- Chat Sidebar -->
+    <div class="chat-sidebar">
+        <div class="chat-header">
+            <h3>Chats</h3>
+            <button class="btn-new-chat" onclick="openNewChatModal()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        
+        <!-- User Status -->
+        <div class="user-status-section">
+            <div class="user-info">
+                <div class="status-indicator status-<%= user.chatStatus || 'available' %>"></div>
+                <span><%= user.username %></span>
+            </div>
+            <select id="statusSelect" onchange="updateUserStatus(this.value)">
+                <option value="available" <%= user.chatStatus === 'available' ? 'selected' : '' %>>Available</option>
+                <option value="away" <%= user.chatStatus === 'away' ? 'selected' : '' %>>Away</option>
+                <option value="busy" <%= user.chatStatus === 'busy' ? 'selected' : '' %>>Busy</option>
+                <option value="invisible" <%= user.chatStatus === 'invisible' ? 'selected' : '' %>>Invisible</option>
+            </select>
+        </div>
+        
+        <!-- Search -->
+        <div class="chat-search">
+            <input type="text" placeholder="Search messages..." id="searchInput" onkeyup="searchMessages(this.value)">
+        </div>
+        
+        <!-- Room List -->
+        <div class="room-list" id="roomList">
+            <% rooms.forEach(room => { %>
+                <div class="room-item <%= room.isUnread ? 'unread' : '' %>" 
+                     data-room-id="<%= room._id %>" 
+                     onclick="selectRoom('<%= room._id %>')">
+                    <div class="room-avatar">
+                        <% if (room.type === 'direct') { %>
+                            <% const otherUser = room.participants.find(p => p._id.toString() !== user._id.toString()) %>
+                            <%= otherUser ? otherUser.username.charAt(0).toUpperCase() : '?' %>
+                        <% } else { %>
+                            <i class="fas fa-users"></i>
+                        <% } %>
+                    </div>
+                    <div class="room-info">
+                        <div class="room-name">
+                            <% if (room.type === 'direct') { %>
+                                <% const otherUser = room.participants.find(p => p._id.toString() !== user._id.toString()) %>
+                                <%= otherUser ? otherUser.username : 'Unknown User' %>
+                            <% } else { %>
+                                <%= room.name || 'Group Chat' %>
+                            <% } %>
+                        </div>
+                        <div class="room-last-message">
+                            <% if (room.lastMessage) { %>
+                                <%= room.lastMessage.sender === user._id ? 'You: ' : '' %>
+                                <%= room.lastMessage.message.substring(0, 30) %>...
+                            <% } else { %>
+                                No messages yet
+                            <% } %>
+                        </div>
+                    </div>
+                    <% if (room.isUnread) { %>
+                        <div class="unread-indicator"></div>
+                    <% } %>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+    
+    <!-- Chat Main Area -->
+    <div class="chat-main">
+        <div id="noRoomSelected" class="no-room-selected">
+            <i class="fas fa-comments"></i>
+            <p>Select a chat to start messaging</p>
+        </div>
+        
+        <div id="chatArea" style="display: none;">
+            <!-- Chat Header -->
+            <div class="chat-main-header">
+                <button class="mobile-back-btn" onclick="showRoomList()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="chat-info">
+                    <h3 id="chatTitle"></h3>
+                    <div id="typingIndicator" class="typing-indicator" style="display: none;">
+                        <span></span> is typing...
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button onclick="toggleRoomInfo()" title="Room Info">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                    <button onclick="leaveRoom()" title="Leave Room" id="leaveRoomBtn" style="display: none;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Messages Area -->
+            <div class="messages-container" id="messagesContainer">
+                <!-- Messages will be loaded here -->
+            </div>
+            
+            <!-- Message Input -->
+            <div class="message-input-container">
+                <form id="messageForm" onsubmit="sendMessage(event)">
+                    <input type="text" 
+                           id="messageInput" 
+                           placeholder="Type a message..." 
+                           autocomplete="off"
+                           onkeydown="handleTyping()">
+                    <button type="submit">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Room Info Sidebar -->
+    <div id="roomInfoSidebar" class="room-info-sidebar">
+        <div class="room-info-header">
+            <h3>Room Info</h3>
+            <button onclick="closeRoomInfo()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="roomInfoContent">
+            <!-- Room info will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Navigation -->
+<div class="mobile-nav">
+    <button onclick="showRoomList()" class="nav-rooms active">
+        <i class="fas fa-comments"></i>
+    </button>
+    <button onclick="showActiveChat()" class="nav-chat">
+        <i class="fas fa-comment"></i>
+    </button>
+    <button onclick="openNewChatModal()" class="nav-new">
+        <i class="fas fa-plus-circle"></i>
+    </button>
+</div>
+
+<!-- New Chat Modal -->
+<div id="newChatModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>New Chat</h3>
+            <button onclick="closeNewChatModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="chat-type-selector">
+                <label>
+                    <input type="radio" name="chatType" value="direct" checked onchange="toggleChatType()">
+                    Direct Message
+                </label>
+                <label>
+                    <input type="radio" name="chatType" value="group" onchange="toggleChatType()">
+                    Group Chat
+                </label>
+            </div>
+            
+            <div id="directChatForm">
+                <input type="text" 
+                       id="directUsername" 
+                       placeholder="Enter username..."
+                       autocomplete="off">
+            </div>
+            
+            <div id="groupChatForm" style="display: none;">
+                <input type="text" 
+                       id="groupName" 
+                       placeholder="Group name..."
+                       autocomplete="off">
+                <textarea id="groupParticipants" 
+                          placeholder="Enter usernames (one per line)..."
+                          rows="4"></textarea>
+            </div>
+            
+            <button onclick="createNewChat()" class="btn-primary">
+                Create Chat
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Pass user ID to JavaScript
+window.currentUserId = '<%= user._id %>';
+</script>
+<script src="/js/chat.js"></script>
+
+<%- include('footer') %>

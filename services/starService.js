@@ -261,49 +261,45 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete=true,
                         }], {session: _session});
                     }
                 }
-                if(amountToGiveCollabers < 0){
-                    amountToGiveCollabers = 0;
-                }
+                // await passage.author.save();
+            }
+            if(amountToGiveCollabers < 0){
+                amountToGiveCollabers = 0;
+            }
+            if(shouldGetContributionPoints && deplete && starsTakenAway > 0){
                 const SYSTEM = await System.findOne({}).session(_session);
-                if(shouldGetContributionPoints){
-                    var numContributionPoints = starsTakenAway;
-                    //reduce the numcontributionpoints by an amount
-                    //that makes it equal to if they were starring
-                    //a group of users that didn't star them first
-                    var dockingAmount = 
-                    ((user.starsGiven+starsTakenAway) * totalAbsorbed) / 
-                    (SYSTEM.totalStarsGiven + starsTakenAway - user.starsGiven);
-                    numContributionPoints -= dockingAmount;
-                    user.starsGiven += numContributionPoints;
-                }
                 if (!SYSTEM) {
                     throw new Error('System document not found.');
                 }
-                if(deplete){
-                    //only add to starsgiven count if they cant be associated with a user
-                    //thus deplete must be true because single stars don't add to starsGiven
-                    SYSTEM.totalStarsGiven += amount;
-                    await SYSTEM.save({_session});
-                }
-                // passage.author.stars += amountToGiveCollabers;
-                await addStarsToUser(passage.author, amountToGiveCollabers, _session);
-                //give stars to collaborators if applicable
-                //split stars with collaborators
-                if(passage.collaborators.length > 0){
-                    for(const collaborator in passage.collaborators){
-                        if(collaborator._id.toString() == passage.author._id.toString()){
-                            //we already starred the author
-                            continue;
-                        }
-                        let collaber = await User.findOne({_id:collaborator._id.toString()}).session(_session);
-                        if(collaber != null){
-                            // collaber.stars += amountToGiveCollabers;
-                            await addStarsToUser(collaber, amountToGiveCollabers, _session);
-                            // await collaber.save();
-                        }
+                var numContributionPoints = starsTakenAway;
+                //reduce the numcontributionpoints by an amount
+                //that makes it equal to if they were starring
+                //a group of users that didn't star them first
+                var dockingAmount = 
+                ((user.starsGiven+starsTakenAway) * totalAbsorbed) / 
+                (SYSTEM.totalStarsGiven + starsTakenAway - user.starsGiven);
+                numContributionPoints -= dockingAmount;
+                user.starsGiven += numContributionPoints;
+                SYSTEM.totalStarsGiven += amount;
+                await SYSTEM.save({_session});
+            }
+            // passage.author.stars += amountToGiveCollabers;
+            await addStarsToUser(passage.author, amountToGiveCollabers, _session);
+            //give stars to collaborators if applicable
+            //split stars with collaborators
+            if(passage.collaborators.length > 0){
+                for(const collaborator of passage.collaborators){
+                    if(collaborator._id.toString() == passage.author._id.toString()){
+                        //we already starred the author
+                        continue;
+                    }
+                    let collaber = await User.findOne({_id:collaborator._id.toString()}).session(_session);
+                    if(collaber != null){
+                        // collaber.stars += amountToGiveCollabers;
+                        await addStarsToUser(collaber, amountToGiveCollabers, _session);
+                        // await collaber.save();
                     }
                 }
-                // await passage.author.save();
             }
             await user.save({_session});
             await passage.save({_session});
@@ -405,7 +401,7 @@ async function starSources(passage, top, authors=[], starredPassages=[], amount,
                         //give stars to collaborators if applicable
                         //split stars with collaborators
                         if(sourcePop.collaborators.length > 0){
-                            for(const collaborator in sourcePop.collaborators){
+                            for(const collaborator of sourcePop.collaborators){
                                 if(collaborator._id.toString() == passage.author._id.toString()){
                                     //we already starred the author
                                     continue;

@@ -54,6 +54,9 @@ async function configureExpress() {
     });
     app.use(session);
     
+    // Store session middleware for Socket.IO
+    app.set('session', session);
+    
     // Set view engine
     app.set('view engine', 'ejs');
     app.set('views', './views');
@@ -96,7 +99,8 @@ async function configureExpress() {
         res.locals.CESCONNECT = req.session.CESCONNECT;
         res.locals.fromOtro = req.query.fromOtro || false;
         //daemoncheck
-        if(['simulation', 'simulated-passages', 'notifications', 'verify-identity', 'bank', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
+        if(['simulation', 'chat', '/api/chat/rooms', '/api/chat/search', '/api/chat/contacts/online',
+            'simulated-passages', 'notifications', 'verify-identity', 'bank', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])){
             let daemons = [];
             if(req.session.user){
                 let user = await User.findOne({_id: req.session.user._id}).populate('daemons');

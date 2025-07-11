@@ -29,8 +29,10 @@ const stripeRoutes = require('./routes/stripe');
 const staticRoutes = require('./routes/static');
 const passageRoutes = require('./routes/passage');
 const simulationRoutes = require('./routes/simulation');
+const chatRoutes = require('./routes/chat');
 
 const passageService = require('./services/passageService');
+const { initializeChatSocket } = require('./config/chatSocket');
 
 async function startServer() {
     try {
@@ -45,7 +47,25 @@ async function startServer() {
         const server = http.Server(app);
         
         // Socket.IO setup (from sasame.js line 416)
-        const io = require('socket.io')(server);
+        const io = require('socket.io')(server, {
+            cors: {
+                origin: "*",
+                methods: ["GET", "POST"],
+                credentials: true
+            }
+        });
+        
+        // Add session middleware to Socket.IO
+        const sessionMiddleware = require('express-session');
+        const sharedsession = require('express-socket.io-session');
+        const sessionShareMiddleware = sharedsession(app.get('session'), {
+            autoSave: true
+        });
+        
+        io.use(sessionShareMiddleware);
+        
+        // Initialize chat socket handlers and pass session middleware
+        initializeChatSocket(io, sessionShareMiddleware);
         
         // Middleware to track in-flight requests (from sasame.js line 10302)
         app.use((req, res, next) => {
@@ -75,6 +95,7 @@ async function startServer() {
         app.use('/', staticRoutes);
         app.use('/', passageRoutes);
         app.use('/', simulationRoutes);
+        app.use('/', chatRoutes);
         
         // Setup graceful shutdown handlers
         setupGracefulShutdown(server, io, app);
@@ -104,7 +125,7 @@ async function startServer() {
         }, startupDelay);
         
         console.log('Feed system initialized');
-        server.listen(PORT, () => {
+        server.listen(PORT, '0.0.0.0', () => {
             console.log(`Sasame started on Port ${PORT}`);
             rewardUsers.start();
             feedUpdates.start();
