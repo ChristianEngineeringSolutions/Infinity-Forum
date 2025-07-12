@@ -7,6 +7,7 @@ const Star = require('../models/Star');
 const System = require('../models/System');
 const Message = require('../models/Message');
 const starService = require('../services/starService');
+const starQueue = require('../services/starServiceQueued');
 const passageService = require('../services/passageService');
 const {monthsBetween} = require('../common-utils');
 const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageController');
@@ -21,26 +22,28 @@ async function starPassage(req, res){
     var subPassage = req.body.parent == 'root' ? false : true;
     if(req.session.user && user){
         if((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount && process.env.REMOTE == 'true'){
-            let passage = await starService.starPassage(req.session.user, amount, req.body.passage_id, sessionUser._id, true);
+            let passage = await starQueue.starPassage(req.session.user, amount, req.body.passage_id, sessionUser._id, true);
             if(typeof passage === 'object' && passage !== null){
-                passage = await passageService.getPassage(passage);
+                // passage = await passageService.getPassage(passage);
             }
             else{
                 return res.send(passage);
             }
-            passage.location = await passageService.returnPassageLocation(passage);
+            // passage.location = await passageService.returnPassageLocation(passage);
+            return res.send("Done.");
             return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
         }
         else if(process.env.REMOTE == 'false'){
-            let passage = await starService.starPassage(req.session.user, amount, req.body.passage_id, sessionUser._id, true);
+            let passage = await starQueue.starPassage(req.session.user, amount, req.body.passage_id, sessionUser._id, true);
             await sessionUser.save();
             if(typeof passage === 'object' && passage !== null){
-                passage = await passageService.getPassage(passage);
+                // passage = await passageService.getPassage(passage);
             }
             else{
                 return res.send(passage);
             }
-            passage.location = await passageService.returnPassageLocation(passage);
+            // passage.location = await passageService.returnPassageLocation(passage);
+            return res.send("Done.");
             return res.render('passage', {subPassage: subPassage, subPassages: false, passage: passage, sub: true});
         }
         else{
@@ -55,14 +58,15 @@ async function singleStarPassage(req, res){
         var p = await Passage.findOne({_id: req.body._id});
         //whether we are giving a star or taking it away
         if(req.body.on == 'false' && !p.starrers.includes(user)){
-            var passage = await starService.singleStarPassage(req.session.user, p, false, false, null);
+            var passage = await starQueue.singleStarPassage(req.session.user, p, false, false, null);
         }
         else if(req.body.on == 'true'){
-            var passage = await starService.singleStarPassage(req.session.user, p, true, false, null);
+            var passage = await starQueue.singleStarPassage(req.session.user, p, true, false, null);
         }
         else{
         }
         console.log(passage);
+        return res.send("Done.");
         return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage: true});
     }
     else{

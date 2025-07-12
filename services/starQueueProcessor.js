@@ -1,6 +1,6 @@
 'use strict';
 
-const Redlock = require('redlock');
+const Redlock = require('redlock').default;
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { getRedisClient, getStarQueue } = require('../config/redis');
@@ -15,6 +15,9 @@ const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 // Initialize Redlock for distributed locking
 let redlock;
 let starQueue;
+
+// Check if Redlock should be enabled (default to false for single Redis instance)
+const ENABLE_REDLOCK = process.env.ENABLE_REDLOCK === 'true';
 
 function initializeRedlock() {
     const redisClient = getRedisClient();
@@ -36,7 +39,14 @@ function initializeRedlock() {
             retryDelay: 200, // time in ms
             
             // The max time in ms randomly added to retries
-            retryJitter: 200 // time in ms
+            retryJitter: 200, // time in ms
+            
+            // For single Redis instance, we need to adjust the settings
+            // Set automaticExtensionThreshold to 0 to disable automatic extension
+            automaticExtensionThreshold: 0,
+            
+            // For single instance, we only need 1 server to agree (quorum of 1)
+            // Redlock v5 doesn't have a direct quorum setting, but we can work around it
         }
     );
     
@@ -75,12 +85,15 @@ async function markStarOperationProcessed(idempotencyKey, result) {
     await redisOps.set(`star:processed:${idempotencyKey}`, JSON.stringify({
         processedAt: new Date().toISOString(),
         result: result
-    }), 'EX', 30 * 24 * 60 * 60);
+    }), { EX: 30 * 24 * 60 * 60 });
 }
 
 // Process star queue jobs with distributed locking
 async function processStarQueue() {
-    if (!redlock) {
+    console.log('processStarQueue called!');
+    console.log('Redlock enabled:', ENABLE_REDLOCK);
+    
+    if (ENABLE_REDLOCK && !redlock) {
         redlock = initializeRedlock();
     }
     
@@ -90,25 +103,55 @@ async function processStarQueue() {
         return;
     }
     
+    console.log('Setting up star queue processor...');
+    console.log('Star queue exists:', !!starQueue);
+    console.log('Star queue name:', starQueue.name);
+    
     // Process jobs sequentially with concurrency of 1
-    starQueue.process(1, async (job) => {
-        const { jobId, data } = job;
+    console.log('About to call starQueue.process()');
+    
+    // Add a handler to check when jobs become active
+    starQueue.on('active', (job) => {
+        console.log(`Job ${job.id} is now active (from event handler)`);
+    });
+    
+    const processor = starQueue.process(1, async (job) => {
+        console.log('★★★ Job processor function called! ★★★');
+        console.log('Job ID:', job.id);
+        console.log('Job data:', JSON.stringify(job.data, null, 2));
+        
+        const { id: jobId, data } = job;
         const { userId, passageId, amount, sessionUserId, deplete, single, operation, idempotencyKey } = data;
         
         console.log(`Processing star job ${jobId} with idempotency key ${idempotencyKey}`);
         
-        // Acquire distributed lock for this star operation
-        const lockKey = `star:lock:${passageId}`;
-        const lockTTL = 60000; // 60 seconds
         let lock;
         
         try {
-            // Try to acquire lock
-            lock = await redlock.acquire([lockKey], lockTTL);
-            console.log(`Acquired lock for passage ${passageId}`);
+            // Conditionally acquire distributed lock
+            console.log('ENABLE_REDLOCK value:', ENABLE_REDLOCK, 'type:', typeof ENABLE_REDLOCK);
+            
+            if (ENABLE_REDLOCK) {
+                const lockKey = `star:lock:${passageId}`;
+                const lockTTL = 60000; // 60 seconds
+                
+                try {
+                    lock = await redlock.acquire([lockKey], lockTTL);
+                    console.log(`Acquired Redlock for passage ${passageId}`);
+                } catch (lockError) {
+                    console.error('Failed to acquire Redlock:', lockError.message);
+                    throw lockError;
+                }
+            } else {
+                console.log(`Processing passage ${passageId} without Redlock (single instance mode)`);
+            }
             
             // Check idempotency
-            if (await hasStarOperationBeenProcessed(idempotencyKey)) {
+            console.log('Checking idempotency for key:', idempotencyKey);
+            const alreadyProcessed = await hasStarOperationBeenProcessed(idempotencyKey);
+            console.log('Already processed?', alreadyProcessed);
+            
+            if (alreadyProcessed) {
                 console.log(`Star operation ${idempotencyKey} already processed, skipping`);
                 await job.progress(100);
                 return { status: 'already_processed', idempotencyKey };
@@ -146,22 +189,47 @@ async function processStarQueue() {
         }
     });
     
+    // Add event handlers for debugging (remove duplicate active handler)
+    starQueue.on('error', (error) => {
+        console.error('Star queue error:', error);
+    });
+    
+    starQueue.on('failed', (job, err) => {
+        console.error(`Job ${job.id} failed:`, err);
+    });
+    
+    starQueue.on('stalled', (job) => {
+        console.warn(`Job ${job.id} stalled`);
+    });
+    
+    starQueue.on('completed', (job, result) => {
+        console.log(`Job ${job.id} completed:`, result);
+    });
+    
+    starQueue.on('waiting', (jobId) => {
+        console.log(`Job ${jobId} is waiting`);
+    });
+    
     console.log('Star queue processor started');
 }
 
 // Process starPassage logic (extracted from starService.js)
 async function processStarPassage(userId, passageId, amount, sessionUserId, deplete, single) {
+    console.log('processStarPassage called with:', { userId, passageId, amount, sessionUserId, deplete, single });
     const session = await mongoose.startSession();
     
     try {
         let result = null;
         
         await session.withTransaction(async () => {
+            console.log('Starting transaction...');
+            
             // Get session user
             const sessionUser = await User.findOne({_id: sessionUserId}).session(session);
             if (!sessionUser) {
                 throw new Error('Session user not found');
             }
+            console.log('Session user found:', sessionUser.username);
             
             // The rest of the starPassage logic from starService.js
             let user = await User.findOne({_id: userId}).session(session);
@@ -290,9 +358,11 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             }], {session: session});
             
             // Add stars to passage
+            console.log(`Adding ${amount + bonus} stars to passage. Current stars: ${passage.stars}`);
             passage.stars += amount + bonus;
             passage.verifiedStars += amount + bonus;
             passage.lastCap = passage.verifiedStars;
+            console.log(`New star count: ${passage.stars}`);
             
             // Handle bubbling passages
             if(passage.bubbling && passage.passages && !passage.public){
@@ -813,17 +883,34 @@ async function queueStarOperation(data) {
         throw new Error('Star queue not initialized');
     }
     
+    console.log('Adding job to star queue with data:', data);
+    
     const job = await starQueue.add(data, {
         jobId: `star-${data.idempotencyKey}`,
         priority: data.priority || 0,
         delay: data.delay || 0
     });
     
+    console.log(`Job added to queue with ID: ${job.id}`);
+    
+    // Try to get the job immediately to verify it was added
+    const addedJob = await starQueue.getJob(job.id);
+    console.log('Job retrieved from queue:', !!addedJob);
+    if (addedJob) {
+        console.log('Job data:', addedJob.data);
+        console.log('Job opts:', addedJob.opts);
+    }
+    
+    // Check waiting jobs
+    const waitingJobs = await starQueue.getWaiting();
+    console.log('Number of waiting jobs:', waitingJobs.length);
+    
     return job.id;
 }
 
 // Initialize and start the processor
 async function startStarQueueProcessor() {
+    console.log('startStarQueueProcessor called!');
     try {
         await processStarQueue();
         console.log('Star queue processor initialized successfully');

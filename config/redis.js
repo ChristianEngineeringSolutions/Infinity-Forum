@@ -2,29 +2,30 @@
 
 const redis = require('redis');
 const Queue = require('bull');
-const { promisify } = require('util');
 
 // Initialize Redis client and Bull queue
 let redisClient;
 let feedQueue;
 let starQueue;
 
-// Promisified Redis methods object
+// Redis operations object (redis v5 methods are already async)
 const redisOps = {};
 
 async function initializeRedis() {
     try {
         console.log('Initializing Redis...');
         
-        // Initialize Redis client without using connect() (from sasame.js lines 10181-10190)
+        // Initialize Redis client with v5 API
         redisClient = redis.createClient({
             url: process.env.REDIS_URL || 'redis://localhost:6379',
-            retry_strategy: function(options) {
-                if (options.error && options.error.code === 'ECONNREFUSED') {
-                    console.error('Redis connection refused. Retrying...');
-                    return Math.min(options.attempt * 100, 3000);
+            socket: {
+                reconnectStrategy: (retries) => {
+                    if (retries > 10) {
+                        console.error('Too many Redis reconnection attempts');
+                        return new Error('Too many retries');
+                    }
+                    return Math.min(retries * 100, 3000);
                 }
-                return Math.min(options.attempt * 100, 3000);
             }
         });
 
@@ -32,18 +33,18 @@ async function initializeRedis() {
             console.error('Redis client error:', error);
         });
 
-        redisClient.on('ready', () => {
-            console.log('Connected to Redis');
-        });
+        // Connect to Redis (v5 requires explicit connect)
+        await redisClient.connect();
+        console.log('Connected to Redis');
 
-        // Promisify Redis methods for easier async/await usage (from sasame.js lines 10201-10207)
-        redisOps.get = promisify(redisClient.get).bind(redisClient);
-        redisOps.set = promisify(redisClient.set).bind(redisClient);
-        redisOps.del = promisify(redisClient.del).bind(redisClient);
-        redisOps.keys = promisify(redisClient.keys).bind(redisClient);
-        redisOps.exists = promisify(redisClient.exists).bind(redisClient);
-        redisOps.zadd = promisify(redisClient.zadd).bind(redisClient);
-        redisOps.zrevrange = promisify(redisClient.zrevrange).bind(redisClient);
+        // Set up Redis operations (v5 methods are already async)
+        redisOps.get = redisClient.get.bind(redisClient);
+        redisOps.set = redisClient.set.bind(redisClient);
+        redisOps.del = redisClient.del.bind(redisClient);
+        redisOps.keys = redisClient.keys.bind(redisClient);
+        redisOps.exists = redisClient.exists.bind(redisClient);
+        redisOps.zAdd = redisClient.zAdd.bind(redisClient);
+        redisOps.zRange = redisClient.zRange.bind(redisClient);
         
         // Initialize Bull queue for background processing (from sasame.js line 57)
         feedQueue = new Queue('feed-generation', process.env.REDIS_URL || 'redis://localhost:6379');
@@ -95,7 +96,7 @@ function getStarQueue() {
 
 // Check if Redis is available and ready
 function isRedisReady() {
-    return redisClient && redisClient.ready;
+    return redisClient && redisClient.isReady;
 }
 
 module.exports = {

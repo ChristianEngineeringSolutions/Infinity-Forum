@@ -18,6 +18,7 @@ async function initializeStarQueue() {
         
         // Start the queue processor
         await startStarQueueProcessor();
+        console.log('Star queue processor started successfully');
         
         // Schedule periodic cleanup of old processed keys (daily)
         setInterval(async () => {

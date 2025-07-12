@@ -17,12 +17,14 @@ const { getStarQueue } = require('../config/redis');
  */
 async function starPassage(sessionUser, amount, passageID, userID, deplete = true, single = false) {
     try {
-        // Generate idempotency key
+        // Generate idempotency key with timestamp and random component for uniqueness
+        const timestamp = Date.now();
+        const randomComponent = Math.random().toString(36).substring(7);
         const idempotencyKey = generateStarIdempotencyKey(
             userID,
             passageID,
             amount,
-            `star-${deplete ? 'deplete' : 'nodeplete'}-${single ? 'single' : 'multi'}`
+            `star-${deplete ? 'deplete' : 'nodeplete'}-${single ? 'single' : 'multi'}-${timestamp}-${randomComponent}`
         );
         
         // Queue the star operation
@@ -39,6 +41,45 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete = tru
         };
         
         const jobId = await queueStarOperation(jobData);
+        console.log("Queued Job with ID:", jobId);
+        
+        // For debugging: show the idempotency key
+        console.log("Idempotency key for this operation:", idempotencyKey);
+        
+        // Check queue status
+        const starQueue = getStarQueue();
+        if (starQueue) {
+            const jobCounts = await starQueue.getJobCounts();
+            console.log('Queue job counts:', jobCounts);
+            
+            // Check for stalled jobs
+            const stalledJobs = await starQueue.getJobs(['stalled']);
+            if (stalledJobs && stalledJobs.length > 0) {
+                console.log('Stalled jobs found:', stalledJobs.length);
+            }
+            
+            // Get all jobs to see what's in the queue
+            const allJobs = await starQueue.getJobs(['waiting', 'active', 'completed', 'failed', 'delayed', 'stalled']);
+            console.log('Total jobs in queue:', allJobs.length);
+            for (const job of allJobs) {
+                console.log(`Job ${job.id} - Status: ${await job.getState()}`);
+            }
+            
+            // Check for failed jobs
+            const failedJobs = await starQueue.getFailed();
+            if (failedJobs.length > 0) {
+                console.log('Failed jobs found:', failedJobs.length);
+                for (const job of failedJobs) {
+                    console.log(`Failed job ${job.id}:`, job.failedReason);
+                    if (job.stacktrace) {
+                        console.log('Stacktrace:', job.stacktrace[0]);
+                    }
+                    // Clean up old failed jobs to prevent confusion
+                    console.log('Removing old failed job:', job.id);
+                    await job.remove();
+                }
+            }
+        }
         
         // Return job information for tracking
         return {
@@ -70,12 +111,14 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete = tru
  */
 async function singleStarPassage(sessionUser, passage, reverse = false, isSub = false) {
     try {
-        // Generate idempotency key
+        // Generate idempotency key with timestamp and random component for uniqueness
+        const timestamp = Date.now();
+        const randomComponent = Math.random().toString(36).substring(7);
         const idempotencyKey = generateStarIdempotencyKey(
             sessionUser._id.toString(),
             passage._id.toString(),
             1,
-            `singlestar-${reverse ? 'reverse' : 'forward'}-${isSub ? 'sub' : 'main'}`
+            `singlestar-${reverse ? 'reverse' : 'forward'}-${isSub ? 'sub' : 'main'}-${timestamp}-${randomComponent}`
         );
         
         // Queue the operation

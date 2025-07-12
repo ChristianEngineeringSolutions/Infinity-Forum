@@ -436,6 +436,9 @@ $(function(){
                 _id: _id
             },
             success: function(data){
+                if(_id == $('#chief_passage_id').val()){
+                    window.location.reload();
+                }
                 // $('#passage_'+_id).remove();
                 // $('.close-modal').click();
             }
@@ -471,7 +474,9 @@ $(function(){
                 _id: _id
             },
             success: function(data){
-                
+                if(_id == $('#chief_passage_id').val()){
+                    window.location.reload();
+                }
             }
         });
     });
@@ -1003,7 +1008,7 @@ $(function(){
             // thisPassage(thiz).replaceWith('<div class="page-loader-'+getPassageId(thiz)+'"id="page-loader">'+$('#small-loading').html()+'</div>');
             // }
             // alert(JSON.stringify(data));
-            thiz.text("Loading...");
+            // thiz.text("Loading...");
             $.ajax({
                 url: '/star_passage/',
                 // url: DOMAIN + '/star_passage/' + fromOtro,
@@ -1019,7 +1024,11 @@ $(function(){
                             thisPassage(thiz).prepend(data2);
                         }
                         else{
-                            thisPassage(thiz).replaceWith(data2);
+                            var prevCount = parseInt($('#p-starCount-' + passage_id).text().split(' ')[0], 10);
+                            var newCount = prevCount + amount;
+                            var finalText = newCount + ' star' + (newCount == 1 ? '' : 's');
+                            $('#p-starCount-' + passage_id).text(finalText);
+                            // thisPassage(thiz).replaceWith(data2);
                             // $('.page-loader-'+getPassageId(thiz)).replaceWith(data2);
                         }
                     }
@@ -1029,6 +1038,7 @@ $(function(){
     });
     $(document).on('click', '[id^=star-]', function(){
         var thiz = $(this);
+        var passage_id = $(this).attr('id').split('-').at(-1);
         $.ajax({
             type: 'post',
             url: '/single_star/',
@@ -1037,7 +1047,12 @@ $(function(){
                 on: $(this).css('color') == 'rgb(255, 215, 0)' ? true : false
             },
             success: function(data){
-                thisPassage(thiz, '-').replaceWith(data);
+                var prevCount = parseInt($('#p-starCount-' + passage_id).text().split(' ')[0], 10);
+                var newCount = prevCount + (thiz.css('color') == 'rgb(255, 215, 0)' ? (-1) : 1);
+                var finalText = newCount + ' star' + (newCount == 1 ? '' : 's');
+                $('#p-starCount-' + passage_id).text(finalText);
+                thiz.css('color', (thiz.css('color') == 'rgb(255, 215, 0)' ? 'rgb(255, 255, 255)' : 'rgb(255, 215, 0)'));
+                // thisPassage(thiz, '-').replaceWith(data);
             }
         });
     });

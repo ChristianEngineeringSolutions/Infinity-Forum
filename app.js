@@ -11,6 +11,7 @@ const { connectDatabase } = require('./config/database');
 const { configureExpress } = require('./config/express');
 const { initializeRedis, getFeedQueue } = require('./config/redis');
 const { setupGracefulShutdown } = require('./config/server');
+const { initializeStarQueue } = require('./services/starQueueInit');
 
 // Import route modules
 const pageRoutes = require('./routes/pages');
@@ -41,7 +42,9 @@ async function startServer() {
         
         const redisInitialized = await initializeRedis();
         console.log('Redis initialization result:', redisInitialized);
-        
+        if(redisInitialized){
+          await initializeStarQueue();
+        }
         // Configure Express app
         const app = await configureExpress();
         const server = http.Server(app);
