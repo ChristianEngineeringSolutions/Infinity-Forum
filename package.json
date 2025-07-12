@@ -1,11 +1,11 @@
 {
-  "name": "ChristianEngineeringSolutions",
+  "name": "Infinity Forum",
   "version": "1.0.0",
-  "description": "Christian Engineering Solutions",
-  "main": "sasame.js",
+  "description": "Infinity Forum",
+  "main": "app.js",
   "scripts": {
-    "dev": "nodemon sasame.js",
-    "start": "node sasame.js"
+    "dev": "nodemon app.js",
+    "start": "node app.js"
   },
   "author": "Uriah Sanders",
   "license": "ISC",

@@ -1,5 +1,5 @@
 {
-  "watch": ["dist/", "sasame.js", "feed.js", "common-utils.js", "reward-users.js", ".env", "controllers/", "models/", "views/", "compress.py"],
+  "watch": ["services/", "utils/", "tests/", "routes/", "payplatform.js", "config/", "cron/", "middleware/", "dist/", "sasame.js", "feed.js", "common-utils.js", "reward-users.js", ".env", "controllers/", "models/", "views/", "compress.py"],
   "ignore": ["node_modules/", ".git/", "tmp/", "uploads/"],
   "ext": "*"
 }
