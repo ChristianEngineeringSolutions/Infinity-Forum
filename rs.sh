@@ -5,5 +5,5 @@
 #pm2 delete app
 #pm2 kill
 #pm2 start app.js
-pm2 reload sasame
+pm2 reload app
 sudo /usr/bin/systemctl reload nginx
