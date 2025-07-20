@@ -273,13 +273,17 @@ $(function(){
             case 'Project':
             case 'Idea':
             case 'Database':
+            case 'Folder':
                 $('#editor-label-color').css('color', 'red');
                 break;
             case 'Social':
+            case 'Public Folder':
+            case 'Product':
             case 'Question':
             case 'Comment':
             case 'Task':
             case 'Challenge':
+            case 'Product':
                 $('#editor-label-color').css('color', 'green');
                 break;
             case 'Forum':
@@ -564,19 +568,12 @@ $(function(){
             }
         });
     });
-    $(document).on('click', '[id^="passage_share_"]', function(e){
+    $(document).on('click', '[id^="passage_share_"]', async function(e){
         var _id = getPassageId(this);
-        $.ajax({
-            type: 'post',
-            // url: DOMAIN + '/share_passage/' + fromOtro,
-            url: '/share_passage/',
-            data: {
-                _id: _id
-            },
-            success: function(data){
-                flashIcon($('#passage_share_' + _id), 'green');
-            }
-        });
+        var text = $('#passage-href-'+_id).val();
+        var port = window.location.hostname == 'localhost' ? ':3000' : '';
+        await navigator.clipboard.writeText(window.location.protocol + '//' + window.location.hostname + port + text);
+        alert("Copied URL to clipboard!");
     });
     $(document).on('click', '[id^="passage_more_"]', function(e){
         let _id = getPassageId(this);
@@ -1259,6 +1256,11 @@ $(function(){
     $(document).on('click', '[id^=yt-drop-]', function(){
         var _id = $(this).attr('id').split('-').at(-1);
         $('.yt-dropdown-' + _id).slideToggle();
+    });
+    $(document).on('click', '[id^=list-contributors-]', function(){
+        var _id = $(this).attr('id').split('-').at(-1);
+        $('#contributor-list-'+_id).slideToggle();
+
     });
     $(document).on('click', '.add-source', function(){
         var _id = $(this).attr('id').split('-').at(-1);

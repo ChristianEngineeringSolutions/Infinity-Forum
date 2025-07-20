@@ -358,31 +358,7 @@ async function createInitialPassage(req, res) {
     if(!passageService.labelOptions.includes(passage.label)){
         return res.send("Not an option.");
     }
-    switch(passage.label){
-        case 'Project':
-        case 'Idea':
-        case 'Database':
-        case 'Article':
-            passage.public = false;
-            passage.forum = false;
-            break;
-        case 'Social':
-        case 'Question':
-        case 'Comment':
-        case 'Task':
-        case 'Challenge':
-            passage.public = true;
-            passage.forum = false;
-            break;
-        case 'Forum':
-            passage.public = true;
-            passage.forum = true;
-            break;
-        default:
-            passage.public = false;
-            passage.forum = false;
-
-    }
+    passageService.updateLabel(passage);
     passage.html = formData.html;
     console.log("HTML"+ passage.html);
     passage.css = formData.css;
@@ -860,34 +836,14 @@ async function changeLabel(req, res){
     }
     
     const label = req.body.label;
-    if(!labelOptions.includes(label)){
+    if(!passageService.labelOptions.includes(label)){
         return res.send("Not an option.");
     }
     
     // Prepare update data
     const updateData = { label: label };
     
-    switch(label){
-        case 'Project':
-        case 'Idea':
-        case 'Database':
-        case 'Article':
-            updateData.public = false;
-            updateData.forum = false;
-            break;
-        case 'Social':
-        case 'Question':
-        case 'Comment':
-        case 'Task':
-        case 'Challenge':
-            updateData.public = true;
-            updateData.forum = false;
-            break;
-        case 'Forum':
-            updateData.public = true;
-            updateData.forum = true;
-            break;
-    }
+    passageService.updateLabel(updateData);
     
     // Use atomic update
     await Passage.updateOne(

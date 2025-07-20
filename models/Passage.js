@@ -465,7 +465,19 @@ const passageSchema = mongoose.Schema({
     simulated: {
         type: Boolean,
         default: false
-    }
+    },
+    reward: {
+        type: Number,
+        default: 0
+    },
+    price: {
+        type: Number,
+        default: 0
+    },
+    selectedAnswer: {
+        type: Boolean,
+        default: false
+    },
 });
 
 var autoPopulateChildren = function(next) {

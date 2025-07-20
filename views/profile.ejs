@@ -85,7 +85,7 @@
 </div>
   <%if(user && profile._id == user._id){%>
     <button id="add_passage_button">+</button>
-    <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
+    <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream', scripts: scripts})%>'/>
   <%}%>
   <br>
   <div id="passage_wrapper">

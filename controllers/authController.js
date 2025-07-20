@@ -18,7 +18,8 @@ async function renderLoginForm(req, res) {
 async function handleLogin(req, res) {
     //check if email has been verified
     var user = await userService.authenticateUsername(req.body.username, req.body.password);
-    if(user && !user.simulated){
+    var proceed = (!user.simulated && process.env.REMOTE === 'true') || process.env.LOCAL === 'true';
+    if(user && proceed){
         // Update last login time
         user.lastLogin = new Date();
         await user.save();

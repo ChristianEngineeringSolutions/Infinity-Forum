@@ -6,6 +6,40 @@ const { User } = require('../models/User');
 const { getFeedQueue } = require('../config/redis');
 const { DOCS_PER_PAGE, scripts } = require('../common-utils');
 const browser = require('browser-detect');
+const labelOptions = [
+    "Project", 'Idea', 'Database', 
+    "Social", "Question", "Comment", "Task", 
+    "Forum", "Challenge", "Article", "Folder",
+    "Public Folder", "Product"];
+function updateLabel(passage){
+    switch(passage.label){
+        case 'Project':
+        case 'Idea':
+        case 'Database':
+        case 'Article':
+        case 'Folder':
+            passage.public = false;
+            passage.forum = false;
+            break;
+        case 'Social':
+        case 'Question':
+        case 'Comment':
+        case 'Task':
+        case 'Challenge':
+        case 'Product':
+        case 'Public Folder':
+            passage.public = true;
+            passage.forum = false;
+            break;
+        case 'Forum':
+            passage.public = true;
+            passage.forum = true;
+            break;
+        default:
+            passage.public = false;
+            passage.forum = false;
+    }
+}
 async function deletePassage(passage){
     //delete old versions
     await Passage.deleteMany({versionOf: passage});
@@ -141,7 +175,7 @@ async function copyPassage(passage, user, parent, callback, synthetic=false, com
 async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor=false){
     for(const source of sourceList){
         if(getAuthor){
-            var sourcePassage = await Passage.findOne({_id:source}).populate('author');
+            var sourcePassage = await Passage.findOne({_id:source}).populate('author collaborators');
         }else{
             var sourcePassage = await Passage.findOne({_id:source});
         }
@@ -190,6 +224,14 @@ async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor
     sources = sources.filter(i => i);
     sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
     return sources;
+}
+
+function getContributors(passage){
+    var contributors = [passage.author, ...passage.collaborators];
+    for(const source of passage.sourceList){
+        contributors.push(source.author, ...source.collaborators);
+    }
+    return contributors;
 }
 
 async function fillUsedInList(passages){
@@ -636,8 +678,8 @@ async function getPassage(passage, small=true){
     }else{
         passage.repostFixed = false;
     }
-    passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage);
-    console.log('test10');
+    passage.sourceList = await getRecursiveSourceList(passage.sourceList, [], passage, true);
+    passage.contributors = getContributors(passage);
     return passage;
 }
 
@@ -1074,9 +1116,6 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
     let find = await Passage.findOne({_id: passage._id}).populate('author sourceList');
     return find;
 }
-
-// Label options constant (from sasame.js)
-const labelOptions = ["Project", 'Idea', 'Database', "Social", "Question", "Comment", "Task", "Forum", "Challenge", "Article"];
 
 // Share passage function (from sasame.js line 1327)
 async function sharePassage(from, _id, username) {
@@ -1828,5 +1867,6 @@ module.exports = {
     DAEMONLIBS,
     getRelevantPassagesForUser,
     processFeedGenerationJob,
-    scorePassages
+    scorePassages,
+    updateLabel
 };

@@ -9,7 +9,7 @@ const MongoStore = require('connect-mongo');
 const { uploadConfig } = require('../middleware/upload');
 const { updateActivityTimestamp } = require('../middleware/auth');
 const { getUploadFolder } = require('../utils/fileUtils');
-const { accessSecret } = require('../common-utils');
+const { accessSecret, scripts } = require('../common-utils');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
 
@@ -92,6 +92,7 @@ async function configureExpress() {
         res.locals.user = req.session.user;
         res.locals.DOMAIN = process.env.DOMAIN;
         res.locals.LOCAL = process.env.LOCAL;
+        res.locals.scripts = scripts;
         
         if(!req.session.CESCONNECT){
             req.session.CESCONNECT = false;

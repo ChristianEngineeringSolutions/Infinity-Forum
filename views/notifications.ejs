@@ -16,7 +16,7 @@
 }) %>
 <%-include('menu')%>
 <%-include('sidebar')%>
-<input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream'})%>'/>
+<input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream', scripts: scripts})%>'/>
 <input id="chief_passage_id"type="hidden" value="<%=passage.id || 'root'%>"name="chief">
             <input id="is_distraction_free"type="hidden" value="<%=passage.distraction_free || false%>"name="">
             <input type="hidden" value="false", id="is_profile"/>

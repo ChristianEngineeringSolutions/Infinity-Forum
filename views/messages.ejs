@@ -26,7 +26,7 @@
                     <div id="page_title"><%= decodeURIComponent(passageTitle)%></div>
                 <%}%>
             </div>
-            <%-include('label_select');%>
+            <%-include('label_select', {scripts: scripts});%>
             <%if(passages){%>
                 <input type="hidden" id="search">
                 <input id="search_messages"placeholder="Search Messages..." type="" name="" autocomplete="off">

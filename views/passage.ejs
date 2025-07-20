@@ -43,7 +43,7 @@
         <input id="p_bestOf_<%=passage._id%>"type="hidden"value="<%=passage.bestOf._id%>" name="">
     <%}%>
     <div id="passage_settings_modal_<%=passage._id%>" class="modal">
-        <%- include('passage_settings', {passage: passage}) %>
+        <%- include('passage_settings', {passage: passage, scripts: scripts}) %>
     </div>
     <div id="passage_sources_modal_<%=passage._id%>" class="modal">
         <%if(passage.sourceLink != null && passage.sourceLink.length > 1){%>
@@ -67,7 +67,12 @@
         <div id="sourcelist_<%=passage._id%>">
             <div id="recursive-sources-<%=passage._id%>">
                 <%passage.sourceList.forEach(function(source) { %>
-                    <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a></div>
+                    <%var contributors = [source.author, ...source.collaborators];%>
+                    <%var list = [];%>
+                    <%for(const contributor of contributors){%>
+                        <%list.push(contributor.name)%>
+                    <%}%>
+                    <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>">(<%=list.join(', ')%>) <b><%=source.title == '' ? "Untitled" : source.title%></b></a></div>
                 <%});%>
             </div>
             <div id="original-sources-<%=passage._id%>"style="display:none;">
@@ -76,6 +81,15 @@
                     <div class="passage_source_<%=passage._id%>"><a target="_blank"href="/passage/<%=source.title == '' ? 'Untitled' : source.title%>/<%=source._id%>"><%=source.title == '' ? "Untitled" : source.title%></a> <span class="passage_remove_source"data-source="<%=source._id%>"id="delete-passage-source-<%=passage._id%>" style="cursor:pointer;color:red;">X</span></div>
                 <%});%>
             <%}%>
+            </div>
+            <br>
+            <span id="list-contributors-<%=passage._id%>"class="link">List Contributors</span>
+            <div id="contributor-list-<%=passage._id%>"style="display:none">
+                <ul style="list-style-type: none;">
+                    <%for(const contributor of passage.contributors){%>
+                        <li><%=contributor.username%></li>
+                    <%}%>
+                </ul>
             </div>
             <%if(user && (user._id == passage.author._id || user.admin)){%>
                 <br>
@@ -121,8 +135,9 @@
 
     </div>
     <ul class="passage_options">
+        <input type="hidden"id="passage-href-<%=passage._id%>"value="/passage/<%=passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)%>/<%=passage._id%>"/>
         <% if((typeof comments != 'undefined' && comments == true) || (sub === true && (passage.author && user && user._id.toString() == passage.author._id.toString() || (passage.passages && passage.passages.length > 0) || passage.public || passage.parent == null)) || sub === true){%>
-        <li class="passage_option"><a class="hard-link"href="/passage/<%=passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)%>/<%=passage._id%>">Details</a></li>
+        <li class="passage_option"><a id="details-link-<%=passage._id%>"class="hard-link"href="/passage/<%=passage.title == '' ? 'Untitled' : encodeURIComponent(passage.title)%>/<%=passage._id%>">Details</a></li>
         <%}%>
         <%if((typeof comments == 'undefined' || !comments) && !passage.public && !passage.forum){%>
             <% var commentsLink = ''; %>
@@ -160,7 +175,7 @@
                     <div id="passage-share-modal-<%=passage._id%>" class="modal">
                         <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
                     </div>
-                    <a class="basic_link option_link" href="#passage-share-modal-<%=passage._id%>" rel="modal:open"><li id="passage_share_<%=passage._id%>" class="passage_option">Share</li></a>
+                    <li id="passage_share_<%=passage._id%>" class="passage_option">Share</li>
                     <%if(user && user.admin){%>
                         <li style="<%=passage.stickied ? 'color:gold' : ''%>"id="passage_sticky_<%=passage._id%>" class="passage_option">Sticky</li>
                     <%}%>
