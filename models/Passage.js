@@ -474,10 +474,24 @@ const passageSchema = mongoose.Schema({
         type: Number,
         default: 0
     },
+    // how much of this product do they have in stock
+    inStock: {
+        type: Number,
+        default: Infinity
+    },
     selectedAnswer: {
         type: Boolean,
         default: false
     },
+    views: {
+        type: Number,
+        default: 0
+    },
+    videoViews: [Number],
+    youtubeViews: {
+        type: Number,
+        default: 0
+    }
 });
 
 var autoPopulateChildren = function(next) {

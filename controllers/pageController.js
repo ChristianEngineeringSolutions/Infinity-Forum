@@ -57,7 +57,9 @@ async function donate(req, res) {
         var subscriptionQuantity = 0;
     }
     res.render('donate', {
-        passage: {id: 'root'}, usd: Math.floor((await scripts.getMaxToGiveOut())/100), stars: stars,
+        passage: {id: 'root'}, 
+        usd: Math.floor((await scripts.getMaxToGiveOut())/100), 
+        stars: stars,
         totalUSD: Math.floor(usd/100),
         donateLink: process.env.STRIPE_DONATE_LINK,
         subscribeLink: process.env.STRIPE_SUBSCRIBE_LINK,
@@ -68,6 +70,7 @@ async function bank(req, res){
     if (!req.session.user) {
     return res.redirect('/loginform');
   }
+  var usd = await totalUSD();
   var user = await User.findOne({_id:req.session.user._id});
   var today = new Date();
     //its been more than a month since they last got stars so reset the month we're looking at
@@ -76,7 +79,12 @@ async function bank(req, res){
         user.starsBorrowedThisMonth = 0;
         await user.save();
     }
-  return res.render('bank', {borrowedAmount:user.borrowedStars, starsBorrowedThisMonth: user.starsBorrowedThisMonth});
+  return res.render('bank', {
+        borrowedAmount:user.borrowedStars, 
+        starsBorrowedThisMonth: user.starsBorrowedThisMonth,
+        usd: Math.floor((await scripts.getMaxToGiveOut())/100), 
+        totalUSD: Math.floor(usd/100),
+    });
 }
 async function fileStream(req, res){
      const ISMOBILE = browser(req.headers['user-agent']).mobile;

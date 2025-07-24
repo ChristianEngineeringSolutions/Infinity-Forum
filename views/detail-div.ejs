@@ -64,8 +64,11 @@
             <%}%>
             <div id="">
                 <iframe width="560" height="315"
-                src="https://www.youtube.com/embed/<%=embed%>"
-                frameborder="0" allowfullscreen></iframe>
+                src="https://www.youtube.com/embed/<%=embed%>?enablejsapi=1"
+                frameborder="0" allowfullscreen
+                id="youtube-player-<%=passage._id%>"
+                data-passage-id="<%=passage._id%>"
+                data-youtube-id="<%=embed%>"></iframe>
             </div>
             <br>
         <%}%>

@@ -4,7 +4,7 @@ const { Passage } = require('../models/Passage');
 const Message = require('../models/Message');
 const { User } = require('../models/User');
 const { scripts } = require('../common-utils');
-const { getPassage, fillUsedInList, generateGuestFeed } = require('../services/passageService');
+const { getPassage, fillUsedInList, generateGuestFeed, standardPopulate } = require('../services/passageService');
 
 // Constants
 const DOCS_PER_PAGE = 10;
@@ -136,7 +136,7 @@ async function ppeSearch(req, res) {
         title: {
         $regex: search,
         $options: 'i',
-    }}).populate('author users sourceList').sort('-stars').limit(DOCS_PER_PAGE);
+    }}).populate(standardPopulate).sort('-stars').limit(DOCS_PER_PAGE);
     for(var i = 0; i < results.length; ++i){
         results[i] = await getPassage(results[i]);
     }
@@ -176,7 +176,7 @@ async function searchPassage(req, res) {
             break;
     }
     console.log(sort);
-    let results = await Passage.find(find).populate('author users sourceList').sort(sort).limit(DOCS_PER_PAGE);
+    let results = await Passage.find(find).populate(standardPopulate).sort(sort).limit(DOCS_PER_PAGE);
     if(results.length < 1 && req.session.user){
         var parent = await Passage.findOne({_id: req.body._id});
         let users = [req.session.user._id];
@@ -298,7 +298,7 @@ async function search(req, res) {
     }
 
     if (!feed) {
-        results = await Passage.find(matchStage).populate('author users sourceList parent').sort(sort).limit(DOCS_PER_PAGE);   
+        results = await Passage.find(matchStage).populate(standardPopulate).sort(sort).limit(DOCS_PER_PAGE);   
         for(var i = 0; i < results.length; ++i){
             results[i] = await fillUsedInList(results[i]);
             results[i] = await getPassage(results[i]);

@@ -225,6 +225,32 @@ async function processRewardDistribution(job) {
                                 }),
                                 `transfer for user ${user._id}`
                             );
+                            
+                            // Manually trigger payout for the connected account
+                            try {
+                                const payoutIdempotencyKey = generateIdempotencyKey(
+                                    user._id,
+                                    'payout',
+                                    rewardPeriod
+                                );
+                                
+                                const payout = await withRetry(
+                                    () => stripe.payouts.create({
+                                        amount: transferAmount,
+                                        currency: "usd",
+                                    }, {
+                                        stripeAccount: user.stripeAccountId,
+                                        idempotencyKey: payoutIdempotencyKey,
+                                    }),
+                                    `payout for user ${user._id}`
+                                );
+                                
+                                console.log(`Payout initiated for user ${user._id}: ${payout.id}`);
+                            } catch (payoutError) {
+                                console.error(`Failed to create payout for user ${user._id}:`, payoutError);
+                                // Continue even if payout fails - the transfer succeeded
+                            }
+                            
                             totalCut += cut;
                             // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                             //     user.amountEarned += 600 - user.amountEarnedThisYear;

@@ -312,8 +312,9 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
             
             // Give starring user stars for each logged stars at 1% rate (rebate)
+            //removed populating sources since we are no longer doing that
             var loggedStars = await Star.find({passage:passage._id, single: false})
-                .populate('user passage sources')
+                .populate('user passage')
                 .session(session);
                 
             var totalForStarrer = 0;
@@ -325,17 +326,19 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                     console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
                 }
                 
-                for(const source of loggedStar.sources){
-                    if(!sourceLog.includes(source) && 
-                        source.author._id.toString() != starrer._id.toString() && 
-                        sessionUser._id.toString() != starrer._id.toString()){
-                        console.log("working, " + starrer.name);
-                        let subtotal = 0.01 * loggedStar.amount * amountForRebate;
-                        totalForStarrer += subtotal;
-                        console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
-                    }
-                    sourceLog.push(source);
-                }
+                //commented out because this would unfairly advantage starring
+                //a passage with many sources
+                // for(const source of loggedStar.sources){
+                //     if(!sourceLog.includes(source) && 
+                //         source.author._id.toString() != starrer._id.toString() && 
+                //         sessionUser._id.toString() != starrer._id.toString()){
+                //         console.log("working, " + starrer.name);
+                //         let subtotal = 0.01 * loggedStar.amount * amountForRebate;
+                //         totalForStarrer += subtotal;
+                //         console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                //     }
+                //     sourceLog.push(source);
+                // }
                 await addStarsToUser(starrer, totalForStarrer, session);
             }
             
@@ -575,7 +578,7 @@ async function processStarSources(passage, top, authors, starredPassages, amount
             }
             
             // Don't star same passage twice
-            if(!starredPassages.includes(sourcePop._id.toString())){
+            if(!starredPassages.toString().includes(sourcePop._id.toString())){
                 await starMessages(sourcePop._id, amount, session);
                 
                 let sourceAuthor = await User.findOne({_id: sourcePop.author._id}).session(session);
@@ -587,13 +590,26 @@ async function processStarSources(passage, top, authors, starredPassages, amount
                     && !sourcePop.collaborators.toString().includes(passage.author._id.toString())
                     && !overlaps(sourcePop.collaborators, passage.collaborators)){
                     
-                    bonus = passageSimilarity(top, sourcePop);
+                    // bonus = passageSimilarity(top, sourcePop);
                     bonus = 0; // Bonuses are to reward users for citing
                     sourcePop.stars += amount + bonus;
-                    
+                    //the source just got more stars so let's now reward all 
+                    //previous starrers of this source
+                    var loggedStars = await Star.find({passage:sourcePop._id.toString(), single: false})
+                    .populate('user passage')
+                    .session(session);
+                    for(const loggedStar of loggedStars){
+                        var starrer = loggedStar.user;
+                        if(sessionUser._id.toString() != starrer._id.toString()){
+                            totalForStarrer = 0.01 * loggedStar.amount * amount;
+                            console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
+                        }
+                        await addStarsToUser(starrer, totalForStarrer, session);
+                    }
                     // Don't give author stars if starrer is a collaborator
-                    if(!sourcePop.collaborators.includes(sessionUser._id.toString())){
-                        if(!authors.includes(sourceAuthor._id.toString())){
+                    if(!sourcePop.collaborators.toString().includes(sessionUser._id.toString())){
+                        //or if the author has already gotten stars from this star
+                        if(!authors.toString().includes(sourceAuthor._id.toString())){
                             await addStarsToUser(sourceAuthor, (amount + bonus/(sourcePop.collaborators.length + 1)), session);
                         }
                     }
@@ -603,6 +619,8 @@ async function processStarSources(passage, top, authors, starredPassages, amount
                         authors.push(collaber._id.toString());
                     }
                     await sourcePop.save({session});
+
+
                     
                     // Don't give collaborators stars if starrer is a collaborator
                     if(!sourcePop.collaborators.includes(sessionUser._id.toString())){

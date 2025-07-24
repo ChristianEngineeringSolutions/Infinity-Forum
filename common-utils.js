@@ -25,7 +25,7 @@ scripts.labelSelectOptions = function(plural=false){
     var options = ``;
     var option = ``;
     for(const label of labelOptions){
-        option = plural && (label !== 'Social' && label !== 'Forum') ? label + 's' : label;
+        option = plural && (label !== 'Social' && label !== 'Forum' && label !== 'Miscellaneous') ? label + 's' : label;
         options += `<option value="${label}">${option}</option>`;
     }
     return options;

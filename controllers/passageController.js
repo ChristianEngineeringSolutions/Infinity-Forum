@@ -9,12 +9,9 @@ const Follower = require('../models/Follower');
 const { deleteOldUploads, uploadFile } = require('../services/fileService');
 const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis');
 //Call in Scripts
-const { scripts } = require('../common-utils');
+const { scripts, DOCS_PER_PAGE } = require('../common-utils');
 const browser = require('browser-detect');
 var fs = require('fs'); 
-
-// Constants
-const DOCS_PER_PAGE = 10; 
 
 async function deletePassage(req, res) {
     var passage = await Passage.findOne({_id: req.body._id});
@@ -65,11 +62,6 @@ async function postsPage(req, res) {
         try {
         // Generate feed for guest users
         const feedResult = await passageService.generateGuestFeed(page, limit);
-        
-        // Check if we need to redirect (e.g., page number is beyond available results)
-        if (feedResult.redirect) {
-          return res.redirect(`/discover?page=${feedResult.page}`);
-        }
         
         // Process each passage to get complete data
         const passages = [];
@@ -354,6 +346,9 @@ async function createInitialPassage(req, res) {
     }
     if(req.body.comments != 'true'){
         passage.label = formData.label;
+    }
+    if(req.body.whichPage == 'market'){
+        passage.label = 'Product';
     }
     if(!passageService.labelOptions.includes(passage.label)){
         return res.send("Not an option.");

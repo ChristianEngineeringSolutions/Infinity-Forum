@@ -28,5 +28,34 @@
             <%}%>
         <%});%>
         
+        <!-- View tracking scripts -->
+        <script src="/js/viewTracking.js"></script>
+        
+        <!-- YouTube IFrame API for tracking -->
+        <script>
+        // Load YouTube IFrame API if there are YouTube embeds
+        if (document.querySelector('iframe[data-youtube-id]')) {
+            var tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            var firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            
+            // When API is ready, initialize tracking
+            window.onYouTubeIframeAPIReady = function() {
+                document.querySelectorAll('iframe[data-youtube-id]').forEach(function(iframe) {
+                    var player = new YT.Player(iframe.id, {
+                        events: {
+                            'onReady': function(event) {
+                                var passageId = iframe.getAttribute('data-passage-id');
+                                var youtubeId = iframe.getAttribute('data-youtube-id');
+                                ViewTracker.trackYouTubePlayer(event.target, passageId, youtubeId);
+                            }
+                        }
+                    });
+                });
+            };
+        }
+        </script>
+        
     </body>
 </html>

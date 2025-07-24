@@ -274,6 +274,7 @@ $(function(){
             case 'Idea':
             case 'Database':
             case 'Folder':
+            case 'Miscellaneous':
                 $('#editor-label-color').css('color', 'red');
                 break;
             case 'Social':
@@ -284,6 +285,7 @@ $(function(){
             case 'Task':
             case 'Challenge':
             case 'Product':
+            case 'Commission':
                 $('#editor-label-color').css('color', 'green');
                 break;
             case 'Forum':
@@ -366,15 +368,16 @@ $(function(){
         
     });
     $(document).on('click', '#add_passage_button', function(e){
+        var whichPage = $('#which-page').val();
         var chief = $('#chief_passage_id').val();
-        popup("New Post", $('#clean_editor').val());
+        var title = whichPage == 'market' ? 'New Product' : "New Post";
+        popup(title, $('#clean_editor').val());
         if($('.popup').css('position') == 'absolute'){
             $('.popup').css('top', $(window).scrollTop() + 'px');
         }
         $('#passage_form').show();
         if($('#is-root').length > 0){
             var isRoot = $('#is-root').val();
-            var whichPage = $('#which-page').val();
             var parentLabel = $("#parent-label").val();
             var parentPublic = $("#parent-public").val();
             if(isRoot == 'false'){
@@ -387,6 +390,10 @@ $(function(){
                         $('#editor-label-color').hide();
                     }
                 }
+            }
+            if(whichPage == 'market'){
+                $('#editor-label').hide();
+                $('#editor-label-color').hide();
             }
         }
         else{

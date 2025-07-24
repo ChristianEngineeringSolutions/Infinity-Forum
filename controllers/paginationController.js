@@ -8,7 +8,8 @@ const {
     generateGuestFeed, 
     generateFeedWithPagination, 
     getPassage, 
-    getPassagesByUsage 
+    getPassagesByUsage,
+    standardPopulate
 } = require('../services/passageService');
 
 // Constants (this should be imported from a config file)
@@ -126,7 +127,7 @@ async function paginate(req, res) {
                         sort: sort_query, 
                         page: page, 
                         limit: DOCS_PER_PAGE, 
-                        populate: 'author users parent sourceList'
+                        populate: standardPopulate
                     });
                 }
                 

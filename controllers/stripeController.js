@@ -444,6 +444,14 @@ const stripeAuthorize = async (req, res) => {
                     capabilities: {
                         transfers: {requested: true},
                     },
+                    settings: {
+                      payouts: {
+                        schedule: {
+                          interval: 'daily',
+                          delay_days: 14 //every 2 weeks
+                        }
+                      }
+                    }
                   });
                 try{
                     await User.updateOne({_id: user._id}, {stripeAccountId: account.id});

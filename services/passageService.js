@@ -7,10 +7,11 @@ const { getFeedQueue } = require('../config/redis');
 const { DOCS_PER_PAGE, scripts } = require('../common-utils');
 const browser = require('browser-detect');
 const labelOptions = [
-    "Project", 'Idea', 'Database', 
+    "Miscellaneous", "Project", 'Idea', 'Database', 
     "Social", "Question", "Comment", "Task", 
-    "Forum", "Challenge", "Article", "Folder",
+    "Forum", "Challenge", "Commission", "Article", "Folder",
     "Public Folder", "Product"];
+const standardPopulate = 'author users sourceList parent collaborators versions mirror';
 function updateLabel(passage){
     switch(passage.label){
         case 'Project':
@@ -18,6 +19,7 @@ function updateLabel(passage){
         case 'Database':
         case 'Article':
         case 'Folder':
+        case 'Miscellaneous':
             passage.public = false;
             passage.forum = false;
             break;
@@ -28,6 +30,7 @@ function updateLabel(passage){
         case 'Challenge':
         case 'Product':
         case 'Public Folder':
+        case 'Commission':
             passage.public = true;
             passage.forum = false;
             break;
@@ -427,7 +430,7 @@ async function generateGuestFeed(page = 1, limit = 10) {
     if (paginatedIds.length > 0) {
         feed = await Passage.find({ 
             _id: { $in: paginatedIds }
-        }).populate('author users sourceList parent collaborators versions mirror');
+        }).populate(standardPopulate);
         
         // Fill in usedIn lists
         feed = await fillUsedInList(feed);
@@ -520,7 +523,7 @@ async function generateFeedWithPagination(user, page = 1, limit = 10) {
         const mongoose = require('mongoose');
         feed = await Passage.find({ 
             _id: { $in: paginatedIds.map(id => mongoose.Types.ObjectId(id)) }
-        }).populate('author users sourceList parent collaborators versions mirror');
+        }).populate(standardPopulate);
         
         // Fill in usedIn data
         feed = await fillUsedInList(feed);
@@ -838,7 +841,7 @@ async function concatObjectProps(passage, sub){
                 var displayNone = 'style="display:none"';
             }
             passage.video += `
-            <video class="uploadedVideo passage-file-`+sub._id+` passage-vid-`+sub.filename[i].split('.')[0]+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls>
+            <video class="uploadedVideo passage-file-`+sub._id+` passage-vid-`+sub.filename[i].split('.')[0]+` passage-video-`+passage._id+`"`+displayNone+`id="passage_video_`+sub._id+`"class="passage_video uploadedVideo"width="320" height="240" controls data-passage-id="`+passage._id+`" data-video-index="`+i+`">
                 <source src="/`+getUploadFolder(sub)+`/`+sub.filename[i]+`" type="video/`+sub.filename[i].split('.').at(-1)+`">
                 Your browser does not support the video tag.
             </video>
@@ -919,7 +922,7 @@ async function bubbleUpAll(passage){
     for(var i = 0; i < passage.filename.length; ++i){
         if(passage.mimeType[i] == 'video'){
             passage.video += `
-            <video id="passage_video_`+passage._id+`"class="passage_video uploadedVideo passage-video-`+passage._id+`"width="320" height="240" controls>
+            <video id="passage_video_`+passage._id+`"class="passage_video uploadedVideo passage-video-`+passage._id+`"width="320" height="240" controls data-passage-id="`+passage._id+`" data-video-index="`+i+`">
                 <source src="/`+getUploadFolder(passage)+`/`+passage.filename[i]+`" type="video/`+passage.filename[i].split('.').at(-1)+`">
                 Your browser does not support the video tag.
             </video>
@@ -1868,5 +1871,6 @@ module.exports = {
     getRelevantPassagesForUser,
     processFeedGenerationJob,
     scorePassages,
-    updateLabel
+    updateLabel,
+    standardPopulate
 };
