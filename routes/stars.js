@@ -13,4 +13,6 @@ router.post('/single_star/', starController.singleStarPassage);
 // Borrow stars route
 router.post('/borrow-stars', starController.borrowStars);
 
+router.get('/calculate-donation-stars', starController.calculateDonationStars);
+
 module.exports = router;

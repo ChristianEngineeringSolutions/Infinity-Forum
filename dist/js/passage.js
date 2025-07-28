@@ -162,6 +162,9 @@ $(function(){
         }
         $('.display_data_' + _id).toggle();
         $('#passage_form_' + _id).toggle();
+        if($('#editor-label').val() == 'Product'){
+            $('#product-form-'+_id).html(productFormHTML);
+        }
     });
     $(document).on('click', '[id^="make_mainfile_"]', function(){
         var thiz = $(this);
@@ -268,7 +271,26 @@ $(function(){
         }
         $('#passage_thumbnail_' + _id).fadeIn();
     });
+    $(document).on('click', '[id^="buy-product-button-"]', function(e){
+        var thiz = $(this);
+        $.ajax({
+            type: 'get',
+            data: {
+                _id: thiz.attr('id').split('-').at(-1)
+            },
+            success: function(data){
+                window.location.href = data;
+            }
+        });
+    });
+    const productFormHTML = `
+        Price: <input type="number" name="price"/><br>
+        Contains screen bigger than 4 inches diagonally (phones excluded) or cathode ray tube(s) <input type="checkbox" name="ceds"/><br>
+        Contains or is new tires <input type="checkbox" name="new-tires"/><br>
+        Contains smoking, tobacco, marijuana, or alcoholic beverage products <input type="checkbox" name="drugs"/>
+    `;
     $(document).on('change', '#editor-label', function(e){
+        //change label color
         switch($(this).val()){
             case 'Project':
             case 'Idea':
@@ -291,10 +313,14 @@ $(function(){
             case 'Forum':
                 $('#editor-label-color').css('color', 'brown');
                 break;
-
+        }
+        //add/remove product details
+        if($(this).val() == 'Product'){
+            $('#product-form').html(productFormHTML);
+        }else{
+            $('#product-form').html('');
         }
     });
-    
     $(document).on('change', '[id^="passage_showbestof_"]', function(e){
         var ID = $(this).attr('id').split('_').at(-1);
         var thiz = $(this);
@@ -394,6 +420,7 @@ $(function(){
             if(whichPage == 'market'){
                 $('#editor-label').hide();
                 $('#editor-label-color').hide();
+                $('#product-form').html(productFormHTML);
             }
         }
         else{
@@ -961,8 +988,26 @@ $(function(){
         var _id = getPassageId(this);
         $('#passage_condensed_' + _id).fadeToggle();
     });
+    function disallowedProducts(thiz){
+        if($('#'+thiz.attr('id')+' [name="ceds"]').is(':checked')){
+            alert("Screens must be less than 4 inches diagonally (phones excluded), and product can not contain cathode ray tube(s).");
+            return true;
+        }
+        if($('#'+thiz.attr('id')+' [name="new-tires"]').is(':checked')){
+            alert("Product can not contain or be new tires.");
+            return true;
+        }
+        if($('#'+thiz.attr('id')+' [name="drugs"]').is(':checked')){
+            alert("Smoking, tobacco, marijuana, or alcoholic beverage products are not allowed.");
+            return true;
+        }
+        return false;
+    }
     $(document).on('submit', '[id^=passage_form_]', function(e){
         e.preventDefault();
+        if(disallowedProducts($(this))){
+            return;
+        }
         var thiz = $(this);
         var formData = new FormData(this);
         formData.append("parent", $('#chief_passage_id').val());
@@ -1319,6 +1364,9 @@ $(function(){
     });
     $(document).on('submit', '#passage_form', function(e){
         e.preventDefault();
+        if(disallowedProducts($(this))){
+            return;
+        }
         $('.editor-chief').val($('#chief_passage_id').val());
         $('#which-subforums').val($('#yes-subforums').val());
         $('#which-comments').val($('#yes-comments').val());

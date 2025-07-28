@@ -26,6 +26,13 @@
                 (Currently Subscribed)
             <%}%>
             </h5>
+            <h4>or</h4>
+            <h3>Buy Donation Stars</h3>
+            <div>
+              $<input id="donation-star-price"type="number" autocomplete="off"> = <span id="donation-star-amount">0 Donation Stars</span>
+              <br><br>
+              <div class="buy-product-button">Buy</div>
+            </div>
         <%}%>
         <!-- <h5>(Subscriber stars are multiplied by the number of months subscribed.)</h5> -->
         <!-- <h3 style="margin-top:50px;">Funds distributed monthly at 20% increments to Users based on merit (contribution points, earned by giving stars to other users).</h3> -->
@@ -36,6 +43,24 @@
         <br><br>
     </div>
     <script type="text/javascript">
+        $(function(){
+          $(document).on('keyup', '#donation-star-price', function(e){
+            var thiz = $(this);
+            if(isNaN(thiz.val())){
+              return;
+            }
+            $.ajax({
+              type: 'get',
+              url: '/calculate-donation-stars',
+              data: {
+                price: thiz.val()
+              },
+              success: function(data){
+                $('#donation-star-amount').text(data);
+              }
+            });
+          });
+        });
         // Client-side (example with a quantity input)
         document.addEventListener('DOMContentLoaded', () => {
           const subscribeButton = document.getElementById('subscribeButton');

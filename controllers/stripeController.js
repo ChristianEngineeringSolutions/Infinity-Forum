@@ -47,10 +47,13 @@ const stripeWebhook = async (request, response) => {
                     if (user) {
                         var amountToAdd = 0;
                         var totalStarsGivenAmount = SYSTEM.totalStarsGiven;
-                        var percentUSDAmount = await percentUSD(Number(amount));
+                        var percentUSDAmount = await percentOfPayouts(Number(amount));
                         amountToAdd = percentUSDAmount * totalStarsGivenAmount;
-                        if (totalStarsGivenAmount == 0) {
-                            amountToAdd = 100;
+                        if (percentUSDAmount == 0) {
+                            amountToAdd = amount/100;
+                        }
+                        if(totalStarsGivenAmount == 0){
+                          amountToAdd = 10;
                         }
                         await User.updateOne({_id: user._id.toString()}, 
                           {$inc: {
@@ -139,8 +142,15 @@ const stripeWebhook = async (request, response) => {
               }
             console.log("Subscription Quantity:"+subscriptionQuantity);
             let monthsSubscribed = monthDiff(subscriber.lastSubscribed, new Date());
-            var subscriptionReward = (await percentUSD(500 * subscriber.subscriptionQuantity * 100 * (monthsSubscribed + 1))) * (await totalStarsGiven());
-            var amountToAdd = (await percentUSD(500 * subscriber.subscriptionQuantity * 100)) * (await totalStarsGiven());
+            var percentPayouts = await percentOfPayouts(500 * subscriber.subscriptionQuantity * (monthsSubscribed + 1));
+            var subscriptionReward = (percentPayouts) * (await totalStarsGiven());
+            var totalStarsGivenAmount = await totalStarsGiven(); 
+            if (percentPayouts == 0) {
+                subscriptionReward = ((500 * subscriber.subscriptionQuantity)/100) * (monthsSubscribed + 1);
+            }
+            if(totalStarsGivenAmount == 0){
+              subscriptionReward = 10;
+            }
             subscriber.donationStars += subscriptionReward;
             var amount = 500 * subscriptionQuantity;
             if(!subscriber.subscribed){

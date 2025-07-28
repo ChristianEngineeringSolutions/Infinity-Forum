@@ -131,6 +131,7 @@ async function processRewardDistribution(job) {
     // var usd = SYSTEM.userAmount;
     var usd = await scripts.getMaxToGiveOut();
     let totalCut = 0;
+    var totalPaidOut = 0;
     const successfulTransfers = [];
     const failedTransfers = [];
 
@@ -252,6 +253,8 @@ async function processRewardDistribution(job) {
                             }
                             
                             totalCut += cut;
+                            totalPaidOut += transferAmount;
+
                             // if(user.amountEarnedThisYear + (userUSD/100) > 600){
                             //     user.amountEarned += 600 - user.amountEarnedThisYear;
                             //     user.amountEarnedThisYear += 600 - user.amountEarnedThisYear;
@@ -310,7 +313,8 @@ async function processRewardDistribution(job) {
 
         try {
             await System.updateOne({}, {$set:{
-                userAmount: 0
+                userAmount: 0,
+                totalPaidOut: totalPaidOut
             }});
             // const payout = await withRetry(
             //     () => stripe.payouts.create({

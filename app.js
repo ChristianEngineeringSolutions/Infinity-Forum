@@ -121,15 +121,15 @@ async function startServer() {
           return await passageService.processFeedGenerationJob(job);
         });
         // Schedule initial feed updates for active users
-        const startupDelay = 10 * 1000; // 10 seconds
-        setTimeout(async () => {
-          try {
-            await passageService.scheduleBackgroundFeedUpdates();
-            console.log('Initial feed updates scheduled');
-          } catch (error) {
-            console.error('Error scheduling initial feed updates:', error);
-          }
-        }, startupDelay);
+        // const startupDelay = 10 * 1000; // 10 seconds
+        // setTimeout(async () => {
+        //   try {
+        //     await passageService.scheduleBackgroundFeedUpdates();
+        //     console.log('Initial feed updates scheduled');
+        //   } catch (error) {
+        //     console.error('Error scheduling initial feed updates:', error);
+        //   }
+        // }, startupDelay);
         
         console.log('Feed system initialized');
         server.listen(PORT, '0.0.0.0', () => {

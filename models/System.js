@@ -27,7 +27,12 @@ const systemSchema = mongoose.Schema({
     leftOver: {
         type: Number,
         default: 0
-    } 
+    },
+    //in cents
+    totalPaidOut: {
+        type: Number,
+        default: 0
+    }
 });
 
 module.exports = mongoose.model('System', systemSchema, 'System');

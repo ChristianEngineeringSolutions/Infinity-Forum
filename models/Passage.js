@@ -491,6 +491,10 @@ const passageSchema = mongoose.Schema({
     youtubeViews: {
         type: Number,
         default: 0
+    },
+    published: {
+        type: Boolean,
+        default: true
     }
 });
 

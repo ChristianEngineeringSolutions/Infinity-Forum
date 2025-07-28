@@ -7,5 +7,7 @@ const { requiresLogin } = require('../middleware/auth');
 
 router.get('/market', marketController.market);
 router.get('/market-dashboard', requiresLogin, marketController.dashboard);
+router.get('/orders', marketController.orders);
+router.get('/sales', marketController.sales);
 
 module.exports = router;

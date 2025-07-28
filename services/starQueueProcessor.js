@@ -321,6 +321,7 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             for(const loggedStar of loggedStars){
                 var starrer = loggedStar.user;
                 var sourceLog = [];
+                //you dont get the rebate when you star
                 if(sessionUser._id.toString() != starrer._id.toString()){
                     totalForStarrer = 0.01 * loggedStar.amount * amountForRebate;
                     console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
@@ -600,6 +601,7 @@ async function processStarSources(passage, top, authors, starredPassages, amount
                     .session(session);
                     for(const loggedStar of loggedStars){
                         var starrer = loggedStar.user;
+                        //you don't get the rebate when you star
                         if(sessionUser._id.toString() != starrer._id.toString()){
                             totalForStarrer = 0.01 * loggedStar.amount * amount;
                             console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');

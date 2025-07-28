@@ -2,7 +2,8 @@
     <br>
     <ion-icon id="editor-label-color"style="color:red;"src="/images/ionicons/ellipse.svg"></ion-icon>
     <select id="editor-label"name="label">
-        <%-scripts.labelSelectOptions(false)%>
+        <%products = user && user.identityVerified && user.stripeOnboardingComplete%>
+        <%-scripts.labelSelectOptions(false, products)%>
     </select>
     <br><br>
     <input type="hidden" name="repost"value="false">
@@ -66,6 +67,7 @@
         <img id="thumbnail_image"src="" alt="">
         <input id="thumbnail_clip"type="hidden" name="thumbnail">
     </div>
+    <div id="product-form"></div>
     <div id="passage_advanced"class="passage_advanced">
             <br>
             <div>Programming Language:</div><br>

@@ -350,6 +350,9 @@ async function createInitialPassage(req, res) {
     if(req.body.whichPage == 'market'){
         passage.label = 'Product';
     }
+    if(passage.label == 'Product'){
+        passage.price = req.body.price;
+    }
     if(!passageService.labelOptions.includes(passage.label)){
         return res.send("Not an option.");
     }

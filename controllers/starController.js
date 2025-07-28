@@ -9,7 +9,7 @@ const Message = require('../models/Message');
 const starService = require('../services/starService');
 const starQueue = require('../services/starServiceQueued');
 const passageService = require('../services/passageService');
-const {monthsBetween} = require('../common-utils');
+const {monthsBetween, percentUSD} = require('../common-utils');
 const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageController');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 
@@ -119,10 +119,27 @@ async function borrowStars(req, res){
       return res.send("Error.");
 }
 
-
+async function calculateDonationStars(req, res){
+    var SYSTEM = await System.findOne({});
+    var usd = SYSTEM.totalPaidOut;
+    var price = Number(req.query.price);
+    var starsGiven = SYSTEM.totalStarsGiven;
+    var numDonationStars = 0;
+    if(usd == 0){
+        numDonationStars = price;
+    }
+    else if(starsGiven == 0){
+        numDonationStars = 10;
+    }else{
+        var percentUSDAmount = await percentOfPayouts(price * 100);
+        numDonationStars = percentUSDAmount * starsGiven;
+    }
+    return res.send(Math.floor(numDonationStars) + ' Donation Star' + (numDonationStars == 1 ? '' : 's'));
+}
 
 module.exports = {
     starPassage,
     singleStarPassage,
-    borrowStars
+    borrowStars,
+    calculateDonationStars
 };

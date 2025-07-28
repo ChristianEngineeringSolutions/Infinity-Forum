@@ -1574,6 +1574,7 @@ function DAEMONLIBS(passage, USERID){
      * This should be called from a cron job or similar
      */
 async function scheduleBackgroundFeedUpdates() {
+    console.log("FIRE");
   try {
     // Find active users who have logged in recently
     const activeTimeThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -1604,13 +1605,15 @@ async function scheduleBackgroundFeedUpdates() {
             refreshInterval = 12 * 60 * 60 * 1000; // 12 hours for less active users
           }
           
-          // Use the job queue system to schedule feed updates
+          // Add a one-time job to update this user's feed
+          // We'll rely on cron jobs to re-schedule active users
           var feedQueue = getFeedQueue();
           await feedQueue.add(
             { userId: user._id.toString() },
             { 
-              repeat: { every: refreshInterval },
-              jobId: `feed-update-${user._id}`
+              jobId: `feed-update-${user._id}`,
+              removeOnComplete: true,
+              removeOnFail: false
             }
           );
           

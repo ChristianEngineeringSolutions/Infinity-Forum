@@ -21,12 +21,14 @@ async function accessSecret(secretName) {
 }
 const scripts = {};
 
-scripts.labelSelectOptions = function(plural=false){
+scripts.labelSelectOptions = function(plural=false, products=true){
     var options = ``;
     var option = ``;
     for(const label of labelOptions){
-        option = plural && (label !== 'Social' && label !== 'Forum' && label !== 'Miscellaneous') ? label + 's' : label;
-        options += `<option value="${label}">${option}</option>`;
+        if(label !== 'Product' || products){
+            option = plural && (label !== 'Social' && label !== 'Forum' && label !== 'Miscellaneous') ? label + 's' : label;
+            options += `<option value="${label}">${option}</option>`;
+        }
     }
     return options;
 }
@@ -113,6 +115,16 @@ scripts.labelSelectOptions = function(plural=false){
         var amount = await totalUSD();
         if(amount == 0){
             return 1;
+        }
+        let final = donationUSD / (amount);
+        return final;
+    }
+    //get percentage of total paidOut
+    async function percentOfPayouts(donationUSD){
+        var SYSTEM = await System.findOne({});
+        var amount = SYSTEM.totalPaidOut;
+        if(amount == 0){
+            return 0;
         }
         let final = donationUSD / (amount);
         return final;

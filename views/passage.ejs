@@ -229,6 +229,9 @@
         last: false,
         minor: false
     })%>
+    <%if(passage.label == 'Product'){%>
+        <div id="buy-product-button-<%=passage._id%>"class="buy-product-button">Buy ($<%=passage.price%>)</div>
+    <%}%>
     <%if(user){%>
         <%var bottom = 'bottom-bar-loggedin';%>
         <%var starBottom = ' star-bottom';%>
