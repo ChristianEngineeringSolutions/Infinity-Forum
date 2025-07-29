@@ -1238,7 +1238,8 @@ async function increaseReward(req, res){
         _id: req.body._id
     }, {
         $inc: {
-            reward: Number(req.body.value)
+            reward: Number(req.body.value),
+            stars: value
         }
     });
     return res.send("Reward Increased.");
