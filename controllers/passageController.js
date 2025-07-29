@@ -1225,6 +1225,15 @@ async function increaseReward(req, res){
             donationStars: -donationUsed
         }
     });
+    //add reward to winning user
+    var reward = await Reward.findOne({parentPassage: req.body._id});
+    await User.updateOne({
+        _id: reward.user._id.toString()
+    }, {
+        $inc: {
+            starsGiven: value
+        }
+    });
     await Passage.updateOne({
         _id: req.body._id
     }, {
