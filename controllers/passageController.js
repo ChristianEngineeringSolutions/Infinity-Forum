@@ -1241,6 +1241,12 @@ async function selectAnswer(req, res){
             selectedAnswer: false
         }
     });
+    const oldReward = await Reward.findOne({parentPassage: passage.parent._id.toString(), selectedAnswer: true});
+    if(oldReward && passage.parent && passage.parent.reward > 0){
+        await User.updateOne({_id: oldReward.user}, {
+            $inc: { starsGiven: -passage.parent.reward }
+        });
+    }
     await Reward.deleteOne({parentPassage: passage.parent._id.toString(), selectedAnswer: true});
     await Passage.updateOne({_id: req.body.answer.toString()}, {
         $set: {
@@ -1254,6 +1260,12 @@ async function selectAnswer(req, res){
             parentPassage: passage.parent._id.toString(),
             selectedAnswer: true
         });
+        //add points to user who got reward
+        if(passage.parent && passage.parent.reward > 0){
+            await User.updateOne({_id: passage.author._id}, {
+                $inc: { starsGiven: passage.parent.reward }
+            });
+        }
     }
     return res.send("Answer selected.");
 }
