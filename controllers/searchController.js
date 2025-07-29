@@ -148,6 +148,7 @@ async function ppeSearch(req, res) {
 // Search passage route handler (from sasame.js line 3126)
 async function searchPassage(req, res) {
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
     var find = {
         deleted: false,
         personal: false,
@@ -225,6 +226,7 @@ async function searchPassage(req, res) {
 
 // Main search route handler (from sasame.js line 3226)
 async function search(req, res) {
+    console.log("FLAIR");
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     var label = req.body.label;
     var matchStage = {
@@ -256,7 +258,7 @@ async function search(req, res) {
             break;
         // case 'feed': // ... (your feed logic) ...
     }
-
+    console.log("FLAIR2");
     var sort = { stars: -1, _id: -1 };
     var results;
     var nextCursor = null;
@@ -296,15 +298,15 @@ async function search(req, res) {
             sort = { date: 1 };
             break;
     }
-
+    console.log("FLAIR3");
     if (!feed) {
         results = await Passage.find(matchStage).populate(standardPopulate).sort(sort).limit(DOCS_PER_PAGE);   
         for(var i = 0; i < results.length; ++i){
-            results[i] = await fillUsedInList(results[i]);
+            results[i] = await fillUsedInListSingle(results[i]);
             results[i] = await getPassage(results[i]);
         }         
     }
-
+    console.log("FLAIR4");
     res.render("passages", {
         passages: results,
         subPassages: false,

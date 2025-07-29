@@ -499,6 +499,11 @@ const passageSchema = mongoose.Schema({
     published: {
         type: Boolean,
         default: true
+    },
+    sourcedFrom: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage',
+        default: null
     }
 });
 

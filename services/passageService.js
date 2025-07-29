@@ -100,7 +100,8 @@ async function copyPassage(passage, user, parent, callback, synthetic=false, com
         mirrorContent: passage.mirrorContent,
         bestOfEntire: passage.bestOfEntire,
         bestOfContent: passage.bestOfContent,
-        comment: comment
+        comment: comment,
+        sourcedFrom: passage._id.toString()
     });
     //Add copy to passage it was duplicated into
     if(parent != "root" && parent != null){
@@ -138,7 +139,8 @@ async function copyPassage(passage, user, parent, callback, synthetic=false, com
                     metadata: p.metadata,
                     sourceLink: p.sourceLink,
                     synthetic: synthetic,
-                    personal: p.personal
+                    personal: p.personal,
+                    sourcedFrom: p._id.toString()
                 });
                 copy.passages.push(pcopy._id);
                 await copy.save();

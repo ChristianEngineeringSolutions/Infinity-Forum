@@ -63,11 +63,23 @@ async function transferBookmark(req, res) {
         parent.sourceList.push(passage._id);
         //remove duplicates
         parent.sourceList = Object.values(parent.sourceList.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
-        parent.markModified('sourceList');
-        await parent.save();
+        // parent.markModified('sourceList');
+        // await parent.save();
+        await Passage.updateOne({
+            _id: req.body.parent
+        }, {
+            $set: {
+                sourceList: parent.sourceList
+            }
+        });
         //passage usage list has grown so put it higher in feed
-        passage.lastUpdated = Date.now();
-        await passage.save();
+        await Passage.updateOne({
+            _id: req.body._id
+        }, {
+            $set: {
+                lastUpdated: Date.now()
+            }
+        });
         console.log('sources:'+parent.sourceList);
         var test = await Passage.findOne({_id:parent._id});
         console.log('sources'+test.sourceList);
