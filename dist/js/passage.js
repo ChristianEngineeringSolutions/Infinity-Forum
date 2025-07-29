@@ -870,7 +870,7 @@ $(function(){
     $(document).on('click touch', '#parent_title2', function(e){
         window.location.href = $(this).data('url');
     });
-    $(document).on('change', '[id^=label-select-]', function(e){
+    $(document).on('change', 'select[id^=label-select-]', function(e){
         var ID = $(this).attr('id').split('-').at(-1);
         var thiz = $(this);
         $.ajax({

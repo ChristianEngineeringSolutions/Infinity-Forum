@@ -9,6 +9,8 @@ const searchController = require('../controllers/searchController');
 // Main search route
 router.post('/search/', searchController.search);
 
+router.post('/testSearch/', searchController.testSearch);
+
 // Passage search route
 router.post('/search_passage/', searchController.searchPassage);
 

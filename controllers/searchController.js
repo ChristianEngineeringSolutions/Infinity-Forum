@@ -4,7 +4,7 @@ const { Passage } = require('../models/Passage');
 const Message = require('../models/Message');
 const { User } = require('../models/User');
 const { scripts } = require('../common-utils');
-const { getPassage, fillUsedInList, generateGuestFeed, standardPopulate } = require('../services/passageService');
+const { getPassage, fillUsedInList, fillUsedInListSingle, generateGuestFeed, standardPopulate } = require('../services/passageService');
 
 // Constants
 const DOCS_PER_PAGE = 10;
@@ -226,6 +226,20 @@ async function searchPassage(req, res) {
 
 // Main search route handler (from sasame.js line 3226)
 async function search(req, res) {
+    try {
+        // Debug logging to identify the issue
+        console.log("=== SEARCH ROUTE DEBUG ===");
+        console.log("req.body:", JSON.stringify(req.body, null, 2));
+        console.log("req.params:", JSON.stringify(req.params, null, 2));
+        console.log("req.query:", JSON.stringify(req.query, null, 2));
+    
+    // Check each field that might contain "div"
+    Object.keys(req.body || {}).forEach(key => {
+        if (req.body[key] === "div") {
+            console.log(`WARNING: req.body.${key} contains "div"`);
+        }
+    });
+    
     console.log("FLAIR");
     var search = req.body.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     var label = req.body.label;
@@ -300,7 +314,8 @@ async function search(req, res) {
     }
     console.log("FLAIR3");
     if (!feed) {
-        results = await Passage.find(matchStage).populate(standardPopulate).sort(sort).limit(DOCS_PER_PAGE);   
+        console.log("FLAIR14");
+        results = await Passage.find(matchStage).populate(standardPopulate).sort(sort).limit(DOCS_PER_PAGE); 
         for(var i = 0; i < results.length; ++i){
             results[i] = await fillUsedInListSingle(results[i]);
             results[i] = await getPassage(results[i]);
@@ -314,13 +329,24 @@ async function search(req, res) {
         subPassage: false,
         page: 1
     });
+    } catch (error) {
+        console.error("=== ERROR IN SEARCH ROUTE ===");
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+        console.error("Error type:", error.constructor.name);
+        throw error;
+    }
 }
-
+async function testSearch(req, res){
+    console.log("test");
+    return res.send("test");
+}
 module.exports = {
     searchLeaderboard,
     searchProfile,
     searchMessages,
     ppeSearch,
     searchPassage,
-    search
+    search,
+    testSearch
 };
