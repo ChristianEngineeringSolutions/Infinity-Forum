@@ -32,6 +32,19 @@
         <%}%>
         <%*/%>
         </div></div>
+        <%if(user._id.toString() == passage.author._id.toString() && sub && !passage.selectedAnswer){%>
+            <div><br><a id="select-answer-<%=passage._id%>">Choose as Winner</a></br></div>
+        <%}%>
+        <%if(passage.selectedAnswer && sub){%>
+            <div><br>Selected Answer</div>
+        <%}%>
+        <%if(['Question', 'Task', 'Challenge', 'Commission'].includes(passage.label) && user){%>
+            <div><br>Reward: <span id="reward-ticker-<%=passage._id%>"><%=passage.reward%></span> Contribution Point<%=passage.reward == 1 ? '' : 's'%> (<a id="add-reward-<%=passage._id%>">Increase</a>)</div>
+            <div id="reward-form-<%=passage._id%>" style="display:none;">
+                <br>
+                <input id="reward-input-<%=passage._id%>"type="number" value="1"> Stars <button id="increase-reward-<%=passage._id%>">Add to Reward</button>
+            </div>
+        <%}%>
     <%if(passage.author && user && ((passage.author._id == user._id) || user.admin)){%>
         <%- include('editor') %>
     <%}else{%>

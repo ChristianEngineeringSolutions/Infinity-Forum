@@ -4,6 +4,7 @@ const express = require('express');
 const helmet = require('helmet');
 const compression = require('compression');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 // const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const { uploadConfig } = require('../middleware/upload');
@@ -22,6 +23,7 @@ async function configureExpress() {
     app.use(helmet());
     app.use(compression());
     app.use(cors());
+    app.use(cookieParser());
     app.use(express.urlencoded({ extended: true, limit: '250mb' }));
     app.use(express.json({
         verify: function (req, res, buf) {

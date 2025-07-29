@@ -4,6 +4,7 @@ const {accessSecret,
      totalStarsGiven} = require('./common-utils');
 const {User, UserSchema} = require('./models/User');
 const System = require('./models/System');
+const Reward = require('./models/Reward');
 const crypto = require('crypto');
 const Bull = require('bull');
 
@@ -155,7 +156,12 @@ async function processRewardDistribution(job) {
                 // if(!user.paymentsLocked){
                     //appropriate percentage based on stars
                     //users get same allotment as they have percentage of stars given
-                    let userUSD = parseInt((await percentStarsGiven(user.starsGiven)) * usd);
+                    var starsGiven = user.starsGiven;
+                    var rewards = await Reward.find({user: user._id.toString()}).populate('parentPassage');
+                    for(const reward of rewards){
+                        starsGiven += reward.parentPassage.reward;
+                    }
+                    let userUSD = parseInt((await percentStarsGiven(starsGiven)) * usd);
                     try{
                         //calculate percentile
                         var rank = i + indexInBatch + 1; //Rank 1 has the most stars

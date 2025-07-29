@@ -4,14 +4,9 @@ const Visitor = require('../models/Visitor');
 const Follower = require('../models/Follower');
 const { User } = require('../models/User');
 const { getFeedQueue } = require('../config/redis');
-const { DOCS_PER_PAGE, scripts } = require('../common-utils');
+const { DOCS_PER_PAGE, scripts, labelOptions } = require('../common-utils');
 const browser = require('browser-detect');
-const labelOptions = [
-    "Miscellaneous", "Project", 'Idea', 'Database', 
-    "Social", "Question", "Comment", "Task", 
-    "Forum", "Challenge", "Commission", "Article", "Folder",
-    "Public Folder", "Product"];
-const standardPopulate = 'author users sourceList parent collaborators versions mirror';
+const standardPopulate = 'author users sourceList parent subforums collaborators versions mirror bestOf best';
 function updateLabel(passage){
     switch(passage.label){
         case 'Project':
@@ -1202,7 +1197,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         passage_id = req.params.passage_id;
     }
     var page = req.query.page || req.params.page || 1;
-    var passage = await Passage.findOne({_id: passage_id.toString()}).populate('parent author users sourceList subforums collaborators versions mirror bestOf best');
+    var passage = await Passage.findOne({_id: passage_id.toString()}).populate(standardPopulate);
     if(passage == null){
         return res.redirect('/');
     }
@@ -1274,25 +1269,27 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     if(replacing){
     replacement = await getPassage(replacement, false);
     }
-    console.log('test'+passage.originalSourceList.length);
-    console.log(passage.sourceList.length);
     if(passage.public == true && !passage.forum){
-        var subPassages = await Passage.paginate({parent: passage_id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
+        var subPassages = await Passage.paginate({parent: passage_id.toString(), comment: false}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: standardPopulate});
         subPassages = subPassages.docs;
+        var selectedAnswer = await Passage.findOne({parent: passage_id.toString(), selectedAnswer: true}).populate(standardPopulate);
+        if(selectedAnswer){
+            subPassages.unshift(selectedAnswer);
+        }
     }
     else{
         if(passage.displayHTML.length > 0 || passage.displayCSS.length > 0 || passage.displayJavascript.length > 0){
             passage.showIframe = true;
         }
         if(passage.forum){
-            var subPassages = await Passage.paginate({parent: passage_id, comment:false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList collaborators versions mirror bestOf best'});
+            var subPassages = await Passage.paginate({parent: passage_id.toString(), comment: false}, {sort: '_id', page: page, limit: DOCS_PER_PAGE, populate: standardPopulate});
             subPassages = subPassages.docs;
         }
         else{ 
             //private passages
-            var subPassages = await Passage.find({parent: passage_id, comment: false, author: {
+            var subPassages = await Passage.find({parent: passage_id.toString(), comment: false, author: {
                 $in: passageUsers
-            }}).populate('author users sourceList collaborators versions mirror bestOf best');  
+            }}).populate(standardPopulate);  
             subPassages = subPassages.filter(function(p){
                 return ((p.personal && (!req.session.user || p.author._id.toString() != req.session.user._id.toString())) || p.comment) ? false : true;
             });
@@ -1338,7 +1335,7 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         var comments = await Passage.paginate({$or: [
             {comment: true},
             {publicReply:true}
-        ],parent:passage._id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: 'author users sourceList'});
+        ],parent:passage._id}, {sort: {stars: -1, _id: -1}, page: page, limit: DOCS_PER_PAGE, populate: standardPopulate});
         passage.passages = comments.docs;
         for(var i = 0; i < passage.passages.length; ++i){
             passage.passages[i] = await getPassage(passage.passages[i]);
@@ -1861,7 +1858,6 @@ module.exports = {
     returnPassageLocation,
     getUploadFolder,
     createPassage,
-    labelOptions,
     sharePassage,
     updatePassage,
     afterPassageCreation,

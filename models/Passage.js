@@ -483,6 +483,10 @@ const passageSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    inFirstPlace: {
+        type: Boolean,
+        default: false
+    },
     views: {
         type: Number,
         default: 0

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const passageController = require('../controllers/passageController');
-
+const { requiresLogin } = require('../middleware/auth');
 // Import dependencies for passage routes
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
@@ -119,5 +119,9 @@ router.post('/sticky', passageController.sticky);
 router.get('/comments/:passage_title/:passage_id/:page?', passageController.comments);
 router.get('/subforums/:passage_title/:passage_id/:page?', passageController.subforums);
 router.get('/get_big_passage', passageController.getBigPassage);
+
+
+router.post('/increase-reward', requiresLogin, passageController.increaseReward);
+router.post('/select-answer', requiresLogin, passageController.selectAnswer);
 
 module.exports = router;

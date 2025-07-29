@@ -31,7 +31,7 @@
             <div>
               $<input id="donation-star-price"type="number" autocomplete="off"> = <span id="donation-star-amount">0 Donation Stars</span>
               <br><br>
-              <div class="buy-product-button">Buy</div>
+              <div id="buy-donation-stars"class="buy-product-button">Buy</div>
             </div>
         <%}%>
         <!-- <h5>(Subscriber stars are multiplied by the number of months subscribed.)</h5> -->
@@ -57,6 +57,23 @@
               },
               success: function(data){
                 $('#donation-star-amount').text(data);
+              }
+            });
+          });
+          $(document).on('click', '#buy-donation-stars', function(e){
+            if(isNaN($('#donation-star-price').val()) || $('#donation-star-price').val() == '' || Number($('#donation-star-price').val()) < 1){
+              alert('Please enter a valid number greater than or equal to 1.');
+              return;
+            }
+            $.ajax({
+              type: 'post',
+              url: '/buy-donation-stars',
+              data: {
+                price: $('#donation-star-price').val(),
+                amount: $('#donation-star-amount').text().split(' ')[0]
+              },
+              success: function(data){
+                window.location.href = data;
               }
             });
           });

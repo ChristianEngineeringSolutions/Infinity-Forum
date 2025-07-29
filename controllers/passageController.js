@@ -5,11 +5,12 @@ const bookmarkService = require('../services/bookmarkService');
 const passageService = require('../services/passageService');
 const { User } = require('../models/User');
 const Message = require('../models/Message');
+const Reward = require('../models/Reward');
 const Follower = require('../models/Follower');
 const { deleteOldUploads, uploadFile } = require('../services/fileService');
 const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis');
 //Call in Scripts
-const { scripts, DOCS_PER_PAGE } = require('../common-utils');
+const { scripts, DOCS_PER_PAGE, labelOptions } = require('../common-utils');
 const browser = require('browser-detect');
 var fs = require('fs'); 
 
@@ -353,7 +354,7 @@ async function createInitialPassage(req, res) {
     if(passage.label == 'Product'){
         passage.price = req.body.price;
     }
-    if(!passageService.labelOptions.includes(passage.label)){
+    if(!labelOptions.includes(passage.label)){
         return res.send("Not an option.");
     }
     passageService.updateLabel(passage);
@@ -814,6 +815,7 @@ async function passage(req, res) {
         // var location = ['test'];
         var location = await passageService.getPassageLocation(bigRes.passage);
         await passageService.getRecursiveSpecials(bigRes.passage);
+        console.log(bigRes.subPassages);
         return res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
             ISMOBILE: bigRes.ISMOBILE,
             thread: false,
@@ -834,7 +836,7 @@ async function changeLabel(req, res){
     }
     
     const label = req.body.label;
-    if(!passageService.labelOptions.includes(label)){
+    if(!labelOptions.includes(label)){
         return res.send("Not an option.");
     }
     
@@ -1156,6 +1158,106 @@ const getBigPassage = async (req, res) => {
     }
 };
 
+async function increaseReward(req, res){
+    if(isNaN(Number(req.body.value)) || req.body.value == '' || Number(req.body.value) <= 0){
+        return res.send("Invalid input.");
+    }
+    var value = Number(req.body.value);
+    var user = await User.findOne({_id: req.session.user._id.toString()});
+    if((user.stars + user.borrowedStars + user.donationStars) < value){
+        return res.send("Not enough stars.");
+    }
+    var remainder = value;
+    var borrowedUsed = 0;
+    var starsTakenAway = 0;
+    var donationUsed = 0;
+    // First, spend borrowed stars
+    if(user.borrowedStars > 0){
+        borrowedUsed = Math.min(user.borrowedStars, remainder);
+        user.borrowedStars -= borrowedUsed;
+        remainder -= borrowedUsed;
+    }
+    
+    // If there's still remainder, spend from user.stars or donationStars
+    if(remainder > 0){
+        if(user.stars > 0){
+            // Take from user.stars first (can go to 0 or negative)
+            var starsUsed = Math.min(user.stars, remainder);
+            user.stars -= starsUsed;
+            starsTakenAway += starsUsed;
+            remainder -= starsUsed;
+            
+            // If still remainder and user.stars is now 0, take from donationStars
+            if(remainder > 0 && user.donationStars > 0){
+                donationUsed = Math.min(user.donationStars, remainder);
+                user.donationStars -= donationUsed;
+                remainder -= donationUsed;
+                amountForRebate -= donationUsed;
+            }
+            
+            // Any final remainder goes to user.stars (making it negative)
+            if(remainder > 0){
+                user.stars -= remainder;
+                starsTakenAway += remainder;
+            }
+        } else {
+            // user.stars is 0 or negative, take from donationStars first
+            if(user.donationStars > 0){
+                donationUsed = Math.min(user.donationStars, remainder);
+                user.donationStars -= donationUsed;
+                remainder -= donationUsed;
+                amountForRebate -= donationUsed;
+            }
+            
+            // Any remainder after donation stars should be taken from user.stars
+            if(remainder > 0){
+                user.stars -= remainder;
+                starsTakenAway = remainder;
+            }
+        }
+    }
+    await User.updateOne({
+        _id: req.session.user._id.toString()
+    }, {
+        $inc: {
+            stars: -starsTakenAway,
+            borrowedStars: -borrowedUsed,
+            donationStars: -donationUsed
+        }
+    });
+    await Passage.updateOne({
+        _id: req.body._id
+    }, {
+        $inc: {
+            reward: Number(req.body.value)
+        }
+    });
+    return res.send("Reward Increased.");
+}
+async function selectAnswer(req, res){
+    var passage = await Passage.findOne({_id: req.body.answer.toString()}).populate('parent');
+    await Passage.updateMany({parent: passage.parent._id.toString()}, {
+        $set: {
+            selectedAnswer: false
+        }
+    });
+    await Reward.deleteOne({parentPassage: passage.parent._id.toString(), selectedAnswer: true});
+    await Passage.updateOne({_id: req.body.answer.toString()}, {
+        $set: {
+            selectedAnswer: true
+        }
+    });
+    if(passage.author._id.toString() !== req.session.user._id.toString()){
+        await Reward.create({
+            user: req.session.user._id.toString(),
+            passage: passage._id.toString(),
+            parentPassage: passage.parent._id.toString(),
+            selectedAnswer: true
+        });
+    }
+    return res.send("Answer selected.");
+}
+
 module.exports = {
     passage,
     deletePassage,
@@ -1193,4 +1295,6 @@ module.exports = {
     comments,
     subforums,
     getBigPassage,
+    increaseReward,
+    selectAnswer
 };

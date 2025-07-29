@@ -4,7 +4,12 @@ const System = require('./models/System');
 const Visitor = require('./models/Visitor');
 const DOCS_PER_PAGE = 10; // Documents per Page Limit (Pagination)
 let client;
-const {labelOptions} = require('./services/passageService');
+
+const labelOptions = [
+    "Miscellaneous", "Project", 'Idea', 'Database', 
+    "Social", "Question", "Comment", "Task", 
+    "Forum", "Challenge", "Commission", "Article", "Folder",
+    "Public Folder", "Product"];
 
 async function accessSecret(secretName) {
   if (process.env.REMOTE == 'true') {
@@ -144,6 +149,10 @@ scripts.labelSelectOptions = function(plural=false, products=true){
         return SYSTEM.userAmount;
         // return usd - SYSTEM.amount;
     }
+    // scripts.starsToDollars = async function(stars){
+    //     var percentStars = stars / (await totalStarsGiven);
+    //     var usd = percentStars * totalUSD
+    // }
     async function totalStarsGiven(){
         // let users = await User.find({stripeOnboardingComplete: true});
         // if(users == false){
@@ -189,4 +198,4 @@ function monthsBetween(date1, date2) {
 module.exports = {
     monthsBetween, accessSecret, scripts, 
     percentStarsGiven, percentUSD, totalUSD, 
-    totalStarsGiven, sortArray, monthDiff, DOCS_PER_PAGE};
+    totalStarsGiven, sortArray, monthDiff, DOCS_PER_PAGE, labelOptions};

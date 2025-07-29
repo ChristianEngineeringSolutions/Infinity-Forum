@@ -15,4 +15,6 @@ router.post('/borrow-stars', starController.borrowStars);
 
 router.get('/calculate-donation-stars', starController.calculateDonationStars);
 
+router.post('/buy-donation-stars', starController.buyDonationStarsLink);
+
 module.exports = router;

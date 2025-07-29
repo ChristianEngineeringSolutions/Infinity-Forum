@@ -31,7 +31,23 @@ const stripeWebhook = async (request, response) => {
             const session = event.data.object;
             const amount = session.amount_total;
             const customerEmail = session.customer_details?.email;
-
+            const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+                expand: ['data.price.product'] // Crucial for getting product metadata
+            });
+            var metadata = '';
+            lineItems.data.forEach(item => {
+                if (item.price && item.price.product && typeof item.price.product === 'object') {
+                    // Check if product data is expanded and accessible
+                    const product = item.price.product;
+                    if (product.metadata) {
+                        metadata = product.metadata;
+                    } else {
+                        console.log('No metadata found for this product.');
+                    }
+                } else {
+                    console.log('Product data not fully expanded or missing for item:', item.id);
+                }
+            });
             const chargeId = session.payment_intent ? await stripe.paymentIntents.retrieve(session.payment_intent).then(pi => pi.latest_charge) : null;
 
              if (chargeId) {
@@ -59,10 +75,20 @@ const stripeWebhook = async (request, response) => {
                           {$inc: {
                             donationStars: amountToAdd
                         }});
+                        if(metadata == ''){
+                          platformDec = 0.55;
+                          userDec = 0.45;
+                        }else if(metadata == 'Buying Donation Stars'){
+                          platformDec = 0.10;
+                          userDec = 0.90;
+                        }else if(metadata == 'Product'){
+                          platformDec = 0.75;
+                          userDec = 0.25;
+                        }
                         await System.updateOne({_id: SYSTEM._id.toString()}, 
                           {$inc: {
-                            platformAmount: Math.floor((amount * 0.55) - fee),
-                            userAmount: Math.floor(amount * 0.45)
+                            platformAmount: Math.floor((amount * platformDec) - fee),
+                            userAmount: Math.floor(amount * userDec)
                         }});
                     }
                 }

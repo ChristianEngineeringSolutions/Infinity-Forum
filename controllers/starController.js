@@ -9,7 +9,7 @@ const Message = require('../models/Message');
 const starService = require('../services/starService');
 const starQueue = require('../services/starServiceQueued');
 const passageService = require('../services/passageService');
-const {monthsBetween, percentUSD} = require('../common-utils');
+const {monthsBetween, percentUSD, accessSecret} = require('../common-utils');
 const { getRecursiveSourceList, fillUsedInListSingle, getLastSource } = require('./passageController');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 
@@ -137,9 +137,42 @@ async function calculateDonationStars(req, res){
     return res.send(Math.floor(numDonationStars) + ' Donation Star' + (numDonationStars == 1 ? '' : 's'));
 }
 
+async function buyDonationStarsLink(req, res){
+    try {
+        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+        const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'], // Specify payment methods (e.g., 'card', 'paypal')
+            mode: 'payment', // 'payment' for one-time payments, 'subscription' for recurring
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        unit_amount: (Number(req.body.price) * 100), // Amount in cents
+                        product_data: {
+                            name: req.body.amount + ' Donation Stars',
+                            description: "Donation stars are consumed first when setting rewards for challenges and other passages. They are consumed last when starring passages. They do not yield dividends or contribution points.",
+                            metadata: "Buying Donation Stars"
+                        },
+                    },
+                    quantity: 1, // Number of units of this product
+                },
+            ],
+            success_url: req.headers.origin + '/donate',
+            cancel_url: req.headers.origin + '/donate',
+            customer_email: req.session.user.email
+        });
+        return res.send(session.url);
+    } catch (error) {
+        console.error('Error creating Stripe Checkout Session:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     starPassage,
     singleStarPassage,
     borrowStars,
-    calculateDonationStars
+    calculateDonationStars,
+    buyDonationStarsLink
 };

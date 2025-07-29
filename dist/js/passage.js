@@ -321,6 +321,44 @@ $(function(){
             $('#product-form').html('');
         }
     });
+    $(document).on('click', '[id^="select-answer-"]', function(e){
+        var id = $(this).attr('id').split('-').at(-1);
+        $.ajax({
+            type: 'post',
+            url: '/select-answer',
+            data: {
+                answer: id,
+            },
+            success: function(data){
+                window.location.reload();
+            }
+        });
+    });
+    $(document).on('click', '[id^="add-reward-"]', function(e){
+        var id = $(this).attr('id').split('-').at(-1);
+        $('#reward-form-'+id).slideToggle();
+    });
+    $(document).on('click', '[id^="increase-reward-"]', function(e){
+        var id = $(this).attr('id').split('-').at(-1);
+        var value = $('#reward-input-'+id).val();
+        if(isNaN(value) || value == '' || Number(value) <= 0){
+            alert("Please enter a valid number greater than 0.");
+        }
+        $.ajax({
+            type: 'post',
+            url: '/increase-reward',
+            data: {
+                value: value,
+                _id: id
+            },
+            success: function(data){
+                if(data == 'Reward Increased.'){
+                    $('#reward-ticker-'+id).text(Number($('#reward-ticker-'+id).text()) + Number(value));
+                }
+                alert(data);
+            }
+        });
+    });
     $(document).on('change', '[id^="passage_showbestof_"]', function(e){
         var ID = $(this).attr('id').split('_').at(-1);
         var thiz = $(this);
@@ -1265,7 +1303,7 @@ $(function(){
                     }else{
                         $('#passage_wrapper').append(data);
                         syntaxHighlight();
-                        replacePassages();
+                        // replacePassages();
                     }
                     okPaginate = true;
                     analyzeImages();

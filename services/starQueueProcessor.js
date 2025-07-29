@@ -7,6 +7,7 @@ const { getRedisClient, getStarQueue } = require('../config/redis');
 const { User } = require('../models/User');
 const { Passage } = require('../models/Passage');
 const Star = require('../models/Star');
+const Reward = require('../models/Reward');
 const System = require('../models/System');
 const Message = require('../models/Message');
 const { getRecursiveSourceList, fillUsedInListSingle, getLastSource, getPassage } = require('./passageService');
@@ -477,6 +478,35 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             // Save all changes
             await user.save({session});
             await passage.save({session});
+            //update first place for this 
+            if(passage.parent){
+                var newFirstPlace = await Passage.find({parent:passage.parent._id.toString(), comment: false}).sort('-stars').populate('parent author').limit(1).session(session);
+                var checkFirstPlace = await Passage.findOne({parent:passage.parent._id.toString(), comment: false, inFirstPlace: true}).session(session);
+                if(checkFirstPlace && newFirstPlace._id.toString() == checkFirstPlace._id.toString()){
+                    //no changes needed
+                }else if(!checkFirstPlace){
+                    newFirstPlace.inFirstPlace = true;
+                    await newFirstPlace.save(session);
+                    await Reward.create({
+                        user: newFirstPlace.author._id.toString(),
+                        passage: newFirstPlace._id.toString(),
+                        parentPassage: newFirstPlace.parent._id.toString(),
+                        selectedAnswer: false
+                    }, {session});
+                }else{
+                    checkFirstPlace.inFirstPlace = false;
+                    newFirstPlace.inFirstPlace = true;
+                    await checkFirstPlace.save(session);
+                    await newFirstPlace.save(session);
+                    await Reward.deleteMany({parentPassage: newFirstPlace.parent._id.toString(), selectedAnswer: false}, {session});
+                    await Reward.create({
+                        user: newFirstPlace.author._id.toString(),
+                        passage: newFirstPlace._id.toString(),
+                        parentPassage: newFirstPlace.parent._id.toString(),
+                        selectedAnswer: false
+                    }, {session});
+                }
+            }
             await addStarsToUser(passage.author, amountToGiveCollabers, session);
             
             // Give stars to collaborators if applicable
