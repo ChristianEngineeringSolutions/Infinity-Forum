@@ -349,6 +349,9 @@ const getAdmin = async (req, res) => {
                   $sort: { _id: -1 }
               },
               {
+                  $limit: 50  // Limit to 50 results
+              },
+              {
                   $project: {
                       user: 0
                   }

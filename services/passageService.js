@@ -3,6 +3,7 @@ const { Passage } = require('../models/Passage');
 const Visitor = require('../models/Visitor');
 const Follower = require('../models/Follower');
 const { User } = require('../models/User');
+const fileService = require('./fileService');
 const { getFeedQueue } = require('../config/redis');
 const { DOCS_PER_PAGE, scripts, labelOptions } = require('../common-utils');
 const browser = require('browser-detect');
@@ -50,7 +51,7 @@ async function deletePassage(passage){
             }
         });
         if(passages.length == 1){
-            await deleteOldUploads(passage);
+            await fileService.deleteOldUploads(passage);
         }
     }
     var passages = await Passage.find({parent:passage._id});
