@@ -72,13 +72,25 @@ async function deleteOldUploads(passage){
                     var orig = firstPart + '_orig.' + ext;
                     var medium = firstPart + '_medium.' + ext;
                     //unlink _orig
-                    await fsp.unlink(orig);
+                    try{
+                        await fsp.unlink(orig);
+                    }catch(e){
+                        console.log(e);
+                    }
                     console.log("Removed original version of upload.");
                     //unlink _medium
-                    await fsp.unlink(medium);
+                    try{
+                        await fsp.unlink(medium);
+                    }catch(e){
+                        console.log(e);
+                    }
                     console.log("Removed medium version of upload.");
                     //unlink main file
-                    await fsp.unlink(filePath);
+                    try{
+                        await fsp.unlink(filePath);
+                    }catch(e){
+                        console.log(e);
+                    }
                     console.log("Removed main upload.");
                 }
             }catch(e){
