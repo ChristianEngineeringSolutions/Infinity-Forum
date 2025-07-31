@@ -105,11 +105,11 @@
                 <%if(passage.mainFile){%>
                     <div style="color:red;">MAINFILE</div>
                 <%}else{%>
-                <button id="make_mainfile_<%=passage._id%>">Make Mainfile</button>
+                <button type="button" id="make_mainfile_<%=passage._id%>">Make Mainfile</button>
                 <%}%>
                 <%if(passage.mainFile){%>
                     <br>
-                    <button id="make_mainfile_<%=passage._id%>">Run File</button>
+                    <button type="button" id="make_mainfile_<%=passage._id%>">Run File</button>
                 <%}%>
             <%}%>
             <div style="margin-top: 25px;">Bibliography:</div><br>

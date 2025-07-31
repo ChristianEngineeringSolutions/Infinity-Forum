@@ -1261,22 +1261,24 @@ async function increaseReward(req, res){
     var parentPassage = await Passage.findOne({_id:req.body._id});
     //add reward to winning users
     var reward = await Reward.findOne({parentPassage: req.body._id}).populate('passage');
-    var passage = await Passage.findOne({_id:reward.passage._id.toString()}).populate('sourceList');
-    var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
-    var allContributors = passageService.getAllContributors(passage, sourceList);
-    // Build bulk operations for all contributors except a contributor if passage is merely selected answer and contributor is author of rewarding passage
-    const bulkOps = allContributors
-        .filter(contributor => passage.seelctedAnswer && !passage.inFirstPlace && (contributor !== parentPassage.author._id))
-        .map(contributor => ({
-            updateOne: {
-                filter: { _id: contributor },
-                update: { $inc: { starsGiven: value } }
-            }
-        }));
-    
-    // Execute bulk write if there are operations
-    if(bulkOps.length > 0){
-        await User.bulkWrite(bulkOps);
+    if(reward){
+        var passage = await Passage.findOne({_id:reward.passage._id.toString()}).populate('sourceList');
+        var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
+        var allContributors = passageService.getAllContributors(passage, sourceList);
+        // Build bulk operations for all contributors except a contributor if passage is merely selected answer and contributor is author of rewarding passage
+        const bulkOps = allContributors
+            .filter(contributor => passage.selectedAnswer && !passage.inFirstPlace && (contributor !== parentPassage.author._id))
+            .map(contributor => ({
+                updateOne: {
+                    filter: { _id: contributor },
+                    update: { $inc: { starsGiven: value } }
+                }
+            }));
+        
+        // Execute bulk write if there are operations
+        if(bulkOps.length > 0){
+            await User.bulkWrite(bulkOps);
+        }
     }
     //update reward amount and stars
     await Passage.updateOne({
@@ -1290,23 +1292,25 @@ async function increaseReward(req, res){
     return res.send("Reward Increased.");
 }
 async function selectAnswer(req, res){
+    //answer to select
+    var passage = await Passage.findOne({_id: req.body.answer.toString()}).populate('parent');
     var currentlySelected = await Passage.findOne({
         parent: passage.parent._id.toString(),
         selectedAnswer: true
     });
-    if(req.body.answer.toString() === currentlySelected._id.toString()){
+    if(currentlySelected && req.body.answer.toString() === currentlySelected._id.toString()){
         return res.send("That is already the selected answer.");
     }
-    //answer to select
-    var passage = await Passage.findOne({_id: req.body.answer.toString()}).populate('parent');
     var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
     var allContributors = passageService.getAllContributors(passage, sourceList);
     //unselect current answer
-    await Passage.updateOne({_id: currentlySelected._id.toString()}, {
-        $set: {
-            selectedAnswer: false
-        }
-    });
+    if(currentlySelected){
+        await Passage.updateOne({_id: currentlySelected._id.toString()}, {
+            $set: {
+                selectedAnswer: false
+            }
+        });
+    }
     //take reward away from current answer
     const oldReward = await Reward.findOne({parentPassage: passage.parent._id.toString(), selectedAnswer: true});
     if(oldReward && passage.parent && passage.parent.reward > 0){

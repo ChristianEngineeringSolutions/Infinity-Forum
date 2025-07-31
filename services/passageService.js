@@ -233,7 +233,7 @@ function getContributors(passage){
     }
     return contributors;
 }
-function getAllcontributors(passage, sourceList){
+function getAllContributors(passage, sourceList){
     var contributors = [passage.author, ...passage.collaborators];
     for(const source of sourceList){
         contributors.push(source.author, ...source.collaborators);
@@ -1887,5 +1887,7 @@ module.exports = {
     processFeedGenerationJob,
     scorePassages,
     updateLabel,
-    standardPopulate
+    standardPopulate,
+    getContributors,
+    getAllContributors
 };

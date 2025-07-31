@@ -57,7 +57,7 @@ async function transferBookmark(req, res) {
         //the passage getting the new source
         parent = await Passage.findOne({_id: req.body.parent}).populate('parent');
         //if there is a reward for being in first place or selected and the passage is
-        if(parent.parent.reward > 0 && (parent.selectedAnswer || parent.inFirstPlace)){
+        if(parent.parent && parent.parent.reward > 0 && (parent.selectedAnswer || parent.inFirstPlace)){
             var sourceList = await passageService.getRecursiveSourceList(parent.sourceList, [], parent);
             var allContributors = passageService.getAllContributors(parent, sourceList);
         }
@@ -88,7 +88,7 @@ async function transferBookmark(req, res) {
             }
         });
         //if parent has a reward, give it to the new contributors
-        if(parent.parent.reward > 0 && (parent.selectedAnswer || parent.inFirstPlace)){
+        if(parent.parent && parent.parent.reward > 0 && (parent.selectedAnswer || parent.inFirstPlace)){
             var sourceSourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
             var sourceContributors = passageService.getAllContributors(passage, sourceList);
             //get all source contributors that are not existing contributors to parent
