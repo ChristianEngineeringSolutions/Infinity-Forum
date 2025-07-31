@@ -76,8 +76,8 @@ async function handleRegister(req, res) {
         stars: 0,
         token: v4(),
         lastLogin: lastLogin,
-        joined: lastLogin
-        // IP: ipNumber
+        joined: lastLogin,
+        IP: ipNumber
         }  //use schema.create to insert data into the db
       if(req.body.email != ''){
         userData.email = req.body.email;

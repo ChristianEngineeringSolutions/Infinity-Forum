@@ -32,7 +32,7 @@
         <%}%>
         <%*/%>
         </div></div>
-        <%if(user._id.toString() == passage.author._id.toString() && sub && !passage.selectedAnswer && subPassages){%>
+        <%if(user && user._id.toString() == passage.author._id.toString() && sub && !passage.selectedAnswer && subPassages){%>
             <div><br><a id="select-answer-<%=passage._id%>">Choose as Winner</a></br></div>
         <%}%>
         <%if(passage.selectedAnswer && sub){%>

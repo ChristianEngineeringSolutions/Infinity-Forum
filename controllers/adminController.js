@@ -312,12 +312,14 @@ const getAdmin = async (req, res) => {
               "whatsapp", 'btn', 'tokopedia', 'gopay',
               'dbs', 'call center', 'indodax'
           ];
+          // Create regex pattern for substring matching
+          var blacklistPattern = new RegExp(blacklisted.join('|'), 'i');
           var passages = await Passage.aggregate([
               {
                   $match: {
                       $or: [
-                          { title: { $in: blacklisted } },
-                          { content: { $in: blacklisted } }
+                          { title: blacklistPattern },
+                          { content: blacklistPattern }
                       ]
                   }
               },
@@ -352,6 +354,9 @@ const getAdmin = async (req, res) => {
                   }
               }
           ]);
+          
+          // Populate the aggregation results
+          passages = await Passage.populate(passages, passageService.standardPopulate);
 
       }
       let bookmarks = [];
@@ -368,6 +373,7 @@ const getAdmin = async (req, res) => {
       //     }
       //     console.log(hash);
       //   });
+      console.log(passages);
       return res.render("admin", {
           subPassages: false,
           ISMOBILE: ISMOBILE,
