@@ -813,16 +813,24 @@ async function removeSource(req, res) {
             //get all source contributors that are not existing contributors to passage
             elementsNotInPassageSourceList = sourceContributors.filter(element => !passageContributors.includes(element));
             var contributorsToRemoveRewardFrom = elementsNotInPassageSourceList;
-            for(const contributor of contributorsToRemoveRewardFrom){
-                //if the reward is for selected answer: dont give if contributor == parent.parent.author
-                //if the reward is for most stars, it's okay for contributor to have created the challenge
-                //if the reward is for both it is also okay
-                if(parent.selectedAnswer && !parent.inFirstPlace && contributor === parent.parent.author._id.toString()){
-                    continue;
-                }
-                await User.updateOne({_id: contributor}, {
-                    $inc: { starsGiven: -passage.parent.reward }
-                });
+            // Build bulk operations for contributors to remove reward from
+            const bulkOps = contributorsToRemoveRewardFrom
+                .filter(contributor => {
+                    // if the reward is for selected answer: dont give if contributor == parent.parent.author
+                    // if the reward is for most stars, it's okay for contributor to have created the challenge
+                    // if the reward is for both it is also okay
+                    return !(parent.selectedAnswer && !parent.inFirstPlace && contributor === parent.parent.author._id.toString());
+                })
+                .map(contributor => ({
+                    updateOne: {
+                        filter: { _id: contributor },
+                        update: { $inc: { starsGiven: -passage.parent.reward } }
+                    }
+                }));
+            
+            // Execute bulk write if there are operations
+            if(bulkOps.length > 0){
+                await User.bulkWrite(bulkOps);
             }
         }
         res.send("Done.");
@@ -1250,21 +1258,25 @@ async function increaseReward(req, res){
             donationStars: -donationUsed
         }
     });
+    var parentPassage = await Passage.findOne({_id:req.body._id});
     //add reward to winning users
     var reward = await Reward.findOne({parentPassage: req.body._id}).populate('passage');
     var passage = await Passage.findOne({_id:reward.passage._id.toString()}).populate('sourceList');
     var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
     var allContributors = passageService.getAllContributors(passage, sourceList);
-    for(const contributor of allContributors){
-        if(contributor !== req.session.user._id.toString()){
-            await User.updateOne({
-                _id: contributor
-            }, {
-                $inc: {
-                    starsGiven: value
-                }
-            });
-        }
+    // Build bulk operations for all contributors except a contributor if passage is merely selected answer and contributor is author of rewarding passage
+    const bulkOps = allContributors
+        .filter(contributor => passage.seelctedAnswer && !passage.inFirstPlace && (contributor !== parentPassage.author._id))
+        .map(contributor => ({
+            updateOne: {
+                filter: { _id: contributor },
+                update: { $inc: { starsGiven: value } }
+            }
+        }));
+    
+    // Execute bulk write if there are operations
+    if(bulkOps.length > 0){
+        await User.bulkWrite(bulkOps);
     }
     //update reward amount and stars
     await Passage.updateOne({

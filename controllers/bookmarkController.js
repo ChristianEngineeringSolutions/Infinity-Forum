@@ -94,16 +94,24 @@ async function transferBookmark(req, res) {
             //get all source contributors that are not existing contributors to parent
             elementsNotInParentSourceList = sourceContributors.filter(element => !allContributors.includes(element));
             var contributorsToReward = elementsNotInParentSourceList;
-            for(const contributor of contributorsToReward){
-                //if the reward is for selected answer: dont give if contributor == parent.parent.author
-                //if the reward is for most stars, it's okay for contributor to have created the challenge
-                //if the reward is for both it is also okay
-                if(parent.selectedAnswer && !parent.inFirstPlace && contributor === parent.parent.author._id.toString()){
-                    continue;
-                }
-                await User.updateOne({_id: contributor}, {
-                    $inc: { starsGiven: parent.parent.reward }
-                });
+            // Build bulk operations for contributors to reward
+            const bulkOps = contributorsToReward
+                .filter(contributor => {
+                    // if the reward is for selected answer: dont give if contributor == parent.parent.author
+                    // if the reward is for most stars, it's okay for contributor to have created the challenge
+                    // if the reward is for both it is also okay
+                    return !(parent.selectedAnswer && !parent.inFirstPlace && contributor === parent.parent.author._id.toString());
+                })
+                .map(contributor => ({
+                    updateOne: {
+                        filter: { _id: contributor },
+                        update: { $inc: { starsGiven: parent.parent.reward } }
+                    }
+                }));
+            
+            // Execute bulk write if there are operations
+            if(bulkOps.length > 0){
+                await User.bulkWrite(bulkOps);
             }
         }
         console.log('sources:'+parent.sourceList);

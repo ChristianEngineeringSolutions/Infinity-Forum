@@ -508,10 +508,17 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                     }, {session});
                     //add points to users who got reward
                     if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        for(const contributor of allContributors){
-                            await User.updateOne({_id: contributor}, {
-                                $inc: { starsGiven: newFirstPlace.parent.reward }
-                            }, {session});
+                        // Build bulk operations for adding reward to contributors
+                        const bulkOps = allContributors.map(contributor => ({
+                            updateOne: {
+                                filter: { _id: contributor },
+                                update: { $inc: { starsGiven: newFirstPlace.parent.reward } }
+                            }
+                        }));
+                        
+                        // Execute bulk write if there are operations
+                        if(bulkOps.length > 0){
+                            await User.bulkWrite(bulkOps, {session});
                         }
                     }
                     
@@ -523,10 +530,17 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                     const oldReward = await Reward.findOne({parentPassage: newFirstPlace.parent._id.toString(), selectedAnswer: false}).session(session);
                     if(oldReward && newFirstPlace.parent && newFirstPlace.parent.reward > 0){
                         //remove points from all old users who got reward
-                        for(const contributor of allContributors){
-                            await User.updateOne({_id: contributor}, {
-                                $inc: { starsGiven: -newFirstPlace.parent.reward }
-                            }, {session});
+                        // Build bulk operations for removing reward from contributors
+                        const removeBulkOps = allContributors.map(contributor => ({
+                            updateOne: {
+                                filter: { _id: contributor },
+                                update: { $inc: { starsGiven: -newFirstPlace.parent.reward } }
+                            }
+                        }));
+                        
+                        // Execute bulk write if there are operations
+                        if(removeBulkOps.length > 0){
+                            await User.bulkWrite(removeBulkOps, {session});
                         }
                     }
                     await Reward.deleteOne({parentPassage: newFirstPlace.parent._id.toString(), selectedAnswer: false}, {session});
@@ -538,10 +552,17 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                     }, {session});
                     //add points to users who got reward
                     if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        for(const contributor of allContributors){
-                            await User.updateOne({_id: contributor}, {
-                                $inc: { starsGiven: newFirstPlace.parent.reward }
-                            }, {session});
+                        // Build bulk operations for adding reward to contributors
+                        const addBulkOps = allContributors.map(contributor => ({
+                            updateOne: {
+                                filter: { _id: contributor },
+                                update: { $inc: { starsGiven: newFirstPlace.parent.reward } }
+                            }
+                        }));
+                        
+                        // Execute bulk write if there are operations
+                        if(addBulkOps.length > 0){
+                            await User.bulkWrite(addBulkOps, {session});
                         }
                     }
                 }
