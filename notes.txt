@@ -1,3 +1,5 @@
+transaction chunking
+
 auto add parent passage as source
 
 
@@ -192,3 +194,7 @@ move create verification session to verification MVC
 star passage change log
 
 removed !single in contribution points check
+
+I need you to implement the backend of a chat system where messages are also stored in the database. Use socket io. Each user should contain the ability to change status from available to invisible, away, or busy. Available should   │
+│   be the default if the user is online. Status changes should persist via the database. Group chats should be possible with users added via username. Group chats should be able to be assigned a topic. There should be a function to     │
+│   get all chat rooms the user is in sorted by recency. A chat should be set to pending if there are messages the user hasn't seen yet.  

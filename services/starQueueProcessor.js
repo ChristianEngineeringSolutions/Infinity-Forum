@@ -10,8 +10,292 @@ const Star = require('../models/Star');
 const Reward = require('../models/Reward');
 const System = require('../models/System');
 const Message = require('../models/Message');
-const { getRecursiveSourceList, fillUsedInListSingle, getLastSource, getPassage } = require('./passageService');
+const { getRecursiveSourceList, fillUsedInListSingle, getLastSource, getPassage, getAllContributors } = require('./passageService');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
+
+// Helper function to calculate star addition deltas based on borrowed stars
+function calculateStarAddition(currentUser, amount) {
+    const deltas = {stars: 0, borrowedStars: 0, donationStars: 0, starsGiven: 0};
+    
+    if(currentUser.borrowedStars > 0){
+        deltas.borrowedStars = -Math.min(currentUser.borrowedStars, amount);
+        const remainder = amount + deltas.borrowedStars; // amount left after reducing borrowed
+        if(remainder > 0){
+            deltas.stars = remainder;
+        }
+    }else{
+        deltas.stars = amount;
+    }
+    
+    return deltas;
+}
+
+// Helper function to calculate star depletion deltas
+function calculateStarDepletion(currentUser, amount) {
+    const deltas = {stars: 0, borrowedStars: 0, donationStars: 0, starsGiven: 0};
+    let remainder = amount;
+    
+    // First, spend borrowed stars
+    if(currentUser.borrowedStars > 0){
+        const borrowedUsed = Math.min(currentUser.borrowedStars, remainder);
+        deltas.borrowedStars = -borrowedUsed;
+        remainder -= borrowedUsed;
+    }
+    
+    // If there's still remainder, spend from user.stars or donationStars
+    if(remainder > 0){
+        if(currentUser.stars > 0){
+            // Take from user.stars first (can go to 0 or negative)
+            const starsUsed = Math.min(currentUser.stars, remainder);
+            deltas.stars = -starsUsed;
+            remainder -= starsUsed;
+            
+            // If still remainder and user.stars is now 0, take from donationStars
+            if(remainder > 0 && currentUser.donationStars > 0){
+                const donationUsed = Math.min(currentUser.donationStars, remainder);
+                deltas.donationStars = -donationUsed;
+                remainder -= donationUsed;
+            }
+            
+            // Any final remainder goes to user.stars (making it negative)
+            if(remainder > 0){
+                deltas.stars -= remainder;
+            }
+        } else {
+            // user.stars is 0 or negative, take from donationStars first
+            if(currentUser.donationStars > 0){
+                const donationUsed = Math.min(currentUser.donationStars, remainder);
+                deltas.donationStars = -donationUsed;
+                remainder -= donationUsed;
+            }
+            
+            // Any remainder after donation stars should be taken from user.stars
+            if(remainder > 0){
+                deltas.stars = -remainder;
+            }
+        }
+    }
+    
+    return deltas;
+}
+
+// StarOperationAccumulator class for batching database operations
+class StarOperationAccumulator {
+    constructor() {
+        this.userStarUpdates = new Map(); // userId -> {stars: 0, borrowedStars: 0, donationStars: 0, starsGiven: 0}
+        this.passageStarUpdates = new Map(); // passageId -> {stars: 0, verifiedStars: 0}
+        this.starDocuments = []; // Star documents to create
+        this.debtUpdates = new Map(); // starId -> newDebtValue
+        this.messageStarUpdates = new Map(); // messageId -> starDelta
+        this.rewardDocuments = []; // Reward documents to create
+        this.rewardDeletions = []; // Reward IDs to delete
+        this.passageFieldUpdates = new Map(); // passageId -> {field: value} for other updates
+        this.starrerUpdates = new Map(); // passageId -> {add: [userIds], remove: [userIds]}
+        this.starDeletions = []; // Star document deletions {user, passage, single}
+    }
+    
+    addUserStars(userId, updates) {
+        const current = this.userStarUpdates.get(userId) || {stars: 0, borrowedStars: 0, donationStars: 0, starsGiven: 0};
+        if (typeof updates === 'number') {
+            // Legacy support for just star amount - should not be used
+            throw new Error('Use calculateStarAddition() to get proper deltas before calling addUserStars');
+        } else {
+            // New format with specific fields
+            current.stars += updates.stars || 0;
+            current.borrowedStars += updates.borrowedStars || 0;
+            current.donationStars += updates.donationStars || 0;
+            current.starsGiven += updates.starsGiven || 0;
+        }
+        this.userStarUpdates.set(userId, current);
+    }
+    
+    addPassageStars(passageId, stars) {
+        const current = this.passageStarUpdates.get(passageId) || {stars: 0, verifiedStars: 0};
+        current.stars += stars;
+        current.verifiedStars += stars;
+        this.passageStarUpdates.set(passageId, current);
+    }
+    
+    addStarDocument(starDoc) {
+        this.starDocuments.push(starDoc);
+    }
+    
+    addMessageStars(messageId, stars) {
+        const current = this.messageStarUpdates.get(messageId) || 0;
+        this.messageStarUpdates.set(messageId, current + stars);
+    }
+    
+    updatePassageField(passageId, field, value) {
+        const current = this.passageFieldUpdates.get(passageId) || {};
+        current[field] = value;
+        this.passageFieldUpdates.set(passageId, current);
+    }
+    
+    addStarrer(passageId, userId) {
+        const current = this.starrerUpdates.get(passageId) || {add: [], remove: []};
+        if (!current.add.includes(userId)) {
+            current.add.push(userId);
+        }
+        // Remove from remove list if present
+        current.remove = current.remove.filter(id => id !== userId);
+        this.starrerUpdates.set(passageId, current);
+    }
+    
+    removeStarrer(passageId, userId) {
+        const current = this.starrerUpdates.get(passageId) || {add: [], remove: []};
+        if (!current.remove.includes(userId)) {
+            current.remove.push(userId);
+        }
+        // Remove from add list if present
+        current.add = current.add.filter(id => id !== userId);
+        this.starrerUpdates.set(passageId, current);
+    }
+    
+    addStarDeletion(user, passage, single = true) {
+        this.starDeletions.push({user, passage, single});
+    }
+    
+    async executeBulkOperations(session) {
+        const operations = [];
+        
+        // User bulk operations
+        if (this.userStarUpdates.size > 0) {
+            const userBulkOps = Array.from(this.userStarUpdates.entries()).map(([userId, deltas]) => {
+                const updateObj = {};
+                if (deltas.stars !== 0) updateObj.stars = deltas.stars;
+                if (deltas.borrowedStars !== 0) updateObj.borrowedStars = deltas.borrowedStars;
+                if (deltas.donationStars !== 0) updateObj.donationStars = deltas.donationStars;
+                if (deltas.starsGiven !== 0) updateObj.starsGiven = deltas.starsGiven;
+                
+                return {
+                    updateOne: {
+                        filter: { _id: userId },
+                        update: { $inc: updateObj }
+                    }
+                };
+            });
+            operations.push(User.bulkWrite(userBulkOps, {session}));
+        }
+        
+        // Passage bulk operations
+        if (this.passageStarUpdates.size > 0 || this.passageFieldUpdates.size > 0) {
+            const passageBulkOps = [];
+            
+            // Star updates
+            for (const [passageId, deltas] of this.passageStarUpdates.entries()) {
+                const updateObj = {
+                    $inc: { stars: deltas.stars, verifiedStars: deltas.verifiedStars }
+                };
+                
+                // Check if there are field updates for this passage
+                const fieldUpdates = this.passageFieldUpdates.get(passageId);
+                if (fieldUpdates) {
+                    updateObj.$set = fieldUpdates;
+                    this.passageFieldUpdates.delete(passageId);
+                }
+                
+                passageBulkOps.push({
+                    updateOne: {
+                        filter: { _id: passageId },
+                        update: updateObj
+                    }
+                });
+            }
+            
+            // Remaining field updates (passages without star updates)
+            for (const [passageId, fieldUpdates] of this.passageFieldUpdates.entries()) {
+                passageBulkOps.push({
+                    updateOne: {
+                        filter: { _id: passageId },
+                        update: { $set: fieldUpdates }
+                    }
+                });
+            }
+            
+            if (passageBulkOps.length > 0) {
+                operations.push(Passage.bulkWrite(passageBulkOps, {session}));
+            }
+        }
+        
+        // Message bulk operations
+        if (this.messageStarUpdates.size > 0) {
+            const messageBulkOps = Array.from(this.messageStarUpdates.entries()).map(([messageId, stars]) => ({
+                updateOne: {
+                    filter: { _id: messageId },
+                    update: { $inc: { stars } }
+                }
+            }));
+            operations.push(Message.bulkWrite(messageBulkOps, {session}));
+        }
+        
+        // Star document insertions
+        if (this.starDocuments.length > 0) {
+            operations.push(Star.insertMany(this.starDocuments, {session}));
+        }
+        
+        // Reward operations
+        if (this.rewardDocuments.length > 0) {
+            operations.push(Reward.insertMany(this.rewardDocuments, {session}));
+        }
+        
+        if (this.rewardDeletions.length > 0) {
+            operations.push(Reward.deleteMany({_id: {$in: this.rewardDeletions}}, {session}));
+        }
+        
+        // Starrer updates
+        if (this.starrerUpdates.size > 0) {
+            const starrerBulkOps = [];
+            for (const [passageId, updates] of this.starrerUpdates.entries()) {
+                const updateObj = {};
+                if (updates.add.length > 0) {
+                    updateObj.$addToSet = { starrers: { $each: updates.add } };
+                }
+                if (updates.remove.length > 0) {
+                    updateObj.$pull = { starrers: { $in: updates.remove } };
+                }
+                if (Object.keys(updateObj).length > 0) {
+                    starrerBulkOps.push({
+                        updateOne: {
+                            filter: { _id: passageId },
+                            update: updateObj
+                        }
+                    });
+                }
+            }
+            if (starrerBulkOps.length > 0) {
+                operations.push(Passage.bulkWrite(starrerBulkOps, {session}));
+            }
+        }
+        
+        // Star deletions
+        if (this.starDeletions.length > 0) {
+            const deleteFilters = this.starDeletions.map(del => ({
+                user: del.user,
+                passage: del.passage,
+                single: del.single
+            }));
+            operations.push(Star.deleteMany({ $or: deleteFilters }, {session}));
+        }
+        
+        // Execute all operations in parallel
+        if (operations.length > 0) {
+            await Promise.all(operations);
+        }
+    }
+    
+    reset() {
+        this.userStarUpdates.clear();
+        this.passageStarUpdates.clear();
+        this.starDocuments = [];
+        this.debtUpdates.clear();
+        this.messageStarUpdates.clear();
+        this.rewardDocuments = [];
+        this.rewardDeletions = [];
+        this.passageFieldUpdates.clear();
+        this.starrerUpdates.clear();
+        this.starDeletions = [];
+    }
+}
 
 // Initialize Redlock for distributed locking
 let redlock;
@@ -214,143 +498,236 @@ async function processStarQueue() {
     console.log('Star queue processor started');
 }
 
-// Process starPassage logic (extracted from starService.js)
+// Helper function to check if author/collaborators should receive contribution points
+function shouldGetContributionPoints(sessionUser, passage) {
+    return !(sessionUser._id.toString() == passage.author._id.toString() || 
+             passage.collaborators.toString().includes(sessionUser._id.toString()));
+}
+
+// Helper function to check if author should be rewarded
+function shouldRewardAuthor(passage, sessionUser) {
+    return sessionUser._id.toString() != passage.author._id.toString() &&
+           !passage.collaborators.toString().includes(sessionUser._id.toString());
+}
+
+// Process rebates in batch
+async function processRebatesBatch(passages, amount, sessionUser, accumulator, session) {
+    // Fetch all star logs for all passages in one query
+    const passageIds = passages.map(p => p._id);
+    const starLogs = await Star.find({
+        passage: { $in: passageIds },
+        single: false
+    }).session(session);
+    
+    // Group by passage for easier processing
+    const logsByPassage = new Map();
+    for (const log of starLogs) {
+        const passageId = log.passage.toString();
+        if (!logsByPassage.has(passageId)) {
+            logsByPassage.set(passageId, []);
+        }
+        logsByPassage.get(passageId).push(log);
+    }
+    
+    // Calculate rebates for each passage
+    for (const passage of passages) {
+        const logs = logsByPassage.get(passage._id.toString()) || [];
+        for (const log of logs) {
+            if (log.user.toString() !== sessionUser._id.toString()) {
+                const rebateAmount = 0.01 * log.amount * amount;
+                const user = await User.findById(log.user).session(session);
+                if (user) {
+                    const deltas = calculateStarAddition(user, rebateAmount);
+                    accumulator.addUserStars(log.user.toString(), deltas);
+                }
+            }
+        }
+    }
+}
+
+// Process sources in batches with limited transactions
+async function processSourcesBatched(rootPassage, amount, sessionUser, deplete) {
+    const BATCH_SIZE = 100;
+    const processedSources = new Set();
+    const sourceQueue = [];
+    
+    // Initialize with root passage sources
+    for (const source of rootPassage.sourceList) {
+        if (!processedSources.has(source._id.toString())) {
+            sourceQueue.push(source._id);
+        }
+    }
+    
+    // Add special sources (best, bestOf, mirror)
+    if (rootPassage.showBestOf) {
+        const best = await Passage.findOne({parent: rootPassage._id}, null, {sort: {stars: -1}});
+        if (best && !processedSources.has(best._id.toString())) {
+            sourceQueue.push(best._id);
+        }
+    } else {
+        if (rootPassage.mirror && !processedSources.has(rootPassage.mirror._id.toString())) {
+            sourceQueue.push(rootPassage.mirror._id);
+        }
+        if (rootPassage.bestOf) {
+            const bestOf = await Passage.findOne({parent: rootPassage.bestOf._id}).sort('-stars');
+            if (bestOf && !processedSources.has(bestOf._id.toString())) {
+                sourceQueue.push(bestOf._id);
+            }
+        }
+    }
+    
+    processedSources.add(rootPassage._id.toString());
+    
+    while (sourceQueue.length > 0) {
+        // Take next batch
+        const batchIds = sourceQueue.splice(0, BATCH_SIZE);
+        
+        // Process batch in new transaction
+        const session = await mongoose.startSession();
+        try {
+            await session.withTransaction(async () => {
+                const accumulator = new StarOperationAccumulator();
+                
+                // Fetch all passages in batch with necessary populates
+                const passages = await Passage.find({
+                    _id: { $in: batchIds }
+                })
+                .populate('author sourceList collaborators')
+                .session(session);
+                
+                // Fetch all users needed for this batch
+                const userIds = new Set();
+                for (const passage of passages) {
+                    userIds.add(passage.author._id.toString());
+                    for (const collab of passage.collaborators) {
+                        userIds.add(collab._id ? collab._id.toString() : collab.toString());
+                    }
+                }
+                const users = await User.find({ _id: { $in: Array.from(userIds) } }).session(session);
+                const userMap = new Map(users.map(u => [u._id.toString(), u]));
+                
+                // Process each passage
+                for (const passage of passages) {
+                    if (processedSources.has(passage._id.toString())) continue;
+                    
+                    // Add stars to passage
+                    accumulator.addPassageStars(passage._id, amount);
+                    
+                    // Process messages for this passage
+                    const messages = await Message.find({passage: passage._id}).session(session);
+                    for (const message of messages) {
+                        accumulator.addMessageStars(message._id, amount);
+                    }
+                    
+                    // Process author and collaborators
+                    if (shouldRewardAuthor(passage, sessionUser) && 
+                        !overlaps(passage.collaborators, rootPassage.collaborators)) {
+                        
+                        const authorAmount = amount / (passage.collaborators.length + 1);
+                        const author = userMap.get(passage.author._id.toString());
+                        if (author) {
+                            const deltas = calculateStarAddition(author, authorAmount);
+                            accumulator.addUserStars(author._id.toString(), deltas);
+                        }
+                        
+                        // Process collaborators
+                        for (const collab of passage.collaborators) {
+                            const collabId = collab._id ? collab._id.toString() : collab.toString();
+                            const collabUser = userMap.get(collabId);
+                            if (collabUser) {
+                                const deltas = calculateStarAddition(collabUser, authorAmount);
+                                accumulator.addUserStars(collabId, deltas);
+                            }
+                        }
+                    }
+                    
+                    // Add unprocessed sources to queue
+                    for (const source of passage.sourceList) {
+                        if (!processedSources.has(source._id.toString())) {
+                            sourceQueue.push(source._id);
+                        }
+                    }
+                    
+                    processedSources.add(passage._id.toString());
+                }
+                
+                // Process rebates for this batch
+                await processRebatesBatch(passages, amount, sessionUser, accumulator, session);
+                
+                // Execute all operations for this batch
+                await accumulator.executeBulkOperations(session);
+            });
+        } finally {
+            await session.endSession();
+        }
+    }
+}
+
+// Process starPassage logic - refactored for batch processing
 async function processStarPassage(userId, passageId, amount, sessionUserId, deplete, single) {
     console.log('processStarPassage called with:', { userId, passageId, amount, sessionUserId, deplete, single });
-    const session = await mongoose.startSession();
     
+    // Validation
+    if(isNaN(amount) || amount == 0){
+        throw new Error('Please enter a number greater than 0.');
+    }
+    
+    // Get session user first (outside transaction for validation)
+    const sessionUser = await User.findOne({_id: sessionUserId});
+    if (!sessionUser) {
+        throw new Error('Session user not found');
+    }
+    
+    let starsTakenAway = 0;
+    let amountForRebate = amount;
+    let passage = null;
+    let sources = [];
+    let result = null;
+    
+    // TRANSACTION 1: Process main passage only
+    const mainSession = await mongoose.startSession();
     try {
-        let result = null;
-        
-        await session.withTransaction(async () => {
-            console.log('Starting transaction...');
+        await mainSession.withTransaction(async () => {
+            const accumulator = new StarOperationAccumulator();
             
-            // Get session user
-            const sessionUser = await User.findOne({_id: sessionUserId}).session(session);
-            if (!sessionUser) {
-                throw new Error('Session user not found');
-            }
-            console.log('Session user found:', sessionUser.username);
-            
-            // The rest of the starPassage logic from starService.js
-            let user = await User.findOne({_id: userId}).session(session);
-            let passage = await Passage.findOne({_id: passageId}).populate('author sourceList').session(session);
+            // Get user and passage
+            const user = await User.findOne({_id: userId}).session(mainSession);
+            passage = await Passage.findOne({_id: passageId})
+                .populate('author sourceList collaborators')
+                .session(mainSession);
             
             if (!user || !passage) {
                 throw new Error('User or passage not found');
             }
             
-            var shouldGetContributionPoints = true;
-            //if a collaborator
-            if(sessionUser._id.toString() == passage.author._id.toString()
-                || passage.collaborators.toString().includes(sessionUser._id.toString())){
-                shouldGetContributionPoints = false;
-            }
+            const contributionPoints = shouldGetContributionPoints(sessionUser, passage);
             
-            if(isNaN(amount) || amount == 0){
-                throw new Error('Please enter a number greater than 0.');
-            }
-            
-            var starsTakenAway = 0;
-            var amountForRebate = amount;
-            
+            // Handle star depletion
             if(deplete){
                 // Check if user has enough total stars (skip check if single)
                 if(((user.stars + user.borrowedStars + user.donationStars) < amount) && !single){
                     throw new Error("Not enough stars.");
                 }
                 
-                var remainder = amount;
+                const depletion = calculateStarDepletion(user, amount);
+                accumulator.addUserStars(userId, depletion);
                 
-                // First, spend borrowed stars
-                if(user.borrowedStars > 0){
-                    var borrowedUsed = Math.min(user.borrowedStars, remainder);
-                    user.borrowedStars -= borrowedUsed;
-                    remainder -= borrowedUsed;
-                }
-                
-                // If there's still remainder, spend from user.stars or donationStars
-                if(remainder > 0){
-                    if(user.stars > 0){
-                        // Take from user.stars first (can go to 0 or negative)
-                        var starsUsed = Math.min(user.stars, remainder);
-                        user.stars -= starsUsed;
-                        starsTakenAway += starsUsed;
-                        remainder -= starsUsed;
-                        
-                        // If still remainder and user.stars is now 0, take from donationStars
-                        if(remainder > 0 && user.donationStars > 0){
-                            var donationUsed = Math.min(user.donationStars, remainder);
-                            user.donationStars -= donationUsed;
-                            remainder -= donationUsed;
-                            amountForRebate -= donationUsed;
-                        }
-                        
-                        // Any final remainder goes to user.stars (making it negative)
-                        if(remainder > 0){
-                            user.stars -= remainder;
-                            starsTakenAway += remainder;
-                        }
-                    } else {
-                        // user.stars is 0 or negative, take from donationStars first
-                        if(user.donationStars > 0){
-                            var donationUsed = Math.min(user.donationStars, remainder);
-                            user.donationStars -= donationUsed;
-                            remainder -= donationUsed;
-                            amountForRebate -= donationUsed;
-                        }
-                        
-                        // Any remainder after donation stars should be taken from user.stars
-                        if(remainder > 0){
-                            user.stars -= remainder;
-                            starsTakenAway = remainder;
-                        }
-                    }
-                }
+                // Track stars taken for contribution points
+                starsTakenAway = Math.abs(depletion.stars);
+                amountForRebate = amount + depletion.donationStars; // Reduce rebate by donation stars used
             }
             
-            // Process sources and rebates
-            var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+            // Get sources for star log
+            sources = await getRecursiveSourceList(passage.sourceList, [], passage);
             
-            // Give starring user stars for each logged stars at 1% rate (rebate)
-            //removed populating sources since we are no longer doing that
-            var loggedStars = await Star.find({passage:passage._id, single: false})
-                .populate('user passage')
-                .session(session);
-                
-            var totalForStarrer = 0;
-            for(const loggedStar of loggedStars){
-                var starrer = loggedStar.user;
-                var sourceLog = [];
-                //you dont get the rebate when you star
-                if(sessionUser._id.toString() != starrer._id.toString()){
-                    totalForStarrer = 0.01 * loggedStar.amount * amountForRebate;
-                    console.log('root, '+starrer.name + ' made ' + totalForStarrer + ' stars!');
-                }
-                
-                //commented out because this would unfairly advantage starring
-                //a passage with many sources
-                // for(const source of loggedStar.sources){
-                //     if(!sourceLog.includes(source) && 
-                //         source.author._id.toString() != starrer._id.toString() && 
-                //         sessionUser._id.toString() != starrer._id.toString()){
-                //         console.log("working, " + starrer.name);
-                //         let subtotal = 0.01 * loggedStar.amount * amountForRebate;
-                //         totalForStarrer += subtotal;
-                //         console.log(starrer.name + ' made ' + totalForStarrer + ' stars!');
-                //     }
-                //     sourceLog.push(source);
-                // }
-                await addStarsToUser(starrer, totalForStarrer, session);
-            }
+            // Process rebates for main passage
+            await processRebatesBatch([passage], amountForRebate, sessionUser, accumulator, mainSession);
             
-            var lastSource = await getLastSource(passage);
-            var bonus = 0;
-            bonus = bonus * amount;
+            var bonus = 0; // bonus logic removed/simplified
             
             // Log the amount starred
             let loggedStarDebt = sessionUser._id.toString() == passage.author._id.toString() ? 0 : (amount + bonus);
-            await Star.create([{
+            accumulator.addStarDocument({
                 user: userId,
                 passage: passage._id,
                 passageAuthor: passage.author._id.toString(),
@@ -360,14 +737,11 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                 debt: loggedStarDebt,
                 fromSingle: single,
                 system: null
-            }], {session: session});
+            });
             
             // Add stars to passage
-            console.log(`Adding ${amount + bonus} stars to passage. Current stars: ${passage.stars}`);
-            passage.stars += amount + bonus;
-            passage.verifiedStars += amount + bonus;
-            passage.lastCap = passage.verifiedStars;
-            console.log(`New star count: ${passage.stars}`);
+            accumulator.addPassageStars(passage._id, amount + bonus);
+            accumulator.updatePassageField(passage._id, 'lastCap', passage.verifiedStars + amount + bonus);
             
             // Handle bubbling passages
             if(passage.bubbling && passage.passages && !passage.public){
@@ -388,242 +762,266 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             }
             
             // Process star messages
-            await starMessages(passage._id, amount, session);
-            
-            // Process collaborator debt and distribution
-            var starrerDebt = await Star.find({
-                passageAuthor: sessionUser._id.toString(),
-                single: false,
-                debt: {$gt:0}
-            }).session(session);
-            
-            // Absorb amount of stars that goes to author and collaborators
-            // depending on "star debt"
-            var allCollaborators = [passage.author, ...passage.collaborators];
-            var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
-            if(!shouldGetContributionPoints){
-                amountToGiveCollabers = 0;
+            const messages = await Message.find({passage: passage._id}).session(mainSession);
+            for(const message of messages){
+                accumulator.addMessageStars(message._id, amount);
             }
-            var totalAbsorbed = 0;
             
-            collaboratorsLoop:
-            for(const collaber of allCollaborators){
-                // Only inherit debt, subtract debt, and create debt if we are actually starring the collaber
-                if(passage.author._id.toString() != sessionUser._id.toString() && !passage.collaborators.includes(sessionUser._id.toString())){
-                    // Get all debt owed by session user to specific collaber
-                    var stars = await Star.find({
-                        passageAuthor: sessionUser._id.toString(), // (owes the debt)
-                        user: collaber._id.toString(), // they starred session user
-                        single: false,
-                        debt: {$gt:0}
-                    }).session(session);
-                    
-                    for(const star of stars){
-                        // Filter out all old debt that was already added to this collaber
-                        starrerDebt = starrerDebt.filter(function(x){
-                            return x.trackToken != star.trackToken;
-                        });
-                        // Reduce the amount we're giving collabers by the amount owed
-                        amountToGiveCollabers -= star.debt;
-                        totalAbsorbed += star.debt;
-                        star.debt -= (amount + bonus)/(passage.collaborators.length + 1);
-                        
-                        if(star.debt <= 0){
-                            star.debt = 0;
-                            await star.save({session});
-                            continue;
-                        }else{
-                            await star.save({session});
-                            break collaboratorsLoop;
-                        }
-                    }
-                    
-                    // Each collaber inherits star debt from starrer to prevent collusion rings
-                    for(const debt of starrerDebt){
-                        await Star.create([{
-                            passageAuthor: collaber._id.toString(),
-                            user: debt.user._id.toString(),
-                            single: false,
-                            debt: debt.debt,
-                            system: null,
-                            passage: passage._id,
-                            sources: sources,
-                            trackToken: debt.trackToken
-                        }], {session: session});
-                    }
-                }
-            }
-            if(amountToGiveCollabers < 0){
-                amountToGiveCollabers = 0;
-            }
+            // Process collaborator debt
+            await processCollaboratorDebt(passage, sessionUser, amount, bonus, contributionPoints, accumulator, mainSession);
+            
             // Process contribution points
-            if(shouldGetContributionPoints && deplete && starsTakenAway > 0){
-                const SYSTEM = await System.findOne({}).session(session);
+            if(contributionPoints && deplete && starsTakenAway > 0){
+                const SYSTEM = await System.findOne({}).session(mainSession);
                 if (!SYSTEM) {
                     throw new Error('System document not found.');
                 }
+                
+                // Calculate absorbed amount from debt processing
+                const totalAbsorbed = await calculateTotalAbsorbed(sessionUser, passage, amount, bonus, mainSession);
+                
                 var numContributionPoints = starsTakenAway;
-                //reduce the numcontributionpoints by an amount
-                //that makes it equal to if they were starring
-                //a group of users that didn't star them first
                 var dockingAmount = 
                 ((user.starsGiven+starsTakenAway) * totalAbsorbed) / 
                 (SYSTEM.totalStarsGiven + starsTakenAway - user.starsGiven);
                 numContributionPoints -= dockingAmount;
-                user.starsGiven += numContributionPoints;
-                SYSTEM.totalStarsGiven += amount;
-                await SYSTEM.save({session});
+                
+                accumulator.addUserStars(userId, { starsGiven: numContributionPoints });
+                
+                // Update system total
+                await System.updateOne({}, { $inc: { totalStarsGiven: amount }}, {session: mainSession});
             }
             
-            // Save all changes
-            await user.save({session});
-            await passage.save({session});
-            //update first place for this 
-            if(passage.parent){
-                var oldFirstPlace = await Passage.findOne({parent:passage.parent._id.toString(), comment: false, inFirstPlace: true}).session(session);
-                var newFirstPlaceArray = await Passage.find({parent:passage.parent._id.toString(), comment: false}).sort('-stars').populate('parent author').limit(1).session(session);
-                var newFirstPlace = newFirstPlaceArray[0];
-                if(oldFirstPlace._id.toString() !== newFirstPlace._id.toString()){
-                    var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
-                    var allContributors = passageService.getAllContributors(passage, sourceList);
-                }
-                if(passage._id.toString() === newFirstPlace._id.toString() && !passage.inFirstPlace){
-                    await Passage.updateOne({
-                        _id: passage._id.toString()
-                    }, {$set: {
-                        inFirstPlace: true
-                    }}, {session});
-                }
-                if(oldFirstPlace && newFirstPlace._id.toString() == oldFirstPlace._id.toString()){
-                    //no changes needed, still in first place
-                }else if(!oldFirstPlace){
-                    //first time getting a first place in this thread
-                    newFirstPlace.inFirstPlace = true;
-                    await newFirstPlace.save(session);
-                    await Reward.create({
-                        user: newFirstPlace.author._id.toString(),
-                        passage: newFirstPlace._id.toString(),
-                        parentPassage: newFirstPlace.parent._id.toString(),
-                        selectedAnswer: false
-                    }, {session});
-                    //add points to users who got reward
-                    if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        // Build bulk operations for adding reward to contributors
-                        const bulkOps = allContributors.map(contributor => ({
-                            updateOne: {
-                                filter: { _id: contributor },
-                                update: { $inc: { starsGiven: newFirstPlace.parent.reward } }
-                            }
-                        }));
-                        
-                        // Execute bulk write if there are operations
-                        if(bulkOps.length > 0){
-                            await User.bulkWrite(bulkOps, {session});
-                        }
-                    }
-                    
-                }else{
-                    oldFirstPlace.inFirstPlace = false;
-                    newFirstPlace.inFirstPlace = true;
-                    await oldFirstPlace.save(session);
-                    await newFirstPlace.save(session);
-                    const oldReward = await Reward.findOne({parentPassage: newFirstPlace.parent._id.toString(), selectedAnswer: false}).session(session);
-                    if(oldReward && newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        //remove points from all old users who got reward
-                        // Build bulk operations for removing reward from contributors
-                        const removeBulkOps = allContributors.map(contributor => ({
-                            updateOne: {
-                                filter: { _id: contributor },
-                                update: { $inc: { starsGiven: -newFirstPlace.parent.reward } }
-                            }
-                        }));
-                        
-                        // Execute bulk write if there are operations
-                        if(removeBulkOps.length > 0){
-                            await User.bulkWrite(removeBulkOps, {session});
-                        }
-                    }
-                    await Reward.deleteOne({parentPassage: newFirstPlace.parent._id.toString(), selectedAnswer: false}, {session});
-                    await Reward.create({
-                        user: newFirstPlace.author._id.toString(),
-                        passage: newFirstPlace._id.toString(),
-                        parentPassage: newFirstPlace.parent._id.toString(),
-                        selectedAnswer: false
-                    }, {session});
-                    //add points to users who got reward
-                    if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        // Build bulk operations for adding reward to contributors
-                        const addBulkOps = allContributors.map(contributor => ({
-                            updateOne: {
-                                filter: { _id: contributor },
-                                update: { $inc: { starsGiven: newFirstPlace.parent.reward } }
-                            }
-                        }));
-                        
-                        // Execute bulk write if there are operations
-                        if(addBulkOps.length > 0){
-                            await User.bulkWrite(addBulkOps, {session});
-                        }
-                    }
-                }
-            }
-            await addStarsToUser(passage.author, amountToGiveCollabers, session);
+            // Process first place updates
+            await processFirstPlaceUpdates(passage, accumulator, mainSession);
             
-            // Give stars to collaborators if applicable
-            if(passage.collaborators.length > 0){
+            // Give stars to author and collaborators of main passage
+            var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
+            if(!contributionPoints){
+                amountToGiveCollabers = 0;
+            }
+            
+            if(amountToGiveCollabers > 0){
+                // Author
+                const authorUser = await User.findById(passage.author._id).session(mainSession);
+                if(authorUser){
+                    const authorDeltas = calculateStarAddition(authorUser, amountToGiveCollabers);
+                    accumulator.addUserStars(passage.author._id.toString(), authorDeltas);
+                }
+                
+                // Collaborators
                 for(const collaborator of passage.collaborators){
-                    if(collaborator._id && collaborator._id.toString() == passage.author._id.toString()){
-                        // We already starred the author
-                        continue;
+                    const collabId = collaborator._id ? collaborator._id.toString() : collaborator.toString();
+                    if(collabId !== passage.author._id.toString()){
+                        const collabUser = await User.findById(collabId).session(mainSession);
+                        if(collabUser){
+                            const collabDeltas = calculateStarAddition(collabUser, amountToGiveCollabers);
+                            accumulator.addUserStars(collabId, collabDeltas);
+                        }
                     }
-                    let collaber = await User.findOne({_id: collaborator._id ? collaborator._id.toString() : collaborator.toString()}).session(session);
-                    if(collaber != null){
-                        await addStarsToUser(collaber, amountToGiveCollabers, session);
-                    }
                 }
             }
             
-            // Star each source
-            var i = 0;
-            var authors = [];
-            
-            // Add sources for best, bestOf, and mirror
-            if(passage.showBestOf){
-                var best = await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('parent author users sourceList collaborators versions subforums').session(session);
-                if(best != null){
-                    passage.sourceList.push(best);
-                }
-            }
-            else{
-                try{
-                    var mirror = await Passage.findOne({_id:passage.mirror._id}).populate('parent author users sourceList collaborators versions subforums').session(session);
-                    if(mirror != null)
-                        passage.sourceList.push(mirror);
-                }
-                catch(e){
-                }
-                try{
-                    var bestOf = await Passage.findOne({parent:passage.bestOf._id}).sort('-stars').populate('parent author users sourceList collaborators versions subforums').session(session);
-                    if(bestOf != null)
-                        passage.sourceList.push(bestOf);
-                }
-                catch(e){
-                }
-            }
-            
-            // Process sources
-            await processStarSources(passage, passage, [], [], amount, sessionUser, session);
+            // Execute all operations for main passage
+            await accumulator.executeBulkOperations(mainSession);
             
             result = await fillUsedInListSingle(passage);
         });
-        
-        return result;
-        
-    } catch (error) {
-        console.error('Error in processStarPassage:', error);
-        throw error;
     } finally {
-        await session.endSession();
+        await mainSession.endSession();
+    }
+    
+    // TRANSACTION 2+: Process sources in batches (separate transactions)
+    if(passage){
+        await processSourcesBatched(passage, amount, sessionUser, deplete);
+    }
+    
+    return result;
+}
+
+// Helper function to process collaborator debt
+async function processCollaboratorDebt(passage, sessionUser, amount, bonus, contributionPoints, accumulator, session){
+    var starrerDebt = await Star.find({
+        passageAuthor: sessionUser._id.toString(),
+        single: false,
+        debt: {$gt:0}
+    }).session(session);
+    
+    var allCollaborators = [passage.author, ...passage.collaborators];
+    var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
+    if(!contributionPoints){
+        amountToGiveCollabers = 0;
+    }
+    
+    const debtUpdates = [];
+    const inheritedDebts = [];
+    
+    for(const collaber of allCollaborators){
+        // Only process debt if we are actually starring the collaber
+        if(passage.author._id.toString() != sessionUser._id.toString() && 
+           !passage.collaborators.toString().includes(sessionUser._id.toString())){
+            
+            // Get all debt owed by session user to specific collaber
+            var stars = await Star.find({
+                passageAuthor: sessionUser._id.toString(),
+                user: collaber._id ? collaber._id.toString() : collaber.toString(),
+                single: false,
+                debt: {$gt:0}
+            }).session(session);
+            
+            for(const star of stars){
+                // Filter out processed debt
+                starrerDebt = starrerDebt.filter(x => x.trackToken != star.trackToken);
+                
+                const debtReduction = (amount + bonus)/(passage.collaborators.length + 1);
+                const newDebt = Math.max(0, star.debt - debtReduction);
+                
+                debtUpdates.push({
+                    updateOne: {
+                        filter: { _id: star._id },
+                        update: { $set: { debt: newDebt } }
+                    }
+                });
+                
+                if(newDebt === 0) break; // No more debt to process
+            }
+            
+            // Inherit debt
+            for(const debt of starrerDebt){
+                inheritedDebts.push({
+                    passageAuthor: collaber._id ? collaber._id.toString() : collaber.toString(),
+                    user: debt.user._id.toString(),
+                    single: false,
+                    debt: debt.debt,
+                    system: null,
+                    passage: passage._id,
+                    sources: await getRecursiveSourceList(passage.sourceList, [], passage),
+                    trackToken: debt.trackToken
+                });
+            }
+        }
+    }
+    
+    // Execute debt updates
+    if(debtUpdates.length > 0){
+        await Star.bulkWrite(debtUpdates, {session});
+    }
+    
+    // Create inherited debts
+    if(inheritedDebts.length > 0){
+        await Star.insertMany(inheritedDebts, {session});
+    }
+}
+
+// Helper function to calculate total absorbed from debt
+async function calculateTotalAbsorbed(sessionUser, passage, amount, bonus, session){
+    let totalAbsorbed = 0;
+    const allCollaborators = [passage.author, ...passage.collaborators];
+    
+    for(const collaber of allCollaborators){
+        if(passage.author._id.toString() != sessionUser._id.toString() && 
+           !passage.collaborators.toString().includes(sessionUser._id.toString())){
+            
+            const stars = await Star.find({
+                passageAuthor: sessionUser._id.toString(),
+                user: collaber._id ? collaber._id.toString() : collaber.toString(),
+                single: false,
+                debt: {$gt:0}
+            }).session(session);
+            
+            for(const star of stars){
+                totalAbsorbed += Math.min(star.debt, (amount + bonus)/(passage.collaborators.length + 1));
+            }
+        }
+    }
+    
+    return totalAbsorbed;
+}
+
+// Helper function to process first place updates
+async function processFirstPlaceUpdates(passage, accumulator, session){
+    if(!passage.parent) return;
+    
+    const oldFirstPlace = await Passage.findOne({
+        parent: passage.parent._id.toString(), 
+        comment: false, 
+        inFirstPlace: true
+    }).session(session);
+    
+    const newFirstPlaceArray = await Passage.find({
+        parent: passage.parent._id.toString(), 
+        comment: false
+    }).sort('-stars').populate('parent author').limit(1).session(session);
+    
+    const newFirstPlace = newFirstPlaceArray[0];
+    if(!newFirstPlace) return;
+    
+    // Update inFirstPlace field if needed
+    if(passage._id.toString() === newFirstPlace._id.toString() && !passage.inFirstPlace){
+        accumulator.updatePassageField(passage._id.toString(), 'inFirstPlace', true);
+    }
+    
+    if(!oldFirstPlace || oldFirstPlace._id.toString() === newFirstPlace._id.toString()){
+        // No change in first place
+        return;
+    }
+    
+    // Get contributors for reward updates
+    const sourceList = await getRecursiveSourceList(newFirstPlace.sourceList, [], newFirstPlace);
+    const allContributors = getAllContributors(newFirstPlace, sourceList);
+    
+    if(!oldFirstPlace){
+        // First time getting first place
+        accumulator.updatePassageField(newFirstPlace._id.toString(), 'inFirstPlace', true);
+        accumulator.rewardDocuments.push({
+            user: newFirstPlace.author._id.toString(),
+            passage: newFirstPlace._id.toString(),
+            parentPassage: newFirstPlace.parent._id.toString(),
+            selectedAnswer: false
+        });
+        
+        // Add reward to contributors
+        if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
+            for(const contributor of allContributors){
+                accumulator.addUserStars(contributor, { starsGiven: newFirstPlace.parent.reward });
+            }
+        }
+    } else {
+        // Change in first place
+        accumulator.updatePassageField(oldFirstPlace._id.toString(), 'inFirstPlace', false);
+        accumulator.updatePassageField(newFirstPlace._id.toString(), 'inFirstPlace', true);
+        
+        // Remove old reward
+        const oldReward = await Reward.findOne({
+            parentPassage: newFirstPlace.parent._id.toString(), 
+            selectedAnswer: false
+        }).session(session);
+        
+        if(oldReward){
+            accumulator.rewardDeletions.push(oldReward._id);
+            
+            // Remove points from old winners
+            if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
+                for(const contributor of allContributors){
+                    accumulator.addUserStars(contributor, { starsGiven: -newFirstPlace.parent.reward });
+                }
+            }
+        }
+        
+        // Create new reward
+        accumulator.rewardDocuments.push({
+            user: newFirstPlace.author._id.toString(),
+            passage: newFirstPlace._id.toString(),
+            parentPassage: newFirstPlace.parent._id.toString(),
+            selectedAnswer: false
+        });
+        
+        // Add points to new winners
+        if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
+            for(const contributor of allContributors){
+                accumulator.addUserStars(contributor, { starsGiven: newFirstPlace.parent.reward });
+            }
+        }
     }
 }
 
@@ -752,16 +1150,20 @@ async function processStarSources(passage, top, authors, starredPassages, amount
 async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub) {
     const session = await mongoose.startSession();
     
+    let result = null;
+    let sourcesOperation = null;
+    let sources = [];
+    let passage = null;
+    let user = null;
+    
     try {
-        let result = null;
-        
         await session.withTransaction(async () => {
             const sessionUser = await User.findOne({_id: sessionUserId}).session(session);
             if (!sessionUser) {
                 throw new Error('Session user not found');
             }
             
-            const passage = await Passage.findOne({_id: passageId})
+            passage = await Passage.findOne({_id: passageId})
                 .populate('author sourceList collaborators')
                 .session(session);
                 
@@ -769,8 +1171,8 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                 throw new Error('Passage not found');
             }
             
-            var user = sessionUser._id.toString();
-            var sources = await getRecursiveSourceList(passage.sourceList, [], passage);
+            user = sessionUser._id.toString();
+            sources = await getRecursiveSourceList(passage.sourceList, [], passage);
             var shouldGetContributionPoints = true;
             
             // If a collaborator
@@ -837,8 +1239,8 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                             idempotencyKey: subIdempotencyKey
                         });
                         
-                        // Process sources
-                        await processSingleStarSources(user, sources, passage, false, true, session);
+                        // Mark that sources need to be processed after transaction
+                        sourcesOperation = {reverse: false, justRecord: true};
                     }
                     else if(sessionUser.identityVerified && !starredBefore){
                         //just add a star to passage but not collabers
@@ -846,12 +1248,14 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                         let userDoc = await User.findOne({_id:user}).session(session);
                         userDoc.stars -= 1;
                         await userDoc.save(session);
-                        await processSingleStarSources(user, sources, passage, false, false, session);
+                        // Mark that sources need to be processed after transaction
+                        sourcesOperation = {reverse: false, justRecord: false};
                     }
                     else{
                         // Just add a star to passage but not collaborators
                         passage.stars += 1;
-                        await processSingleStarSources(user, sources, passage, false, false, session);
+                        // Mark that sources need to be processed after transaction
+                        sourcesOperation = {reverse: false, justRecord: false};
                     }
                     
                     // Check if passage is valid before accessing starrers
@@ -894,7 +1298,8 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                 if(passage.starrers.includes(user)){
                     // Unstar if no previous record of being directly starred or isn't a sub passage
                     if((recordSingle == null && recordSingleSystem != null) || !isSub){
-                        await processSingleStarSources(user, sources, passage, true, false, session);
+                        // Mark that sources need to be processed after transaction
+                        sourcesOperation = {reverse: true, justRecord: false};
                         passage.stars -= 1;
                         if(sessionUser.identityVerified){
                             passage.verifiedStars -= 1;
@@ -928,6 +1333,17 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
             result = await getPassage(passage);
         });
         
+        // Process sources in batches outside the main transaction if needed
+        if(sourcesOperation && passage && sources.length > 0){
+            await processSingleStarSourcesBatched(
+                user, 
+                sources, 
+                passage, 
+                sourcesOperation.reverse, 
+                sourcesOperation.justRecord
+            );
+        }
+        
         return result;
         
     } catch (error) {
@@ -938,7 +1354,90 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
     }
 }
 
-// Process single star sources
+// Process single star sources in batches
+async function processSingleStarSourcesBatched(user, sources, mainPassage, reverse=false, justRecord=false) {
+    const BATCH_SIZE = 100;
+    const sourceIds = sources.map(s => (s._id || s).toString()).filter(id => id !== mainPassage._id.toString());
+    
+    while (sourceIds.length > 0) {
+        const batchIds = sourceIds.splice(0, BATCH_SIZE);
+        
+        // Process batch in new transaction
+        const session = await mongoose.startSession();
+        try {
+            await session.withTransaction(async () => {
+                const accumulator = new StarOperationAccumulator();
+                
+                // Fetch batch of sources with necessary data
+                const batchSources = await Passage.find({
+                    _id: { $in: batchIds }
+                })
+                .populate('author collaborators sourceList')
+                .session(session);
+                
+                for (const source of batchSources) {
+                    // Skip if this source is the same as the main passage
+                    if(source._id.toString() === mainPassage._id.toString()){
+                        continue;
+                    }
+                    
+                    // Check if starred already
+                    const recordSingle = await Star.findOne({
+                        user: user, 
+                        passage: source._id, 
+                        single: true, 
+                        system: false
+                    }).session(session);
+                    
+                    const recordSingleSystem = await Star.findOne({
+                        user: user, 
+                        passage: source._id, 
+                        single: true, 
+                        system: true
+                    }).session(session);
+                    
+                    // Unstar if no previous record of being directly starred
+                    if(reverse && recordSingle == null){
+                        accumulator.addStarDeletion(user, source._id, true);
+                        accumulator.addPassageStars(source._id, -1);
+                        accumulator.removeStarrer(source._id, user);
+                    }
+                    // Star if hasn't been starred already and not a collaborator
+                    else if(recordSingleSystem == null && recordSingle == null
+                        && source.author._id.toString() != user 
+                        && source.author._id.toString() != mainPassage.author._id.toString()
+                        && !source.collaborators.toString().includes(mainPassage.author._id.toString())
+                        && !overlaps(source.collaborators, mainPassage.collaborators)
+                        && !source.collaborators.includes(user)){
+                        
+                        if(!justRecord){
+                            accumulator.addPassageStars(source._id, 1);
+                        }
+                        accumulator.addStarrer(source._id, user);
+                        
+                        // Get sources for star log
+                        const sourceSources = await getRecursiveSourceList(source.sourceList, [], source);
+                        accumulator.addStarDocument({
+                            user: user,
+                            passage: source._id,
+                            amount: 1,
+                            sources: sourceSources,
+                            single: true,
+                            system: true
+                        });
+                    }
+                }
+                
+                // Execute all operations for this batch
+                await accumulator.executeBulkOperations(session);
+            });
+        } finally {
+            await session.endSession();
+        }
+    }
+}
+
+// Process single star sources (legacy - kept for compatibility)
 async function processSingleStarSources(user, sources, passage, reverse=false, justRecord=false, session){
     for(const source of sources){
         // Skip if this source is the same as the main passage to avoid version conflicts
