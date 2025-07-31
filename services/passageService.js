@@ -233,6 +233,20 @@ function getContributors(passage){
     }
     return contributors;
 }
+function getAllcontributors(passage, sourceList){
+    var contributors = [passage.author, ...passage.collaborators];
+    for(const source of sourceList){
+        contributors.push(source.author, ...source.collaborators);
+    }
+    
+    // Convert to array of string _ids and remove duplicates
+    contributors = contributors
+        .filter(c => c) // Remove null/undefined values
+        .map(c => c._id ? c._id.toString() : c.toString()) // Convert to string IDs
+        .filter((id, index, self) => self.indexOf(id) === index); // Remove duplicates
+    
+    return contributors;
+}
 
 async function fillUsedInList(passages){
     if(passages.length > 0)

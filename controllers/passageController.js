@@ -800,6 +800,31 @@ async function removeSource(req, res) {
             { _id: passageID },
             { $pull: { sourceList: sourceID } }
         );
+        //if passage.parent has a reward and passage is in first place or the selected answer
+        //remove reward from all users who are contributors to source but not to passage
+        //if the reward is for selected answer only don't take away from contributor if they are equal to passage.parent.author as they
+        //never got the reward in the first place
+        if(passage.parent.reward > 0 && (passage.selectedAnswer || passage.inFirstPlace)){
+            var source = await Passage.findOne({_id: sourceID});
+            var passageSourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
+            var passageContributors = passageService.getAllContributors(passage, sourceList);
+            var sourceSourceList = await passageService.getRecursiveSourceList(source.sourceList, [], source);
+            var sourceContributors = passageService.getAllContributors(source, sourceList);
+            //get all source contributors that are not existing contributors to passage
+            elementsNotInPassageSourceList = sourceContributors.filter(element => !passageContributors.includes(element));
+            var contributorsToRemoveRewardFrom = elementsNotInPassageSourceList;
+            for(const contributor of contributorsToRemoveRewardFrom){
+                //if the reward is for selected answer: dont give if contributor == parent.parent.author
+                //if the reward is for most stars, it's okay for contributor to have created the challenge
+                //if the reward is for both it is also okay
+                if(parent.selectedAnswer && !parent.inFirstPlace && contributor === parent.parent.author._id.toString()){
+                    continue;
+                }
+                await User.updateOne({_id: contributor}, {
+                    $inc: { starsGiven: -passage.parent.reward }
+                });
+            }
+        }
         res.send("Done.");
     }
 }
@@ -1226,14 +1251,21 @@ async function increaseReward(req, res){
         }
     });
     //add reward to winning users
-    var reward = await Reward.findOne({parentPassage: req.body._id});
-    await User.updateOne({
-        _id: reward.user._id.toString()
-    }, {
-        $inc: {
-            starsGiven: value
+    var reward = await Reward.findOne({parentPassage: req.body._id}).populate('passage');
+    var passage = await Passage.findOne({_id:reward.passage._id.toString()}).populate('sourceList');
+    var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
+    var allContributors = passageService.getAllContributors(passage, sourceList);
+    for(const contributor of allContributors){
+        if(contributor !== req.session.user._id.toString()){
+            await User.updateOne({
+                _id: contributor
+            }, {
+                $inc: {
+                    starsGiven: value
+                }
+            });
         }
-    });
+    }
     //update reward amount and stars
     await Passage.updateOne({
         _id: req.body._id
@@ -1246,36 +1278,60 @@ async function increaseReward(req, res){
     return res.send("Reward Increased.");
 }
 async function selectAnswer(req, res){
+    var currentlySelected = await Passage.findOne({
+        parent: passage.parent._id.toString(),
+        selectedAnswer: true
+    });
+    if(req.body.answer.toString() === currentlySelected._id.toString()){
+        return res.send("That is already the selected answer.");
+    }
+    //answer to select
     var passage = await Passage.findOne({_id: req.body.answer.toString()}).populate('parent');
-    await Passage.updateMany({parent: passage.parent._id.toString()}, {
+    var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
+    var allContributors = passageService.getAllContributors(passage, sourceList);
+    //unselect current answer
+    await Passage.updateOne({_id: currentlySelected._id.toString()}, {
         $set: {
             selectedAnswer: false
         }
     });
+    //take reward away from current answer
     const oldReward = await Reward.findOne({parentPassage: passage.parent._id.toString(), selectedAnswer: true});
     if(oldReward && passage.parent && passage.parent.reward > 0){
-        await User.updateOne({_id: oldReward.user}, {
-            $inc: { starsGiven: -passage.parent.reward }
-        });
+        //remove reward from all contributors
+        //where contributor !== req.session.user (because they wouldnt have gotten the reward in the first place)
+        for(const contributor of allContributors){
+            if(contributor !== req.session.user._id.toString()){
+                await User.updateOne({_id: contributor}, {
+                    $inc: { starsGiven: -passage.parent.reward }
+                });
+            }
+        }
     }
+    //delete old reward
     await Reward.deleteOne({parentPassage: passage.parent._id.toString(), selectedAnswer: true});
+    //add new answer
     await Passage.updateOne({_id: req.body.answer.toString()}, {
         $set: {
             selectedAnswer: true
         }
     });
-    if(passage.author._id.toString() !== req.session.user._id.toString()){
-        await Reward.create({
-            user: req.session.user._id.toString(),
-            passage: passage._id.toString(),
-            parentPassage: passage.parent._id.toString(),
-            selectedAnswer: true
-        });
-        //add points to user who got reward
-        if(passage.parent && passage.parent.reward > 0){
-            await User.updateOne({_id: passage.author._id}, {
-                $inc: { starsGiven: passage.parent.reward }
-            });
+    //give reward if not author of passage being selected
+    await Reward.create({
+        user: req.session.user._id.toString(),
+        passage: passage._id.toString(),
+        parentPassage: passage.parent._id.toString(),
+        selectedAnswer: true
+    });
+    //add points to all contributors who got reward
+    //who arent equal to req.session.user
+    if(passage.parent && passage.parent.reward > 0){
+        for(const contributor of allContributors){
+            if(contributor !== req.session.user._id.toString()){
+                await User.updateOne({_id: contributor}, {
+                    $inc: { starsGiven: passage.parent.reward }
+                });
+            }
         }
     }
     return res.send("Answer selected.");

@@ -480,12 +480,24 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             await passage.save({session});
             //update first place for this 
             if(passage.parent){
+                var oldFirstPlace = await Passage.findOne({parent:passage.parent._id.toString(), comment: false, inFirstPlace: true}).session(session);
                 var newFirstPlaceArray = await Passage.find({parent:passage.parent._id.toString(), comment: false}).sort('-stars').populate('parent author').limit(1).session(session);
                 var newFirstPlace = newFirstPlaceArray[0];
-                var checkFirstPlace = await Passage.findOne({parent:passage.parent._id.toString(), comment: false, inFirstPlace: true}).session(session);
-                if(checkFirstPlace && newFirstPlace._id.toString() == checkFirstPlace._id.toString()){
-                    //no changes needed
-                }else if(!checkFirstPlace){
+                if(oldFirstPlace._id.toString() !== newFirstPlace._id.toString()){
+                    var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
+                    var allContributors = passageService.getAllContributors(passage, sourceList);
+                }
+                if(passage._id.toString() === newFirstPlace._id.toString() && !passage.inFirstPlace){
+                    await Passage.updateOne({
+                        _id: passage._id.toString()
+                    }, {$set: {
+                        inFirstPlace: true
+                    }}, {session});
+                }
+                if(oldFirstPlace && newFirstPlace._id.toString() == oldFirstPlace._id.toString()){
+                    //no changes needed, still in first place
+                }else if(!oldFirstPlace){
+                    //first time getting a first place in this thread
                     newFirstPlace.inFirstPlace = true;
                     await newFirstPlace.save(session);
                     await Reward.create({
@@ -494,23 +506,28 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                         parentPassage: newFirstPlace.parent._id.toString(),
                         selectedAnswer: false
                     }, {session});
-                    //add points to user who got reward
+                    //add points to users who got reward
                     if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        await User.updateOne({_id: newFirstPlace.author._id}, {
-                            $inc: { starsGiven: newFirstPlace.parent.reward }
-                        }, {session});
+                        for(const contributor of allContributors){
+                            await User.updateOne({_id: contributor}, {
+                                $inc: { starsGiven: newFirstPlace.parent.reward }
+                            }, {session});
+                        }
                     }
                     
                 }else{
-                    checkFirstPlace.inFirstPlace = false;
+                    oldFirstPlace.inFirstPlace = false;
                     newFirstPlace.inFirstPlace = true;
-                    await checkFirstPlace.save(session);
+                    await oldFirstPlace.save(session);
                     await newFirstPlace.save(session);
                     const oldReward = await Reward.findOne({parentPassage: newFirstPlace.parent._id.toString(), selectedAnswer: false}).session(session);
                     if(oldReward && newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        await User.updateOne({_id: oldReward.user}, {
-                            $inc: { starsGiven: -newFirstPlace.parent.reward }
-                        }, {session});
+                        //remove points from all old users who got reward
+                        for(const contributor of allContributors){
+                            await User.updateOne({_id: contributor}, {
+                                $inc: { starsGiven: -newFirstPlace.parent.reward }
+                            }, {session});
+                        }
                     }
                     await Reward.deleteOne({parentPassage: newFirstPlace.parent._id.toString(), selectedAnswer: false}, {session});
                     await Reward.create({
@@ -519,11 +536,13 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                         parentPassage: newFirstPlace.parent._id.toString(),
                         selectedAnswer: false
                     }, {session});
-                    //add points to user who got reward
+                    //add points to users who got reward
                     if(newFirstPlace.parent && newFirstPlace.parent.reward > 0){
-                        await User.updateOne({_id: newFirstPlace.author._id}, {
-                            $inc: { starsGiven: newFirstPlace.parent.reward }
-                        }, {session});
+                        for(const contributor of allContributors){
+                            await User.updateOne({_id: contributor}, {
+                                $inc: { starsGiven: newFirstPlace.parent.reward }
+                            }, {session});
+                        }
                     }
                 }
             }

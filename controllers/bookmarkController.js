@@ -23,6 +23,7 @@ async function transferBookmark(req, res) {
     }
     //get passage to copy
     let user;
+    //the source being added to the parent
     let passage = await Passage.findOne({_id: req.body._id});
     //reset author list
     if (typeof req.session.user === 'undefined' || req.session.user === null) {
@@ -53,7 +54,13 @@ async function transferBookmark(req, res) {
     }else{
         var title = passage.title == '' ? 'Untitled' : passage.title;
         //add passage to sourcelist
-        parent = await Passage.findOne({_id: req.body.parent});
+        //the passage getting the new source
+        parent = await Passage.findOne({_id: req.body.parent}).populate('parent');
+        //if there is a reward for being in first place or selected and the passage is
+        if(parent.parent.reward > 0 && (parent.selectedAnswer || parent.inFirstPlace)){
+            var sourceList = await passageService.getRecursiveSourceList(parent.sourceList, [], parent);
+            var allContributors = passageService.getAllContributors(parent, sourceList);
+        }
         if((!req.session.user && !req.session.user.admin) || ((req.session.user._id.toString() !== parent.author._id.toString()) && !req.session.user.admin)){
             return res.send("<h2 style='text-align:center;color:red;'>You can only add sources to your own passages.</h2>");
         }
@@ -80,6 +87,25 @@ async function transferBookmark(req, res) {
                 lastUpdated: Date.now()
             }
         });
+        //if parent has a reward, give it to the new contributors
+        if(parent.parent.reward > 0 && (parent.selectedAnswer || parent.inFirstPlace)){
+            var sourceSourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
+            var sourceContributors = passageService.getAllContributors(passage, sourceList);
+            //get all source contributors that are not existing contributors to parent
+            elementsNotInParentSourceList = sourceContributors.filter(element => !allContributors.includes(element));
+            var contributorsToReward = elementsNotInParentSourceList;
+            for(const contributor of contributorsToReward){
+                //if the reward is for selected answer: dont give if contributor == parent.parent.author
+                //if the reward is for most stars, it's okay for contributor to have created the challenge
+                //if the reward is for both it is also okay
+                if(parent.selectedAnswer && !parent.inFirstPlace && contributor === parent.parent.author._id.toString()){
+                    continue;
+                }
+                await User.updateOne({_id: contributor}, {
+                    $inc: { starsGiven: parent.parent.reward }
+                });
+            }
+        }
         console.log('sources:'+parent.sourceList);
         var test = await Passage.findOne({_id:parent._id});
         console.log('sources'+test.sourceList);
