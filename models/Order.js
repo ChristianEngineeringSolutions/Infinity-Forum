@@ -18,9 +18,13 @@ const orderSchema = mongoose.Schema({
     },
     dateSold: {type: Date, default: Date.now},
     //has the product been shipped?
-    completed: {
+    shipped: {
         type: Boolean,
         default: false
+    },
+    quantity: {
+        type: Number,
+        default: 1
     }
 });
 

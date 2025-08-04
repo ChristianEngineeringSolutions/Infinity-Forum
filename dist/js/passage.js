@@ -273,18 +273,48 @@ $(function(){
     });
     $(document).on('click', '[id^="buy-product-button-"]', function(e){
         var thiz = $(this);
+        var _id = thiz.attr('id').split('-').at(-1);
+        var quantity = Number($('#buy-product-quantity-'+_id).val());
+        var inStock = Number($('#buy-product-in-stock-'+_id).val());
+        if(isNaN(quantity) || quantity < 1 || !Number.isInteger(quantity) || quantity > inStock){
+            alert("Must enter an integer between 1 and "+inStock);
+            return;
+        }
         $.ajax({
-            type: 'get',
+            type: 'post',
+            url: '/buy-product-link',
             data: {
-                _id: thiz.attr('id').split('-').at(-1)
+                _id: _id,
+                quantity: $('#buy-product-quantity-'+_id).val()
             },
             success: function(data){
-                window.location.href = data;
+                window.open(data, "_blank");
+            }
+        });
+    });
+    $(document).on('keyup mouseup', '[id^="buy-product-quantity-"]', function(e){
+        var thiz = $(this);
+        var _id = thiz.attr('id').split('-').at(-1);
+        var price = Number($('#buy-product-price-'+_id).val());
+        var quantity = Number($(this).val());
+        $('#buy-product-display-price-'+_id).text(price*quantity);
+    });
+    $(document).on('click', '[id^="mark-order-shipped"]', function(e){
+        var thiz = $(this);
+        var _id = thiz.attr('id').split('-').at(-1);
+        $.ajax({
+            type: 'post',
+            url: '/mark-order-shipped',
+            data: {
+                productId: _id
+            },
+            success: function(data){
+                $('#order-'+_id).replaceWith(data);
             }
         });
     });
     const productFormHTML = `
-        Price: <input type="number" name="price"/><br>
+        Price: $<input type="number" name="price"/><br>
         Contains screen bigger than 4 inches diagonally (phones excluded) or cathode ray tube(s) <input type="checkbox" name="ceds"/><br>
         Contains or is new tires <input type="checkbox" name="new-tires"/><br>
         Contains smoking, tobacco, marijuana, or alcoholic beverage products <input type="checkbox" name="drugs"/>

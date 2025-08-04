@@ -1,8 +1,10 @@
 const bodyParser = require('body-parser');
 const { User } = require('../models/User');
 const System = require('../models/System');
+const Order = require('../models/Order');
+const {Passage} = require('../models/Passage');
 const VerificationSession = require('../models/VerificationSession');
-const { accessSecret, percentUSD, totalStarsGiven, monthDiff } = require('../common-utils');
+const { accessSecret, percentUSD, totalStarsGiven, monthDiff, percentOfPayouts } = require('../common-utils');
 const systemService = require('../services/systemService');
 const paymentService = require('../services/paymentService');
 const verificationService = require('../services/verificationService');
@@ -71,19 +73,41 @@ const stripeWebhook = async (request, response) => {
                         if(totalStarsGivenAmount == 0){
                           amountToAdd = 10;
                         }
-                        await User.updateOne({_id: user._id.toString()}, 
-                          {$inc: {
-                            donationStars: amountToAdd
-                        }});
-                        if(metadata == ''){
-                          platformDec = 0.55;
-                          userDec = 0.45;
-                        }else if(metadata == 'Buying Donation Stars'){
+                        console.log("METADATA:");
+                        console.log(JSON.stringify(metadata));
+                        var platformDec = 0.55;
+                        var userDec = 0.45;
+                        if(metadata.type && metadata.type === 'Buying Donation Stars'){
                           platformDec = 0.10;
                           userDec = 0.90;
-                        }else if(metadata == 'Product'){
+                          await User.updateOne({_id: user._id.toString()}, 
+                            {$inc: {
+                              donationStars: metadata.amount
+                          }});
+                        }else if(metadata.type && metadata.type === 'Product'){
                           platformDec = 0.75;
                           userDec = 0.25;
+                          await User.updateOne({_id: user._id.toString()}, 
+                            {$inc: {
+                              donationStars: amountToAdd
+                          }});
+                          //create an order for the product
+                          var product = await Passage.findOne({_id:metadata.productId});
+                          await Order.create({
+                            buyer: metadata.buyerId,
+                            chargeId: chargeId,
+                            seller: product.author._id.toString(),
+                            passage: product._id.toString(),
+                            dateSold: Date.now(),
+                            quantity:metadata.quantity
+                          });
+                          console.log("Order created.");
+                        }else{
+                          //simple donation
+                          await User.updateOne({_id: user._id.toString()}, 
+                            {$inc: {
+                              donationStars: amountToAdd
+                          }});
                         }
                         await System.updateOne({_id: SYSTEM._id.toString()}, 
                           {$inc: {

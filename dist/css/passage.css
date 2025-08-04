@@ -458,3 +458,21 @@
 .b-bar{
     cursor: pointer;
 }
+.buy-product-button{
+  background: blue;
+  width:20%;
+  border-radius: 20px;
+  margin: auto;
+  text-align: center;
+  padding: 10px;
+  font-weight:bold;
+  margin-bottom:10px;
+  cursor: pointer;
+}
+.buy-product-quantity{
+  width:20%;
+  margin: auto;
+  text-align: center;
+  padding: 10px;
+  margin-bottom:10px;
+}

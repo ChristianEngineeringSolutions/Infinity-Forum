@@ -4,7 +4,7 @@ const { User } = require('../models/User');
 const { Passage } = require('../models/Passage');
 const Order = require('../models/Order');
 const browser = require('browser-detect');
-const { scripts, DOCS_PER_PAGE } = require('../common-utils');
+const { scripts, DOCS_PER_PAGE, accessSecret } = require('../common-utils');
 const passageService = require('../services/passageService');
 
 async function market(req, res){
@@ -71,11 +71,68 @@ async function products(req, res){
     }).populate(passageService.standardPopulate).sort('-_id').limit(DOCS_PER_PAGE);
     return res.render('products', {products: products});
 }
+async function buyProductLink(req, res){
+    try {
+        var quantity = Number(req.body.quantity);
+        console.log("Quantity:"+quantity);
+        var product = await Passage.findOne({_id:req.body._id});
+        if(isNaN(quantity) || quantity < 1 || !Number.isInteger(quantity) || quantity > product.inStock){
+            return res.send("Must enter an integer between 1 and " + product.inStock);
+        }
+        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+        const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        var productLink = 'https://infinity-forum.org/passage/';
+        if(process.env.LOCAL == 'true'){
+            productLink = 'http://localhost/passage/';
+        }
+        productLink += product.title == '' ? 'Untitled' : encodeURIComponent(product.title) + '/' + product._id;
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'], // Specify payment methods (e.g., 'card', 'paypal')
+            mode: 'payment', // 'payment' for one-time payments, 'subscription' for recurring
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        unit_amount: (product.price * 100), // Amount in cents
+                        product_data: {
+                            name: product.title,
+                            description: "Product info: "+ productLink,
+                            metadata: {
+                                type: 'Product',
+                                quantity: quantity,
+                                buyerId: req.session.user._id.toString(),
+                                productId: product._id.toString()
+                            }
+                        },
+                    },
+                    quantity: quantity, // Number of units of this product
+                },
+            ],
+            success_url: req.headers.origin + '/passage/'+(product.title == '' ? 'Untitled' : encodeURIComponent(product.title))+'/'+product._id.toString(),
+            cancel_url: req.headers.origin + '/donate'+(product.title == '' ? 'Untitled' : encodeURIComponent(product.title))+'/'+product._id.toString(),
+            customer_email: req.session.user.email
+        });
+        return res.send(session.url);
+    } catch (error) {
+        console.error('Error creating Stripe Checkout Session:', error);
+        throw error;
+    }
+}
+
+async function markOrderShipped(req, res){
+    var productId = req.body.productId;
+    var order = await Order.findOneAndUpdate({_id:productId}, {$set:{
+        shipped: true
+    }});
+    return res.render("order", {order: order});
+}
 
 module.exports = {
     market,
     dashboard,
     orders,
     sales,
-    products
+    products,
+    buyProductLink,
+    markOrderShipped
 };

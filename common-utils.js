@@ -198,4 +198,4 @@ function monthsBetween(date1, date2) {
 module.exports = {
     monthsBetween, accessSecret, scripts, 
     percentStarsGiven, percentUSD, totalUSD, 
-    totalStarsGiven, sortArray, monthDiff, DOCS_PER_PAGE, labelOptions};
+    totalStarsGiven, sortArray, monthDiff, DOCS_PER_PAGE, labelOptions, percentOfPayouts};

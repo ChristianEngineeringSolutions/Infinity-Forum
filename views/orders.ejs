@@ -18,4 +18,9 @@
     Your Orders
 </div>
 <div>Search Orders: <input type="text"></div>
+<%orders.forEach(function(order){%>
+    <%if(order.passage != null){%>
+        <%- include('order', {order: order, seller:true})%>
+    <%}%>
+<%});%>
 <%- include('footer') %>

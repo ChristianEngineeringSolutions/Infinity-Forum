@@ -152,7 +152,10 @@ async function buyDonationStarsLink(req, res){
                         product_data: {
                             name: req.body.amount + ' Donation Stars',
                             description: "Donation stars are consumed first when setting rewards for challenges and other passages. They are consumed last when starring passages. They do not yield dividends or contribution points.",
-                            metadata: "Buying Donation Stars"
+                            metadata: {
+                                type: "Buying Donation Stars",
+                                amount: Number(req.body.amount)
+                            }
                         },
                     },
                     quantity: 1, // Number of units of this product

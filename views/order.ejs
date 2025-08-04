@@ -1,0 +1,16 @@
+<div id="order-<%=order._id%>"class="order">
+    <div><%=order.passage.title%></div>
+    <div>Sold: <%=order.dateSold%></div>
+    <div><%=order.passage.price%></div>
+    <div>Quantity: <%=order.quantity%></div>
+    <%if(seller){%>
+        <div>Seller: <%=order.seller.name%></div>
+    <%}%>
+    <%if(!seller){%>
+        <div>Buyer: <%=order.buyer.name%></div>
+    <%}%>
+    <div><%=order.content%></div>
+    <%if(!seller){%>
+        <div>Mark Shipped</div>
+    <%}%>
+</div>
