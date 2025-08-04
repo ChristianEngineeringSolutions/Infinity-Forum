@@ -533,7 +533,7 @@ $(function(){
             },
             success: function(data){
                 alert(data);
-                window.location.reload();
+                // window.location.reload();
                 // $('#passage_'+_id).remove();
                 // $('.close-modal').click();
             }

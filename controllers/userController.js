@@ -181,6 +181,9 @@ const getProfile = async (req, res) => {
     }
     else{
         profile = await User.findOne({_id: req.params._id});
+        if(!profile){
+            return res.redirect('/');
+        }
         console.log("TEST:"+profile.rank);
     }
     if(profile == null){
