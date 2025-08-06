@@ -49,7 +49,13 @@ async function market(req, res){
 }
 
 async function dashboard(req, res){
-    return res.render('market-dashboard');
+    var products = await Passage.find({author:req.session.user._id.toString(), label:'Product'}).sort('-_id').populate(passageService.standardPopulate).limit(DOCS_PER_PAGE);
+    const passages = [];
+    for (const product of products) {
+      const processedPassage = await passageService.getPassage(product);
+      passages.push(processedPassage);
+    }
+    return res.render('market-dashboard', {passages:passages, subPassages:false, page: 1});
 }
 async function orders(req, res){
     var orders = await Order.find({
@@ -60,9 +66,9 @@ async function orders(req, res){
 async function sales(req, res){
     var sales = await Order.find({
         seller: req.session.user._id.toString()
-    }).populate('passage').sort('-dateSold').limit(DOCS_PER_PAGE); //show most recent first
+    }).populate('passage buyer').sort('-dateSold').limit(DOCS_PER_PAGE); //show most recent first
     //populate fields based on chargeId
-    return res.render('sales', {sales: sales});
+    return res.render('sales', {orders: sales});
 }
 async function products(req, res){
     var products = await Passage.find({
@@ -76,6 +82,9 @@ async function buyProductLink(req, res){
         var quantity = Number(req.body.quantity);
         console.log("Quantity:"+quantity);
         var product = await Passage.findOne({_id:req.body._id});
+        if(product.inStock < 1){
+            return res.send("Product out of Stock.");
+        }
         if(isNaN(quantity) || quantity < 1 || !Number.isInteger(quantity) || quantity > product.inStock){
             return res.send("Must enter an integer between 1 and " + product.inStock);
         }

@@ -252,7 +252,7 @@ $(function(){
             distractionFree = false;
         }
     });
-    if($('#is_distraction_free').val() != 'false'){
+    if($('#is_distraction_free').exists && $('#is_distraction_free').val() != 'false'){
         $('#distraction_free').click();
     }
     // $('.passage').draggable();

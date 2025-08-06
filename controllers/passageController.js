@@ -353,6 +353,10 @@ async function createInitialPassage(req, res) {
     }
     if(passage.label == 'Product'){
         passage.price = req.body.price;
+        passage.inStock = req.body.stock;
+        if(req.body['unlimited-stock'] == 'on'){
+            passage.inStock = Infinity;
+        }
     }
     if(!labelOptions.includes(passage.label)){
         return res.send("Not an option.");

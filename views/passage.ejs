@@ -230,8 +230,12 @@
         minor: false
     })%>
     <%if(passage.label == 'Product'){%>
-        <div id="buy-product-button-<%=passage._id%>"class="buy-product-button">Buy ($<span id="buy-product-display-price-<%=passage._id%>"><%=passage.price%></span>)</div>
-        <div class="buy-product-quantity">Quantity: <input id="buy-product-quantity-<%=passage._id%>" type="number"autocomplete="off"value="1"/></div>
+        <%if((passage.inStock > 1)){%>
+            <div id="buy-product-button-<%=passage._id%>"class="buy-product-button">Buy ($<span id="buy-product-display-price-<%=passage._id%>"><%=passage.price%></span>)</div>
+            <div class="buy-product-quantity">Quantity: <input id="buy-product-quantity-<%=passage._id%>" type="number"autocomplete="off"value="1"/></div>
+        <%}else{%>
+            <div class="buy-product-quantity"><b>Out of Stock</b></div>
+        <%}%>
         <input id="buy-product-price-<%=passage._id%>"type="hidden"value="<%=passage.price%>"/>
         <input id="buy-product-in-stock-<%=passage._id%>"type="hidden"value="<%=passage.inStock%>"/>
     <%}%>

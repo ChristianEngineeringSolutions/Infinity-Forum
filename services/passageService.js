@@ -1248,7 +1248,11 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
         parent: passage._id
     })
     console.log(totalDocuments);
-    var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
+    var totalPages = 0;
+    if(passage.forum){
+        totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
+    }
+    // var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
     passage.showIframe = false;
     
     let passageUsers = [];

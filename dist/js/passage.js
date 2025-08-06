@@ -162,8 +162,8 @@ $(function(){
         }
         $('.display_data_' + _id).toggle();
         $('#passage_form_' + _id).toggle();
-        if($('#editor-label').val() == 'Product'){
-            $('#product-form-'+_id).html(productFormHTML);
+        if($('#editor-label-'+_id).val() == 'Product'){
+            $('#product-form-'+_id).html(productFormHTML(_id));
         }
     });
     $(document).on('click', '[id^="make_mainfile_"]', function(){
@@ -313,12 +313,24 @@ $(function(){
             }
         });
     });
-    const productFormHTML = `
-        Price: $<input type="number" name="price"/><br>
-        Contains screen bigger than 4 inches diagonally (phones excluded) or cathode ray tube(s) <input type="checkbox" name="ceds"/><br>
-        Contains or is new tires <input type="checkbox" name="new-tires"/><br>
-        Contains smoking, tobacco, marijuana, or alcoholic beverage products <input type="checkbox" name="drugs"/>
-    `;
+    function productFormHTML(_id="root"){
+        return `
+            Price: $<input id="editor-price-${_id}"type="number" name="price" autocomplete="off"/><br>
+            Amount In Stock: <input id="editor-stock-${_id}"type="number" name="stock" value="1"autocomplete="off"/><br>
+            Unlimited Stock: <input id="editor-unlimited-stock-${_id}"name="unlimited-stock"type="checkbox" autocomplete="off"/><br>
+            Contains screen bigger than 4 inches diagonally (phones excluded) or cathode ray tube(s) <input  autocomplete="off"type="checkbox" name="ceds"/><br>
+            Contains or is new tires <input type="checkbox" name="new-tires" autocomplete="off"/><br>
+            Contains smoking, tobacco, marijuana, or alcoholic beverage products <input type="checkbox" name="drugs" autocomplete="off"/>
+        `;
+    }
+    $(document).on('change', '[id^="editor-unlimited-stock-"]', function(e){
+        var _id = $(this).attr('id').split('-').at(-1);
+        if($(this).is(':checked')){
+            $('#editor-stock-'+_id).attr('disabled', true);
+        }else{
+            $('#editor-stock-'+_id).attr('disabled', false);
+        }
+    });
     $(document).on('change', '#editor-label', function(e){
         //change label color
         switch($(this).val()){
@@ -346,7 +358,7 @@ $(function(){
         }
         //add/remove product details
         if($(this).val() == 'Product'){
-            $('#product-form').html(productFormHTML);
+            $('#product-form').html(productFormHTML());
         }else{
             $('#product-form').html('');
         }
@@ -470,13 +482,13 @@ $(function(){
             $('.popup').css('top', $(window).scrollTop() + 'px');
         }
         $('#passage_form').show();
+        $('#passage_title').focus();
         if($('#is-root').length > 0){
             var isRoot = $('#is-root').val();
             var parentLabel = $("#parent-label").val();
             var parentPublic = $("#parent-public").val();
             if(isRoot == 'false'){
                 if(parentPublic == 'true'){
-
                 }else{
                     $('#editor-label').val(parentLabel).change();
                     if(whichPage == 'comments'){
@@ -488,7 +500,7 @@ $(function(){
             if(whichPage == 'market'){
                 $('#editor-label').hide();
                 $('#editor-label-color').hide();
-                $('#product-form').html(productFormHTML);
+                $('#product-form').html(productFormHTML());
             }
         }
         else{

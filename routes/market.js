@@ -6,7 +6,7 @@ const marketController = require('../controllers/marketController');
 const { requiresLogin } = require('../middleware/auth');
 
 router.get('/market', marketController.market);
-router.get('/market-dashboard', requiresLogin, marketController.dashboard);
+router.get('/market-dashboard/:page?', requiresLogin, marketController.dashboard);
 router.get('/orders', marketController.orders);
 router.get('/sales', marketController.sales);
 router.post('/buy-product-link', marketController.buyProductLink);

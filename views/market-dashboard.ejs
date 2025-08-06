@@ -24,4 +24,7 @@
 <div>Create a Product</div>
 <div>Search: <input type="text"></div>
 <div>Your Products:</div>
+<%if(passages){%>
+    <%- include('passages', {page: 1}) %>
+<%}%>
 <%- include('footer') %>

@@ -101,6 +101,9 @@ const stripeWebhook = async (request, response) => {
                             dateSold: Date.now(),
                             quantity:metadata.quantity
                           });
+                          await Passage.updateOne({_id:product._id.toString()}, {$inc:{
+                            inStock: -metadata.quantity 
+                          }});
                           console.log("Order created.");
                         }else{
                           //simple donation
