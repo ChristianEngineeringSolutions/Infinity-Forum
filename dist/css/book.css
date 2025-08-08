@@ -110,7 +110,7 @@ hr{
     width: 100%;
     font-weight: lighter;
  }
-#search{
+#search, .search{
 	z-index: 9999999 !important;
 	position: relative;
 }

@@ -53,6 +53,9 @@ async function paginate(req, res) {
                     break;
                 case 'stream':
                     break;
+                case 'market':
+                    label = 'Product';
+                    break;
             }
             if (parent !== 'root') find.parent = parent;
             if (profile !== 'false') find.author = profile;

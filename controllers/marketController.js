@@ -49,33 +49,59 @@ async function market(req, res){
 }
 
 async function dashboard(req, res){
-    var products = await Passage.find({author:req.session.user._id.toString(), label:'Product'}).sort('-_id').populate(passageService.standardPopulate).limit(DOCS_PER_PAGE);
+    var page = req.query.page || req.params.page || 1;
+    var find = {
+        author:req.session.user._id.toString(), 
+        label:'Product'
+    };
+    if(req.params.search){
+        find.title = {$regex: req.params.search, $options:'i'}
+    }
+    console.log(JSON.stringify(find));
+    var totalDocuments = await Passage.countDocuments(find);
+    var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
+    var products = await Passage.paginate(find, {sort: '-_id', page: page, limit: DOCS_PER_PAGE, populate: passageService.standardPopulate});
     const passages = [];
-    for (const product of products) {
+    for (const product of products.docs) {
       const processedPassage = await passageService.getPassage(product);
       passages.push(processedPassage);
     }
-    return res.render('market-dashboard', {passages:passages, subPassages:false, page: 1});
+    return res.render('market-dashboard', {passages:passages, subPassages:false, page: page, totalPages: totalPages});
 }
 async function orders(req, res){
-    var orders = await Order.find({
+    var page = req.query.page || req.params.page || 1;
+    var find = {
         buyer: req.session.user._id.toString()
-    }).populate('seller passage').sort('-dateSold').limit(DOCS_PER_PAGE); //show most recent first
-    return res.render('orders', {orders: orders});
+    };
+    if(req.params.search){
+        find.title = {$regex: req.params.search, $options:'i'}
+    }
+    var totalDocuments = await Order.countDocuments(find);
+    var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
+    var orders = await Order.paginate(find, {
+        sort: '-dateSold', page:page, 
+        limit:DOCS_PER_PAGE, 
+        populate:'seller passage'
+    }); //show most recent first
+    return res.render('orders', {orders: orders.docs, page: page, totalPages: totalPages});
 }
 async function sales(req, res){
-    var sales = await Order.find({
+    var page = req.query.page || req.params.page || 1;
+    var find = {
         seller: req.session.user._id.toString()
-    }).populate('passage buyer').sort('-dateSold').limit(DOCS_PER_PAGE); //show most recent first
+    };
+    if(req.params.search){
+        find.title = {$regex: req.params.search, $options:'i'}
+    }
+    var totalDocuments = await Order.countDocuments(find);
+    var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
+    var sales = await Order.paginate(find, {
+        sort: '-dateSold', page:page, 
+        limit:DOCS_PER_PAGE, 
+        populate:'buyer passage'
+    });
     //populate fields based on chargeId
-    return res.render('sales', {orders: sales});
-}
-async function products(req, res){
-    var products = await Passage.find({
-        label: 'Product',
-        author: req.session.user._id.toString()
-    }).populate(passageService.standardPopulate).sort('-_id').limit(DOCS_PER_PAGE);
-    return res.render('products', {products: products});
+    return res.render('sales', {orders: sales.docs, page: page, totalPages: totalPages});
 }
 async function buyProductLink(req, res){
     try {
@@ -141,7 +167,6 @@ module.exports = {
     dashboard,
     orders,
     sales,
-    products,
     buyProductLink,
     markOrderShipped
 };

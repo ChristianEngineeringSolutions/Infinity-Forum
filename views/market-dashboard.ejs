@@ -21,10 +21,11 @@
 <div><a target="_blank"href="/stripeAuthorize">View Earnings and Payouts</a></div>
 <div><a href="/orders">View Orders</a></div>
 <div><a href="/sales">View Sales</a></div>
-<div>Create a Product</div>
-<div>Search: <input type="text"></div>
-<div>Your Products:</div>
+<div>Your Products</div>
+<div><input placeholder="Search...."id="market-search"class="search"type="text"></div>
+<%- include('page-numbers') %>
 <%if(passages){%>
-    <%- include('passages', {page: 1}) %>
+    <%- include('passages', {page: page}) %>
 <%}%>
+<%- include('page-numbers') %>
 <%- include('footer') %>

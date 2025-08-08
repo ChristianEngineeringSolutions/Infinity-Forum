@@ -15,13 +15,18 @@
 <br>
 <br>
 <div>
+    <a href="/market-dashboard">Back to Market Dashboard</a>
+</div>
+<div>
     Your Sales
 </div>
 <%# include search by id %>
-<div>Search Sales: <input type="text"></div>
+<div><input placeholder="Search Sales...."id="market-search"class="search"type="text"></div>
+<%- include('page-numbers') %>
 <%orders.forEach(function(order){%>
     <%if(order.passage != null){%>
         <%- include('order', {order: order, seller:false})%>
     <%}%>
 <%});%>
+<%- include('page-numbers') %>
 <%- include('footer') %>

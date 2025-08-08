@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
 
 const orderSchema = mongoose.Schema({
+    title: {
+        type: String,
+        default: 'Untitled'
+    },
     buyer: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

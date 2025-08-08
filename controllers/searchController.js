@@ -270,6 +270,10 @@ async function search(req, res) {
             matchStage.public = false;
             matchStage.forum = false;
             break;
+        case 'market':
+            matchStage.public = true;
+            matchStage.forum = false;
+            matchStage.label = 'Product';
         // case 'feed': // ... (your feed logic) ...
     }
     console.log("FLAIR2");

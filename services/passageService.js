@@ -1244,12 +1244,11 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     if(passage == null){
         return false;
     }
-    var totalDocuments = await Passage.countDocuments({
-        parent: passage._id
-    })
-    console.log(totalDocuments);
     var totalPages = 0;
     if(passage.forum){
+        var totalDocuments = await Passage.countDocuments({
+            parent: passage._id
+        });
         totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
     }
     // var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
