@@ -16,6 +16,7 @@ const {
     percentOfPayouts
 } = require('../common-utils');
 const systemService = require('../services/systemService');
+const starService = require('../services/starService');
 const paymentService = require('../services/paymentService');
 const verificationService = require('../services/verificationService');
 
@@ -118,7 +119,7 @@ const stripeWebhook = async(request, response) => {
                             //create an order for the product
                             var product = await Passage.findOne({
                                 _id: metadata.productId
-                            });
+                            }).populate('author');
                             await Order.create({
                                 title: product.title,
                                 buyer: metadata.buyerId,
@@ -128,6 +129,8 @@ const stripeWebhook = async(request, response) => {
                                 dateSold: Date.now(),
                                 quantity: metadata.quantity
                             });
+                            //give seller stars
+                            await starService.addStarsToUser(product.author, amountToAdd);
                             await Passage.updateOne({
                                 _id: product._id.toString()
                             }, {

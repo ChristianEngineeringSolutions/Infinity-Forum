@@ -1396,8 +1396,11 @@ $(function(){
     });
     $(document).on('click', '.add-source', function(){
         var _id = $(this).attr('id').split('-').at(-1);
-        $('.new-sources:not(#new-sources-'+_id+')').hide();
+        $('.new-sources:not(#new-sources-'+_id+'):not(#new-sources)').hide();
         $('#new-sources-' + _id).slideToggle();
+    });
+    $(document).on('click', '#add-source', function(){
+        $('#new-sources').slideToggle();
     });
     $(document).on('click', '[id^=remove-sources-]', function(){
         var _id = $(this).attr('id').split('-').at(-1);

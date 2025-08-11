@@ -43,7 +43,7 @@ async function index(req, res) {
     }
 }
 async function terms(req, res) {
-    res.render('terms');
+    res.render('terms', {DAEMONS: []});
 }
 async function donate(req, res) {
     if(req.session.CESCONNECT){

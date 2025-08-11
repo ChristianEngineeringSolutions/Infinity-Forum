@@ -13,6 +13,7 @@ const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis')
 const { scripts, DOCS_PER_PAGE, labelOptions } = require('../common-utils');
 const browser = require('browser-detect');
 var fs = require('fs'); 
+const mongoose = require('mongoose');
 
 async function deletePassage(req, res) {
     var passage = await Passage.findOne({_id: req.body._id});
@@ -308,7 +309,7 @@ async function createInitialPassage(req, res) {
     var formData = req.body;
     var repost = req.body.repost == 'true' ? true : false;
     var repostID = req.body['repost-id'];
-    var passage = await Passage.findOne({_id: newPassage._id}).populate('author users sourceList collaborators versions');
+    var passage = await Passage.findOne({_id: newPassage._id}).populate(passageService.standardPopulate);
     passage.yt = formData.yt;
     if(repost){
         var reposted = await Passage.findOne({_id:repostID});
@@ -374,6 +375,16 @@ async function createInitialPassage(req, res) {
     passage.lang = formData.lang;
     passage.fileStreamPath = formData.filestreampath;
     passage.previewLink = formData['editor-preview'];
+    var sourceList = formData.sourceList;
+    if(sourceList.length > 0){
+        sourceList = sourceList.split(',');
+        for(const source of sourceList){
+            if(mongoose.Types.ObjectId.isValid(source)){
+                passage.sourceList.push(source);
+            }
+        }
+    }
+
     if(parent != null && !passage.public && parent.author._id.toString() == req.session.user._id.toString()){
         if(parent.sameUsers){
             console.log("Same users");
@@ -418,6 +429,8 @@ async function createInitialPassage(req, res) {
         updateFile(passage.fileStreamPath, passage.code);
     }
     await passageService.afterPassageCreation(newPassage);
+    // Reload passage from database with proper population before calling getPassage
+    passage = await Passage.findById(passage._id).populate(passageService.standardPopulate);
     passage = await passageService.getPassage(passage);
     if(formData.page == 'stream'){
         return res.render('passage', {subPassages: false, passage: passage, sub: true, subPassage:true});

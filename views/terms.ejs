@@ -1,45 +1,452 @@
-<p>
-    Infinity-Forum (IF) rewards users through the built-in reputation system. IF distributes all surplus revenue to its users based on contribution points to stimulate productivity on the website.
-    You must be at least 13 years of age to use this site.
-</p>
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<style>
+    .terms-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        color: #333;
+        z-index: 10;
+        position: relative;
+    }
+    .terms-header {
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 20px;
+    }
+    .terms-header h1 {
+        color: #333 !important;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+    .terms-header p {
+        color: #666 !important;
+        margin: 5px 0;
+    }
+    .toc {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 30px;
+        border: 1px solid #dee2e6;
+    }
+    .toc h3 {
+        margin-top: 0;
+        color: #007bff !important;
+        font-size: 1.3em;
+    }
+    .toc ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    .toc li {
+        margin: 8px 0;
+    }
+    .toc a {
+        text-decoration: none;
+        color: #495057 !important;
+        font-weight: 500;
+    }
+    .toc a:hover {
+        color: #007bff !important;
+        text-decoration: underline;
+    }
+    .section {
+        margin-bottom: 40px;
+        padding: 20px 0;
+    }
+    .section h2 {
+        color: #007bff !important;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+    .section h3 {
+        color: #495057 !important;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        font-size: 1.3em;
+    }
+    .section p {
+        color: #333 !important;
+        line-height: 1.6;
+        margin: 15px 0;
+    }
+    .highlight-box {
+        background: #e3f2fd !important;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 4px;
+    }
+    .highlight-box p, .highlight-box strong, .highlight-box ul, .highlight-box li {
+        color: #0d47a1 !important;
+    }
+    .warning-box {
+        background: #fff3e0 !important;
+        border-left: 4px solid #ff9800;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 4px;
+    }
+    .warning-box p, .warning-box strong, .warning-box ul, .warning-box li {
+        color: #e65100 !important;
+    }
+    .important {
+        font-weight: bold;
+        color: #d32f2f !important;
+    }
+    ul, ol {
+        margin: 15px 0;
+        padding-left: 25px;
+        color: #333;
+    }
+    li {
+        margin: 8px 0;
+        line-height: 1.6;
+        color: #333 !important;
+    }
+    strong {
+        color: #333 !important;
+    }
+    html, body{
+        background: darkgrey !important;
+    }
+</style>
+</head>
+<%- include('header') %>
+<%- include('header2', {page: 'more'}) %>
+<%- include('menu') %>
+<%- include('sidebar') %>
+<%- include('member_box') %>
+<br>
+<br>
+<br>
+<br>
+<br>
+<div class="terms-container">
+    <div class="terms-header">
+        <h1>Terms of Service & Privacy Policy</h1>
+        <p>Infinity-Forum (IF) - Collaborative Solutions Platform</p>
+        <p><em>Last Updated: <%= new Date().toLocaleDateString() %></em></p>
+    </div>
 
-<p>These terms are subject to change.</p>
+    <div class="toc">
+        <h3>Table of Contents</h3>
+        <ul>
+            <li><a href="#acceptance">1. Acceptance of Terms</a></li>
+            <li><a href="#eligibility">2. User Eligibility</a></li>
+            <li><a href="#revenue-system">3. Revenue Distribution & Rewards System</a></li>
+            <li><a href="#ip-rights">4. Intellectual Property Rights</a></li>
+            <li><a href="#content-policy">5. Content Policy & Prohibited Conduct</a></li>
+            <li><a href="#marketplace">6. Marketplace Terms</a></li>
+            <li><a href="#identity-verification">7. Identity Verification</a></li>
+            <li><a href="#privacy">8. Privacy & Data Protection</a></li>
+            <li><a href="#liability">9. Limitation of Liability</a></li>
+            <li><a href="#termination">10. Account Termination</a></li>
+            <li><a href="#disputes">11. Dispute Resolution</a></li>
+            <li><a href="#changes">12. Changes to Terms</a></li>
+            <li><a href="#contact">13. Contact Information</a></li>
+        </ul>
+    </div>
 
-<p>
-    IF utilizes an open-source algorithm in order to manage its budget and distribute rewards to users based on merit.
-    These algorithms are subject to change; IF is not responsible for compensating users for any donations or activity on the website infinity-forum.org.
-    IF is also not responsible for any lost work. IF reserves the right to remove or censor any content for any reason. Pornographic or illegal material is not allowed on the site. Distributing pornographic material on this site or choosing a profile name or information that is pornographic in nature may result in your account being removed or suspended.
-</p>
+    <div class="section" id="acceptance">
+        <h2>1. Acceptance of Terms</h2>
+        <p>By accessing and using Infinity-Forum ("IF", "we", "us"), you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our platform.</p>
+        
+        <div class="highlight-box">
+            <strong>Important:</strong> These terms are subject to change. We will notify users of significant changes via the platform.
+        </div>
+    </div>
 
-<p>
-    IF modules maintain a source list and reward system that allows users to utilize the works of others in their own contributions while keeping track of merit. 
-    All users own their own work. By using IF, you are authorizing IF and other users to utilize your work on the system (including selling as a product in the Infinity Forum marketplace) as long as they use the built in channels for maintaining credit. To use your work outside of the system (creating a derivative work for posting off-site, making a profit outside of the Infinity Forum Marketplace, etc., excluding standard sharing practices (fair use)), users must gain permission from all contributors, in which case they are able to use any passages (you authorize this usage by continuing to use this site). Infinity-Forum is considered a contributor to any projects with a source.
-</p>
+    <div class="section" id="eligibility">
+        <h2>2. User Eligibility</h2>
+        <p>To use Infinity-Forum, you must:</p>
+        <ul>
+            <li>Be at least <span class="important">13 years of age</span></li>
+            <li>Provide accurate account information, when the need for accuracy is specified.</li>
+            <li>Comply with all applicable laws and regulations</li>
+            <li>Not be prohibited from using the service under applicable law</li>
+        </ul>
+    </div>
 
-<p>
-    If you wish to revoke the license you give others to sell your work or derivatives of it in the Infinity Forum Marketplace, you may delete the referenced passage (losing any points potentially gained from it), and submit a copyright/patent/trademark (IP) claim by emailing admin@infinity-forum.org. Products will only be taken down if you have an actual IP claim to the product, not simply if you were a contributor to it on Infinity Forum. When revoking a license to sell, the license is revoked when IF revokes it, not when the complaint is made. Posts utilizing your work but not selling it may not have their licenses revoked.
-</p>
+    <div class="section" id="revenue-system">
+        <h2>3. Revenue Distribution & Rewards System</h2>
+        
+        <h3>How Rewards Work</h3>
+        <p>Infinity-Forum operates a unique revenue-sharing model:</p>
+        <ul>
+            <li><strong>Merit-Based Distribution:</strong> All surplus revenue is distributed to users based on contribution points</li>
+            <li><strong>Contribution Points:</strong> Earned by receiving stars from other users for quality content and collaboration</li>
+            <li><strong>Open-Source Algorithm:</strong> Our distribution algorithms are transparent and subject to community review</li>
+        </ul>
 
-<p>
-    If you have an IP claim to a work with no other Infinity Forum contributors, and wish you and any coowners to be the only seller(s), you may revoke the licenses to sell without deleting the post. Simply email admin@infinity-forum.org.
-</p>
+        <div class="warning-box">
+            <strong>Disclaimer:</strong> 
+            <ul>
+                <li>Reward algorithms may change to improve fairness and platform sustainability</li>
+                <li>IF is not responsible for compensating users for any donations or activity</li>
+                <li>We are not responsible for any lost work or data</li>
+                <li>No guarantee of specific reward amounts</li>
+            </ul>
+        </div>
+    </div>
 
-<p>By posting, uploading, or otherwise making available any content containing trademarks, logos, or other intellectual property ("User Content") on infinity-forum.org, you hereby grant to infinity-forum.org and other users of the Website a non-exclusive, royalty-free, worldwide, perpetual, irrevocable, and sublicensable license to use, reproduce, modify, adapt, publish, translate, create derivative works from, distribute, publicly perform, and publicly display such User Content solely on and through the Website for the purpose of operating and providing the Website's services. This license is limited to the functionality of the Website and does not grant any rights for use outside of the Website without the explicit permission of the intellectual property owner, except for uses to improve or fund the website (all funds go to paying users), as well as for marketing purposes.
-   You represent and warrant that you own or have the necessary licenses, rights, consents, and permissions to publish User Content you submit; and the User Content and your use of the User Content does not and will not infringe, misappropriate or violate a third party's intellectual property rights, or rights of publicity or privacy, or any other applicable law or regulation."</p>
+    <div class="section" id="ip-rights">
+        <h2>4. Intellectual Property Rights</h2>
+        
+        <h3>Your Content Ownership</h3>
+        <p><strong>You retain ownership</strong> of all original content you create and post on Infinity-Forum.</p>
+        
+        <h3>License to IF and Other Users</h3>
+        <p>By posting content, you grant IF and other users a limited license to:</p>
+        <ul>
+            <li>Use your work within the IF system with proper attribution</li>
+            <li>Build upon and reference your work using our built-in citation system</li>
+            <li>Collaborate and create derivative works within the platform</li>
+        </ul>
+        
+        <h3>External Use & Marketplace</h3>
+        <p><strong>For use outside IF or in the IF Marketplace:</strong></p>
+        <ul>
+            <li>Permission required from all contributors with IP claims</li>
+            <li>IF automatically grants permission for IF Marketplace sales</li>
+            <li>Standard fair use practices apply for non-commercial sharing</li>
+        </ul>
+        
+        <h3>Collaborative Works</h3>
+        <div class="highlight-box">
+            <strong>Important:</strong> 
+            <ul>
+                <li>IF is considered a contributor to any projects that use sources</li>
+                <li>All contributors are equal co-owners of collaborative works</li>
+                <li>When in doubt, assume contributors have IP claims to their work</li>
+            </ul>
+        </div>
+        
+        <h3>Code Licensing</h3>
+        <p>All code posted to Infinity-Forum is released under the <strong>MIT License</strong>, with the requirement that sources must be properly cited using our attribution system.</p>
+        
+        <h3>User Content License</h3>
+        <p>You grant IF a non-exclusive, royalty-free, worldwide, perpetual license to use your content for:</p>
+        <ul>
+            <li>Platform operation and service provision</li>
+            <li>Website improvement and funding (funds distributed to users)</li>
+            <li>Marketing purposes</li>
+        </ul>
+        
+        <p><strong>You represent and warrant that:</strong></p>
+        <ul>
+            <li>You own or have necessary rights to your submitted content</li>
+            <li>Your content does not infringe third-party rights</li>
+            <li>Your content complies with applicable laws</li>
+        </ul>
+    </div>
 
-<p>
-    Whenever possible, you agree to use the in-house citation system to attribute original sources. For sources not on the site, you agree to cite in the normal manner, using the passage bibliography or description text.
-</p>
+    <div class="section" id="content-policy">
+        <h2>5. Content Policy & Prohibited Conduct</h2>
+        
+        <h3>Content Standards</h3>
+        <p>Content submitted to IF should be:</p>
+        <ul>
+            <li>Constructive and aimed at helping others</li>
+            <li>Properly attributed using our citation system</li>
+            <li>Respectful of intellectual property rights</li>
+            <li>Compliant with applicable laws</li>
+        </ul>
+        
+        <h3>Prohibited Content</h3>
+        <div class="warning-box">
+            <strong>Strictly Prohibited:</strong>
+            <ul>
+                <li>Pornographic or sexually explicit material</li>
+                <li>Illegal content or activities</li>
+                <li>Harassment, threats, or abusive behavior</li>
+                <li>Spam or misleading information</li>
+                <li>Content that infringes intellectual property rights</li>
+            </ul>
+        </div>
+        
+        <h3>Enforcement</h3>
+        <p>IF reserves the right to:</p>
+        <ul>
+            <li>Remove or censor any content for any reason</li>
+            <li>Suspend or terminate accounts for policy violations</li>
+            <li>Report illegal activity to appropriate authorities</li>
+        </ul>
+        
+        <h3>Content Disclaimer</h3>
+        <p>User-submitted content does not reflect IF's views or beliefs. Our goal is to categorize and organize information in ways that maximally benefit our mission of helping others.</p>
+    </div>
 
-<p>
-    Passages which users submit to the website infinity-forum.org are not reflective of our views or beliefs.
-    Our goal is to find a proper place to categorize any information which is submitted such that it is maximally beneficial to our company goals
-    of helping others.
-</p>
+    <div class="section" id="marketplace">
+        <h2>6. Marketplace Terms</h2>
+        <p>The IF Marketplace allows users to commercialize their work with specific terms:</p>
+        <ul>
+            <li>IF automatically grants permission for marketplace sales of collaborative works</li>
+            <li>Other contributors must provide explicit permission</li>
+            <li>Standard marketplace fees and policies apply</li>
+            <li>All sales must comply with applicable laws and regulations</li>
+        </ul>
+    </div>
 
-<p>
-    For users who choose to verify their identity, we store a hash of identity document details, as well as the user's first name, last name, and date of birth. We use the hash in order to identify duplicate accounts and prevent fraud. We use the other details to provide verified account badges (we compare to the public name). These details are not made public.
+    <div class="section" id="identity-verification">
+        <h2>7. Identity Verification</h2>
+        
+        <h3>Verification Process</h3>
+        <p>Users may optionally verify their identity to receive verified badges and additional platform benefits.</p>
+        
+        <h3>Data Storage</h3>
+        <p>For verified users, we store:</p>
+        <ul>
+            <li><strong>Hashed identity document details</strong> (for duplicate account prevention and fraud detection)</li>
+            <li><strong>First name, last name, and date of birth</strong> (for badge verification and display)</li>
+        </ul>
+        
+        <div class="highlight-box">
+            <strong>Privacy Protection:</strong>
+            <ul>
+                <li>Identity details are never made public</li>
+                <li>Data is used solely for verification and fraud prevention</li>
+                <li>We employ industry-standard security measures</li>
+            </ul>
+        </div>
+    </div>
 
-    We do not sell your information.
-</p>
+    <div class="section" id="privacy">
+        <h2>8. Privacy & Data Protection</h2>
+        
+        <h3>Our Privacy Promise</h3>
+        <div class="highlight-box">
+            <strong>We do not sell your personal information.</strong>
+        </div>
+        
+        <h3>Data We Collect</h3>
+        <ul>
+            <li>Account information (username, email, profile data)</li>
+            <li>Content and contributions to the platform</li>
+            <li>Usage analytics and platform interaction data</li>
+            <li>Identity verification data (for verified accounts only)</li>
+        </ul>
+        
+        <h3>How We Use Data</h3>
+        <ul>
+            <li>Platform operation and service improvement</li>
+            <li>Reward distribution calculations</li>
+            <li>Fraud prevention and security</li>
+            <li>Communication about platform updates</li>
+        </ul>
+        
+        <h3>Data Security</h3>
+        <p>We implement appropriate technical and organizational measures to protect your data against unauthorized access, alteration, disclosure, or destruction.</p>
+    </div>
 
+    <div class="section" id="liability">
+        <h2>9. Limitation of Liability</h2>
+        
+        <div class="warning-box">
+            <strong>Important Legal Disclaimers:</strong>
+        </div>
+        
+        <h3>Service Availability</h3>
+        <p>IF is provided "as is" without warranties of any kind. We do not guarantee:</p>
+        <ul>
+            <li>Continuous, uninterrupted service availability</li>
+            <li>Accuracy or completeness of user-generated content</li>
+            <li>Specific reward amounts or distribution schedules</li>
+            <li>Data preservation or backup</li>
+        </ul>
+        
+        <h3>Limitation of Damages</h3>
+        <p>IF's liability is limited to the maximum extent permitted by law. We are not liable for:</p>
+        <ul>
+            <li>Lost profits, data, or opportunities</li>
+            <li>Indirect, incidental, or consequential damages</li>
+            <li>Actions of other users</li>
+            <li>Third-party content or services</li>
+        </ul>
+        
+        <h3>User Responsibility</h3>
+        <p>Users are responsible for:</p>
+        <ul>
+            <li>Backing up their own work and data</li>
+            <li>Complying with applicable laws</li>
+            <li>Respecting others' intellectual property</li>
+            <li>Using the platform at their own risk</li>
+        </ul>
+    </div>
+
+    <div class="section" id="termination">
+        <h2>10. Account Termination</h2>
+        
+        <h3>Termination by User</h3>
+        <p>You may terminate your account at any time by contacting us or using account settings.</p>
+        
+        <h3>Termination by IF</h3>
+        <p>We may suspend or terminate accounts for:</p>
+        <ul>
+            <li>Violation of these terms</li>
+            <li>Illegal activity</li>
+            <li>Harm to other users or the platform</li>
+            <li>Extended inactivity</li>
+        </ul>
+        
+        <h3>Effect of Termination</h3>
+        <ul>
+            <li>Access to your account will be revoked</li>
+            <li>Your content may remain on the platform (as permitted by these terms)</li>
+            <li>Outstanding rewards may be forfeited</li>
+        </ul>
+    </div>
+
+    <div class="section" id="disputes">
+        <h2>11. Dispute Resolution</h2>
+        
+        <h3>Governing Law</h3>
+        <p>These terms are governed by and construed in accordance with the laws of the United States of America.</p>
+        
+        <h3>Dispute Process</h3>
+        <ol>
+            <li><strong>Contact Us First:</strong> Please reach out to resolve issues informally</li>
+            <li><strong>Mediation:</strong> If informal resolution fails, we encourage mediation</li>
+            <li><strong>Arbitration:</strong> Binding arbitration may be required for certain disputes</li>
+        </ol>
+    </div>
+
+    <div class="section" id="changes">
+        <h2>12. Changes to Terms</h2>
+        <p>We may update these terms to:</p>
+        <ul>
+            <li>Reflect changes in our services</li>
+            <li>Address new legal requirements</li>
+            <li>Improve user protection</li>
+        </ul>
+        
+        <p><strong>Notice:</strong> We will provide reasonable notice of significant changes through the platform or via email.</p>
+    </div>
+
+    <div class="section" id="contact">
+        <h2>13. Contact Information</h2>
+        <p>For questions about these terms or our services, please contact us:</p>
+        
+        <div class="highlight-box">
+            <strong>Infinity-Forum Support</strong><br>
+            Email: admin@infinity-forum.org<br>
+            <!-- Address: [Business address to be added]<br>
+            Platform: Use the contact form on our website -->
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d;">
+        <p>Thank you for being part of the Infinity-Forum community!</p>
+        <p><em>Together, we build solutions that help others.</em></p>
+    </div>
+</div>
+
+<%- include('footer') %>

@@ -75,13 +75,28 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^=remove-citation-]', function(){
+        var _id = $(this).attr('id').split('-').at(-1);
+        var _ids = $('#sourceList-data').val().split(',');
+        _ids = _ids.filter((item) => item !== _id);
+        $('#sourceList-data').val(_ids.join(','));
+        $('#citation-'+_id).remove();
+    });
     $(document).on('click', '[id^=transfer_bookmark_]', function(){
         var thiz = this;
         var _id = $(thiz).attr('id').split('_')[2];
         var _chief = $('#chief_passage_id').val();
         var focus = false;
+        //they're adding sources to a new passage their writing
+        if($('#new-sources:visible').length > 0){
+            $('#sourceList').append(`
+                <div class="new-source" id="citation-${$(thiz).data('id')}">"${$(thiz).data('title')}" Added to Sourcelist. <span style="color:red;cursor:pointer;font-weight:bolder;" id="remove-citation-${$(this).data('id')}">X</span></div>
+            `);
+            $('#sourceList-data').val($('#sourceList-data').val() == '' ? $(thiz).data('id') : $('#sourceList-data').val() + ',' + $(thiz).data('id'));
+            return;
+        }
         if($('.new-sources:visible').length > 0){
-            //they're adding to a passage
+            //they're adding to an existing passage
             focus = true;
             _chief = $('.new-sources:visible').attr('id').split('-').at(-1);
         }

@@ -18,7 +18,7 @@ async function starMessages(passage, stars=1) {
         await message.save();
     }
 }
-async function addStarsToUser(user, amount, _session){
+async function addStarsToUser(user, amount, _session=null){
     if(user.borrowedStars > 0){
         user.borrowedStars -= amount;
         var remainder = user.borrowedStars;
@@ -31,7 +31,14 @@ async function addStarsToUser(user, amount, _session){
     }else{
         user.stars += amount;
     }
-    await user.save({session: _session});
+    if(session !== null){
+        await user.save({session: _session});
+    }else{
+        await User.updateOne({_id:user._id.toString()}, {$set: {
+            stars: user.stars,
+            borrowedStars: user.borrowedStars
+        }});
+    }
 }
 
 async function starPassage(sessionUser, amount, passageID, userID, deplete=true, single=false, initialSession=null){
@@ -638,5 +645,6 @@ module.exports = {
     starPassage,
     starSources,
     singleStarPassage,
-    singleStarSources
+    singleStarSources,
+    addStarsToUser
 };
