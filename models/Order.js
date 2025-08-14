@@ -29,6 +29,18 @@ const orderSchema = mongoose.Schema({
     quantity: {
         type: Number,
         default: 1
+    },
+    carrier: {
+        type: String,
+        maxLength: 100
+    },
+    trackingNumber: {
+        type: String,
+        maxLength: 100
+    },
+    shippingService: {
+        type: String,
+        maxLength: 100
     }
 });
 

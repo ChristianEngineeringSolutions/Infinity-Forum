@@ -1,5 +1,5 @@
 <div id="order-<%=order._id%>"class="order">
-    <div><%=order.passage.title%></div>
+    <div><a href="/<%=seller ? 'order' : 'sale';%>/<%=order.title == '' ? 'Untitled' : encodeURIComponent(order.title)%>/<%=order._id%>"><%=order.passage.title%></a></div>
     <div>Sold: <%=order.dateSold%></div>
     <div><%=order.passage.price%></div>
     <div>Quantity: <%=order.quantity%></div>
@@ -10,7 +10,21 @@
         <div>Buyer: <%=order.buyer.name%></div>
     <%}%>
     <div><%=order.content%></div>
-    <%if(!seller){%>
-        <div>Mark Shipped</div>
+    <%if(!seller && order.seller._id.toString() === user._id.toString()){%>
+        <%if(!order.shipped){%>
+            <div><input placeholder="Shipping Carrier"name="carrier"type="text" autocomplete="off"/></div>
+            <div><input placeholder="Tracking Number"name="trackingNumber"type="text" autocomplete="off"/></div>
+            <div><input placeholder="Shipping Service"type="text" autocomplete="off" name="shippingService"/></div>
+            <div><button id="mark-order-shipped-<%=order._id%>">Mark Shipped</button></div>
+        <%}else{%>
+            <div>Shipped.</div>
+        <%}%>
+    <%}else{%>
+        <%if(order.shipped){%>
+            <div>Shipped.</div>
+            <div>Shipping Carrier: <%=order.carrier ? order.carrier : 'Unspecified'%></div>
+            <div>Tracking Number: <%=order.trackingNumber ? order.trackingNumber : 'Unspecified'%></div>
+            <div>Shipping Service: <%=order.shippingService ? order.shippingService : 'Unspecified'%></div>
+        <%}%>
     <%}%>
 </div>

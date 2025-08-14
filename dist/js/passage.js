@@ -163,7 +163,7 @@ $(function(){
         $('.display_data_' + _id).toggle();
         $('#passage_form_' + _id).toggle();
         if($('#editor-label-'+_id).val() == 'Product'){
-            $('#product-form-'+_id).html(productFormHTML(_id));
+            $('#product-form-'+_id).html(productFormHTML(_id, $(this).data('price'), $(this).data('stock'), $(this).data('unlimited')));
         }
     });
     $(document).on('click', '[id^="make_mainfile_"]', function(){
@@ -299,25 +299,25 @@ $(function(){
         var quantity = Number($(this).val());
         $('#buy-product-display-price-'+_id).text(price*quantity);
     });
-    $(document).on('click', '[id^="mark-order-shipped"]', function(e){
+    $(document).on('click', '[id^="mark-order-shipped-"]', function(e){
         var thiz = $(this);
         var _id = thiz.attr('id').split('-').at(-1);
         $.ajax({
             type: 'post',
             url: '/mark-order-shipped',
             data: {
-                productId: _id
+                orderId: _id
             },
             success: function(data){
                 $('#order-'+_id).replaceWith(data);
             }
         });
     });
-    function productFormHTML(_id="root"){
+    function productFormHTML(_id="root", price=null, stock=null, unlimited=null){
         return `
-            Price: $<input id="editor-price-${_id}"type="number" name="price" autocomplete="off"/><br>
-            Amount In Stock: <input id="editor-stock-${_id}"type="number" name="stock" value="1"autocomplete="off"/><br>
-            Unlimited Stock: <input id="editor-unlimited-stock-${_id}"name="unlimited-stock"type="checkbox" autocomplete="off"/><br>
+            Price: $<input ${price ? `value="${price}"` : 'value="1"'} min="1"id="editor-price-${_id}"type="number" name="price" autocomplete="off"/><br>
+            Amount In Stock: <input ${stock ? `value="${stock}"` : 'value="1"'} id="editor-stock-${_id}"type="number" name="stock" autocomplete="off"/><br>
+            Unlimited Stock: <input ${unlimited ? `checked` : ''} id="editor-unlimited-stock-${_id}"name="unlimited-stock"type="checkbox" autocomplete="off"/><br>
             Contains screen bigger than 4 inches diagonally (phones excluded) or cathode ray tube(s) <input  autocomplete="off"type="checkbox" name="ceds"/><br>
             Contains or is new tires <input type="checkbox" name="new-tires" autocomplete="off"/><br>
             Contains smoking, tobacco, marijuana, or alcoholic beverage products <input type="checkbox" name="drugs" autocomplete="off"/>
@@ -1288,6 +1288,9 @@ $(function(){
             //         // alert(data);
             //     }
             // });
+        }
+        if($('#editor-label-'+_id).val() == 'Product' && $('#product-form-'+_id).html().length < 10){
+            $('#product-form-'+_id).html(productFormHTML(_id, $('#passage_edit_'+_id).data('price'), $('#passage_edit_'+_id).data('stock'), $('#passage_edit_'+_id).data('unlimited')));
         }
         $('#passage_form_' + _id).submit();
     });

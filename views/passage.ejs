@@ -168,7 +168,7 @@
                 <%}%>
                 <%if(passage.author && user && (passage.author._id.toString() == user._id.toString()) || user.admin){%>
                     <%if(passage.public_daemon != 2 && passage.default_daemon != true && passage.versionOf == null){%>
-                        <li id="passage_edit_<%=passage._id%>" data-quill="false"class="passage_option">Edit</li>
+                        <li id="passage_edit_<%=passage._id%>" data-price="<%=passage.price%>" data-stock="<%=passage.inStock%>" data-unlimited="<%=passage.inStock === Infinity ? true : false%>" data-quill="false"class="passage_option">Edit</li>
                         <li id="passage_update_<%=passage._id%>" class="passage_option">Update</li>
                         <li id="passage_delete_<%=passage._id%>" class="passage_option passage_delete">Delete</li>
                     <%}%>

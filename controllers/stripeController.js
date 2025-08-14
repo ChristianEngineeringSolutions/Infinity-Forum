@@ -116,48 +116,6 @@ const stripeWebhook = async(request, response) => {
                                     donationStars: amountToAdd
                                 }
                             });
-                            //create an order for the product
-                            var product = await Passage.findOne({
-                                _id: metadata.productId
-                            }).populate('author');
-                            await Order.create({
-                                title: product.title,
-                                buyer: metadata.buyerId,
-                                chargeId: chargeId,
-                                seller: product.author._id.toString(),
-                                passage: product._id.toString(),
-                                dateSold: Date.now(),
-                                quantity: metadata.quantity
-                            });
-                            //give seller stars
-                            await starService.addStarsToUser(product.author, amountToAdd);
-                            await Passage.updateOne({
-                                _id: product._id.toString()
-                            }, {
-                                $inc: {
-                                    inStock: -metadata.quantity
-                                }
-                            });
-                            //transfer 90% of amount to seller
-                            //take 25% of the 10% cut and add it to SYSTEM.userAmount
-                            //add the rest to platformAmount
-                            await stripe.transfers.create({
-                                amount: amount * 0.90,
-                                currency: "usd",
-                                destination: product.author.stripeAccountId
-                            });
-                            var platformCommission = amount * 0.10;
-                            var userPayoutAmount = platformCommission * 0.25;
-                            var platformAmount = platformCommission - userPayoutAmount - fee;
-                            await System.updateOne({
-                                _id: SYSTEM._id.toString()
-                            }, {
-                                $inc: {
-                                    platformAmount: Math.floor(platformAmount),
-                                    userAmount: Math.floor(userPayoutAmount)
-                                }
-                            });
-                            console.log("Order created.");
                         } else {
                             //simple donation
                             await User.updateOne({
@@ -176,6 +134,46 @@ const stripeWebhook = async(request, response) => {
                                 }
                             });
                         }
+                    }
+                    //user not logged in so cant give donation stars
+                    //however we can still create an order
+                    if(metadata.type && metadata.type === 'Product'){
+                      //create an order for the product
+                      var product = await Passage.findOne({
+                          _id: metadata.productId
+                      }).populate('author');
+                      await Order.create({
+                          title: product.title,
+                          buyer: customerEmail,
+                          chargeId: chargeId,
+                          seller: product.author._id.toString(),
+                          passage: product._id.toString(),
+                          dateSold: Date.now(),
+                          quantity: metadata.quantity
+                      });
+                      //give seller stars
+                      await starService.addStarsToUser(product.author, amountToAdd);
+                      await Passage.updateOne({
+                          _id: product._id.toString()
+                      }, {
+                          $inc: {
+                              inStock: -metadata.quantity
+                          }
+                      });
+                      //take 25% of the 10% cut - fee and add it to SYSTEM.userAmount
+                      //add the rest to platformAmount
+                      var platformCommission = amount * 0.10;
+                      var userPayoutAmount = platformCommission * 0.25;
+                      var platformAmount = platformCommission - userPayoutAmount - fee;
+                      await System.updateOne({
+                          _id: SYSTEM._id.toString()
+                      }, {
+                          $inc: {
+                              platformAmount: Math.floor(platformAmount),
+                              userAmount: Math.floor(userPayoutAmount)
+                          }
+                      });
+                      console.log("Order created.");
                     }
                 }
             } else {

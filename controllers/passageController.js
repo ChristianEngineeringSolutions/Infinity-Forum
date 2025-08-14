@@ -293,6 +293,12 @@ async function createInitialPassage(req, res) {
     if(!req.session.user){
         return res.send("You must log in to create a passage.");
     }
+    if(req.body.whichPage === 'market' || formData.label === 'Product'){
+        var checkUser = await User.findOne({_id:req.session.user._id.toString()});
+        if(!checkUser.identityVerified || !checkUser.stripeOnboardingComplete){
+            return res.send("You must have your identity verified and your payment options setup to create a product.");
+        }
+    }
     let user = req.session.user || null;
     var chief = req.body.chief;
     if(req.body['post-top'] && req.body['post-top'] == 'on'){
@@ -302,7 +308,7 @@ async function createInitialPassage(req, res) {
     var customDate = req.body.simulated === 'true' && req.body.date ? new Date(req.body.date) : null;
     var isSimulated = req.body.simulated === 'true';
     var newPassage = await passageService.createPassage(user, chief.toString(), req.body.subforums, req.body.comments, customDate, isSimulated);
-    if(newPassage == 'Not allowed.' || newPassage == 'Must be on userlist.'){
+    if(newPassage == 'Not allowed.' || newPassage == 'Must be on userlist.' || newPassage == 'Can not add to or modify public daemon.'){
         return res.send(newPassage);
     }
     //update passage
@@ -353,10 +359,13 @@ async function createInitialPassage(req, res) {
         passage.label = 'Product';
     }
     if(passage.label == 'Product'){
-        passage.price = req.body.price;
-        passage.inStock = req.body.stock;
+        passage.price = formData.price;
+        passage.inStock = formData.stock;
         if(req.body['unlimited-stock'] == 'on'){
             passage.inStock = Infinity;
+        }
+        if(passage.price < 1){
+            return res.send("Price must be greater than or equal to $1.");
         }
     }
     if(!labelOptions.includes(passage.label)){
@@ -489,7 +498,20 @@ async function updatePassage(req, res) {
     if(passage.versionOf != null){
         return res.send("Not allowed.");
     }
-    
+    var price = formData.price;
+    if(price < 1){
+        return res.send("Price must be greater than or equal to $1.");
+    }
+    var inStock = formData.stock;
+    if(req.body['unlimited-stock'] == 'on'){
+        inStock = Infinity;
+    }
+    if(formData.label === 'Product'){
+        var checkUser = await User.findOne({_id:req.session.user._id.toString()});
+        if(!checkUser.identityVerified || !checkUser.stripeOnboardingComplete){
+            return res.send("You must have your identity verified and your payment options setup to create a product.");
+        }
+    }
     // Prepare update object
     const updateData = {
         $set: {
@@ -506,7 +528,9 @@ async function updatePassage(req, res) {
             fileStreamPath: formData.filestreampath,
             previewLink: formData['editor-preview'],
             synthetic: false,
-            lastUpdated: Date.now()
+            lastUpdated: Date.now(),
+            price: price,
+            inStock: inStock
         }
     };
     
@@ -886,6 +910,12 @@ async function changeLabel(req, res){
     }
     
     const label = req.body.label;
+    if(label === 'Product'){
+        var checkUser = await User.findOne({_id:req.session.user._id.toString()});
+        if(!checkUser.identityVerified || !checkUser.stripeOnboardingComplete){
+            return res.send("You must have your identity verified and your payment options setup to create a product.");
+        }
+    }
     if(!labelOptions.includes(label)){
         return res.send("Not an option.");
     }

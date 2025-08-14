@@ -1,0 +1,24 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<br>
+<br>
+<br>
+<br>
+<br>
+<div>
+    <a href="/market-dashboard">Market Dashboard</a>
+</div>
+<h1>
+    Your <%=seller == true ? 'Order' : 'Sale';%>
+</h1>
+<%- include('order', {order: order, seller:seller})%>
+<%- include('footer') %>

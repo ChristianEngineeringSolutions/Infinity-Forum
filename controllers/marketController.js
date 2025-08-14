@@ -6,6 +6,8 @@ const Order = require('../models/Order');
 const browser = require('browser-detect');
 const { scripts, DOCS_PER_PAGE, accessSecret } = require('../common-utils');
 const passageService = require('../services/passageService');
+const mongoose = require('mongoose');
+const systemService = require('../services/systemService');
 
 async function market(req, res){
     const ISMOBILE = browser(req.headers['user-agent']).mobile;
@@ -85,13 +87,36 @@ async function orders(req, res){
     }); //show most recent first
     return res.render('orders', {orders: orders.docs, page: page, totalPages: totalPages});
 }
+async function order(req, res){
+    var order = await Order.findOne({_id: req.params.id}).populate('seller passage');
+    if(req.session.user._id.toString() !== order.buyer._id.toString()){
+        return res.send("Order does not exist.");
+    }
+    return res.render('order-page', {order: order, seller: true, page: 'more'});
+}
+async function sale(req, res){
+    var sale = await Order.findOne({_id: req.params.id}).populate('buyer passage');
+    if(req.session.user._id.toString() !== sale.seller._id.toString()){
+        return res.send("Sale does not exist.");
+    }
+    return res.render('order-page', {order: sale, seller: false, page: 'more'});
+}
 async function sales(req, res){
     var page = req.query.page || req.params.page || 1;
     var find = {
         seller: req.session.user._id.toString()
     };
-    if(req.params.search){
-        find.title = {$regex: req.params.search, $options:'i'}
+    var search = req.params.search;
+    var shipped = req.query.shipped;
+    if(shipped && shipped !== 'both'){
+        find.shipped = shipped == 'true' ? true : false;
+    }
+    if(search){
+        if(mongoose.isValidObjectId(search)){
+            find._id = search;
+        }else{
+            find.title = {$regex: search, $options:'i'}
+        }
     }
     var totalDocuments = await Order.countDocuments(find);
     var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
@@ -104,10 +129,13 @@ async function sales(req, res){
     return res.render('sales', {orders: sales.docs, page: page, totalPages: totalPages});
 }
 async function buyProductLink(req, res){
+    if(!req.session.user){
+        return res.send(process.env.DOMAIN + '/loginform');
+    }
     try {
         var quantity = Number(req.body.quantity);
         console.log("Quantity:"+quantity);
-        var product = await Passage.findOne({_id:req.body._id});
+        var product = await Passage.findOne({_id:req.body._id}).populate('author');
         if(product.inStock < 1){
             return res.send("Product out of Stock.");
         }
@@ -121,6 +149,11 @@ async function buyProductLink(req, res){
             productLink = 'http://localhost/passage/';
         }
         productLink += product.title == '' ? 'Untitled' : encodeURIComponent(product.title) + '/' + product._id;
+        // Calculate the total amount in cents
+        const totalAmountInCents = (product.price * 100) * quantity;
+        // Calculate the 10% application fee in cents, rounding to the nearest whole number
+        // This fee is charged to the platform, and the rest goes to the connected account
+        const applicationFeeAmount = Math.round(totalAmountInCents * 0.10);
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'], // Specify payment methods (e.g., 'card', 'paypal')
             mode: 'payment', // 'payment' for one-time payments, 'subscription' for recurring
@@ -145,7 +178,15 @@ async function buyProductLink(req, res){
             ],
             success_url: req.headers.origin + '/passage/'+(product.title == '' ? 'Untitled' : encodeURIComponent(product.title))+'/'+product._id.toString(),
             cancel_url: req.headers.origin + '/donate'+(product.title == '' ? 'Untitled' : encodeURIComponent(product.title))+'/'+product._id.toString(),
-            customer_email: req.session.user.email
+            customer_email: req.session.user.email,
+            payment_intent_data: {
+                application_fee_amount: applicationFeeAmount,
+                metadata: {
+                    productId: product._id.toString()
+                }
+            }
+        }, {
+            stripeAccount: product.author.stripeAccountId
         });
         return res.send(session.url);
     } catch (error) {
@@ -155,11 +196,22 @@ async function buyProductLink(req, res){
 }
 
 async function markOrderShipped(req, res){
-    var productId = req.body.productId;
-    var order = await Order.findOneAndUpdate({_id:productId}, {$set:{
-        shipped: true
-    }});
-    return res.render("order", {order: order});
+    var orderId = req.body.orderId;
+    var carrier = req.body.carrier;
+    var shippingService = req.body.shippingService;
+    var trackingNumber = req.body.trackingNumber;
+    var order = await Order.findOneAndUpdate({_id:orderId}, {$set:{
+        shipped: true,
+        carrier: carrier,
+        trackingNumber: trackingNumber,
+        shippingService: shippingService
+    }},
+    { returnDocument: 'after' }).populate('buyer passage');
+    await systemService.sendEmail(order.buyer.email, `Your Order "${order.title}" has been shipped!`, 
+    `
+        View your order at: https://infinity-forum.org/order/`+order._id+`
+    `);
+    return res.render("order", {order: order, seller: false});
 }
 
 module.exports = {
@@ -168,5 +220,7 @@ module.exports = {
     orders,
     sales,
     buyProductLink,
-    markOrderShipped
+    markOrderShipped,
+    order,
+    sale
 };

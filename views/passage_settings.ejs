@@ -33,7 +33,8 @@ Add Collaborator (Split Stars): <br>
 <!-- <div id="label-color-<%=passage._id%>"style="display:inline"class="test"><ion-icon src="/images/ionicons/ellipse.svg"></ion-icon></div> -->
 <select id="label-select-<%=passage._id%>"style="font-weight:normal;border: 1px solid black;"class="label-select"autocomplete="off">
     <option><%=passage.label%></option>
-    <%-scripts.labelSelectOptions(false)%>
+    <%products = user && user.identityVerified && user.stripeOnboardingComplete%>
+    <%-scripts.labelSelectOptions(false, products)%>
 </select>
 <br><br>
 <div id="show-bestof-<%=passage._id%>"><input id="passage_showbestof_<%=passage._id%>"<%=passage.showBestOf ? ' checked ' : ''%>type="checkbox"> Show best of</div>

@@ -1055,6 +1055,9 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
     else{
         parentId = parentPassageId;
         parent = await Passage.findOne({_id: parentId});
+        if(parent.public_daemon === 2){
+            return 'Can not add to or modify public daemon.';
+        }
         if(parent.fileStreamPath != null && parent.fileStreamPath.slice(-1) == '/'){
             fileStreamPath = parent.fileStreamPath + 'Untitled';
         }

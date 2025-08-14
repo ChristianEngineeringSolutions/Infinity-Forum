@@ -77,7 +77,11 @@
             <%}%>
             <%if((typeof comments != 'undefined' && comments == true) || (user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if((typeof comments != 'undefined' && comments == true) || (passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true)){%>
-                    <button title="Add Passage"id="add_passage_button">+</button>
+                    <%if(whichPage === 'market' && (!user.identityVerified || !user.stripeOnboardingComplete)){%>
+
+                    <%}else{%>
+                        <button title="Add Passage"id="add_passage_button">+</button>
+                    <%}%>
                     <input id="clean_editor"type="hidden" name=""value='<%- include("clean_editor", {passage:passage, page: 'stream', scripts: scripts})%>'/>
                 <%}%>
             <%}%>
@@ -94,7 +98,11 @@
             <div id="passage_form_wrapper"></div>
             <%if((user && passage.id == 'root') || (user && (passage.author._id == user._id || passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if(passage.id != 'root' && passage.public_daemon != 2 && passage.default_daemon != true && ( typeof comments == 'undefined' || !comments)){%>
-                    <button title="Add Passage"id="add_passage_button">+</button>
+                    <%if(whichPage === 'market' && (!user.identityVerified || !user.stripeOnboardingComplete)){%>
+
+                    <%}else{%>
+                        <button title="Add Passage"id="add_passage_button">+</button>
+                    <%}%>
                 <%}%>
             <%}%>
     <br>
