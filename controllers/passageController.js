@@ -293,6 +293,7 @@ async function createInitialPassage(req, res) {
     if(!req.session.user){
         return res.send("You must log in to create a passage.");
     }
+    var formData = req.body;
     if(req.body.whichPage === 'market' || formData.label === 'Product'){
         var checkUser = await User.findOne({_id:req.session.user._id.toString()});
         if(!checkUser.identityVerified || !checkUser.stripeOnboardingComplete){
@@ -312,7 +313,6 @@ async function createInitialPassage(req, res) {
         return res.send(newPassage);
     }
     //update passage
-    var formData = req.body;
     var repost = req.body.repost == 'true' ? true : false;
     var repostID = req.body['repost-id'];
     var passage = await Passage.findOne({_id: newPassage._id}).populate(passageService.standardPopulate);
@@ -421,6 +421,7 @@ async function createInitialPassage(req, res) {
         console.log('File uploaded');
         await uploadFile(req, res, passage);
     }
+    passage.chain = await passageService.getChain(passage);
     await passage.save();
     //create notification if making a sub passage
     if(chief !== 'root'){

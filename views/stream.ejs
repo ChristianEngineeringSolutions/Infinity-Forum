@@ -43,7 +43,7 @@
 
                 <%}else{%>
                     <%if(!passage.forum){%>
-                        <div id="parent_title"><a href="/posts"style="color:white;z-index:999999;position:relative;"><%=passage.label == 'Social' ? 'Network' : passage.label + 's';%></a></div>
+                        <div id="parent_title"><a href="/posts"style="color:white;z-index:999999;position:relative;"><%=passage.label == 'Social' ? 'Network' : (passage.label === 'Miscellaneous' ? passage.label : passage.label + 's');%></a></div>
                     <%}else if(passage.forum){%>
                         <div id="parent_title"><a href="/posts"style="color:white;z-index:999999;position:relative;">Infinity Forum</a></div>
                     <%}%>

@@ -504,7 +504,13 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage',
         default: null
-    }
+    },
+    //chain of parents starting from root parent
+    chain: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage',
+        default: []
+    }],
 });
 
 var autoPopulateChildren = function(next) {

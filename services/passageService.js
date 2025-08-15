@@ -984,18 +984,13 @@ async function getPassageLocation(passage, train){
     train = train || [];
     // console.log(passage.parent);
     if(passage.parent == null){
-        var word;
-        if(!passage.public && !passage.forum){
-            word = 'Projects';
-        }
-        else if(passage.public && !passage.forum){
-            word = 'Tasks';
-        }
-        else if(passage.forum){
+        var word = passage.label;
+        if(passage.forum){
             word = 'Infinity Forum';
         }
-        if(word != 'Infinity Forum'){
+        if(word != 'Infinity Forum' && word !== 'Miscellaneous'){
             console.log('IF');
+            console.log('label:'+word);
             word = passage.label + 's';
         }
         if(passage.label == "Social"){
@@ -1863,6 +1858,18 @@ async function scorePassages(passages, user=null) {
   
   return scoredPassages;
 }
+//get all the parents of a passage in a chain
+async function getChain(passage, chain=[]){
+    if(passage.parent !== null){
+        chain.unshift(passage.parent._id.toString());
+        var p = await Passage.findOne({
+            _id: passage.parent._id.toString()
+        }).populate('parent');
+        return await getChain(p, chain);
+    }else{
+        return chain;
+    }
+}
 module.exports = {
     deletePassage,
     scheduleBackgroundFeedUpdates,
@@ -1896,5 +1903,6 @@ module.exports = {
     updateLabel,
     standardPopulate,
     getContributors,
-    getAllContributors
+    getAllContributors,
+    getChain
 };

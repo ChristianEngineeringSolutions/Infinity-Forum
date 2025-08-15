@@ -171,6 +171,15 @@ async function handleCompression(err, stdout, stderr, passage, partialpath, uplo
 
 // Upload file function
 async function uploadFile(req, res, passage) {
+    const checkDiskSpace = require('check-disk-space');
+    const DISK_SPACE_LIMIT_PERCENT = 90;
+    const diskSpace = await checkDiskSpace('/');
+    //calculate the percentage of used space
+    const usedSpace = diskSpace.size - diskSpace.free;
+    const usedPercentage = (usedSpace / diskSpace.size) * 100;
+    if(usedPercentage > DISK_SPACE_LIMIT_PERCENT){
+        return res.send('Server disk space is full. Please try again later.');
+    }
     console.log("Upload Test");
     await deleteOldUploads(passage);
     var passages = await Passage.find({}).limit(20);
