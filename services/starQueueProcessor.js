@@ -668,7 +668,7 @@ async function processSourcesBatched(rootPassage, amount, sessionUser, deplete) 
 }
 
 // Process starPassage logic - refactored for batch processing
-async function processStarPassage(userId, passageId, amount, sessionUserId, deplete, single) {
+async function processStarPassage(userId, passageId, amount, sessionUserId, deplete, single, team=null) {
     console.log('processStarPassage called with:', { userId, passageId, amount, sessionUserId, deplete, single });
     
     // Validation

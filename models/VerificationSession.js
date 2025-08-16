@@ -13,6 +13,7 @@ const verificationSessionSchema = mongoose.Schema({
     documentType: String,
     verifiedAt: Date,
     verificationStatus: String,
+    verificationReportId: String
 });
 
 module.exports = mongoose.model('VerificationSession', verificationSessionSchema, 'VerificationSessions');

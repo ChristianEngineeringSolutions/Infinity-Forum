@@ -511,6 +511,11 @@ const passageSchema = mongoose.Schema({
         ref: 'Passage',
         default: []
     }],
+    team: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Team',
+        default: null
+    }
 });
 
 var autoPopulateChildren = function(next) {

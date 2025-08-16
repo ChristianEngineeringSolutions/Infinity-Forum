@@ -4,36 +4,13 @@ const crypto = require('crypto');
 const VerificationSession = require('../models/VerificationSession');
 const { accessSecret } = require('../common-utils');
 
-async function createDocumentHash(documentDetails) {
-  if (!documentDetails) return null;
-  
-  // Create a deterministic string from key document fields
-  const documentString = [
-    documentDetails.documentType,
-    documentDetails.documentNumber,
-    documentDetails.firstName,
-    documentDetails.lastName,
-    documentDetails.dob
-  ].join('|').toLowerCase();
-  
-  // Use a consistent salt for all hashing
-  const staticSalt = await accessSecret('DOCUMENT_VERIFICATION_SALT');
-  
-  return new Promise((resolve, reject) => {
-    crypto.scrypt(documentString, staticSalt, 64, (err, derivedKey) => {
-      if (err) reject(err);
-      resolve(derivedKey.toString('hex'));
-    });
-  });
-}
-
-async function checkForDuplicateDocuments(documentHash, currentUserId) {
-  if (!documentHash) return { isDuplicate: false, existingUserIds: [] };
+async function checkForDuplicateIdentities(verificationReportId, currentUserId) {
+  if (!verificationReportId) return { isDuplicate: false, existingUserIds: [] };
   
   // Find other users who have verified with this document
   const existingVerifications = await VerificationSession
     .find({ 
-      documentHash,
+      verificationReportId,
       userId: { $ne: currentUserId } // Exclude current user
     });
   
@@ -110,10 +87,7 @@ async function processVerificationResult(verificationSessionId) {
     // Retrieve the verification details from Stripe
     const verificationSession = await stripe.identity.verificationSessions.retrieve(
       verificationSessionId, 
-      { expand: [
-      'verified_outputs.dob',
-      'verified_outputs.id_number',
-    ] }
+      { expand: ['last_verification_report'] }
     );
     
     // Find our internal record for this verification
@@ -138,25 +112,7 @@ async function processVerificationResult(verificationSessionId) {
       const dob = verifiedOutputs?.dob ? 
         `${verifiedOutputs.dob.day}/${verifiedOutputs.dob.month}/${verifiedOutputs.dob.year}` : 
         null;
-      
-      // Build document details object
-      const documentDetails = verifiedOutputs ? {
-        documentType: verifiedOutputs.id_number_type || null,  // e.g., 'us_ssn', 'driving_license'
-        documentNumber: verifiedOutputs.id_number || null,
-        firstName: verifiedOutputs.first_name || null,
-        lastName: verifiedOutputs.last_name || null,
-        dob: dob,
-        // Address fields if available
-        address: verifiedOutputs.address ? {
-          line1: verifiedOutputs.address.line1,
-          line2: verifiedOutputs.address.line2,
-          city: verifiedOutputs.address.city,
-          state: verifiedOutputs.address.state,
-          postalCode: verifiedOutputs.address.postal_code,
-          country: verifiedOutputs.address.country
-        } : null
-      } : null;
-      
+
       // Update user with verified information
       if (verifiedOutputs) {
         await User.updateOne({
@@ -169,26 +125,20 @@ async function processVerificationResult(verificationSessionId) {
           }
         });
       }
-      
-      // Only create hash and check duplicates if we have document details
-      if (documentDetails && documentDetails.documentNumber) {
-        // Create a unique identifier based on document details
-        const documentHash = await createDocumentHash(documentDetails);
-        
+      if (verificationSession.last_verification_report && typeof verificationSession.last_verification_report === 'object') {
         await VerificationSession.updateOne({
           userId: internalRecord.userId
         }, {
           $set: {
-            documentHash: documentHash,
-            documentType: documentDetails.documentType,
             verifiedAt: new Date(),
-            status: 'verified'
+            status: 'verified',
+            verificationReportId: verificationSession.last_verification_report.id
           }
         });
-        console.log("Saved document hash.");
+        console.log("Saved unique identifier.");
         
         // Check for duplicate documents across users
-        const duplicateResults = await checkForDuplicateDocuments(documentHash, internalRecord.userId);
+        const duplicateResults = await checkForDuplicateIdentities(verificationSession.last_verification_report.id, internalRecord.userId);
         
         if (duplicateResults.isDuplicate) {
           // Update session with duplicate info
@@ -242,8 +192,7 @@ async function processVerificationResult(verificationSessionId) {
 }
 
 module.exports = {
-  createDocumentHash,
-  checkForDuplicateDocuments,
+  checkForDuplicateIdentities,
   initializeTwilio,
   startVerification,
   checkVerification,
