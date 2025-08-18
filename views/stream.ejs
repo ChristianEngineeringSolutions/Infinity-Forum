@@ -19,6 +19,12 @@
             <input type="hidden" value="false", id="is_profile"/>
             <input type="hidden" id="selection">
             <div id="page_title_container">
+                <%if(passage.team){%>
+                    <h1>&emsp;&emsp;&emsp;Team: <a href="/teams/team/<%=passage.team._id%>"><%=passage.team.name%></h1></a>
+                <%}%>
+                <%if(passage.teamForRoot){%>
+                    <h1>&emsp;&emsp;&emsp;Team: <a href="/teams/team/<%=passage.teamForRoot._id%>"><%=passage.teamForRoot.name%></h1></a>
+                <%}%>
                 <%passageTitle = passageTitle === '' ? 'Untitled' : passageTitle;%>
                 <%if(passage.parent != null){%>
                     <div id="parent_title"><span data-url="/passage/<%=encodeURIComponent(passage.parent.title) == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title2"><%=location.join('/')%></span></div>

@@ -515,7 +515,20 @@ const passageSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Team',
         default: null
-    }
+    },
+    teamOpen: {
+        type: Boolean,
+        default: false
+    },
+    teamRootPassage: {
+        type: Boolean,
+        default: false
+    },
+    teamForRoot: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Team',
+        default: null
+    },
 });
 
 var autoPopulateChildren = function(next) {

@@ -19,11 +19,36 @@ async function starPassage(req, res){
     var amount = Number(req.body.amount);
     //get user from db
     let sessionUser = await User.findOne({_id: user._id});
+    let passage = await Passage.findOne({_id: req.body.passage_id}).populate('team');
+    var team = false;
+    var ledger = false;
+    if(passage.team){
+        var ledger = passage.team.ledger.filter(function(obj){
+            return obj.user._id.toString() === req.session.user._id.toString()
+        });
+        if(ledger.length === 0){
+            team = false;
+            ledger = false;
+        }else{
+            team = true;
+            ledger = ledger[0];
+            if(ledger.stars < amount && !ledger.options.useGeneralStars && passage.team.leader._id.toString() !== user._id.toString()){
+                return res.send("Not enough stars.");
+            }
+            if(ledger.options.useGeneralStars){
+                team = false;
+                ledger = false;
+            }
+        }
+    }
+    if(!team && ((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount)){
+        return res.send("Not enough stars.");
+    }
     var subPassage = req.body.parent == 'root' ? false : true;
     if(req.session.user && user){
-        if((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount && process.env.REMOTE == 'true'){
+        if(!team && ((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount) && process.env.REMOTE == 'true'){
             let passage = await starQueue.starPassage(req.session.user, amount, req.body.passage_id, sessionUser._id, true);
-            if(typeof passage === 'object' && passage !== null){
+            if(typeof passage === 'object'){
                 // passage = await passageService.getPassage(passage);
             }
             else{
@@ -36,10 +61,12 @@ async function starPassage(req, res){
         else if(process.env.REMOTE == 'false'){
             let passage = await starQueue.starPassage(req.session.user, amount, req.body.passage_id, sessionUser._id, true);
             await sessionUser.save();
-            if(typeof passage === 'object' && passage !== null){
+            if(typeof passage === 'object'){
+                console.log("CONSOLE"+JSON.stringify(passage));
                 // passage = await passageService.getPassage(passage);
             }
             else{
+                console.log("CONSOLE"+passage);
                 return res.send(passage);
             }
             // passage.location = await passageService.returnPassageLocation(passage);

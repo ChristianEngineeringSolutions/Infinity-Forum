@@ -10,8 +10,9 @@ const Star = require('../models/Star');
 const Reward = require('../models/Reward');
 const System = require('../models/System');
 const Message = require('../models/Message');
+const Team = require('../models/Team');
 const starService = require('./starService');
-const { getRecursiveSourceList, fillUsedInListSingle, getLastSource, getPassage, getAllContributors } = require('./passageService');
+const { getRecursiveSourceList, fillUsedInListSingle, getLastSource, getPassage, getAllContributors, inTeam, isTeamLeader } = require('./passageService');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 
 // Helper function to calculate star addition deltas based on borrowed stars
@@ -633,6 +634,12 @@ async function processSourcesBatched(rootPassage, amount, sessionUser, deplete, 
                     //don't restar top passage
                     if(passage._id.toString() === rootPassage._id.toString()) continue;
                     
+                    //only star if the same team as rootPassage
+                    if(team){
+                        if(team._id.toString() !== passage.team._id.toString()){
+                            continue;
+                        }
+                    }
                     // Add stars to passage
                     // You won't get extra stars for citing your own work
                     var passageAuthor = passage.author._id.toString();
@@ -759,12 +766,23 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             
             // Handle star depletion
             if(team){
+                if(passage.teamRootPassage && !passage.teamOpen && !inTeam(user, team) && !isTeamLeader(user, team)){
+                    throw new Error("This is not an open team; you must be a member to star it.");
+                }
+                if(!passage.teamRootPassage && !inTeam(user, team) && !isTeamLeader(user, team)){
+                    throw new Error("You must be in the team to star it.");
+                }
                 ledger = team.ledger.filter(function(obj){
                     return obj.user._id.toString() === user._id.toString()
                 });
-                ledger = ledger[0];
-                if(ledger.stars < amount && !single && !ledger.options.useGeneralStars && team.leader._id.toString() !== user._id.toString()){
-                    throw new Error("Not enough stars.");
+                if(ledger.length === 0 || passage.teamRootPassage){
+                    team = false;
+                    ledger = false;
+                }else{
+                    ledger = ledger[0];
+                    if(ledger.stars < amount && !single && !ledger.options.useGeneralStars && team.leader._id.toString() !== user._id.toString()){
+                        throw new Error("Not enough stars.");
+                    }
                 }
             }
             whichStarsToUse = !team ? 'general' : (ledger.options.useGeneralStars ? 'general' : 'team');
@@ -774,6 +792,11 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                     && !single 
                     && (!team || (ledger && ledger.options.useGeneralStars))){
                     throw new Error("Not enough stars.");
+                }
+                else if(team && ledger && !ledger.options.useGeneralStars && team.leader._id.toString() !== user._id.toString()){
+                    if(ledger.stars < amount){
+                        throw new Error("Not enough stars.");
+                    }
                 }
                 if(whichStarsToUse === 'general'){
                     const depletion = calculateStarDepletion(user, amount);
@@ -811,7 +834,7 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                 debt: loggedStarDebt,
                 fromSingle: single,
                 system: null,
-                team: team
+                team: !!team
             });
             
             // Add stars to passage
@@ -1000,7 +1023,7 @@ async function processCollaboratorDebt(passage, sessionUser, amount, bonus, cont
                     passage: passage._id,
                     sources: await getRecursiveSourceList(passage.sourceList, [], passage),
                     trackToken: debt.trackToken,
-                    team: team
+                    team: !!team
                 });
             }
         }
@@ -1299,8 +1322,10 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                 team = false;
             }
             var ledger = false;
-
             if(team){
+                if(!passage.teamRootPassage && !inTeam(sessionUser, team) && !isTeamLeader(sessionUser, team)){
+                    throw new Error("You must be in the team to star it.");
+                }
                 ledger = team.ledger.filter(function(obj){
                     return obj.user._id.toString() === user._id.toString()
                 });

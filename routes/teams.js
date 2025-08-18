@@ -9,8 +9,9 @@ const { requiresLogin } = require('../middleware/auth');
 
 router.get('/', requiresLogin, teamController.teams);
 router.post('/create-team', requiresLogin, teamController.createTeam);
+router.post('/edit-team', requiresLogin, teamController.editTeam);
 router.post('/delete-team', requiresLogin, teamController.deleteTeam);
-router.post('/add-member', requiresLogin, teamController.addMember);
+router.post('/add-members', requiresLogin, teamController.addMembers);
 router.post('/remove-member', requiresLogin, teamController.removeMember);
 router.get('/team/:teamId', requiresLogin, teamController.team);
 router.post('/star/:passageId', requiresLogin, teamController.starPassage);

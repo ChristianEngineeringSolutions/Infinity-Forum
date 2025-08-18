@@ -26,6 +26,16 @@ async function accessSecret(secretName) {
 }
 const scripts = {};
 
+scripts.inTeam = function(user, team){
+    if(!team) return true;
+    return team.members.toString().includes(user._id.toString());
+}
+
+scripts.isTeamLeader = function(user, team){
+    if(!team) return true;
+    return user._id.toString() === team.leader._id.toString();
+}
+
 scripts.labelSelectOptions = function(plural=false, products=true){
     var options = ``;
     var option = ``;

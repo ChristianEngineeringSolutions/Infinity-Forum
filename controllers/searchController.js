@@ -249,6 +249,7 @@ async function search(req, res) {
         personal: req.body.personal === 'true', // Convert string to boolean
         simulated: false,
         title: {$regex:search,$options:'i'},
+        team: null
     };
 
     // Add label filter if not 'All'

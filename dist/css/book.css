@@ -1088,7 +1088,7 @@ ion-icon{
 .special_icon{
     cursor: default;
 }
-#post-passage{
+#post-passage, #create-team, #enter-team, .grey-button{
     background: rgba(255, 255, 255, 0.2);
 	border: 1px solid rgba(255, 255, 255, 0.23);
 	padding: 8px 12px;

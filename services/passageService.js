@@ -7,7 +7,7 @@ const fileService = require('./fileService');
 const { getFeedQueue } = require('../config/redis');
 const { DOCS_PER_PAGE, scripts, labelOptions } = require('../common-utils');
 const browser = require('browser-detect');
-const standardPopulate = 'author users sourceList parent subforums collaborators versions mirror bestOf best';
+const standardPopulate = 'author users sourceList parent subforums collaborators versions mirror bestOf best team teamForRoot';
 function updateLabel(passage){
     switch(passage.label){
         case 'Project':
@@ -1089,6 +1089,13 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
     if(parent && parent.forum){
         forum = parent.forum;
     }
+    var team = null;
+    if(parent && parent.teamForRoot){
+        team = parent.teamForRoot;
+    }
+    if(parent && parent.team){
+        team = parent.team;
+    }
     var sourceList = parentId == null ? [] : [parentId];
     let passage = await Passage.create({
         author: user,
@@ -1102,7 +1109,8 @@ async function createPassage(user, parentPassageId, subforums=false, comments=fa
         lastUpdated: customDate && simulated ? customDate : Date.now(),
         date: customDate && simulated ? customDate : Date.now(),
         publicReply: publicReply,
-        simulated: simulated || false
+        simulated: simulated || false,
+        team: team
     });
     if(subforums == 'true'){
         passage.forumType = 'subforum';
@@ -1233,6 +1241,9 @@ async function getBigPassage(req, res, params=false, subforums=false, comments=f
     }
     if(passage.personal == true && !scripts.isPassageUser(req.session.user, passage)){
         return res.send(passage + "Must be on Userlist");
+    }
+    if(passage.team && !passage.teamOpen && !scripts.inTeam(req.session.user, passage.team) && !scripts.isTeamLeader(req.session.user, passage.team)){
+        return res.send("You don't have permission to view this passage.");
     }
     try{
         var mirror = await Passage.findOne({_id:passage.mirror._id});
@@ -2022,6 +2033,14 @@ async function scoreTeamPassages(passages) {
     return scoredPassages;
 }
 
+async function inTeam(user, team){
+    return team.members.toString().includes(user._id.toString());
+}
+
+async function isTeamLeader(user, team){
+    return user._id.toString() === team.leader._id.toString();
+}
+
 module.exports = {
     deletePassage,
     scheduleBackgroundFeedUpdates,
@@ -2059,5 +2078,7 @@ module.exports = {
     standardPopulate,
     getContributors,
     getAllContributors,
-    getChain
+    getChain,
+    inTeam,
+    isTeamLeader
 };

@@ -10,9 +10,10 @@
 <%-include('sidebar')%>
 <%- include('member_box') %>
 <br><br><br><br>
-
+<input type="hidden" id="edit-team-form-input" value='<%- include('edit-team-form', {team: team})%>'>
 <div id="team_header">
     <h2><%=team.name%></h2>
+    <h4><%=team.description%></h4>
     <div>
         <strong>Leader:</strong> <%=team.leader.name%> (@<%=team.leader.username%>)
     </div>
@@ -22,7 +23,23 @@
     <div>
         <strong>Total Points:</strong> <%=team.totalPoints || 0%>
     </div>
+    <div>
+        Ledger:<br>
+        <ul style="margin-top:0px;">
+            <%for(const ledge of team.ledger){%>
+                <li><a target="__blank"href="/profile/<%=ledge.user.username%>/<%=ledge.user._id%>"><%=ledge.user.name%></a></li>
+                <ul>
+                    <li>Stars: <%=ledge.stars%></li>
+                    <li>Points: <%=ledge.points%></li>
+                </ul>
+            <%}%>
+        </ul>
+    </div>
     <br>
+    <a id="enter-team"class="basic_link" href="/passage/<%=team.rootPassage.title === '' ? 'Untitled' : encodeURIComponent(team.rootPassage.title)%>/<%=team.rootPassage._id.toString()%>">ENTER</a><br>
+    <%if(team.leader._id.toString() === user._id.toString()){%>
+        <h5><a id="delete-team-<%=team._id%>">Delete</a> | <a id="edit-team">Edit</a></h5>
+    <%}%>
     <a href="/teams">← Back to Teams</a>
 </div>
 
@@ -31,7 +48,7 @@
     
     <% if(feed && feed.length > 0) { %>
         <%feed.forEach(function(passage) { %>
-            <%- include('passage', {passage: passage, sub: true, subPassage: false}) %>
+            <%- include('passage', {passage: passage, sub: true, subPassage: false, subPassages:false}) %>
         <%}); %>
         
         <%- include('page-numbers', {

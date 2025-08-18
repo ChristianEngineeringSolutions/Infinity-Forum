@@ -26,6 +26,7 @@ async function paginate(req, res) {
                 versionOf: null,
                 forumType: {$in: ['', null]},
                 title: new RegExp(search, "i"),
+                team: null
             };
             
             // Add simulated filter based on request parameter

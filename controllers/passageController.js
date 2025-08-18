@@ -1400,7 +1400,42 @@ async function selectAnswer(req, res){
     }
     return res.send("Answer selected.");
 }
-
+async function _protected(req, res){
+    if(!req.session.user){
+            return res.redirect('/');
+        }
+        var passages = await Passage.find({
+            filename: {
+                $in: [req.params.filename]
+            }
+        }).populate('team');
+        var clear = false;
+        for(const p of passages){
+            if(p.author._id.toString() == req.session.user._id.toString()
+                || p.users.includes(req.session.user._id) 
+                || p.collaborators.includes(req.session.user._id)
+                || scripts.inTeam(req.session.user, p.team) 
+                || scripts.isTeamLeader(req.session.user, p.team)
+                || passage.teamOpen){
+                clear = true;
+                break;
+            }
+        }
+        if(clear){
+            switch(req.params.filename.split('.').at(-1)){
+                case 'png':
+                    res.type('image/png');
+                    break;
+                case 'webm':
+                    res.type('video/webm');
+                    break;
+            }
+            return res.sendFile('protected/'+req.params.filename, {root: __dirname});
+        }
+        else{
+            return res.redirect('/');
+        }
+}
 module.exports = {
     passage,
     deletePassage,
@@ -1439,5 +1474,6 @@ module.exports = {
     subforums,
     getBigPassage,
     increaseReward,
-    selectAnswer
+    selectAnswer,
+    _protected
 };

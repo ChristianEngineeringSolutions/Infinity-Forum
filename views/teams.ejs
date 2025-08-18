@@ -14,33 +14,16 @@
 <div id="teams_header">
     <h2>Teams</h2>
     <p>Manage and view your teams.</p>
+    <div>
+        <input type="hidden" id="create-team-form-input" value='<%- include('create-team-form')%>'>
+        <a id="create-team"class="basic_link">Create Team</a>
+    </div>
 </div>
 
 <div id="teams_list">
     <% if(teams && teams.length > 0) { %>
         <% teams.forEach(function(team) { %>
-            <div class="team_item" style="border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px;">
-                <h3>
-                    <a href="/teams/team/<%=team._id%>"><%=team.name%></a>
-                </h3>
-                <div>
-                    <strong>Leader:</strong> <%=team.leader.name%> (@<%=team.leader.username%>)
-                </div>
-                <div>
-                    <strong>Members:</strong> <%=team.members.length + 1%> total
-                </div>
-                <div>
-                    <strong>Created:</strong> <%=team.dateCreated.toLocaleDateString()%>
-                </div>
-                <% if(team.totalPoints) { %>
-                    <div>
-                        <strong>Total Points:</strong> <%=team.totalPoints%>
-                    </div>
-                <% } %>
-                <div style="margin-top: 10px;">
-                    <a href="/teams/team/<%=team._id%>" class="basic_link">View Team Feed →</a>
-                </div>
-            </div>
+            <%- include('team-mini', {team: team}) %>
         <% }); %>
         
         <% if(totalPages > 1) { %>

@@ -36,7 +36,8 @@ const teamSchema = mongoose.Schema({
     totalPoints: {
         type: Number,
         default: 0
-    }
+    },
+    description: String
 });
 
 teamSchema.plugin(mongoosePaginate);

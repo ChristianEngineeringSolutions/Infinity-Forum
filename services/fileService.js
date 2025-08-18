@@ -222,7 +222,7 @@ async function uploadFile(req, res, passage) {
         const mimeType = file.mimetype;
         const uploadTitle = file.name.split('.')[0] + '_' + v4() + "." + file.name.split('.').at(-1);
         const thumbnailTitle = v4() + ".jpg";
-        const where = passage.personal ? 'protected' : 'uploads';
+        const where = (passage.personal || passage.team || passage.teamForRoot) ? 'protected' : 'uploads';
         
         // Adjust paths for new location in services directory
         const projectRoot = path.join(__dirname, '..');

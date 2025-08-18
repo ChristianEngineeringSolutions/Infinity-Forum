@@ -44,20 +44,68 @@ async function teams(req, res){
     return res.render('teams', {teams: teams.docs, totalPages: totalPages, page: page});
 }
 async function createTeam(req, res){
-    var team = await Team.create({
-        leader: req.session.user._id.toString(),
-        subscriptionAmount: req.body.subscriptionAmount,
-        open: req.body.open,
-        ledger: [{
-            user: req.session.user._id.toString(),
+    var usernamesToAdd = req.body.usernames.split('\n');
+    const usersToAdd = await User.find({
+        username: { $in: usernamesToAdd }
+    }).select('_id');
+    
+    var newParticipantIds = usersToAdd
+        .map(u => u._id);
+    newParticipantIds = Object.values(newParticipantIds.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
+    var newParticipantLedger = [{
+        user: req.session.user._id.toString(),
+        stars: 0,
+        points: 0,
+        options: {
+            useGeneralStars: false
+        }
+    }];
+    for(const id of newParticipantIds){
+        newParticipantLedger.push({
+            user: id,
             stars: 0,
             points: 0,
             options: {
                 useGeneralStars: false
             }
-        }]
+        });
+    }
+    var team = await Team.create({
+        leader: req.session.user._id.toString(),
+        subscriptionAmount: req.body.subscriptionAmount,
+        open: req.body.open === 'on' ? true : false,
+        name: req.body.name,
+        description: req.body.description,
+        members: newParticipantIds,
+        ledger: newParticipantLedger
     });
-    return res.render('team', {team: team});
+    var teamOpen = req.body.open === 'on' ? true : false;
+    var rootPassage = await Passage.create({
+        label: 'Project',
+        title: req.body.name,
+        author: req.session.user._id.toString(),
+        users: [req.session.user._id.toString()],
+        teamForRoot: team._id.toString(),
+        teamOpen: teamOpen,
+        teamRootPassage: true,
+        team: teamOpen ? null : team._id.toString()
+    });
+    team.rootPassage = rootPassage;
+    await team.save();
+    team = await team.populate('leader rootPassage').execPopulate();
+    return res.render('team-mini', {team: team});
+}
+async function editTeam(req, res){
+    var team = await Team.findOneAndUpdate({_id: req.body._id}, {
+        $set: {
+            subscriptionAmount: req.body.subscriptionAmount,
+            open: req.body.open === 'on' ? true : false,
+            name: req.body.name,
+        }
+    }, {
+        returnDocument: 'after'
+    }).populate('leader');
+    return res.render('team-mini', {team: team});
 }
 async function deleteTeam(req, res){
     var team = await Team.findOne({_id: req.body.teamId});
@@ -68,7 +116,7 @@ async function deleteTeam(req, res){
     await Team.deleteOne({_id: req.body.teamId});
     return res.send("Team deleted.");
 }
-async function addMember(req, res){
+async function addMembers(req, res){
     var team = await Team.findOne({_id: req.body.teamId});
     if(team.leader._id.toString() !== req.session.user._id.toString()){
         return res.send("You dont have permission.");
@@ -85,9 +133,9 @@ async function addMember(req, res){
     if (newParticipantIds.length === 0) {
         return res.send("No members to add."); // No new participants to add
     }
-    var newParticipantLedgers = [];
+    var newParticipantLedger = [];
     for(const id of newParticipantIds){
-        newParticipantLedgers.push({
+        newParticipantLedger.push({
             user: id,
             stars: 0,
             points: 0,
@@ -98,8 +146,12 @@ async function addMember(req, res){
     }
     await Team.updateOne({_id: team._id}, {
         $push: {
-            members: newParticipantIds,
-            ledger: newParticipantLedgers
+            members: {
+                $each: newParticipantIds
+            },
+            ledger: {
+                $each: newParticipantLedger
+            }
         }
     });
 }
@@ -144,10 +196,19 @@ async function team(req, res){
     if (feedResult.redirect) {
         return res.redirect(`/teams/team/${teamId}?page=${feedResult.page}`);
     }
+
+    // Process passages with getPassage to get all required data
+    const passages = [];
+    for (let i = 0; i < feedResult.feed.length; i++) {
+        const processedPassage = await passageService.getPassage(feedResult.feed[i]);
+        if(!processedPassage.teamRootPassage){
+            passages.push(processedPassage);
+        }
+    }
     
     return res.render("team", {
         team: team,
-        feed: feedResult.feed,
+        feed: passages,
         totalPages: feedResult.totalPages,
         currentPage: feedResult.currentPage,
         totalItems: feedResult.totalItems
@@ -159,13 +220,62 @@ async function starPassage(req, res){
 async function singleStarPassage(req, res){
     
 }
+async function editTeam(req, res){
+    var team = await Team.findOne({_id: req.body._id});
+    var usernamesToAdd = req.body.usernames.split('\n');
+    const usersToAdd = await User.find({
+        username: { $in: usernamesToAdd }
+    }).select('_id');
+    
+    var newParticipantIds = usersToAdd
+        .map(u => u._id);
+    newParticipantIds = Object.values(newParticipantIds.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
+    var newParticipantLedger = team.ledger;
+    for(const id of newParticipantIds){
+        if(!team.members.includes(id)){
+            newParticipantLedger.push({
+                user: id,
+                stars: 0,
+                points: 0,
+                options: {
+                    useGeneralStars: false
+                }
+            });
+        }
+    }
+    // Remove ledger entries for users that are getting removed
+    // (present in team.members but not in newParticipantIds)
+    newParticipantLedger = newParticipantLedger.filter(ledger => {
+        // Keep ledger entries for users that are still in the team
+        for(const member of team.members){
+            if(ledger.user.toString() === member.toString()){
+                // If this member is in newParticipantIds, keep the ledger entry
+                return newParticipantIds.some(id => id.toString() === member.toString());
+            }
+        }
+        // Keep ledger entries for new members (not in original team.members)
+        return true;
+    });
+    await Team.updateOne({_id:req.body._id}, {
+        $set: {
+            // subscriptionAmount: req.body.subscriptionAmount,
+            open: req.body.open === 'on' ? true : false,
+            name: req.body.name,
+            description: req.body.description,
+            members: newParticipantIds,
+            ledger: newParticipantLedger
+        }
+    });
+    return res.send("Team updated");
+}
 module.exports = {
     teams,
     createTeam,
     deleteTeam,
-    addMember,
+    addMembers,
     removeMember,
     team,
     starPassage,
-    singleStarPassage
+    singleStarPassage,
+    editTeam
 };

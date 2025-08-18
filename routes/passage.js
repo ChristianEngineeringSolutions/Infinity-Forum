@@ -124,4 +124,6 @@ router.get('/get_big_passage', passageController.getBigPassage);
 router.post('/increase-reward', requiresLogin, passageController.increaseReward);
 router.post('/select-answer', requiresLogin, passageController.selectAnswer);
 
+router.get('/protected/:filename', passageController._protected);
+
 module.exports = router;
