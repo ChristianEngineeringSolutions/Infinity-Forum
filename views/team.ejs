@@ -26,11 +26,12 @@
     <div>
         Ledger:<br>
         <ul style="margin-top:0px;">
-            <%for(const ledge of team.ledger){%>
+            <%for(const ledge of team.ledger.sort((a, b) => b.points - a.points)){%>
                 <li><a target="__blank"href="/profile/<%=ledge.user.username%>/<%=ledge.user._id%>"><%=ledge.user.name%></a></li>
                 <ul>
                     <li>Stars: <%=ledge.stars%></li>
                     <li>Points: <%=ledge.points%></li>
+                    <li>Percentage of Points: <%=team.totalPoints === 0 ? 0 : (ledge.points/team.totalPoints)*100%>%</li>
                 </ul>
             <%}%>
         </ul>
