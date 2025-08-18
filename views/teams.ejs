@@ -1,0 +1,61 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<br><br><br><br>
+
+<div id="teams_header">
+    <h2>Teams</h2>
+    <p>Manage and view your teams.</p>
+</div>
+
+<div id="teams_list">
+    <% if(teams && teams.length > 0) { %>
+        <% teams.forEach(function(team) { %>
+            <div class="team_item" style="border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px;">
+                <h3>
+                    <a href="/teams/team/<%=team._id%>"><%=team.name%></a>
+                </h3>
+                <div>
+                    <strong>Leader:</strong> <%=team.leader.name%> (@<%=team.leader.username%>)
+                </div>
+                <div>
+                    <strong>Members:</strong> <%=team.members.length + 1%> total
+                </div>
+                <div>
+                    <strong>Created:</strong> <%=team.dateCreated.toLocaleDateString()%>
+                </div>
+                <% if(team.totalPoints) { %>
+                    <div>
+                        <strong>Total Points:</strong> <%=team.totalPoints%>
+                    </div>
+                <% } %>
+                <div style="margin-top: 10px;">
+                    <a href="/teams/team/<%=team._id%>" class="basic_link">View Team Feed →</a>
+                </div>
+            </div>
+        <% }); %>
+        
+        <% if(totalPages > 1) { %>
+            <%- include('page-numbers', {
+                totalPages: totalPages,
+                page: page,
+                baseUrl: '/teams'
+            }) %>
+        <% } %>
+    <% } else { %>
+        <div style="margin:auto;text-align:center;padding:20px;">
+            <p>You are not a member of any teams yet.</p>
+            <p>Create a team or ask a team leader to add you to their team.</p>
+        </div>
+    <% } %>
+</div>
+
+<%- include('footer') %>

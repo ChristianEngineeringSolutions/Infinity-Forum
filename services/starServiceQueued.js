@@ -15,7 +15,7 @@ const { getStarQueue } = require('../config/redis');
  * @param {Boolean} single - Whether this is a single star operation
  * @returns {Promise<Object>} Job information including jobId and status
  */
-async function starPassage(sessionUser, amount, passageID, userID, deplete = true, single = false) {
+async function starPassage(sessionUser, amount, passageID, userID, deplete = true, single = false, team=false) {
     try {
         // Generate idempotency key with timestamp and random component for uniqueness
         const timestamp = Date.now();
@@ -37,7 +37,8 @@ async function starPassage(sessionUser, amount, passageID, userID, deplete = tru
             single: single,
             operation: 'star',
             idempotencyKey: idempotencyKey,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            team: team
         };
         
         const jobId = await queueStarOperation(jobData);

@@ -53,6 +53,11 @@ const starSchema = mongoose.Schema({
     date:{
         type: Date,
         default: Date.now
+    },
+    //were these team stars?
+    team: {
+        type: Boolean,
+        default: false
     }
 });
 

@@ -1,0 +1,49 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<br><br><br><br>
+
+<div id="team_header">
+    <h2><%=team.name%></h2>
+    <div>
+        <strong>Leader:</strong> <%=team.leader.name%> (@<%=team.leader.username%>)
+    </div>
+    <div>
+        <strong>Members:</strong> <%=team.members.length + 1%> total
+    </div>
+    <div>
+        <strong>Total Points:</strong> <%=team.totalPoints || 0%>
+    </div>
+    <br>
+    <a href="/teams">← Back to Teams</a>
+</div>
+
+<div id="team_feed">
+    <h3>Team Activity Feed</h3>
+    
+    <% if(feed && feed.length > 0) { %>
+        <%feed.forEach(function(passage) { %>
+            <%- include('passage', {passage: passage, sub: true, subPassage: false}) %>
+        <%}); %>
+        
+        <%- include('page-numbers', {
+            totalPages: totalPages,
+            page: currentPage,
+            baseUrl: `/teams/team/${team._id}`
+        }) %>
+    <% } else { %>
+        <div style="margin:auto;text-align:center;padding:20px;">
+            <p>No team activity yet. Start creating content for this team!</p>
+        </div>
+    <% } %>
+</div>
+
+<%- include('footer') %>

@@ -346,6 +346,7 @@ async function generateGuestFeed(page = 1, limit = 10) {
             personal: false,
             simulated: false,
             forumType: {$in: ['', null]},
+            team: null,
             $or: [
                 { date: { $gte: veryRecentCutoff } }, // Very recent content
                 { stars: { $gte: 0 } }, // Popular content
@@ -471,7 +472,7 @@ function calculateRecencyScore(date) {
     return Math.max(0.1, 10 - Math.log10(daysSince + 1));
 }
 
-async function generateFeedWithPagination(user, page = 1, limit = 10) {
+async function generateFeedWithPagination(user, page = 1, limit = 10, team=null) {
     const cacheKey = `user_feed:${user._id}`;
     const CACHE_EXPIRATION = 3600; // 1 hour in seconds
     
@@ -495,7 +496,7 @@ async function generateFeedWithPagination(user, page = 1, limit = 10) {
     if (!feedCache) {
         console.log(`Generating new feed for user ${user._id}`);
         // Get filtered passages for this user
-        const relevantPassages = await getRelevantPassagesForUser(user);
+        const relevantPassages = await getRelevantPassagesForUser(user, team);
         // Score passages
         const scoredPassages = await scorePassages(relevantPassages, user);
         feedIds = scoredPassages.map(item => item.passage._id.toString());
@@ -1164,7 +1165,8 @@ async function updatePassage(_id, attributes) {
 async function afterPassageCreation(newPassage) {
     try {
         const redis = getRedisOps();
-        // Find users who follow this author
+        
+        // Handle user feeds - find users who follow this author
         const followers = await Follower.find({ following: newPassage.author }).distinct('follower');
         
         // For followed authors, inject the new passage into their feed
@@ -1186,6 +1188,19 @@ async function afterPassageCreation(newPassage) {
                     // Update cache
                     await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', 3600);
                 }
+            }
+        }
+        
+        // Handle team feeds - if this passage belongs to a team
+        if (newPassage.team && isRedisReady()) {
+            const teamCacheKey = `team_feed:${newPassage.team}`;
+            
+            try {
+                // Invalidate the team cache so it gets regenerated with the new passage
+                await redis.del(teamCacheKey);
+                console.log(`Invalidated team feed cache for team ${newPassage.team}`);
+            } catch (teamError) {
+                console.error('Error invalidating team feed cache:', teamError);
             }
         }
         
@@ -1656,7 +1671,7 @@ async function scheduleBackgroundFeedUpdates() {
 /**
  * Get relevant passages for a user's feed with efficient filtering
  */
-async function getRelevantPassagesForUser(user, limit = 1000) {
+async function getRelevantPassagesForUser(user, team=null, limit = 1000) {
   // Get followed authors
   const followedAuthors = await Follower.find({ user: user._id }).distinct('following');
   
@@ -1671,6 +1686,7 @@ async function getRelevantPassagesForUser(user, limit = 1000) {
       deleted: false,
       simulated: false,
       forumType: {$in: ['', null]},
+      team: null,
       $and: [
         {
           $or: [
@@ -1870,6 +1886,142 @@ async function getChain(passage, chain=[]){
         return chain;
     }
 }
+// Get team-specific passages
+async function getTeamPassages(teamId, limit = 1000) {
+    const query = {
+        team: teamId,
+        versionOf: null,
+        deleted: false,
+        personal: false,
+        simulated: false
+    };
+    
+    const passages = await Passage.find(query)
+        .populate('author users sourceList')
+        .sort('-stars -date')
+        .limit(limit);
+    
+    return passages;
+}
+
+// Generate team feed with pagination and caching
+async function generateTeamFeed(teamId, page = 1, limit = 10) {
+    const cacheKey = `team_feed:${teamId}`;
+    const CACHE_EXPIRATION = 3600; // 1 hour in seconds
+    
+    const redisClient = getRedisClient();
+    const redis = getRedisOps();
+    
+    // Try to get cached feed IDs
+    let feedCache = null;
+    if (isRedisReady()) {
+        try {
+            feedCache = await redis.get(cacheKey);
+        } catch (error) {
+            console.error('Redis error when getting team feed cache:', error);
+        }
+    }
+    
+    let feedIds;
+    
+    // If cache doesn't exist, generate the feed
+    if (!feedCache) {
+        console.log(`Generating new team feed for team ${teamId}`);
+        
+        // Get team passages
+        const teamPassages = await getTeamPassages(teamId);
+        
+        // Simple scoring without follower logic
+        const scoredPassages = await scoreTeamPassages(teamPassages);
+        feedIds = scoredPassages.map(item => item.passage._id.toString());
+        
+        // Cache the feed IDs
+        if (isRedisReady()) {
+            try {
+                await redis.set(cacheKey, JSON.stringify(feedIds), 'EX', CACHE_EXPIRATION);
+            } catch (error) {
+                console.error('Redis error when setting team feed cache:', error);
+            }
+        }
+    } else {
+        // Use cached feed IDs
+        feedIds = JSON.parse(feedCache);
+    }
+    
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedIds = feedIds.slice(startIndex, endIndex);
+    
+    // Check pagination bounds
+    if (paginatedIds.length === 0 && feedIds.length > 0) {
+        const lastValidPage = Math.ceil(feedIds.length / limit);
+        return { 
+            redirect: true, 
+            page: lastValidPage,
+            totalPages: lastValidPage
+        };
+    }
+    
+    // Fetch the full passages needed for this page
+    let feed = [];
+    if (paginatedIds.length > 0) {
+        feed = await Passage.find({ 
+            _id: { $in: paginatedIds }
+        }).populate(standardPopulate);
+        
+        // Fill in usedIn lists
+        feed = await fillUsedInList(feed);
+        
+        // Sort according to the feed order
+        feed.sort((a, b) => {
+            return paginatedIds.indexOf(a._id.toString()) - paginatedIds.indexOf(b._id.toString());
+        });
+    }
+    
+    return {
+        feed,
+        totalPages: Math.ceil(feedIds.length / limit),
+        currentPage: page,
+        totalItems: feedIds.length
+    };
+}
+
+// Score team passages without follower logic
+async function scoreTeamPassages(passages) {
+    const scoredPassages = [];
+    
+    for (const passage of passages) {
+        // Simple scoring based on stars, recency, and usage
+        let score = 0;
+        
+        // Star score
+        score += passage.stars * 10;
+        
+        // Recency score
+        const recencyScore = calculateRecencyScore(passage.date);
+        score += recencyScore * 5;
+        
+        // Usage score (how many times this passage was used)
+        const usedByCount = await Passage.countDocuments({
+            sourceList: { $in: [passage._id] },
+            versionOf: null,
+            author: { $ne: passage.author._id }
+        });
+        score += usedByCount * 3;
+        
+        scoredPassages.push({
+            passage,
+            score
+        });
+    }
+    
+    // Sort by score descending
+    scoredPassages.sort((a, b) => b.score - a.score);
+    
+    return scoredPassages;
+}
+
 module.exports = {
     deletePassage,
     scheduleBackgroundFeedUpdates,
@@ -1881,6 +2033,9 @@ module.exports = {
     getLastSource,
     generateGuestFeed,
     generateFeedWithPagination,
+    getTeamPassages,
+    generateTeamFeed,
+    scoreTeamPassages,
     getPassage,
     getPassagesByUsage,
     // bubbleUpAll,

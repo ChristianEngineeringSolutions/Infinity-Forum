@@ -238,7 +238,6 @@ function initializeChatSocket(io, sessionMiddleware) {
          * Handle creating a room
          */
         socket.on('room:create', async (data) => {
-            console.log("URIAH");
             try {
                 const { type, name, participants } = data;
                 

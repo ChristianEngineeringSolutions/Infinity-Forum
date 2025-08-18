@@ -1,10 +1,16 @@
 'use strict';
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const teamSchema = mongoose.Schema({
+    name: String,
     leader: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    rootPassage: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Passage'
     },
     subscriptionAmount: Number,
     members: [{
@@ -21,8 +27,18 @@ const teamSchema = mongoose.Schema({
             ref: 'User'
         },
         stars: Number,
-        points: Number
-    }]
+        points: Number,
+        options: {
+            useGeneralStars: Boolean
+        }
+    }],
+    dateCreated: {type: Date, default: Date.now},
+    totalPoints: {
+        type: Number,
+        default: 0
+    }
 });
+
+teamSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Team', teamSchema, 'Teams');
