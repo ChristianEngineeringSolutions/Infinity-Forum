@@ -6,6 +6,7 @@ const passageService = require('../services/passageService');
 const { User } = require('../models/User');
 const Message = require('../models/Message');
 const Reward = require('../models/Reward');
+const Team = require('../models/Team');
 const Follower = require('../models/Follower');
 const { deleteOldUploads, uploadFile } = require('../services/fileService');
 const { getRedisClient, getRedisOps, isRedisReady } = require('../config/redis');
@@ -1298,16 +1299,25 @@ async function increaseReward(req, res){
             }
         }
     }
-    await User.updateOne({
-        _id: req.session.user._id.toString()
-    }, {
-        $inc: {
-            stars: -starsTakenAway,
-            borrowedStars: -borrowedUsed,
-            donationStars: -donationUsed
-        }
-    });
     var parentPassage = await Passage.findOne({_id:req.body._id});
+    if(!passage.team){
+        await User.updateOne({
+            _id: req.session.user._id.toString()
+        }, {
+            $inc: {
+                stars: -starsTakenAway,
+                borrowedStars: -borrowedUsed,
+                donationStars: -donationUsed
+            }
+        });
+    }else{
+        await Team.updateOne({_
+            id: parentPassage.team._id,
+            'ledger.user': req.session.user._id.toString()
+        }, {
+            $inc: { 'ledger.$.stars': -value }
+        });
+    }
     //add reward to winning users
     var reward = await Reward.findOne({parentPassage: req.body._id}).populate('passage');
     if(reward){
@@ -1315,18 +1325,34 @@ async function increaseReward(req, res){
         var sourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);
         var allContributors = passageService.getAllContributors(passage, sourceList);
         // Build bulk operations for all contributors except a contributor if passage is merely selected answer and contributor is author of rewarding passage
-        const bulkOps = allContributors
-            .filter(contributor => passage.selectedAnswer && !passage.inFirstPlace && (contributor !== parentPassage.author._id))
-            .map(contributor => ({
-                updateOne: {
-                    filter: { _id: contributor },
-                    update: { $inc: { starsGiven: value } }
-                }
-            }));
-        
-        // Execute bulk write if there are operations
-        if(bulkOps.length > 0){
-            await User.bulkWrite(bulkOps);
+        if(!passage.team){
+            const bulkOps = allContributors
+                .filter(contributor => passage.selectedAnswer && !passage.inFirstPlace && (contributor !== parentPassage.author._id))
+                .map(contributor => ({
+                    updateOne: {
+                        filter: { _id: contributor },
+                        update: { $inc: { starsGiven: value } }
+                    }
+                }));
+            
+            // Execute bulk write if there are operations
+            if(bulkOps.length > 0){
+                await User.bulkWrite(bulkOps);
+            }
+        }else{
+            const bulkOps = allContributors
+                .filter(contributor => passage.selectedAnswer && !passage.inFirstPlace && (contributor !== parentPassage.author._id))
+                .map(contributor => ({
+                    updateOne: {
+                        filter: { _id: passage.team._id, 'ledger.user': contributor },
+                        update: { $inc: { 'ledger.$.points': value } }
+                    }
+                }));
+            
+            // Execute bulk write if there are operations
+            if(bulkOps.length > 0){
+                await Team.bulkWrite(bulkOps);
+            }
         }
     }
     //update reward amount and stars
@@ -1367,9 +1393,18 @@ async function selectAnswer(req, res){
         //where contributor !== req.session.user (because they wouldnt have gotten the reward in the first place)
         for(const contributor of allContributors){
             if(contributor !== req.session.user._id.toString()){
-                await User.updateOne({_id: contributor}, {
-                    $inc: { starsGiven: -passage.parent.reward }
-                });
+                if(!passage.team){
+                    await User.updateOne({_id: contributor}, {
+                        $inc: { starsGiven: -passage.parent.reward }
+                    });
+                }else{
+                    await Team.updateOne({_
+                    id: passage.team._id,
+                    'ledger.user': contributor
+                    }, {
+                        $inc: { 'ledger.$.points': -passage.parent.reward }
+                    });
+                }
             }
         }
     }
@@ -1393,9 +1428,18 @@ async function selectAnswer(req, res){
     if(passage.parent && passage.parent.reward > 0){
         for(const contributor of allContributors){
             if(contributor !== req.session.user._id.toString()){
-                await User.updateOne({_id: contributor}, {
-                    $inc: { starsGiven: passage.parent.reward }
-                });
+                if(!passage.team){
+                    await User.updateOne({_id: contributor}, {
+                        $inc: { starsGiven: passage.parent.reward }
+                    });
+                }else{
+                    await Team.updateOne({_
+                    id: passage.team._id,
+                    'ledger.user': contributor
+                    }, {
+                        $inc: { 'ledger.$.points': passage.parent.reward }
+                    });
+                }
             }
         }
     }
