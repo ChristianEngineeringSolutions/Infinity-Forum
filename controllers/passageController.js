@@ -1300,7 +1300,7 @@ async function increaseReward(req, res){
         }
     }
     var parentPassage = await Passage.findOne({_id:req.body._id});
-    if(!passage.team){
+    if(!parentPassage.team){
         await User.updateOne({
             _id: req.session.user._id.toString()
         }, {

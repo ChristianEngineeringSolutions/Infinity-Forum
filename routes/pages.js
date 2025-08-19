@@ -10,4 +10,8 @@ router.get('/terms', pageController.terms);
 router.get('/donate', pageController.donate);
 router.get('/bank', pageController.bank);
 router.get('/filestream/:viewMainFile?/:directory?', pageController.fileStream);
+
+router.get('/create-commission', pageController.createCommission);
+router.get('/take-commission', pageController.takeCommission);
+
 module.exports = router;

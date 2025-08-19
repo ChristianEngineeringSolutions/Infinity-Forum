@@ -150,10 +150,19 @@ async function fileStream(req, res){
     // });
     //on directory click just run same route with different directory
 }
+async function createCommission(req, res){
+    return res.render('create-commission');
+}
+async function takeCommission(req, res){
+    return res.render('take-commission');
+    
+}
 module.exports = {
     index,
     terms,
     donate,
     bank,
-    fileStream
+    fileStream,
+    createCommission,
+    takeCommission
 };

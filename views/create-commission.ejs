@@ -1,0 +1,28 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<br><br><br><br>
+<div style="width:90%;margin:auto;"id="team_header">
+    <h2>Create a Commission</h2>
+    <h4>Make an account and follow these steps to create a commission.</h4>
+    <ol>
+        <li>Buy stars at the donation page or earn them by using the site.</li><br>
+        <li>Create a commission.<br><br>
+            <img style="width:1300px;"src="/images/create-commission.png" alt=""></li><br>
+        <li>Add a reward to the commission.<br><br>
+            <img style="width:1300px;"src="/images/increase-reward.png" alt=""></li><br>
+        </li>
+        <li>Select the best answer!</li><br>
+        <li><a class="basic_link grey-button" href="/loginform">GET STARTED</a><br></li><br>
+        <li>Want to take a commission instead? Click <a href="/take-commission">here</a>.</li>
+    </ol>
+</div>
+<%- include('footer') %>
