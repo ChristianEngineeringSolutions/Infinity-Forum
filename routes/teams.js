@@ -13,7 +13,7 @@ router.post('/edit-team', requiresLogin, teamController.editTeam);
 router.post('/delete-team', requiresLogin, teamController.deleteTeam);
 router.post('/add-members', requiresLogin, teamController.addMembers);
 router.post('/remove-member', requiresLogin, teamController.removeMember);
-router.get('/team/:teamId', requiresLogin, teamController.team);
+router.get('/team/:teamId/:search?', requiresLogin, teamController.team);
 router.post('/star/:passageId', requiresLogin, teamController.starPassage);
 router.post('/single-star/:passageId', requiresLogin, teamController.singleStarPassage);
 

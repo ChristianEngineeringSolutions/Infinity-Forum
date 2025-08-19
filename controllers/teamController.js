@@ -73,38 +73,27 @@ async function createTeam(req, res){
     var team = await Team.create({
         leader: req.session.user._id.toString(),
         subscriptionAmount: req.body.subscriptionAmount,
-        open: req.body.open === 'on' ? true : false,
+        // open: req.body.open === 'on' ? true : false,
         name: req.body.name,
         description: req.body.description,
         members: newParticipantIds,
         ledger: newParticipantLedger
     });
-    var teamOpen = req.body.open === 'on' ? true : false;
+    // var teamOpen = req.body.open === 'on' ? true : false;
     var rootPassage = await Passage.create({
         label: 'Project',
         title: req.body.name,
         author: req.session.user._id.toString(),
         users: [req.session.user._id.toString()],
         teamForRoot: team._id.toString(),
-        teamOpen: teamOpen,
+        // teamOpen: teamOpen,
         teamRootPassage: true,
-        team: teamOpen ? null : team._id.toString()
+        // team: teamOpen ? null : team._id.toString(),
+        team: team._id.toString()
     });
     team.rootPassage = rootPassage;
     await team.save();
     team = await team.populate('leader rootPassage').execPopulate();
-    return res.render('team-mini', {team: team});
-}
-async function editTeam(req, res){
-    var team = await Team.findOneAndUpdate({_id: req.body._id}, {
-        $set: {
-            subscriptionAmount: req.body.subscriptionAmount,
-            open: req.body.open === 'on' ? true : false,
-            name: req.body.name,
-        }
-    }, {
-        returnDocument: 'after'
-    }).populate('leader');
     return res.render('team-mini', {team: team});
 }
 async function deleteTeam(req, res){
@@ -188,30 +177,55 @@ async function team(req, res){
     if (!isLeader && !isMember) {
         return res.status(403).send("You don't have permission to view this team.");
     }
-    
-    // Generate team feed
-    const feedResult = await passageService.generateTeamFeed(teamId, page, 10);
-    
-    // Check if we need to redirect to a different page
-    if (feedResult.redirect) {
-        return res.redirect(`/teams/team/${teamId}?page=${feedResult.page}`);
-    }
-
-    // Process passages with getPassage to get all required data
-    const passages = [];
-    for (let i = 0; i < feedResult.feed.length; i++) {
-        const processedPassage = await passageService.getPassage(feedResult.feed[i]);
-        if(!processedPassage.teamRootPassage){
-            passages.push(processedPassage);
+    var search = req.params.search || false;
+    if(!search){
+        console.log('feed');
+        // Generate team feed
+        const feedResult = await passageService.generateTeamFeed(teamId, page, 10);
+        
+        // Check if we need to redirect to a different page
+        if (feedResult.redirect) {
+            return res.redirect(`/teams/team/${teamId}?page=${feedResult.page}`);
         }
-    }
-    
+
+        // Process passages with getPassage to get all required data
+        var passages = [];
+        for (let i = 0; i < feedResult.feed.length; i++) {
+            const processedPassage = await passageService.getPassage(feedResult.feed[i]);
+            if(!processedPassage.teamRootPassage){
+                passages.push(processedPassage);
+            }
+        }
+        var totalPages = feedResult.totalPages;
+        var currentPage = feedResult.currentPage;
+        var totalItems = feedResult.totalItems;
+    }else{
+        console.log('search');
+       var passages = await Passage.paginate({
+        team: team._id,
+        title: {$regex: req.params.search, $options:'i'}
+       }, {
+            sort: '-stars',
+            page: req.query.page || 1,
+            limit: DOCS_PER_PAGE,
+            populate: passageService.standardPopulate
+        }); 
+        for (let i = 0; i < passages.docs.length; i++) {
+            const processedPassage = await passageService.getPassage(passages.docs[i]);
+        }
+        var totalDocuments = await Passage.countDocuments({team: team._id});
+        var totalPages = Math.floor(totalDocuments/DOCS_PER_PAGE) + 1;
+        var currentPage = req.query.page || 1;
+        var totalItems = passages.length;
+        passages = passages.docs;
+    } 
     return res.render("team", {
         team: team,
         feed: passages,
-        totalPages: feedResult.totalPages,
-        currentPage: feedResult.currentPage,
-        totalItems: feedResult.totalItems
+        totalPages: totalPages,
+        currentPage: currentPage,
+        totalItems: totalItems,
+        search: search || false
     });
 }
 async function starPassage(req, res){
@@ -259,13 +273,41 @@ async function editTeam(req, res){
     await Team.updateOne({_id:req.body._id}, {
         $set: {
             // subscriptionAmount: req.body.subscriptionAmount,
-            open: req.body.open === 'on' ? true : false,
+            // open: req.body.open === 'on' ? true : false,
             name: req.body.name,
             description: req.body.description,
             members: newParticipantIds,
             ledger: newParticipantLedger
         }
     });
+    // var open = req.body.open === 'on' ? true : false;
+    var open = false;
+    if(open && !team.open){
+        await Passage.updateOne({_id: team.rootPassage._id}, {
+            $set: {
+                team: null,
+                teamOpen: open
+            }
+        });
+        await Passage.updateMany({_id: team.rootPassage._id}, {
+            $set: {
+                teamOpen: open
+            }
+        });
+    }
+    else if(!open && team.open){
+        await Passage.updateOne({_id: team.rootPassage._id}, {
+            $set: {
+                team: team._id.toString(),
+                teamOpen: open
+            }
+        });
+        await Passage.updateMany({_id: team.rootPassage._id}, {
+            $set: {
+                teamOpen: open
+            }
+        });
+    }
     return res.send("Team updated");
 }
 module.exports = {

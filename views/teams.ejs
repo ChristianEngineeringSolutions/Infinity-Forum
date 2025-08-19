@@ -11,7 +11,7 @@
 <%- include('member_box') %>
 <br><br><br><br>
 
-<div id="teams_header">
+<div id="teams_header" style="width:90%;margin:auto;">
     <h2>Teams</h2>
     <p>Manage and view your teams.</p>
     <div>
@@ -19,8 +19,8 @@
         <a id="create-team"class="basic_link">Create Team</a>
     </div>
 </div>
-
-<div id="teams_list">
+<br>
+<div id="teams_list" style="width:90%;margin:auto;">
     <% if(teams && teams.length > 0) { %>
         <% teams.forEach(function(team) { %>
             <%- include('team-mini', {team: team}) %>

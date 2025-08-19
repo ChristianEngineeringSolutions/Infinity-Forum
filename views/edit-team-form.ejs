@@ -3,7 +3,7 @@
     Title: <input id="edit-team-name"type="text" name="name" autocomplete="off"value="<%=team.name%>" required/><br><br>
     Description: <br><br>
     <textarea id="edit-team-description"name="description" autocomplete="off"><%=team.description%></textarea><br><br>
-    Open to the Public: <input id="edit-team-open"name="open"type="checkbox" autocomplete="off" <%=team.open ? 'checked' : ''%>/><br><br>
+    <!--Open to the Public: <input id="edit-team-open"name="open"type="checkbox" autocomplete="off" <%=team.open ? 'checked' : ''%>/><br><br>-->
     Members: <br><br>
     <textarea id="edit-team-usernames"name="usernames" autocomplete="off" placeholder="Put a username on each line."><%for(const member of team.members){%><%=member.username%>&#13;&#10;<%}%></textarea><br><br>
     <input type="hidden"id="edit-team-id"value="<%=team._id.toString()%>">

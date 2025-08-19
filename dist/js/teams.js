@@ -7,6 +7,14 @@ $(function(){
 		popup("Edit Team", $('#edit-team-form-input').val());
 		$('#edit-team-form').show();
 	});
+	$(document).on('click', '#toggle-ledger', function(){
+		$('#ledger').slideToggle();
+	});
+	$(document).on('keyup', '#team-search', function(e){
+		if(e.keyCode === 13){
+			window,location.href = window.location.href.split('?')[0] + '/' + $(this).val();
+		}
+	});
 	$(document).on('click', '[id^="delete-team-"]', function(){
 		var _id = $(this).attr('id').split('-').at(-1);
 		$.ajax({

@@ -11,8 +11,8 @@
 <%- include('member_box') %>
 <br><br><br><br>
 <input type="hidden" id="edit-team-form-input" value='<%- include('edit-team-form', {team: team})%>'>
-<div id="team_header">
-    <h2><%=team.name%></h2>
+<div style="width:90%;margin:auto;"id="team_header">
+    <h2>Team: <%=team.name%></h2>
     <h4><%=team.description%></h4>
     <div>
         <strong>Leader:</strong> <%=team.leader.name%> (@<%=team.leader.username%>)
@@ -24,17 +24,19 @@
         <strong>Total Points:</strong> <%=team.totalPoints || 0%>
     </div>
     <div>
-        Ledger:<br>
-        <ul style="margin-top:0px;">
-            <%for(const ledge of team.ledger.sort((a, b) => b.points - a.points)){%>
-                <li><a target="__blank"href="/profile/<%=ledge.user.username%>/<%=ledge.user._id%>"><%=ledge.user.name%></a></li>
-                <ul>
-                    <li>Stars: <%=ledge.stars%></li>
-                    <li>Points: <%=ledge.points%></li>
-                    <li>Percentage of Points: <%=team.totalPoints === 0 ? 0 : (ledge.points/team.totalPoints)*100%>%</li>
-                </ul>
-            <%}%>
-        </ul>
+        <div id="toggle-ledger"><a>View Ledger</a></div>
+        <div id="ledger" style="display:none;">
+            <ul style="margin-top:0px;">
+                <%for(const ledge of team.ledger.sort((a, b) => b.points - a.points)){%>
+                    <li><a target="__blank"href="/profile/<%=ledge.user.username%>/<%=ledge.user._id%>"><%=ledge.user.name%></a></li>
+                    <ul>
+                        <li>Stars: <%=ledge.stars%></li>
+                        <li>Points: <%=ledge.points%></li>
+                        <li>Percentage of Points: <%=team.totalPoints === 0 ? 0 : (ledge.points/team.totalPoints)*100%>%</li>
+                    </ul>
+                <%}%>
+            </ul>
+        </div>
     </div>
     <br>
     <a id="enter-team"class="basic_link" href="/passage/<%=team.rootPassage.title === '' ? 'Untitled' : encodeURIComponent(team.rootPassage.title)%>/<%=team.rootPassage._id.toString()%>">ENTER</a><br>
@@ -45,7 +47,10 @@
 </div>
 
 <div id="team_feed">
-    <h3>Team Activity Feed</h3>
+    <br>
+    <h3 style="width:90%;margin:auto;">Team Activity Feed</h3>
+    <br>
+    <input id="team-search"class="search"placeholder="Search Team..." type="" name="" autocomplete="off"><br>
     
     <% if(feed && feed.length > 0) { %>
         <%feed.forEach(function(passage) { %>
@@ -55,7 +60,7 @@
         <%- include('page-numbers', {
             totalPages: totalPages,
             page: currentPage,
-            baseUrl: `/teams/team/${team._id}`
+            baseUrl: `/teams/team/${team._id}` + (search ? `/${search}` : '')
         }) %>
     <% } else { %>
         <div style="margin:auto;text-align:center;padding:20px;">
