@@ -505,6 +505,16 @@ const passageSchema = mongoose.Schema({
         ref: 'Passage',
         default: null
     },
+    sortedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    originalAuthor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
     //chain of parents starting from root parent
     chain: [{
         type: mongoose.Schema.Types.ObjectId,

@@ -531,7 +531,8 @@ async function updatePassage(req, res) {
             synthetic: false,
             lastUpdated: Date.now(),
             price: price,
-            inStock: inStock
+            inStock: inStock,
+            sortedBy: null
         }
     };
     

@@ -1,4 +1,8 @@
 <!-- <span class="passage_user"> -->
 <%if(profile){%>
-<a class="passage_profile_link"href="/profile/<%=encodeURIComponent(profile.username);%>/<%=profile._id%>"><%=profile.name%></a><!-- </span> -->
+	<%if(!passage.sortedBy){%>
+		<a class="passage_profile_link"href="/profile/<%=encodeURIComponent(profile.username);%>/<%=profile._id%>"><%=profile.name%></a><!-- </span> -->
+	<%}else{%>
+		<a class="passage_profile_link"href="/profile/<%=encodeURIComponent(passage.originalAuthor.username);%>/<%=passage.originalAuthor._id%>"><%=passage.originalAuthor.name%></a><!-- </span> -->
+	<%}%>
 <%}%>

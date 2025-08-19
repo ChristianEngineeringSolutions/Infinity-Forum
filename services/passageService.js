@@ -7,7 +7,7 @@ const fileService = require('./fileService');
 const { getFeedQueue } = require('../config/redis');
 const { DOCS_PER_PAGE, scripts, labelOptions } = require('../common-utils');
 const browser = require('browser-detect');
-const standardPopulate = 'author users sourceList parent subforums collaborators versions mirror bestOf best team teamForRoot';
+const standardPopulate = 'author users sourceList parent subforums collaborators versions mirror bestOf best team teamForRoot sortedBy originalAuthor';
 function updateLabel(passage){
     switch(passage.label){
         case 'Project':
@@ -102,7 +102,9 @@ async function copyPassage(passage, user, parent, callback, synthetic=false, com
         bestOfEntire: passage.bestOfEntire,
         bestOfContent: passage.bestOfContent,
         comment: comment,
-        sourcedFrom: passage._id.toString()
+        sourcedFrom: passage._id.toString(),
+        originalAuthor: passage.author._id,
+        sortedBy: user[0]
     });
     //Add copy to passage it was duplicated into
     if(parent != "root" && parent != null){
@@ -168,7 +170,7 @@ async function copyPassage(passage, user, parent, callback, synthetic=false, com
     else{
         console.log('false');
     }
-    let ret = await Passage.findOne({_id: copy._id}).populate('parent author users sourceList subforums collaborators versions mirror bestOf best');
+    let ret = await Passage.findOne({_id: copy._id}).populate(standardPopulate);
     return ret;
     // res.render('passage', {passage: copy, sub: true});
 }
