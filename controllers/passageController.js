@@ -1311,7 +1311,7 @@ async function increaseReward(req, res){
             }
         });
     }else{
-        await Team.updateOne({_
+        await Team.updateOne({
             id: parentPassage.team._id,
             'ledger.user': req.session.user._id.toString()
         }, {
@@ -1398,7 +1398,7 @@ async function selectAnswer(req, res){
                         $inc: { starsGiven: -passage.parent.reward }
                     });
                 }else{
-                    await Team.updateOne({_
+                    await Team.updateOne({
                     id: passage.team._id,
                     'ledger.user': contributor
                     }, {
@@ -1433,7 +1433,7 @@ async function selectAnswer(req, res){
                         $inc: { starsGiven: passage.parent.reward }
                     });
                 }else{
-                    await Team.updateOne({_
+                    await Team.updateOne({
                     id: passage.team._id,
                     'ledger.user': contributor
                     }, {
