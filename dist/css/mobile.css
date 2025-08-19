@@ -116,8 +116,15 @@
 .mobile-show{
     display: none;
 }
+.commission-image{
+        width: 1300px;
+    }  
 /* Large Phones */
 @media screen and (max-width: 1045px){
+    .commission-image{
+        width: 300px !important;
+        margin: auto;
+    }    
     #top{
         display: none;
     }

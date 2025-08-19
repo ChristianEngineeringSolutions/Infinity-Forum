@@ -8,7 +8,6 @@
 }) %>
 <%-include('menu')%>
 <%-include('sidebar')%>
-<%- include('member_box') %>
 <br><br><br><br>
 <div style="width:90%;margin:auto;"id="team_header">
     <h2>Create a Commission</h2>
@@ -16,9 +15,19 @@
     <ol>
         <li>Buy stars at the donation page or earn them by using the site.</li><br>
         <li>Create a commission.<br><br>
-            <img style="width:1300px;"src="/images/create-commission.png" alt=""></li><br>
+            <picture>
+               <source 
+                  media="(max-width: 1045px)"
+                  srcset="/images/commission1-mobile.png">
+               <img class="commission-image" src="/images/create-commission.png">
+            </picture></li><br>
         <li>Add a reward to the commission.<br><br>
-            <img style="width:1300px;"src="/images/increase-reward.png" alt=""></li><br>
+            <picture>
+               <source 
+                  media="(max-width: 1045px)"
+                  srcset="/images/commission2-mobile.png">
+               <img class="commission-image" style="width:1300px;" src="/images/increase-reward.png" alt="">
+            </picture></li><br>
         </li>
         <li>Select the best answer!</li><br>
         <li><a class="basic_link grey-button" href="/loginform">GET STARTED</a><br></li><br>

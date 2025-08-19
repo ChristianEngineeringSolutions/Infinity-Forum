@@ -8,7 +8,6 @@
 }) %>
 <%-include('menu')%>
 <%-include('sidebar')%>
-<%- include('member_box') %>
 <br><br><br><br>
 <div style="width:90%;margin:auto;"id="team_header">
     <h2>Take a Commission</h2>
@@ -16,8 +15,13 @@
     <ol>
         <li>Setup payment options in Profile.</li><br>
         <li>Find a commission.<br><br>
-            <img style="width:1300px;" src="/images/first-commission.png" alt=""></li><br>
-        <li>Add your work and profit when your answer is selected or has the most stars!</li><br>
+            <picture>
+               <source 
+                  media="(max-width: 1045px)"
+                  srcset="/images/commission3-mobile.png">
+               <img class="commission-image" src="/images/first-commission.png" alt="">
+            </picture></li><br>
+        <li>Add your work and profit when your answer is selected or has the most stars! (You get paid every month based on contribution points)</li><br>
         <li><a class="basic_link grey-button" href="/loginform">GET STARTED</a><br></li><br>
         <li>Want to create a commission instead? Click <a href="/create-commission">here</a>.</li>
     </ol>
