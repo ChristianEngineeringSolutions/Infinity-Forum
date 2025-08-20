@@ -74,7 +74,7 @@ async function bank(req, res){
   var user = await User.findOne({_id:req.session.user._id});
   var today = new Date();
     //its been more than a month since they last got stars so reset the month we're looking at
-    if(monthsBetween(user.monthStarsBorrowed, today) > 0 || user.monthStarsBorrowed === null){
+    if(user.monthStarsBorrowed && monthsBetween(user.monthStarsBorrowed, today) > 0){
         user.monthStarsBorrowed = Date.now();
         user.starsBorrowedThisMonth = 0;
         await user.save();
