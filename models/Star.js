@@ -14,6 +14,13 @@ const starSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    //users that were starred
+    //owe the debt
+    usersThatOwe: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: []
+    }],
     //which passage was starred
     passage: {
         type: mongoose.Schema.Types.ObjectId,

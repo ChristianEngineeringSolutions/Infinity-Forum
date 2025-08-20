@@ -62,6 +62,9 @@ async function searchProfile(req, res) {
         case 'Oldest-Newest':
             sort = {date: 1};
             break;
+        case 'Highest Reward':
+            sort = {reward: -1, _id: 1};
+            break;
     }
     let results = await Passage.find(find).populate('author users sourceList').sort(sort).limit(DOCS_PER_PAGE);
     for(var i = 0; i < results.length; ++i){
@@ -174,6 +177,9 @@ async function searchPassage(req, res) {
             break;
         case 'Oldest-Newest':
             sort = {date: 1};
+            break;
+        case 'Highest Reward':
+            sort = {reward: -1, _id: 1};
             break;
     }
     console.log(sort);
@@ -315,6 +321,9 @@ async function search(req, res) {
             break;
         case 'Oldest-Newest':
             sort = { date: 1 };
+            break;
+        case 'Highest Reward':
+            sort = {reward: -1, _id: 1};
             break;
     }
     console.log("FLAIR3");

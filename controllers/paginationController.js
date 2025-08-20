@@ -123,6 +123,9 @@ async function paginate(req, res) {
                     sort_query = {date: 1};
                     console.log("Oldest");
                     break;
+                case 'Highest Reward':
+                    sort_query = {reward: -1, _id: 1};
+                    break;
             }
 
             try {

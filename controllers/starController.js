@@ -41,7 +41,7 @@ async function starPassage(req, res){
             }
         }
     }
-    if(!team && ((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount)){
+    if(!team && ((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) <= amount)){
         return res.send("Not enough stars.");
     }
     var subPassage = req.body.parent == 'root' ? false : true;

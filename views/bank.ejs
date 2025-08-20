@@ -22,9 +22,13 @@
         <h3>Donation Stars: <%=user.donationStars%></h3>
         <h3>You owe: <%=borrowedAmount%> Star<%=borrowedAmount == 1 ? '' : 's';%></h3>
         <h3>Borrowed Stars Left: <%=user.borrowedStars%></h3>
-        <h1 style="font-size:3em;">Borrow Stars:</h1>
         <%if(user.phone == '' && !user.identityVerified){%>
-        First, verify your phone number<br><br>
+            <h1 style="font-size:3em;">Verify Phone</h1>
+        <%}else{%>
+            <h1 style="font-size:3em;">Borrow Stars:</h1>
+        <%}%>
+        <%if(user.phone == ''){%>
+        First, verify your phone number to like posts, borrow stars, and get paid (if you haven't verified your identity)<br><br>
         <input id="phone" autocomplete="off"type="tel" name="phone" /><br><br>
         <button id="request-code">Request Verification Code</button><br><br>
         <input id="twilio-code"placeholder="CODE"autocomplete="off"type="text" /><br><br>

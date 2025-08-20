@@ -733,6 +733,9 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
     if (!sessionUser) {
         throw new Error('Session user not found');
     }
+    if(sessionUser.phone === '' && !sessionUser.identityVerified){
+        throw new Error('Must be verified to star.');
+    }
     
     let starsTakenAway = 0;
     let amountForRebate = amount;
@@ -824,10 +827,18 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             
             // Log the amount starred
             let loggedStarDebt = sessionUser._id.toString() == passage.author._id.toString() ? 0 : (amount + bonus);
+            var usersThatOwe = [passage.author, ...passage.collaborators];
+            usersThatOwe = usersThatOwe.map(function(collaber){
+                if(collaber._id){
+                    return collaber._id.toString();
+                }
+                return collaber.toString();
+            });
             accumulator.addStarDocument({
                 user: userId,
                 passage: passage._id,
                 passageAuthor: passage.author._id.toString(),
+                usersThatOwe: usersThatOwe,
                 amount: amount,
                 sources: sources,
                 single: false,
@@ -867,7 +878,7 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             }
             
             // Process collaborator debt
-            await processCollaboratorDebt(passage, sessionUser, amount, bonus, contributionPoints, accumulator, mainSession, whichStarsToUse);
+            await processCollaboratorDebtNew(passage, sessionUser, amount, bonus, contributionPoints, accumulator, mainSession, whichStarsToUse);
             
             // Process contribution points
             if(contributionPoints && deplete && starsTakenAway > 0){
@@ -965,6 +976,7 @@ async function processCollaboratorDebt(passage, sessionUser, amount, bonus, cont
     if(whichStarsToUse === 'team'){
         team = true
     }
+    //get all debt that this user owes
     var starrerDebt = await Star.find({
         passageAuthor: sessionUser._id.toString(),
         single: false,
@@ -997,6 +1009,7 @@ async function processCollaboratorDebt(passage, sessionUser, amount, bonus, cont
             
             for(const star of stars){
                 // Filter out processed debt
+                // filter out debt that has already been inherited
                 starrerDebt = starrerDebt.filter(x => x.trackToken != star.trackToken);
                 
                 const debtReduction = (amount + bonus)/(passage.collaborators.length + 1);
@@ -1013,6 +1026,7 @@ async function processCollaboratorDebt(passage, sessionUser, amount, bonus, cont
             }
             
             // Inherit debt
+            //each collaber inherits debt of starrer
             for(const debt of starrerDebt){
                 inheritedDebts.push({
                     passageAuthor: collaber._id ? collaber._id.toString() : collaber.toString(),
@@ -1040,6 +1054,85 @@ async function processCollaboratorDebt(passage, sessionUser, amount, bonus, cont
     }
 }
 
+// Updated collaborator debt function to share inherited debt
+async function processCollaboratorDebtNew(passage, sessionUser, amount, bonus, contributionPoints, accumulator, session, whichStarsToUse='general'){
+    var team = false;
+    if(whichStarsToUse === 'team'){
+        team = true
+    }
+    //get all debt that this user owes to anyone
+    //will be inherited
+    var starrerDebt = await Star.find({
+        usersThatOwe: {$in:[sessionUser._id.toString()]},
+        single: false,
+        debt: {$gt:0},
+        team: team
+    }).session(session);
+    
+    var allCollaborators = [passage.author, ...passage.collaborators];
+    var amountToGiveCollabers = (amount + bonus)/(passage.collaborators.length + 1);
+    if(!contributionPoints){
+        amountToGiveCollabers = 0;
+    }
+    
+    const debtUpdates = [];
+    var inheritBulkOps = [];
+
+    for(const collaber of allCollaborators){
+        // Only process debt if we are actually starring the collaber
+        if(passage.author._id.toString() != sessionUser._id.toString() && 
+           !passage.collaborators.toString().includes(sessionUser._id.toString())){
+            
+            // Get all debt owed by session user to specific collaber
+            var stars = await Star.find({
+                usersThatOwe: {$in:[sessionUser._id.toString()]},
+                user: collaber._id ? collaber._id.toString() : collaber.toString(),
+                single: false,
+                debt: {$gt:0},
+                team: team
+            }).session(session);
+            
+            //
+            for(const star of stars){
+                // Filter out processed debt
+                starrerDebt = starrerDebt.filter(x => x.trackToken != star.trackToken);
+                
+                const debtReduction = (amount + bonus)/(passage.collaborators.length + 1);
+                const newDebt = Math.max(0, star.debt - debtReduction);
+                
+                debtUpdates.push({
+                    updateOne: {
+                        filter: { _id: star._id },
+                        update: { $set: { debt: newDebt } }
+                    }
+                });
+                
+                if(newDebt === 0) break; // No more debt to process
+            }
+            
+            // Inherit debt
+            for(const debt of starrerDebt){
+                inheritBulkOps.push({
+                    updateOne: {
+                        filter: {_id: debt._id, team: !!team},
+                        update: {$push:{
+                            usersThatOwe: collaber._id ? collaber._id.toString() : collaber.toString()
+                        }}
+                    }
+                });
+            }
+        }
+    }
+    
+    // Execute debt updates
+    if(debtUpdates.length > 0){
+        await Star.bulkWrite(debtUpdates, {session});
+    }
+    if(inheritBulkOps.length > 0){
+        await Star.bulkWrite(inheritBulkOps, {session});
+    }
+}
+
 // Helper function to calculate total absorbed from debt
 async function calculateTotalAbsorbed(sessionUser, passage, amount, bonus, session, whichStarsToUse){
     var team = false;
@@ -1054,7 +1147,8 @@ async function calculateTotalAbsorbed(sessionUser, passage, amount, bonus, sessi
            !passage.collaborators.toString().includes(sessionUser._id.toString())){
             
             const stars = await Star.find({
-                passageAuthor: sessionUser._id.toString(),
+                // passageAuthor: sessionUser._id.toString(), //commented out for processCollaboratorDebtNew to work
+                usersThatOwe: {$in:[sessionUser._id.toString()]}, //comment out for processCollaboratorDebt to work, uncomment above
                 user: collaber._id ? collaber._id.toString() : collaber.toString(),
                 single: false,
                 debt: {$gt:0},
@@ -1312,7 +1406,9 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
             if (!sessionUser) {
                 throw new Error('Session user not found');
             }
-            
+            if(sessionUser.phone === '' && !sessionUser.identityVerified){
+                throw new Error('Must be verified to star.');
+            }
             passage = await Passage.findOne({_id: passageId})
                 .populate('author sourceList collaborators team')
                 .session(session);

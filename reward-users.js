@@ -206,7 +206,7 @@ async function processRewardDistribution(job) {
                         const cut = 0;
                         const transferAmount = Math.floor(userUSD - cut);
                         //only do payout for more than one cent and for verified onboarded members
-                        if(transferAmount >= 1 && user.identityVerified == true && user.stripeOnboardingComplete == true){
+                        if(transferAmount >= 1 && (user.identityVerified == true || user.phone !== '') && user.stripeOnboardingComplete == true){
                             // Generate idempotency key
                             const idempotencyKey = generateIdempotencyKey(
                                 user._id,

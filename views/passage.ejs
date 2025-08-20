@@ -259,13 +259,17 @@
             <hr class="bottom-hr"style="background:rgba(204,204,204,.2);">
         <%}%>
         <div class="passage_stars<%=starBottom%>">
-            <%if(user && (scripts.inTeam(user, passage.team) || scripts.isTeamLeader(user, passage.team))){%>
-            <ion-icon class="star"id="star-<%=passage._id%>"style="font-size:1.2em;float:left;<%=gold%>"title="Star Passage"src="/images/ionicons/star.svg"></ion-icon>&emsp;<%}%><span id="p-starCount-<%=passage._id%>"><%=parseInt(passage.stars)%> Star<%=passage.stars == 1 ? '' : 's'%></span> &emsp; 
-            <% if(user && (scripts.inTeam(user, passage.team) || scripts.isTeamLeader(user, passage.team))){ %>
-                <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
-                <input autocomplete="off" id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" />
-                &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Give</span>
-            <% } %>
+            <%if(user.phone !== '' || user.identityVerified){%>
+                <%if(user && (scripts.inTeam(user, passage.team) || scripts.isTeamLeader(user, passage.team))){%>
+                <ion-icon class="star"id="star-<%=passage._id%>"style="font-size:1.2em;float:left;<%=gold%>"title="Star Passage"src="/images/ionicons/star.svg"></ion-icon>&emsp;<%}%><span id="p-starCount-<%=passage._id%>"><%=parseInt(passage.stars)%> Star<%=passage.stars == 1 ? '' : 's'%></span> &emsp; 
+                <% if(user && (scripts.inTeam(user, passage.team) || scripts.isTeamLeader(user, passage.team))){ %>
+                    <!-- Get min and max from input: Min is 1, Max is number of stars user has -->
+                    <input autocomplete="off" id="star_number_<%=passage._id%>"class="star_number"value="1"min="1"max="<%=user.stars%>"type="number" />
+                    &nbsp;&nbsp;<span id="passage_add_stars_<%=passage._id%>"class="add_stars">Give</span>
+                <% } %>
+                <%}else{%>
+                    <a target="__blank"class="basic_link"href="/bank"><u>Like</u></a>
+                <%}%>
         </div>
         <br>
     </div>

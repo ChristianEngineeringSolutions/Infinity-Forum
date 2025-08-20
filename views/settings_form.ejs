@@ -14,10 +14,14 @@
     <a target="_blank"href="/stripeAuthorize">Manage Payments</a>
     <%if(user && !user.identityVerified){%>
         <br><br>
-        <a href="/verify-identity">Verify Identity (To get paid)</a>
+        <a href="/verify-identity">Verify Identity</a>
     <%}else{%>
         <br><br>
         *Verified
+    <%}%>
+    <%if(user.phone === ''){%>
+        <br><br>
+        <a href="/bank">Verify Phone (To get Paid)</a>
     <%}%>
     <br><br>
     <form id="settings_form" action="/update_settings/" method="POST">
