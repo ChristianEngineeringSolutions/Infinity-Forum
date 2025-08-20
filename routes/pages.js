@@ -11,7 +11,8 @@ router.get('/donate', pageController.donate);
 router.get('/bank', pageController.bank);
 router.get('/filestream/:viewMainFile?/:directory?', pageController.fileStream);
 
-router.get('/create-commission', pageController.createCommission);
-router.get('/take-commission', pageController.takeCommission);
+router.get('/buyers', pageController.createCommission);
+router.get('/creators', pageController.takeCommission);
+router.get('/create-or-buy', pageController.createOrBuy);
 
 module.exports = router;

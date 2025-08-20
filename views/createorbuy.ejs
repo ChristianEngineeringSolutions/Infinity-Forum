@@ -1,0 +1,58 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<br><br><br><br>
+<a href="#buyers">Jump to: For Buyers</a>
+<div style="width:90%;margin:auto;"id="team_header">
+    <h1>Creators</h1>
+    <h2>Create a Commission</h2>
+    <h4>Make an account and follow these steps to create a commission.</h4>
+    <ol>
+        <li>Buy stars at the donation page or earn them by using the site.</li><br>
+        <li>Create a commission.<br><br>
+            <picture>
+               <source 
+                  media="(max-width: 1045px)"
+                  srcset="/images/commission1-mobile.png">
+               <img class="commission-image" src="/images/create-commission.png">
+            </picture></li><br>
+        <li>Add a reward to the commission.<br><br>
+            <picture>
+               <source 
+                  media="(max-width: 1045px)"
+                  srcset="/images/commission2-mobile.png">
+               <img class="commission-image" style="width:1300px;" src="/images/increase-reward.png" alt="">
+            </picture></li><br>
+        </li>
+        <li>Select the best answer!</li><br>
+        <li><a class="basic_link grey-button" href="/loginform">GET STARTED</a><br></li><br>
+        <li>Want to take a commission instead? Click <a href="/take-commission">here</a>.</li>
+    </ol>
+</div>
+<br id="buyers"><br>
+<div style="width:90%;margin:auto;"id="team_header">
+    <h1>Buyers</h1>
+    <h2>Take a Commission</h2>
+    <h4>Make an account and follow these steps to take a commission.</h4>
+    <ol>
+        <li>Setup payment options in Profile.</li><br>
+        <li>Find a commission.<br><br>
+            <picture>
+               <source 
+                  media="(max-width: 1045px)"
+                  srcset="/images/commission3-mobile.png">
+               <img class="commission-image" src="/images/first-commission.png" alt="">
+            </picture></li><br>
+        <li>Add your work and profit when your answer is selected or has the most stars! (You get paid every month based on contribution points)</li><br>
+        <li><a class="basic_link grey-button" href="/loginform">GET STARTED</a><br></li><br>
+        <li>Want to create a commission instead? Click <a href="/create-commission">here</a>.</li>
+    </ol>
+</div>
+<%- include('footer') %>

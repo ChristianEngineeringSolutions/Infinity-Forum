@@ -102,7 +102,7 @@ async function configureExpress() {
         res.locals.CESCONNECT = req.session.CESCONNECT;
         res.locals.fromOtro = req.query.fromOtro || false;
         //daemoncheck
-        if(['create-commission', 'take-commission', 'simulation', 'teams', 'team', 'market', 'sale', 'order', 'orders', 'sales', 'market-dashboard', 'chat', '/api/chat/rooms', '/api/chat/search', '/api/chat/contacts/online',
+        if(['creators', 'create-or-buy','buyers', 'simulation', 'teams', 'team', 'market', 'sale', 'order', 'orders', 'sales', 'market-dashboard', 'chat', '/api/chat/rooms', '/api/chat/search', '/api/chat/contacts/online',
             'simulated-passages', 'notifications', 'verify-identity', 'bank', 'feed', 'posts', 'comments', 'subforums', 'profile', '', 'passage', 'messages', 'leaderboard', 'donate', 'filestream', 'loginform', 'personal', 'admin', 'forum', 'projects', 'tasks', 'recover', 'recoverpassword'].includes(req.url.split('/')[1])
             || req.query.shipped || req.query.page){
             let daemons = [];

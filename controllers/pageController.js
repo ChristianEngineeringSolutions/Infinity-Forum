@@ -151,10 +151,14 @@ async function fileStream(req, res){
     //on directory click just run same route with different directory
 }
 async function createCommission(req, res){
-    return res.render('create-commission');
+    return res.render('buyers');
 }
 async function takeCommission(req, res){
-    return res.render('take-commission');
+    return res.render('creators');
+    
+}
+async function createOrBuy(req, res){
+    return res.render('create-or-buy');
     
 }
 module.exports = {
@@ -164,5 +168,6 @@ module.exports = {
     bank,
     fileStream,
     createCommission,
-    takeCommission
+    takeCommission,
+    createOrBuy
 };
