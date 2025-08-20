@@ -31,7 +31,7 @@ async function initializeTwilio() {
         const twilio = require('twilio');
         const accountSid = await accessSecret('TWILIO_ACCOUNT_SID');
         const authToken = await accessSecret('TWILIO_AUTH_TOKEN');
-        serviceSid = await accessSecret('TWILIO_VERIFY_SERVICE_SID');
+        serviceSid = await accessSecret('TWILIO_SERVICE_SID');
         client = twilio(accountSid, authToken);
     }
 }
