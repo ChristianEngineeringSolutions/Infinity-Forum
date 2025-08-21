@@ -1,3 +1,7 @@
+Index page: get started button above how it works
+
+Modify getRecursiveSourceListTabbed to return sources as an object with the keys being each passage pointing to an array of its sources. It should be nested if neccesary.  
+
 transaction chunking
 
 auto add parent passage as source

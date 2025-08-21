@@ -19,7 +19,7 @@
     <div style="margin:auto;text-align:center;">
         <h3>Cash Pool for this month: $<%=usd%> </span>(so far)</h3>
         <!-- <small>Total Savings: $<%=totalUSD%></small> -->
-        <h3>Donation Stars: <%=user.donationStars%></h3>
+        <h3>Generosity Stars: <%=user.donationStars%></h3>
         <h3>You owe: <%=borrowedAmount%> Star<%=borrowedAmount == 1 ? '' : 's';%></h3>
         <h3>Borrowed Stars Left: <%=user.borrowedStars%></h3>
         <%if(user.phone == '' && !user.identityVerified){%>
@@ -49,7 +49,7 @@
         <%# And Donate if investing on %>
         <h3>Other ways to earn stars: Post, Give Stars (You get dividends), Donate (for non-fundable stars).</h3>
         <!-- <h5 style="font-weight: normal; color: red;">Get Paid Monthly by Investing Stars in Projects.</h5> -->
-        <h3>Donation stars don't yield dividends or contribution points. They are spent last.</h3>
+        <h3>Generosity stars don't yield dividends or contribution points. They are spent last.</h3>
         <br><br>
     </div>
     <script type="text/javascript">

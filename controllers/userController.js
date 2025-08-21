@@ -8,6 +8,7 @@ const Notification = require('../models/Notification');
 const userService = require('../services/userService');
 const systemService = require('../services/systemService');
 const bookmarkService = require('../services/bookmarkService');
+const passageService = require('../services/passageService');
 const {DOCS_PER_PAGE, scripts} = require('../common-utils');
 const bcrypt = require('bcrypt');
 const { exec } = require('child_process');
@@ -197,7 +198,7 @@ const getProfile = async (req, res) => {
         personal: false,
         versionOf: null
     };
-    let passages = await Passage.find(find).populate('author users sourceList collaborators versions').sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
+    let passages = await Passage.find(find).populate(passageService.standardPopulate).sort({stars: -1, _id: -1}).limit(DOCS_PER_PAGE);
     for(var i = 0; i < passages.length; ++i){
         passages[i] = await getPassage(passages[i]);
     }

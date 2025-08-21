@@ -228,7 +228,59 @@ async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor
     sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
     return sources;
 }
-
+async function getRecursiveSourceListTabbed(sourceList, sources={}, passage, getAuthor=false){
+    for(const source of sourceList){
+        if(getAuthor){
+            var sourcePassage = await Passage.findOne({_id:source}).populate('author collaborators');
+        }else{
+            var sourcePassage = await Passage.findOne({_id:source});
+        }
+        //get specials as well
+        // sourcePassage = await getPassage(sourcePassage);
+        if(sourcePassage != null){
+            var special = null;
+            // console.log(sourcePassage._id);
+            if(sources.some(s => s._id.toString() === sourcePassage._id.toString())){
+                continue;
+            }
+            // Skip if this source is the same as the original passage to prevent circular citations
+            if(sourcePassage._id.toString() === passage._id.toString()){
+                continue;
+            }                
+            sources.push(sourcePassage);
+            if(source.showBestOf == true){
+                special = await Passage.findOne({parent: source._id}, null, {sort: {stars: -1}});
+                special = special._id;
+            }
+            if(source.best != null){
+                special = source.best;
+            }
+            if(source.repost != null){
+                special = source.repost;
+            }
+            if(source.bestOf != null){
+                special = source.bestOf;
+            }
+            if(source.mirror != null){
+                special = source.mirror;
+            }
+            if(special != null){
+                if(getAuthor){
+                    special = await Passage.findOne({_id:special}).populate('author');
+                }else{
+                    special = await Passage.findOne({_id:special});
+                }
+                special = await Passage.findOne({_id:special});
+                sources.push(special);
+            }
+            sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage, getAuthor);
+        }
+    }
+    // console.log(sources);
+    sources = sources.filter(i => i);
+    sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
+    return sources;
+}
 function getContributors(passage){
     var contributors = [passage.author, ...passage.collaborators];
     for(const source of passage.sourceList){

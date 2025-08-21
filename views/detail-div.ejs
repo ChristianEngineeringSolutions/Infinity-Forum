@@ -35,7 +35,7 @@
         <%}%>
         <%*/%>
         </div></div>
-        <%if(user && user._id.toString() == passage.author._id.toString() && sub && !passage.selectedAnswer && subPassages && passage.parent.public && !passage.parent.forum){%>
+        <%if(user && passage.parent !== null && user._id.toString() == passage.parent.author._id.toString() && sub && !passage.selectedAnswer && subPassages && passage.parent.public && !passage.parent.forum){%>
             <div><br><a id="select-answer-<%=passage._id%>">Choose as Winner</a></br></div>
         <%}%>
         <%if(passage.selectedAnswer && sub){%>

@@ -719,6 +719,158 @@ async function processSourcesBatched(rootPassage, amount, sessionUser, deplete, 
     }
 }
 
+
+/**
+ * Thinking out loud
+[
+    passage: [
+        source1,
+        source2
+    ],
+    source1: [
+        source1source,
+        source1source2
+    ]
+]
+iterate over just the sources, not the keys.
+For each source of key.value, get the key and check it
+See if the source has any collaborators that key does not have (all keys and sources are passages)
+if it does, star the source. If not, don't.
+**/
+async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, deplete, team=false, whichStarsToUse='general') {
+    const BATCH_SIZE = 100;
+    const processedSources = new Set();
+    const sourceQueue = [];
+    var authors = [];
+    var sources = await getRecursiveSourceList(rootPassage.sourceList, [], rootPassage);
+    // Initialize with root passage sources
+    for (const source of sources) {
+        if (!processedSources.has(source._id.toString())) {
+            sourceQueue.push(source._id);
+        }
+    }
+    
+    processedSources.add(rootPassage._id.toString());
+    
+    while (sourceQueue.length > 0) {
+        // Take next batch
+        const batchIds = sourceQueue.splice(0, BATCH_SIZE);
+        
+        // Process batch in new transaction
+        const session = await mongoose.startSession();
+        try {
+            await session.withTransaction(async () => {
+                const accumulator = new StarOperationAccumulator();
+                
+                // Fetch all passages in batch with necessary populates
+                const passages = await Passage.find({
+                    _id: { $in: batchIds }
+                })
+                .populate('author sourceList collaborators')
+                .session(session);
+                
+                // Fetch all users needed for this batch
+                const userIds = new Set();
+                for (const passage of passages) {
+                    userIds.add(passage.author._id.toString());
+                    for (const collab of passage.collaborators) {
+                        userIds.add(collab._id ? collab._id.toString() : collab.toString());
+                    }
+                }
+                const users = await User.find({ _id: { $in: Array.from(userIds) } }).session(session);
+                const userMap = new Map(users.map(u => [u._id.toString(), u]));
+                
+                // Process each passage
+                for (const passage of passages) {
+                    if (processedSources.has(passage._id.toString())) continue;
+                    //don't restar top passage
+                    if(passage._id.toString() === rootPassage._id.toString()) continue;
+                    
+                    //only star if the same team as rootPassage
+                    if(team){
+                        if(team._id.toString() !== passage.team._id.toString()){
+                            continue;
+                        }
+                    }
+                    // Add stars to passage
+                    // You won't get extra stars for citing your own work
+                    var passageAuthor = passage.author._id.toString();
+                    //the only rewards inChain passages get is passage stars
+                    var inChain = rootPassage.chain.toString().includes(passage._id.toString());
+                    if((passageAuthor !== sessionUser._id.toString()
+                        && passageAuthor !== rootPassage.author._id.toString()
+                        && !overlaps(passage.collaborators, rootPassage.collaborators))
+                        || inChain){
+                        accumulator.addPassageStars(passage._id, amount);
+                    }
+                    
+                    // Process messages for this passage
+                    const messages = await Message.find({passage: passage._id}).session(session);
+                    for (const message of messages) {
+                        accumulator.addMessageStars(message._id, amount);
+                    }
+                    
+                    // Process author and collaborators
+                    if (shouldRewardAuthor(passage, sessionUser) && 
+                        !overlaps(passage.collaborators, rootPassage.collaborators)
+                        && !inChain
+                        && !authors.toString().includes(passage.author._id.toString())) {
+                        
+                        const authorAmount = amount / (passage.collaborators.length + 1);
+                        const author = userMap.get(passage.author._id.toString());
+                        if (author) {
+                            if(whichStarsToUse === 'general'){
+                                const deltas = calculateStarAddition(author, authorAmount);
+                                accumulator.addUserStars(author._id.toString(), deltas);
+                            }else{
+                                accumulator.addUserTeamStars(author._id.toString(), {stars: authorAmount}, team);
+                            }
+                            authors.push(author);
+                        }
+                    }
+                    if(!passage.collaborators.includes(sessionUser._id.toString())
+                        && !inChain
+                        && !authors.toString().includes(passage.author._id.toString())){
+                        // Process collaborators
+                        for (const collab of passage.collaborators) {
+                            const collabId = collab._id ? collab._id.toString() : collab.toString();
+                            const collabUser = userMap.get(collabId);
+                            if (collabUser && !authors.toString().includes(collabId) && collabId !== rootPassage.author._id.toString()) {
+                                if(whichStarsToUse === 'general'){
+                                    const deltas = calculateStarAddition(collabUser, authorAmount);
+                                    accumulator.addUserStars(collabId, deltas);
+                                }else{
+                                    accumulator.addUserTeamStars(collabId, {stars: authorAmount}, team);
+                                }
+                                authors.push(collabId);
+                            }
+                        }
+                    }
+                    
+                    // Add unprocessed sources to queue
+                    for (const source of passage.sourceList) {
+                        if (!processedSources.has(source._id.toString())) {
+                            sourceQueue.push(source._id);
+                        }
+                    }
+                    
+                    processedSources.add(passage._id.toString());
+                }
+                
+                // Process rebates for this batch
+                if(!inChain){
+                    await processRebatesBatch(passages, amount, sessionUser, accumulator, session);
+                }
+                
+                // Execute all operations for this batch
+                await accumulator.executeBulkOperations(session);
+            });
+        } finally {
+            await session.endSession();
+        }
+    }
+}
+
 // Process starPassage logic - refactored for batch processing
 async function processStarPassage(userId, passageId, amount, sessionUserId, deplete, single, team=false) {
     console.log('processStarPassage called with:', { userId, passageId, amount, sessionUserId, deplete, single });
