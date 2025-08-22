@@ -13,14 +13,14 @@
     <br><br><br><br><br><br>
     <div style="margin:auto;text-align:center;">
         <h1 style="font-size:3em;">Contribute:</h1>
-        <h2><a target="_blank"href="<%=donateLink%>">Donate Custom Amount</a></h2>
+        <h2><button style="background:green;color:black !important;"class="grey-button"><a style="color:white;"target="_blank"href="<%=donateLink%>">Donate Custom Amount</a></button></h2>
         <%/*%>
         <h2><a target="_blank"href="<%=subscribeLink%>">Subscribe</a></h2>
         <%*/%>
         <%if(user){%>
             <h4>or</h4>
-            <h5 id="update-subscription"style="font-weight:normal;color:white;cursor:pointer;">$5 per <input type="number" id="subscriptionQuantity" autocomplete="off"value="<%=(subscriptionQuantity == 0 ? 1 : subscriptionQuantity)%>" min="0">
-            <button id="subscribeButton"><%=user.subscribed ? "Update Subscription" : "Subscribe"%></button>
+            <h5 id="update-subscription"style="font-weight:normal;color:white;cursor:pointer;">Tier <input style="width:50px;"type="number" id="subscriptionQuantity" autocomplete="off"value="<%=(subscriptionQuantity == 0 ? 1 : subscriptionQuantity)%>" min="0">: $<span id="subscription-price">5</span>
+            <button style="font-size:1em;background:green;"class="grey-button"id="subscribeButton"><%=user.subscribed ? "Update Subscription" : "Subscribe"%></button>
             <%if(user.subscribed){%>
                 <br>
                 (Currently Subscribed)
@@ -59,6 +59,9 @@
                 $('#donation-star-amount').text(data);
               }
             });
+          });
+          $(document).on('change', '#subscriptionQuantity', function(e){
+              $('#subscription-price').text(Number($(this).val()) * 5);
           });
           $(document).on('click', '#buy-donation-stars', function(e){
             if(isNaN($('#donation-star-price').val()) || $('#donation-star-price').val() == '' || Number($('#donation-star-price').val()) < 1){

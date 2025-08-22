@@ -161,7 +161,7 @@ async function calculateDonationStars(req, res){
         var percentUSDAmount = await percentOfPayouts(price * 100);
         numDonationStars = percentUSDAmount * starsGiven;
     }
-    return res.send(Math.floor(numDonationStars) + ' Donation Star' + (numDonationStars == 1 ? '' : 's'));
+    return res.send(Math.floor(numDonationStars) + ' Generosity Star' + (numDonationStars == 1 ? '' : 's'));
 }
 
 async function buyDonationStarsLink(req, res){
