@@ -12,7 +12,7 @@ const System = require('../models/System');
 const Message = require('../models/Message');
 const Team = require('../models/Team');
 const starService = require('./starService');
-const { getRecursiveSourceList, fillUsedInListSingle, getLastSource, getPassage, getAllContributors, inTeam, isTeamLeader } = require('./passageService');
+const { getRecursiveSourceList, getRecursiveSourceListTabbed, fillUsedInListSingle, getLastSource, getPassage, getAllContributors, inTeam, isTeamLeader } = require('./passageService');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 
 // Helper function to calculate star addition deltas based on borrowed stars
@@ -721,40 +721,76 @@ async function processSourcesBatched(rootPassage, amount, sessionUser, deplete, 
 
 
 /**
- * Thinking out loud
-[
-    passage: [
-        source1,
-        source2
-    ],
-    source1: [
-        source1source,
-        source1source2
-    ]
-]
-iterate over just the sources, not the keys.
-For each source of key.value, get the key and check it
-See if the source has any collaborators that key does not have (all keys and sources are passages)
-if it does, star the source. If not, don't.
+ *
+
+Use getRecursiveSourceListTabbed to get sources tabulated by the source that references them
+check if a source has any collaborators that the key does not have (for top level passage compare to rootPassage)
+if it doesn't, dont' star any sources that that source references
+otherwise do star the sources that that source references AS LONG as it also has collaborators that its key does not have
+Do NOT star duplicates
+All of the above is an additional rule to use addPassageStars. Use these rules in place of overlaps.
+
+The logic for starring authors and collaborators should remain the same
 **/
 async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, deplete, team=false, whichStarsToUse='general') {
     const BATCH_SIZE = 100;
     const processedSources = new Set();
-    const sourceQueue = [];
     var authors = [];
-    var sources = await getRecursiveSourceList(rootPassage.sourceList, [], rootPassage);
-    // Initialize with root passage sources
-    for (const source of sources) {
-        if (!processedSources.has(source._id.toString())) {
-            sourceQueue.push(source._id);
-        }
+    
+    // Get the tabbed source structure
+    var tabbedSources = await getRecursiveSourceListTabbed(rootPassage.sourceList, {}, rootPassage);
+    
+    // Helper function to get all collaborators including author
+    function getAllCollaborators(passage) {
+        return [...passage.collaborators, passage.author];
     }
+    
+    // Helper function to check if a source has unique collaborators compared to reference
+    function hasUniqueCollaborators(sourceCollaborators, referenceCollaborators) {
+        if (!sourceCollaborators || sourceCollaborators.length === 0) return false;
+        if (!referenceCollaborators || referenceCollaborators.length === 0) return true;
+        
+        const refCollabIds = new Set(referenceCollaborators.map(c => c._id ? c._id.toString() : c.toString()));
+        return sourceCollaborators.some(c => {
+            const collabId = c._id ? c._id.toString() : c.toString();
+            return !refCollabIds.has(collabId);
+        });
+    }
+    
+    // Helper function to recursively collect sources that should be starred
+    function collectStarrableSources(sourcesObj, referencingCollaborators, sourceQueue = []) {
+        for (const [sourceId, subSources] of Object.entries(sourcesObj)) {
+            // Add this source to queue for potential starring
+            sourceQueue.push({
+                sourceId: sourceId,
+                referencingCollaborators: referencingCollaborators
+            });
+            
+            // If this source has subsources, we need to check collaborative filtering
+            if (subSources !== null && typeof subSources === 'object') {
+                // We'll need to get the source's collaborators later in the batch processing
+                // For now, just note that we need to process subsources conditionally
+                sourceQueue.push({
+                    sourceId: sourceId,
+                    hasSubSources: true,
+                    subSources: subSources,
+                    referencingCollaborators: referencingCollaborators
+                });
+            }
+        }
+        return sourceQueue;
+    }
+    
+    // Collect all sources that might be starred, starting with rootPassage collaborators+author as reference
+    const rootCollaborators = getAllCollaborators(rootPassage);
+    const sourceQueue = collectStarrableSources(tabbedSources, rootCollaborators);
     
     processedSources.add(rootPassage._id.toString());
     
     while (sourceQueue.length > 0) {
         // Take next batch
-        const batchIds = sourceQueue.splice(0, BATCH_SIZE);
+        const batch = sourceQueue.splice(0, BATCH_SIZE);
+        const batchIds = [...new Set(batch.map(item => item.sourceId))];
         
         // Process batch in new transaction
         const session = await mongoose.startSession();
@@ -769,6 +805,9 @@ async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, dep
                 .populate('author sourceList collaborators')
                 .session(session);
                 
+                // Create a map for easy lookup
+                const passageMap = new Map(passages.map(p => [p._id.toString(), p]));
+                
                 // Fetch all users needed for this batch
                 const userIds = new Set();
                 for (const passage of passages) {
@@ -780,9 +819,13 @@ async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, dep
                 const users = await User.find({ _id: { $in: Array.from(userIds) } }).session(session);
                 const userMap = new Map(users.map(u => [u._id.toString(), u]));
                 
-                // Process each passage
-                for (const passage of passages) {
-                    if (processedSources.has(passage._id.toString())) continue;
+                // Process each item in the batch
+                for (const item of batch) {
+                    if (processedSources.has(item.sourceId)) continue;
+                    
+                    const passage = passageMap.get(item.sourceId);
+                    if (!passage) continue;
+                    
                     //don't restar top passage
                     if(passage._id.toString() === rootPassage._id.toString()) continue;
                     
@@ -792,14 +835,18 @@ async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, dep
                             continue;
                         }
                     }
-                    // Add stars to passage
-                    // You won't get extra stars for citing your own work
+                    
+                    // Apply new collaborative filtering logic in place of overlaps
                     var passageAuthor = passage.author._id.toString();
-                    //the only rewards inChain passages get is passage stars
                     var inChain = rootPassage.chain.toString().includes(passage._id.toString());
+                    
+                    // Check if this source has unique collaborators (including author) compared to referencing source
+                    const passageCollaborators = getAllCollaborators(passage);
+                    const shouldStarPassage = hasUniqueCollaborators(passageCollaborators, item.referencingCollaborators);
+                    
                     if((passageAuthor !== sessionUser._id.toString()
                         && passageAuthor !== rootPassage.author._id.toString()
-                        && !overlaps(passage.collaborators, rootPassage.collaborators))
+                        && shouldStarPassage)
                         || inChain){
                         accumulator.addPassageStars(passage._id, amount);
                     }
@@ -810,9 +857,9 @@ async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, dep
                         accumulator.addMessageStars(message._id, amount);
                     }
                     
-                    // Process author and collaborators
+                    // Process author and collaborators (logic remains the same)
                     if (shouldRewardAuthor(passage, sessionUser) && 
-                        !overlaps(passage.collaborators, rootPassage.collaborators)
+                        shouldStarPassage
                         && !inChain
                         && !authors.toString().includes(passage.author._id.toString())) {
                         
@@ -847,11 +894,13 @@ async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, dep
                         }
                     }
                     
-                    // Add unprocessed sources to queue
-                    for (const source of passage.sourceList) {
-                        if (!processedSources.has(source._id.toString())) {
-                            sourceQueue.push(source._id);
-                        }
+                    // Handle subsources based on collaborative filtering
+                    if (item.hasSubSources && shouldStarPassage) {
+                        // This source has unique collaborators, so process its subsources
+                        // But only if those subsources also have unique collaborators
+                        const passageAllCollaborators = getAllCollaborators(passage);
+                        const subSourceQueue = collectStarrableSources(item.subSources, passageAllCollaborators);
+                        sourceQueue.push(...subSourceQueue);
                     }
                     
                     processedSources.add(passage._id.toString());
@@ -1116,7 +1165,7 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
     
     // TRANSACTION 2+: Process sources in batches (separate transactions)
     if(passage){
-        await processSourcesBatched(passage, amount, sessionUser, deplete, team, whichStarsToUse);
+        await processSourcesBatchedTabbed(passage, amount, sessionUser, deplete, team, whichStarsToUse);
     }
     
     return result;

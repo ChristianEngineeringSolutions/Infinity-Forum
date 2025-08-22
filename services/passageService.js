@@ -228,29 +228,51 @@ async function getRecursiveSourceList(sourceList, sources=[], passage, getAuthor
     sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
     return sources;
 }
-async function getRecursiveSourceListTabbed(sourceList, sources={}, passage, getAuthor=false){
+/*
+//return a map that looks like this,
+with the source as the key and the value being the list of sources referenced by the key
+//that that source has
+{
+    source1: null
+    source2: {
+        subsource1: null,
+        subsource2: {
+            subsubsource1: null,
+            //...
+        }
+    },
+    //...
+}
+//it should still handle circular citations, and specials.
+Duplicates are okay as the structure is now different
+*/
+async function getRecursiveSourceListTabbed(sourceList, sources={}, passage, getAuthor=false, visited=new Set()){
     for(const source of sourceList){
         if(getAuthor){
             var sourcePassage = await Passage.findOne({_id:source}).populate('author collaborators');
         }else{
             var sourcePassage = await Passage.findOne({_id:source});
         }
-        //get specials as well
-        // sourcePassage = await getPassage(sourcePassage);
+        
         if(sourcePassage != null){
-            var special = null;
-            // console.log(sourcePassage._id);
-            if(sources.some(s => s._id.toString() === sourcePassage._id.toString())){
-                continue;
-            }
             // Skip if this source is the same as the original passage to prevent circular citations
             if(sourcePassage._id.toString() === passage._id.toString()){
                 continue;
-            }                
-            sources.push(sourcePassage);
+            }
+            
+            // Skip if we've already visited this source to prevent infinite recursion
+            if(visited.has(sourcePassage._id.toString())){
+                continue;
+            }
+            
+            // Add to visited set
+            visited.add(sourcePassage._id.toString());
+            
+            // Handle specials
+            var special = null;
             if(source.showBestOf == true){
                 special = await Passage.findOne({parent: source._id}, null, {sort: {stars: -1}});
-                special = special._id;
+                if(special) special = special._id;
             }
             if(source.best != null){
                 special = source.best;
@@ -264,21 +286,31 @@ async function getRecursiveSourceListTabbed(sourceList, sources={}, passage, get
             if(source.mirror != null){
                 special = source.mirror;
             }
+            
+            // Handle special source if it exists
             if(special != null){
                 if(getAuthor){
                     special = await Passage.findOne({_id:special}).populate('author');
                 }else{
                     special = await Passage.findOne({_id:special});
                 }
-                special = await Passage.findOne({_id:special});
-                sources.push(special);
+                
+                if(special && !visited.has(special._id.toString()) && special._id.toString() !== passage._id.toString()){
+                    visited.add(special._id.toString());
+                    // Recursively get subsources for the special
+                    const specialSubSources = await getRecursiveSourceListTabbed(special.sourceList, {}, passage, getAuthor, new Set(visited));
+                    sources[special._id.toString()] = Object.keys(specialSubSources).length > 0 ? specialSubSources : null;
+                }
             }
-            sources = await getRecursiveSourceList(sourcePassage.sourceList, sources, passage, getAuthor);
+            
+            // Recursively get subsources for this source
+            const subSources = await getRecursiveSourceListTabbed(sourcePassage.sourceList, {}, passage, getAuthor, new Set(visited));
+            
+            // Add this source to the sources object with its subsources
+            sources[sourcePassage._id.toString()] = Object.keys(subSources).length > 0 ? subSources : null;
         }
     }
-    // console.log(sources);
-    sources = sources.filter(i => i);
-    sources = Object.values(sources.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
+    
     return sources;
 }
 function getContributors(passage){
@@ -2101,6 +2133,7 @@ module.exports = {
     logVisit,
     copyPassage,
     getRecursiveSourceList,
+    getRecursiveSourceListTabbed,
     fillUsedInList,
     fillUsedInListSingle,
     getLastSource,
