@@ -14,18 +14,20 @@
 <br>
 <br>
 <br>
-<div>
-    <a href="/market-dashboard">Back to Market Dashboard</a>
-</div>
-<div>
-    Your Orders
-</div>
-<div><input placeholder="Search Orders...."id="market-search"class="search"type="text"></div>
+<div style="width:90%;margin:auto;">
+    <div>
+        <a href="/market-dashboard">Back to Market Dashboard</a>
+    </div>
+    <h2>Your Orders</h2>
+</div><br>
+<div><input placeholder="Search Orders...."id="market-search"class="search"type="text"></div><br>
 <%- include('page-numbers') %>
-<%orders.forEach(function(order){%>
-    <%if(order.passage != null){%>
-        <%- include('order', {order: order, seller:true})%>
-    <%}%>
-<%});%>
+<div id="orders" style="width:90%;margin:auto;">
+    <%orders.forEach(function(order){%>
+        <%if(order.passage != null){%>
+            <%- include('order', {order: order, seller:true})%>
+        <%}%>
+    <%});%>
+</div>
 <%- include('page-numbers') %>
 <%- include('footer') %>

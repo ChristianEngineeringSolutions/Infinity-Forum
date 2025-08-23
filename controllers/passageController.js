@@ -191,6 +191,13 @@ async function personalPage(req, res) {
         }
         passages = await passageService.fillUsedInList(passages);
         const ISMOBILE = browser(req.headers['user-agent']).mobile;
+        
+        // Check if user can create products
+        let canCreateProducts = false;
+        if (req.session.user) {
+            canCreateProducts = await scripts.canCreateProducts(req.session.user);
+        }
+        
         return res.render("stream", {
             subPassages: false,
             passageTitle: false, 
@@ -203,7 +210,8 @@ async function personalPage(req, res) {
             }},
             bookmarks: bookmarks,
             ISMOBILE: ISMOBILE,
-            whichPage: 'personal'
+            whichPage: 'personal',
+            canCreateProducts: canCreateProducts
         });
     }
 }
@@ -239,6 +247,12 @@ async function feedPage(req, res) {
         bookmarks = await bookmarkService.getBookmarks(req.session.user);
       }
       
+      // Check if user can create products
+      let canCreateProducts = false;
+      if (req.session.user) {
+        canCreateProducts = await scripts.canCreateProducts(req.session.user);
+      }
+      
       // Render the stream view with feed data
       return res.render("stream", {
         subPassages: false,
@@ -258,7 +272,8 @@ async function feedPage(req, res) {
         whichPage: 'feed',
         thread: false,
         currentPage: result.currentPage,
-        totalPages: result.totalPages
+        totalPages: result.totalPages,
+        canCreateProducts: canCreateProducts
       });
     } catch (error) {
       console.error('Error generating feed:', error);
@@ -297,8 +312,8 @@ async function createInitialPassage(req, res) {
     var formData = req.body;
     if(req.body.whichPage === 'market' || formData.label === 'Product'){
         var checkUser = await User.findOne({_id:req.session.user._id.toString()});
-        if(!checkUser.identityVerified || !checkUser.stripeOnboardingComplete){
-            return res.send("You must have your identity verified and your payment options setup to create a product.");
+        if(!(await scripts.canCreateProducts(checkUser))){
+            return res.send("You must verify more information to create a product.");
         }
     }
     let user = req.session.user || null;
@@ -893,12 +908,20 @@ async function passage(req, res) {
         var location = await passageService.getPassageLocation(bigRes.passage);
         await passageService.getRecursiveSpecials(bigRes.passage);
         console.log(bigRes.subPassages);
+        
+        // Check if user can create products
+        let canCreateProducts = false;
+        if (req.session.user) {
+            canCreateProducts = await scripts.canCreateProducts(req.session.user);
+        }
+        
         return res.render("stream", {subPassages: bigRes.subPassages, passageTitle: bigRes.passage.title == '' ? 'Untitled' : bigRes.passage.title, passageUsers: bigRes.passageUsers, Passage: Passage, scripts: scripts, sub: false, passage: bigRes.passage, passages: false, totalPages: bigRes.totalPages, docsPerPage: DOCS_PER_PAGE,
             ISMOBILE: bigRes.ISMOBILE,
             thread: false,
             page: 'more',
             whichPage: 'sub',
-            location: location
+            location: location,
+            canCreateProducts: canCreateProducts
         });
     }
 }
@@ -1152,6 +1175,13 @@ const comments = async (req, res) => {
         bigRes.subPassages = await passageService.fillUsedInList(bigRes.subPassages);
         var location = await passageService.getPassageLocation(bigRes.passage);
         await passageService.getRecursiveSpecials(bigRes.passage);
+        
+        // Check if user can create products
+        let canCreateProducts = false;
+        if (req.session.user) {
+            canCreateProducts = await scripts.canCreateProducts(req.session.user);
+        }
+        
         res.render("stream", {
             subPassages: bigRes.subPassages, 
             passageTitle: bigRes.passage.title, 
@@ -1168,7 +1198,8 @@ const comments = async (req, res) => {
             page: 'more',
             whichPage: 'comments',
             location: location,
-            comments: true
+            comments: true,
+            canCreateProducts: canCreateProducts
         });
     }
 };
@@ -1187,6 +1218,13 @@ const subforums = async (req, res) => {
         bigRes.subPassages = await passageService.fillUsedInList(bigRes.subPassages);
         var location = await passageService.getPassageLocation(bigRes.passage);
         await passageService.getRecursiveSpecials(bigRes.passage);
+        
+        // Check if user can create products
+        let canCreateProducts = false;
+        if (req.session.user) {
+            canCreateProducts = await scripts.canCreateProducts(req.session.user);
+        }
+        
         res.render("stream", {
             subPassages: bigRes.subPassages, 
             passageTitle: bigRes.passage.title, 
@@ -1203,7 +1241,8 @@ const subforums = async (req, res) => {
             page: 'more',
             whichPage: 'subforums',
             location: location,
-            subforums: true
+            subforums: true,
+            canCreateProducts: canCreateProducts
         });
     }
 };

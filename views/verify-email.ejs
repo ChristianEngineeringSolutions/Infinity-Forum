@@ -1,0 +1,88 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<input id="chief_passage_id"type="hidden" value="root"name="">
+    <br><br><br><br><br><br>
+    <div style="margin:auto;text-align:center;max-width:600px;">
+        <h1 style="font-size:3em;">Verify your Email:</h1>
+        
+        <div id="email-verification" style="text-align:center;margin:20px auto;max-width:400px;">
+            <% if (user.verified) { %>
+                <div style="background:#d4edda;padding:20px;border:1px solid #c3e6cb;border-radius:5px;margin-bottom:20px;">
+                    <h3 style="color:#155724;margin:0;">✓ Email Already Verified</h3>
+                    <p style="color:#155724;margin:10px 0 0 0;">Your email address is already verified.</p>
+                </div>
+            <% } else { %>
+                <div style="background:#f8d7da;padding:15px;border:1px solid #f5c6cb;border-radius:5px;margin-bottom:20px;">
+                    <p style="color:#721c24;margin:0;">
+                        <strong>Email not verified:</strong> <%= user.email %>
+                    </p>
+                </div>
+                
+                <p style="margin-bottom:20px;color:#666;">
+                    Click the button below to resend a verification email to your inbox. 
+                    Check your spam folder if you don't receive it within a few minutes.
+                </p>
+                
+                <button id="resend-button" style="width:100%;padding:12px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:16px;">
+                    Resend Verification Email
+                </button>
+            <% } %>
+        </div>
+        
+        <div id="result-message" style="margin-top:20px;display:none;"></div>
+        
+        <h4><a href="/profile">Return to Profile after completing.</a></h4>
+        <br><br>
+    </div>
+    
+    <script type="text/javascript">
+        <% if (!user.verified) { %>
+        document.getElementById('resend-button').addEventListener('click', async function() {
+            const button = this;
+            const resultDiv = document.getElementById('result-message');
+            
+            button.disabled = true;
+            button.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('/resend-verification-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = '<p style="color:green;background:#d4edda;padding:10px;border:1px solid #c3e6cb;border-radius:5px;">✓ Verification email sent successfully! Please check your inbox.</p>';
+                    button.textContent = 'Email Sent';
+                    button.style.background = '#28a745';
+                } else {
+                    resultDiv.innerHTML = '<p style="color:red;background:#f8d7da;padding:10px;border:1px solid #f5c6cb;border-radius:5px;">Error: ' + (result.message || 'Failed to send verification email') + '</p>';
+                    button.disabled = false;
+                    button.textContent = 'Resend Verification Email';
+                }
+                
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = '<p style="color:red;background:#f8d7da;padding:10px;border:1px solid #f5c6cb;border-radius:5px;">An error occurred. Please try again.</p>';
+                resultDiv.style.display = 'block';
+                button.disabled = false;
+                button.textContent = 'Resend Verification Email';
+            }
+        });
+        <% } %>
+    </script>
+<%- include('footer') %>

@@ -14,14 +14,16 @@
 <br>
 <br>
 <br>
-<div>
-    Market Dashboard
-</div>
-<div><a target="_blank"href="/stripeAuthorize">View Earnings and Payouts</a></div>
-<div><a href="/orders">View Orders</a></div>
-<div><a href="/sales">View Sales</a></div>
-<div>Your Products</div>
-<div><input placeholder="Search...."id="market-search"class="search"type="text"></div>
+<div style="width:90%;margin:auto;">
+    <h2>
+        Market Dashboard
+    </h2>
+    <div><a target="_blank"href="/stripeAuthorize"><%=!user.stripeOnboardingComplete ? "Setup Account to Create Products and get Paid" : "View Earnings and Payouts"%></a></div>
+    <div><a href="/orders">View Orders</a></div>
+    <div><a href="/sales">View Sales</a></div>
+</div><br>
+<div><input placeholder="Search...."id="market-search"class="search"type="text"></div><br>
+<div style="width:90%;margin:auto;">Your Products:</div>
 <%- include('page-numbers') %>
 <%if(passages){%>
     <%- include('passages', {page: page}) %>

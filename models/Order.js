@@ -41,7 +41,36 @@ const orderSchema = mongoose.Schema({
     shippingService: {
         type: String,
         maxLength: 100
+    },
+    shippingName: {
+        type: String,
+        default: ''
+    },
+    shippingAddressLine1: {
+        type: String,
+        default: ''
+    },
+    shippingAddressLine2: {
+        type: String,
+        default: ''
+    },
+    shippingCity: {
+        type: String,
+        default: ''
+    },
+    shippingState: {
+        type: String,
+        default: ''
+    },
+    shippingPostalCode: {
+        type: String,
+        default: ''
+    },
+    shippingCountry: {
+        type: String,
+        default: ''
     }
+
 });
 
 orderSchema.plugin(mongoosePaginate);

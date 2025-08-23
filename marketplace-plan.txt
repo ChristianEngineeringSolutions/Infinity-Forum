@@ -1,0 +1,4 @@
+Use Veriff for Address verification
+Use TINCheck for TIN verification
+create pages in verificationController for /verify-TIN and /verify-address.
+Use common-utils.js accessSecret() to access api keys and secrets

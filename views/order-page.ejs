@@ -14,11 +14,15 @@
 <br>
 <br>
 <br>
-<div>
-    <a href="/market-dashboard">Market Dashboard</a>
+<div style="width:90%;margin:auto;">
+    <div>
+        <a href="/market-dashboard">Market Dashboard</a>
+        <br><br>
+        <a href="/<%=seller ? 'orders' : 'sales'; %>">Back to <%=seller === true ? 'Orders' : 'Sales';%></a>
+    </div>
+    <h1>
+        Your <%=seller == true ? 'Order' : 'Sale';%>
+    </h1>
+    <%- include('order', {order: order, seller:seller})%>
 </div>
-<h1>
-    Your <%=seller == true ? 'Order' : 'Sale';%>
-</h1>
-<%- include('order', {order: order, seller:seller})%>
 <%- include('footer') %>

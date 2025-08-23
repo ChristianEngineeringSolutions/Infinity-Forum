@@ -1,0 +1,11 @@
+<div id="to-create-products"><a>To Create Products</a></div>
+<div style="display:none;" id="to-create-products-items">
+	<ul>
+		<li><a href="<%=!user.stripeOnboardingComplete ? '/stripeAuthorize' : '';%>">Setup Payments <%-user.stripeOnboardingComplete ? '<span style="color:green;font-size:1em;">&check;</span>' : '&#10060;';%></a></li>
+		<li><a href="<%=!user.identityVerified ? '/verify-identity' : '';%>">Verify Identity <%-user.identityVerified ? '<span style="color:green;font-size:1em;">&check;</span>' : '&#10060;';%></a></li>
+		<li><a href="<%=user.phone === '' ? '/bank' : '';%>">Verify Phone <%-user.phone !== '' ? '<span style="color:green;font-size:1em;">&check;</span>' : '&#10060;';%></a></li>
+		<li><a href="<%=!user.verified ? '/verify-email' : '';%>">Verify Email <%-user.verified ? '<span style="color:green;font-size:1em;">&check;</span>' : '&#10060;';%></a></li>
+		<li><a href="<%=!user.verifiedAddress ? '/verify-address' : '';%>">Verify Address <%-user.verifiedAddress ? '<span style="color:green;font-size:1em;">&check;</span>' : '&#10060;';%></a></li>
+		<li><a href="<%=!user.verifiedTaxIdentificationNumber ? '/verify-tin' : '';%>">Verify Tax Identification Number <%-user.verifiedTaxIdentificationNumber ? '<span style="color:green;font-size:1em;">&check;</span>' : '&#10060;';%></a></li>
+	</ul>
+</div>

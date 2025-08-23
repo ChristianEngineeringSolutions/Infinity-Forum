@@ -1,0 +1,130 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<input id="chief_passage_id"type="hidden" value="root"name="">
+    <br><br><br><br><br><br>
+    <div style="margin:auto;text-align:center;max-width:600px;">
+        <h1 style="font-size:3em;">Verify your Address:</h1>
+        
+        <div id="address-form" style="text-align:left;margin:20px auto;max-width:400px;">
+            <p style="background:#fff3cd;padding:10px;border:1px solid #ffeaa7;border-radius:5px;margin-bottom:20px;">
+                <strong>Important:</strong> Please use the exact same name as it appears on your government-issued ID.
+            </p>
+            
+            <form id="verification-form">
+                <div style="margin-bottom:15px;">
+                    <label for="firstName">First Name:</label><br>
+                    <input type="text" id="firstName" name="firstName" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="lastName">Last Name:</label><br>
+                    <input type="text" id="lastName" name="lastName" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="address">Street Address:</label><br>
+                    <input type="text" id="address" name="address" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="city">City:</label><br>
+                    <input type="text" id="city" name="city" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="state">State/Province:</label><br>
+                    <input type="text" id="state" name="state" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="postalCode">Postal Code:</label><br>
+                    <input type="text" id="postalCode" name="postalCode" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="country">Country:</label><br>
+                    <select id="country" name="country" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                        <option value="">Select Country</option>
+                        <option value="US">United States</option>
+                        <option value="CA">Canada</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="DE">Germany</option>
+                        <option value="FR">France</option>
+                        <option value="AU">Australia</option>
+                        <!-- Add more countries as needed -->
+                    </select>
+                </div>
+                
+                <button type="submit" id="verify-button" style="width:100%;padding:10px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;">
+                    Start Address Verification
+                </button>
+            </form>
+        </div>
+        
+        <div id="result-message" style="margin-top:20px;display:none;"></div>
+        
+        <h4><a href="/profile">Return to Profile after completing.</a></h4>
+        <br><br>
+    </div>
+    
+    <script type="text/javascript">
+        document.getElementById('verification-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            const resultDiv = document.getElementById('result-message');
+            const button = document.getElementById('verify-button');
+            
+            // Validate required fields
+            if (!data.firstName || !data.lastName || !data.address || !data.country) {
+                resultDiv.innerHTML = '<p style="color:red;">Please fill in all required fields.</p>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch('/create-address-verification-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Redirect to Veriff verification flow
+                    window.open(result.sessionUrl, '_blank');
+                    resultDiv.innerHTML = '<p style="color:green;">Verification session created. Please complete the verification in the new window.</p>';
+                } else {
+                    resultDiv.innerHTML = '<p style="color:red;">Error: ' + (result.message || 'Failed to create verification session') + '</p>';
+                }
+                
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = '<p style="color:red;">An error occurred. Please try again.</p>';
+                resultDiv.style.display = 'block';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Start Address Verification';
+            }
+        });
+    </script>
+<%- include('footer') %>

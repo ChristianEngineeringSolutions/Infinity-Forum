@@ -25,6 +25,12 @@ async function market(req, res){
               const processedPassage = await passageService.getPassage(products[i]);
               passages.push(processedPassage);
             }
+            // Check if user can create products
+            let canCreateProducts = false;
+            if (req.session.user) {
+              canCreateProducts = await scripts.canCreateProducts(req.session.user);
+            }
+            
             // Render the feed page
             return res.render("stream", {
               subPassages: false,
@@ -41,7 +47,8 @@ async function market(req, res){
               ISMOBILE: ISMOBILE,
               page: 'market',
               whichPage: 'market',
-              thread: false
+              thread: false,
+              canCreateProducts: canCreateProducts
             });
       } catch (error) {
         console.error('Error generating guest feed:', error);
@@ -176,13 +183,19 @@ async function buyProductLink(req, res){
                     quantity: quantity, // Number of units of this product
                 },
             ],
+            shipping_address_collection: {
+                allowed_countries: ['US', 'CA'], // Example: Allow US and Canada
+            },
             success_url: req.headers.origin + '/passage/'+(product.title == '' ? 'Untitled' : encodeURIComponent(product.title))+'/'+product._id.toString(),
             cancel_url: req.headers.origin + '/donate'+(product.title == '' ? 'Untitled' : encodeURIComponent(product.title))+'/'+product._id.toString(),
             customer_email: req.session.user.email,
             payment_intent_data: {
                 application_fee_amount: applicationFeeAmount,
                 metadata: {
-                    productId: product._id.toString()
+                    productId: product._id.toString(),
+                    productName: product.title, // Add this line
+                    productDescription: "Product info: " + productLink, // Add this line
+                    productQuantity: quantity // Add this line
                 }
             }
         }, {
@@ -192,6 +205,132 @@ async function buyProductLink(req, res){
     } catch (error) {
         console.error('Error creating Stripe Checkout Session:', error);
         throw error;
+    }
+}
+
+async function manageProducts(req, res){
+    if(!req.session.user){
+        return res.redirect('/loginform');
+    }
+    
+    if(!req.session.user.stripeAccountId){
+        return res.send('You need a Stripe account to manage products.');
+    }
+    
+    try {
+        const ISMOBILE = browser(req.headers['user-agent']).mobile;
+        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+        const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        
+        const page = parseInt(req.query.page || '1');
+        const limit = 10; // Items per page
+        const startingAfter = req.query.starting_after;
+        const endingBefore = req.query.ending_before;
+        
+        // Build pagination parameters
+        const paginationParams = { limit: 100 }; // Get more to process locally
+        if (startingAfter) paginationParams.starting_after = startingAfter;
+        if (endingBefore) paginationParams.ending_before = endingBefore;
+        
+        // Get all payment intents for this connected account to find sold products
+        const paymentIntents = await stripe.paymentIntents.list(paginationParams, {
+            stripeAccount: req.session.user.stripeAccountId
+        });
+        
+        // Get unique products from payment intent metadata with shipping details
+        const productSales = new Map();
+        
+        for (const intent of paymentIntents.data) {
+            if (intent.status === 'succeeded' && intent.metadata.productId) {
+                const productId = intent.metadata.productId;
+                
+                if (!productSales.has(productId)) {
+                    productSales.set(productId, {
+                        productId: productId,
+                        sales: [],
+                        totalSales: 0,
+                        totalRevenue: 0
+                    });
+                }
+                
+                const product = productSales.get(productId);
+                
+                // Extract shipping details from metadata if available
+                const shippingDetails = {};
+                if (intent.metadata.shipping_name) {
+                    shippingDetails.name = intent.metadata.shipping_name;
+                    shippingDetails.address = {
+                        line1: intent.metadata.shipping_address_line1,
+                        line2: intent.metadata.shipping_address_line2,
+                        city: intent.metadata.shipping_address_city,
+                        state: intent.metadata.shipping_address_state,
+                        postal_code: intent.metadata.shipping_address_postal_code,
+                        country: intent.metadata.shipping_address_country
+                    };
+                }
+                
+                product.sales.push({
+                    amount: intent.amount,
+                    currency: intent.currency,
+                    created: new Date(intent.created * 1000),
+                    paymentIntentId: intent.id,
+                    productName: intent.metadata.productName || 'Unknown Product',
+                    productQuantity: intent.metadata.productQuantity || 1,
+                    shipping: shippingDetails,
+                });
+                product.totalSales += 1;
+                product.totalRevenue += intent.amount;
+            }
+        }
+        
+        // Convert to array and sort by total revenue descending
+        const allProductDetails = [];
+        for (const [productId, salesData] of productSales) {
+            try {
+                const passage = await Passage.findById(productId).populate('author');
+                if (passage && passage.label === 'Product') {
+                    allProductDetails.push({
+                        passage: passage,
+                        salesData: salesData,
+                        formattedRevenue: (salesData.totalRevenue / 100).toFixed(2)
+                    });
+                }
+            } catch (error) {
+                console.error(`Error fetching product ${productId}:`, error);
+            }
+        }
+        
+        // Sort by most recent sale date instead of revenue
+        allProductDetails.sort((a, b) => {
+            const aLatestSale = Math.max(...a.salesData.sales.map(sale => sale.created.getTime()));
+            const bLatestSale = Math.max(...b.salesData.sales.map(sale => sale.created.getTime()));
+            return bLatestSale - aLatestSale; // Most recent first
+        });
+        
+        // Apply local pagination
+        const totalItems = allProductDetails.length;
+        const totalPages = Math.ceil(totalItems / limit);
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const productDetails = allProductDetails.slice(startIndex, endIndex);
+        
+        return res.render('manage-products', {
+            productDetails: productDetails,
+            user: req.session.user,
+            ISMOBILE: ISMOBILE,
+            page: 'manage-products',
+            currentPage: page,
+            totalPages: totalPages,
+            totalItems: totalItems,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+            nextPage: page + 1,
+            previousPage: page - 1
+        });
+        
+    } catch (error) {
+        console.error('Error loading product sales:', error);
+        return res.status(500).send('Error loading product sales. Please try again later.');
     }
 }
 
@@ -214,13 +353,24 @@ async function markOrderShipped(req, res){
     return res.render("order", {order: order, seller: false});
 }
 
+async function reverseShipped(req, res){
+    var orderId = req.body.orderId;
+    var order = await Order.findOneAndUpdate({_id:orderId}, {$set:{
+        shipped: false
+    }},
+    { returnDocument: 'after' }).populate('buyer passage');
+    return res.render("order", {order: order, seller: false});
+}
+
 module.exports = {
     market,
     dashboard,
     orders,
     sales,
     buyProductLink,
+    manageProducts,
     markOrderShipped,
     order,
-    sale
+    sale,
+    reverseShipped
 };

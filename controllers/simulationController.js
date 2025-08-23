@@ -188,6 +188,12 @@ async function getSimulatedPassages(req, res) {
 
         const scripts = {}; // This should be imported from common-utils or made available
         
+        // Check if user can create products (default to false for simulation)
+        let canCreateProducts = false;
+        if (req.session.user && scripts.canCreateProducts) {
+            canCreateProducts = await scripts.canCreateProducts(req.session.user);
+        }
+        
         return res.render("stream", {
           subPassages: false,
           passageTitle: false, 
@@ -204,6 +210,7 @@ async function getSimulatedPassages(req, res) {
           page: 'posts',
           whichPage: 'simulation',
           thread: false,
+          canCreateProducts: canCreateProducts
         });
     } catch (error) {
         console.error('Error loading simulated passages page:', error);

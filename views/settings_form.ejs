@@ -17,13 +17,13 @@
         <a href="/verify-identity">Verify Identity</a>
     <%}else{%>
         <br><br>
-        *Verified
+        *Identity Verified
     <%}%>
     <%if(user.phone === ''){%>
         <br><br>
-        <a href="/bank">Verify Phone (To get Paid)</a>
-    <%}%>
-    <br><br>
+        <a href="/bank">Verify Phone (To star posts)</a>
+    <%}%><br><br>
+    <br>
     <form id="settings_form" action="/update_settings/" method="POST">
         <input name="oldUsername"id="oldUsername"type="hidden"value="<%=profile.username%>" />
         <input name="oldName"id="oldName"type="hidden"value="<%=profile.name%>" />

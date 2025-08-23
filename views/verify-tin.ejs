@@ -1,0 +1,147 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<%- include('member_box') %>
+<input id="chief_passage_id"type="hidden" value="root"name="">
+    <br><br><br><br><br><br>
+    <div style="margin:auto;text-align:center;max-width:600px;">
+        <h1 style="font-size:3em;">Verify your Tax ID:</h1>
+        
+        <div id="tin-form" style="text-align:left;margin:20px auto;max-width:400px;">
+            <p style="background:#fff3cd;padding:10px;border:1px solid #ffeaa7;border-radius:5px;margin-bottom:20px;">
+                <strong>Important:</strong> Please use the exact same name as it appears on your government-issued ID and tax documents.
+            </p>
+            
+            <form id="verification-form">
+                <div style="margin-bottom:15px;">
+                    <label for="firstName">First Name:</label><br>
+                    <input type="text" id="firstName" name="firstName" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="lastName">Last Name:</label><br>
+                    <input type="text" id="lastName" name="lastName" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="tinType">Tax ID Type:</label><br>
+                    <select id="tinType" name="tinType" required style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                        <option value="">Select TIN Type</option>
+                        <option value="SSN">Social Security Number (SSN)</option>
+                        <option value="EIN">Employer Identification Number (EIN)</option>
+                        <option value="ITIN">Individual Taxpayer Identification Number (ITIN)</option>
+                        <option value="ATIN">Adoption Taxpayer Identification Number (ATIN)</option>
+                        <option value="PTIN">Preparer Tax Identification Number (PTIN)</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                    <label for="tin">Tax Identification Number:</label><br>
+                    <input type="text" id="tin" name="tin" required placeholder="e.g., 123-45-6789" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                    <small style="color:#666;">Enter numbers with or without dashes</small>
+                </div>
+                
+                <button type="submit" id="verify-button" style="width:100%;padding:10px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;">
+                    Verify Tax ID
+                </button>
+            </form>
+        </div>
+        
+        <div id="result-message" style="margin-top:20px;display:none;"></div>
+        
+        <h4><a href="/profile">Return to Profile after completing.</a></h4>
+        <br><br>
+    </div>
+    
+    <script type="text/javascript">
+        document.getElementById('verification-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            const resultDiv = document.getElementById('result-message');
+            const button = document.getElementById('verify-button');
+            
+            // Validate required fields
+            if (!data.firstName || !data.lastName || !data.tinType || !data.tin) {
+                resultDiv.innerHTML = '<p style="color:red;">Please fill in all required fields.</p>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            // Basic TIN format validation
+            const tinValue = data.tin.replace(/[^0-9]/g, ''); // Remove non-digits
+            if (data.tinType === 'SSN' && tinValue.length !== 9) {
+                resultDiv.innerHTML = '<p style="color:red;">SSN must be 9 digits long.</p>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            if (data.tinType === 'EIN' && tinValue.length !== 9) {
+                resultDiv.innerHTML = '<p style="color:red;">EIN must be 9 digits long.</p>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            if (data.tinType === 'ITIN' && tinValue.length !== 9) {
+                resultDiv.innerHTML = '<p style="color:red;">ITIN must be 9 digits long.</p>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = 'Verifying...';
+            
+            try {
+                const response = await fetch('/create-tin-verification-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.verified) {
+                    resultDiv.innerHTML = '<p style="color:green;font-weight:bold;">✓ Tax ID verification successful!</p>';
+                    setTimeout(() => {
+                        window.location.href = '/profile';
+                    }, 2000);
+                } else {
+                    resultDiv.innerHTML = '<p style="color:red;">Verification failed: ' + (result.message || 'Invalid Tax ID or information') + '</p>';
+                }
+                
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = '<p style="color:red;">An error occurred. Please try again.</p>';
+                resultDiv.style.display = 'block';
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Verify Tax ID';
+            }
+        });
+        
+        // Format TIN input based on type
+        document.getElementById('tinType').addEventListener('change', function() {
+            const tinInput = document.getElementById('tin');
+            const tinType = this.value;
+            
+            if (tinType === 'SSN' || tinType === 'ITIN') {
+                tinInput.placeholder = 'e.g., 123-45-6789';
+            } else if (tinType === 'EIN') {
+                tinInput.placeholder = 'e.g., 12-3456789';
+            } else {
+                tinInput.placeholder = 'Enter your Tax ID';
+            }
+        });
+    </script>
+<%- include('footer') %>

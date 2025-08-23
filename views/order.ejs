@@ -1,23 +1,36 @@
 <div id="order-<%=order._id%>"class="order">
-    <div><a href="/<%=seller ? 'order' : 'sale';%>/<%=order.title == '' ? 'Untitled' : encodeURIComponent(order.title)%>/<%=order._id%>"><%=order.passage.title%></a></div>
+    <h2><a href="/<%=seller ? 'order' : 'sale';%>/<%=order.title == '' ? 'Untitled' : encodeURIComponent(order.title)%>/<%=order._id%>"><%=order.passage.title%></a></h2>
     <div>Sold: <%=order.dateSold%></div>
-    <div><%=order.passage.price%></div>
+    <div>$<%=order.passage.price%></div>
     <div>Quantity: <%=order.quantity%></div>
     <%if(seller){%>
         <div>Seller: <%=order.seller.name%></div>
     <%}%>
     <%if(!seller){%>
-        <div>Buyer: <%=order.buyer.name%></div>
+        <div>Buyer: <%=order.buyer.email%></div>
     <%}%>
     <div><%=order.content%></div>
     <%if(!seller && order.seller._id.toString() === user._id.toString()){%>
+        <%if(order.shippingName !== ''){%>
+            <div class="shipping-details">
+                <h4>Shipping Address:</h4>
+                <div><strong>Name:</strong> <%=order.shippingName%></div>
+                <div><strong>Address:</strong> <%=order.shippingAddressLine1%></div>
+                <%if(order.shippingAddressLine2 && order.shippingAddressLine2 !== ''){%>
+                    <div><%=order.shippingAddressLine2%></div>
+                <%}%>
+                <div><%=order.shippingCity%>, <%=order.shippingState%> <%=order.shippingPostalCode%></div>
+                <div><%=order.shippingCountry%></div>
+            </div>
+        <%}%>
         <%if(!order.shipped){%>
-            <div><input placeholder="Shipping Carrier"name="carrier"type="text" autocomplete="off"/></div>
-            <div><input placeholder="Tracking Number"name="trackingNumber"type="text" autocomplete="off"/></div>
-            <div><input placeholder="Shipping Service"type="text" autocomplete="off" name="shippingService"/></div>
+            <h4>Enter Shipping Info:</h4>
+            <div><input placeholder="Shipping Carrier"name="carrier"type="text" autocomplete="off" required/></div>
+            <div><input placeholder="Tracking Number"name="trackingNumber"type="text" autocomplete="off" required/></div>
+            <div><input placeholder="Shipping Service"type="text" autocomplete="off" name="shippingService" required/></div><br>
             <div><button id="mark-order-shipped-<%=order._id%>">Mark Shipped</button></div>
         <%}else{%>
-            <div>Shipped.</div>
+            <div>Shipped. (<a id="shipping-reverse-<%=order._id%>">Reverse</a>)</div>
         <%}%>
     <%}else{%>
         <%if(order.shipped){%>

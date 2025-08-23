@@ -2,6 +2,7 @@ const {User, UserSchema} = require('./models/User');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const System = require('./models/System');
 const Visitor = require('./models/Visitor');
+const paymentService = require('./services/paymentService');
 const DOCS_PER_PAGE = 10; // Documents per Page Limit (Pagination)
 let client;
 
@@ -26,15 +27,21 @@ async function accessSecret(secretName) {
 }
 const scripts = {};
 
+scripts.canCreateProducts = async function(user){
+    const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+    const stripe = require("stripe")(STRIPE_SECRET_KEY);
+    const account = await stripe.account.retrieve(user.stripeAccountId);
+    return user.stripeOnboardingComplete && paymentService.canAcceptCharges(account);
+};
 scripts.inTeam = function(user, team){
     if(!team) return true;
     return team.members.toString().includes(user._id.toString());
-}
+};
 
 scripts.isTeamLeader = function(user, team){
     if(!team) return true;
     return user._id.toString() === team.leader._id.toString();
-}
+};
 
 scripts.labelSelectOptions = function(plural=false, products=true){
     var options = ``;
@@ -46,7 +53,7 @@ scripts.labelSelectOptions = function(plural=false, products=true){
         }
     }
     return options;
-}
+};
     scripts.isPassageUser = function(user, passage){
         if(typeof user == 'undefined'){
             return false;
@@ -98,7 +105,7 @@ scripts.labelSelectOptions = function(plural=false, products=true){
         //     return 0;
         // }
         return views;
-    }
+    };
     scripts.getMaxToGiveOut = async function(){
         const SYSTEM = System.findOne({});
         //let users = await User.find({stripeOnboardingComplete: true});
@@ -113,7 +120,7 @@ scripts.labelSelectOptions = function(plural=false, products=true){
         }
         return usd; //give out total amount for now
         // return 0.20 * usd; //give out in 20% increments
-    }
+    };
     scripts.getBest = async function(passage){
         return await getPassage(await Passage.findOne({parent: passage._id}, null, {sort: {stars: -1}}).populate('author users'));
     };

@@ -31,7 +31,7 @@ async function addStarsToUser(user, amount, _session=null){
     }else{
         user.stars += amount;
     }
-    if(session !== null){
+    if(_session !== null){
         await user.save({session: _session});
     }else{
         await User.updateOne({_id:user._id.toString()}, {$set: {

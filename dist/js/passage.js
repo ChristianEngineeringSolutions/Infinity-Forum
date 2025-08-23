@@ -313,6 +313,20 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^="shipping-reverse-"]', function(e){
+        var thiz = $(this);
+        var _id = thiz.attr('id').split('-').at(-1);
+        $.ajax({
+            type: 'post',
+            url: '/reverse-shipped',
+            data: {
+                orderId: _id
+            },
+            success: function(data){
+                $('#order-'+_id).replaceWith(data);
+            }
+        });
+    });
     function productFormHTML(_id="root", price=null, stock=null, unlimited=null){
         return `
             Price: $<input ${price ? `value="${price}"` : 'value="1"'} min="1"id="editor-price-${_id}"type="number" name="price" autocomplete="off"/><br>

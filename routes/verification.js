@@ -43,4 +43,22 @@ router.post('/create-verification-session', verificationController.createVerific
 // Verify identity page route
 router.get('/verify-identity', verificationController.verifyIdentity);
 
+// Verify address page route  
+router.get('/verify-address', verificationController.verifyAddress);
+
+// Verify TIN page route
+router.get('/verify-tin', verificationController.verifyTIN);
+
+// Verify email page route
+router.get('/verify-email', verificationController.verifyEmail);
+
+// Route for creating address verification session
+router.post('/create-address-verification-session', verificationController.createAddressVerificationSession);
+
+// Route for creating TIN verification session
+router.post('/create-tin-verification-session', verificationController.createTINVerificationSession);
+
+// Route for resending verification email
+router.post('/resend-verification-email', verificationController.resendVerificationEmail);
+
 module.exports = router;

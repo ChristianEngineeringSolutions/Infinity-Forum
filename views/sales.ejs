@@ -14,22 +14,26 @@
 <br>
 <br>
 <br>
-<div>
-    <a href="/market-dashboard">Back to Market Dashboard</a>
-</div>
-<div>
-    Your Sales
-</div>
-<div>
-    <a id="market-view-both" href="">View Both</a> | <a id="market-view-unshipped" href="">View Unshipped</a> | <a id="market-view-shipped" href="">View Shipped</a>
-</div>
+<div style="width:90%;margin:auto;">
+    <div>
+        <a href="/market-dashboard">Back to Market Dashboard</a>
+    </div>
+    <h2>
+        Your Sales
+    </h2>
+    <div>
+        <a id="market-view-both" href="">View Both</a> | <a id="market-view-unshipped" href="">View Unshipped</a> | <a id="market-view-shipped" href="">View Shipped</a>
+    </div>
+</div><br>
 <%# include search by id %>
 <div><input placeholder="Search Sales...."id="market-search"class="search"type="text"></div>
 <%- include('page-numbers') %>
-<%orders.forEach(function(order){%>
-    <%if(order.passage != null){%>
-        <%- include('order', {order: order, seller:false})%>
-    <%}%>
-<%});%>
+<div id="orders">
+    <%orders.forEach(function(order){%>
+        <%if(order.passage != null){%>
+            <%- include('order', {order: order, seller:false})%>
+        <%}%>
+    <%});%>
+</div>
 <%- include('page-numbers') %>
 <%- include('footer') %>

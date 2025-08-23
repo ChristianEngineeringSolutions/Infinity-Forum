@@ -32,7 +32,7 @@ async function messages(req, res){
         passages.push(p);
     }
     for(var i = 0; i < passages.length; ++i){
-        passages[i] = await passageService.getPassage(passage);
+        passages[i] = await passageService.getPassage(passages[i]);
     }
 
     let bookmarks = [];
@@ -43,6 +43,13 @@ async function messages(req, res){
             bookmarks = bookmarkService.getBookmarks(req.session.user);
         }
     passages = await passageService.fillUsedInList(passages);
+    
+    // Check if user can create products
+    let canCreateProducts = false;
+    if (req.session.user) {
+        canCreateProducts = await scripts.canCreateProducts(req.session.user);
+    }
+    
     res.render('messages', {
         passages: passages,
         subPassages: false,
@@ -54,6 +61,7 @@ async function messages(req, res){
         }},
         page: 1,
         bookmarks: bookmarks,
+        canCreateProducts: canCreateProducts
     });
 }
 

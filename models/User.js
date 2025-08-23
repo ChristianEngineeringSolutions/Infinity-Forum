@@ -70,6 +70,7 @@ const userSchema = mongoose.Schema({
       type: Number,
       default: 0
     },
+    //for email verification
     verified: {
       type: Boolean,
       default: false
@@ -199,6 +200,26 @@ const userSchema = mongoose.Schema({
     identityVerified: {
       type: Boolean,
       default: false
+    },
+    address: {
+      type: String,
+      default: ''
+    },
+    verifiedAddress: {
+      type: Boolean,
+      default: false
+    },
+    taxIdentificationNumber: {
+      type: String,
+      default: ''
+    },
+    verifiedTaxIdentificationNumber: {
+      type: Boolean,
+      default: false
+    },
+    verifiedAddressValue: {
+      type: String,
+      default: ''
     },
     verificationLevel: {
       type: String,

@@ -142,14 +142,21 @@ const stripeWebhook = async(request, response) => {
                       var product = await Passage.findOne({
                           _id: metadata.productId
                       }).populate('author');
-                      await Order.create({
+                      var order = await Order.create({
                           title: product.title,
                           buyer: customerEmail,
                           chargeId: chargeId,
                           seller: product.author._id.toString(),
                           passage: product._id.toString(),
                           dateSold: Date.now(),
-                          quantity: metadata.quantity
+                          quantity: metadata.quantity,
+                          shippingName: shippingName,
+                          shippingAddressLine1: shippingAddress.line1,
+                          shippingAddressLine2: shippingAddress.line2,
+                          shippingCity: shippingAddress.city,
+                          shippingState: shippingAddress.state,
+                          shippingPostalCode: shippingAddress.postal_code,
+                          shippingCountry: shippingAddress.country,
                       });
                       //give seller stars
                       await starService.addStarsToUser(product.author, amountToAdd);
@@ -176,6 +183,30 @@ const stripeWebhook = async(request, response) => {
                       console.log("Order created.");
                     }
                 }
+                // if (session.shipping_details) {
+                //     const shippingAddress = session.shipping_details.address;
+                //     const shippingName = session.shipping_details.name;
+                    
+                //     // Now, you can update the PaymentIntent with the shipping address data
+                //     stripe.paymentIntents.update(paymentIntentId, {
+                //         metadata: {
+                //             shipping_name: shippingName,
+                //             shipping_address_line1: shippingAddress.line1,
+                //             shipping_address_line2: shippingAddress.line2,
+                //             shipping_address_city: shippingAddress.city,
+                //             shipping_address_state: shippingAddress.state,
+                //             shipping_address_postal_code: shippingAddress.postal_code,
+                //             shipping_address_country: shippingAddress.country,
+                //             order: order._id
+                //         }
+                //     }, {
+                //         stripeAccount: session.stripe_account
+                //     }).then(() => {
+                //         console.log('Successfully updated PaymentIntent with shipping data.');
+                //     }).catch(err => {
+                //         console.error('Failed to update PaymentIntent:', err);
+                //     });
+                // }
             } else {
                 console.log("Charge ID not found in session or payment intent.");
             }
@@ -401,6 +432,196 @@ const stripeConnectWebhook = async(request, response) => {
         return;
     }
     switch (event.type) {
+        case 'checkout.session.completed':
+            console.log("Checkout session");
+            try {
+                const session = event.data.object;
+                const amount = session.amount_total;
+                const customerEmail = session.customer_details?.email;
+                const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+                    expand: ['data.price.product'] // Crucial for getting product metadata
+                }, {
+                    stripeAccount: event.account // Use the connected account from the event
+                });
+                var metadata = '';
+                lineItems.data.forEach(item => {
+                    if (item.price && item.price.product && typeof item.price.product === 'object') {
+                        // Check if product data is expanded and accessible
+                        const product = item.price.product;
+                        if (product.metadata) {
+                            metadata = product.metadata;
+                        } else {
+                            console.log('No metadata found for this product.');
+                        }
+                    } else {
+                        console.log('Product data not fully expanded or missing for item:', item.id);
+                    }
+                });
+                const chargeId = session.payment_intent ? await stripe.paymentIntents.retrieve(session.payment_intent, {}, {
+                    stripeAccount: event.account
+                }).then(pi => pi.latest_charge) : null;
+
+                if (chargeId) {
+                    const charge = await stripe.charges.retrieve(chargeId, {}, {
+                        stripeAccount: event.account
+                    });
+                    const balanceTransactionId = charge.balance_transaction;
+
+                    if (balanceTransactionId) {
+                        const balanceTransaction = await stripe.balanceTransactions.retrieve(balanceTransactionId, {}, {
+                            stripeAccount: event.account
+                        });
+                        const fee = balanceTransaction.fee;
+                        const net = balanceTransaction.net;
+
+                        var user = await User.findOne({
+                            email: customerEmail
+                        });
+                        if (user) {
+                            var amountToAdd = 0;
+                            var totalStarsGivenAmount = SYSTEM.totalStarsGiven;
+                            var percentUSDAmount = await percentOfPayouts(Number(amount));
+                            amountToAdd = percentUSDAmount * totalStarsGivenAmount;
+                            if (percentUSDAmount == 0) {
+                                amountToAdd = amount / 100;
+                            }
+                            if (totalStarsGivenAmount == 0) {
+                                amountToAdd = 10;
+                            }
+                            console.log("METADATA:");
+                            console.log(JSON.stringify(metadata));
+                            var platformDec = 0.55;
+                            var userDec = 0.45;
+                            if (metadata.type && metadata.type === 'Buying Donation Stars') {
+                                platformDec = 0.10;
+                                userDec = 0.90;
+                                await User.updateOne({
+                                    _id: user._id.toString()
+                                }, {
+                                    $inc: {
+                                        donationStars: metadata.amount
+                                    }
+                                });
+                                await System.updateOne({
+                                    _id: SYSTEM._id.toString()
+                                }, {
+                                    $inc: {
+                                        platformAmount: Math.floor((amount * platformDec) - fee),
+                                        userAmount: Math.floor(amount * userDec)
+                                    }
+                                });
+                            } else if (metadata.type && metadata.type === 'Product') {
+                                console.log("PRODUCT");
+                                await User.updateOne({
+                                    _id: user._id.toString()
+                                }, {
+                                    $inc: {
+                                        donationStars: amountToAdd
+                                    }
+                                });
+                            } else {
+                                //simple donation
+                                await User.updateOne({
+                                    _id: user._id.toString()
+                                }, {
+                                    $inc: {
+                                        donationStars: amountToAdd
+                                    }
+                                });
+                                await System.updateOne({
+                                    _id: SYSTEM._id.toString()
+                                }, {
+                                    $inc: {
+                                        platformAmount: Math.floor((amount * platformDec) - fee),
+                                        userAmount: Math.floor(amount * userDec)
+                                    }
+                                });
+                            }
+                        }
+                        //user not logged in so cant give donation stars
+                        //however we can still create an order
+                        if(metadata.type && metadata.type === 'Product'){
+                            console.log("CREATING ORDER");
+                          //create an order for the product
+                          var product = await Passage.findOne({
+                              _id: metadata.productId
+                          }).populate('author');
+                          const shippingAddress = session.shipping_details.address;
+                          const shippingName = session.shipping_details.name;
+                          var buyer = await User.findOne({email:customerEmail});
+                          var order = await Order.create({
+                              title: product.title,
+                              buyer: buyer._id.toString(),
+                              chargeId: chargeId,
+                              seller: product.author._id.toString(),
+                              passage: product._id.toString(),
+                              dateSold: Date.now(),
+                              quantity: metadata.quantity,
+                              shippingName: shippingName,
+                              shippingAddressLine1: shippingAddress.line1,
+                              shippingAddressLine2: shippingAddress.line2,
+                              shippingCity: shippingAddress.city,
+                              shippingState: shippingAddress.state,
+                              shippingPostalCode: shippingAddress.postal_code,
+                              shippingCountry: shippingAddress.country,
+                          });
+                          //give seller stars
+                          await starService.addStarsToUser(product.author, amountToAdd);
+                          await Passage.updateOne({
+                              _id: product._id.toString()
+                          }, {
+                              $inc: {
+                                  inStock: -metadata.quantity
+                              }
+                          });
+                          //take 25% of the 10% cut - fee and add it to SYSTEM.userAmount
+                          //add the rest to platformAmount
+                          var platformCommission = amount * 0.10;
+                          var userPayoutAmount = platformCommission * 0.25;
+                          var platformAmount = platformCommission - userPayoutAmount - fee;
+                          await System.updateOne({
+                              _id: SYSTEM._id.toString()
+                          }, {
+                              $inc: {
+                                  platformAmount: Math.floor(platformAmount),
+                                  userAmount: Math.floor(userPayoutAmount)
+                              }
+                          });
+                          console.log("Order created.");
+                        }
+                    }
+                    // if (session.shipping_details) {
+                    //     const shippingAddress = session.shipping_details.address;
+                    //     const shippingName = session.shipping_details.name;
+                        
+                    //     // Now, you can update the PaymentIntent with the shipping address data
+                    //     stripe.paymentIntents.update(paymentIntentId, {
+                    //         metadata: {
+                    //             shipping_name: shippingName,
+                    //             shipping_address_line1: shippingAddress.line1,
+                    //             shipping_address_line2: shippingAddress.line2,
+                    //             shipping_address_city: shippingAddress.city,
+                    //             shipping_address_state: shippingAddress.state,
+                    //             shipping_address_postal_code: shippingAddress.postal_code,
+                    //             shipping_address_country: shippingAddress.country,
+                    //             order: order._id
+                    //         }
+                    //     }, {
+                    //         stripeAccount: session.stripe_account
+                    //     }).then(() => {
+                    //         console.log('Successfully updated PaymentIntent with shipping data.');
+                    //     }).catch(err => {
+                    //         console.error('Failed to update PaymentIntent:', err);
+                    //     });
+                    // }
+                } else {
+                    console.log("Charge ID not found in session or payment intent.");
+                }
+            } catch (error) {
+                console.error("Error processing checkout.session.completed:", error);
+                return response.status(500).send(`Error processing event: ${error.message}`);
+            }
+            break;
         case 'account.updated':
             const updatedAccount = event.data.object;
             var user = await User.findOne({
@@ -579,6 +800,9 @@ const stripeAuthorize = async(req, res) => {
                 const account = await stripe.accounts.create({
                     type: 'express',
                     capabilities: {
+                        card_payments: {
+                            requested: true,
+                        },
                         transfers: {
                             requested: true
                         },

@@ -125,6 +125,9 @@ function flashIcon(thiz, color='gold'){
 // }
 
 $(function(){
+    $(document).on('click', '#to-create-products', function(){
+        $('#to-create-products-items').slideToggle();
+    });
     // if($('#parent_chapter_id').val() != 'Christian Engineering Solutions'){
     //     //so only in chapters
     //     Sasame = false;

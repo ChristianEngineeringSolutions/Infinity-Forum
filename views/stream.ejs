@@ -83,7 +83,7 @@
             <%}%>
             <%if((typeof comments != 'undefined' && comments == true) || (user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if((typeof comments != 'undefined' && comments == true) || (passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true)){%>
-                    <%if(whichPage === 'market' && (!user.identityVerified || !user.stripeOnboardingComplete)){%>
+                    <%if(whichPage === 'market' && !scripts.canCreateProducts(user)){%>
 
                     <%}else{%>
                         <button title="Add Passage"id="add_passage_button">+</button>
