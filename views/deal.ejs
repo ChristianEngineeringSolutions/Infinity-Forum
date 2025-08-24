@@ -1,0 +1,112 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<br><br><br><br>
+<input type="hidden" id="dealId" value="<%=deal._id%>">
+<div style="width:90%;margin:auto;">
+    <h1>Deal</h1>
+    <h4>(<%=deal.valid ? 'Valid: All contributors agree' : 'Invalid: Not all contributors have agreed'; %>)</h4>
+    <div class="deal">
+        <h2><a href="/passage/<%=deal.passage.title == '' ? 'Untitled' : encodeURIComponent(deal.passage.title);%>/<%=deal.passage._id%>"><%=deal.passage.title%></a></h2>
+        <%if(deal.starter._id.toString() === user._id.toString()){%>
+            <div>
+                <textarea name="" id="general-contract" placeholder="Additional Contract Specifications"></textarea>
+                <div>
+                    Payment Option (evenly split amongst contributors):
+                    <select name="" id="general-payment-option">
+                        <option>Flat Fee</option>
+                        <option>Percentage of Income</option>
+                        <option>Percentage of Revenue</option>
+                    </select> 
+                    <div>
+                        Amount in Dollars or percentage: <input type="number" id="general-amount-or-percentage"autocomplete="off">
+                    </div>
+                </div>
+                <div>
+                    <button id="deal-send-general-<%=deal._id%>">Send to all contributors</button>
+                </div>
+            </div>
+        <%}%>
+        <%for(const contributor of deal.contributors){%>
+            <%if(deal.starter._id.toString() === user._id.toString() || contributor._id.toString() === user._id.toString()){%>
+                <div>
+                    <h3>
+                        <a href="/profile/<%=encodeURIComponent(contributor.username)%>/<%=contributor._id%>"><%=contributor.name%></a>
+                    </h3>
+                    <div class="deal-expand"><a>Expand</a></div>
+                    <div style="display:none;">
+                        <%-include('micro-deals', {microDeals: microDealsMap[contributor._id.toString()]})%>
+                        <%if(microDealsMap[contributor._id.toString()] && microDealsMap[contributor._id.toString()].length > 0){%>
+                            <div>
+                                <button>Agree to latest deal</button>
+                            </div>
+                        <%}%>
+                        <textarea name="" id="specific-contract-<%=contributor._id%>" placeholder="Additional Contract Specifications"></textarea>
+                        <div>
+                        Payment Option:
+                        <select name="" id="specific-payment-option-<%=contributor._id%>">
+                            <option>Flat Fee</option>
+                            <option>Percentage of Income</option>
+                            <option>Percentage of Revenue</option>
+                        </select>
+                        <div>
+                            Amount in Dollars or percentage: <input type="number" id="specific-amount-or-percentage-<%=contributor._id%>" autocomplete="off">
+                        </div>
+                    </div>
+                        <div>
+                            <button id="deal-send-specific-<%=contributor._id%>">Send</button>
+                        </div>
+                    </div>
+                </div>
+            <%}%>
+        <%}%>
+    </div>
+</div>
+<script>
+    $(function(){
+        $(document).on('click', '.deal-expand', function(){
+            $(this).next().slideToggle();
+        });
+        $(document).on('click', '[id^="deal-send-general-"]', function(){
+            var _id = $(this).attr('id').split('-').at(-1);
+            $.ajax({
+                type: 'post',
+                url: '/deals/send-general',
+                data: {
+                    deal: _id,
+                    contract: $('#general-contract').val(),
+                    paymentOption: $('#general-payment-option').val(),
+                    amountOrPercentage: $('#general-amount-or-percentage').val()
+                },
+                success: function (data){
+                    window.location.reload();
+                }
+            });
+        });
+        $(document).on('click', '[id^="deal-send-specific-"]', function(){
+            var contributor = $(this).attr('id').split('-').at(-1);
+            $.ajax({
+                type: 'post',
+                url: '/deals/send-specific',
+                data: {
+                    deal: $('#dealId').val(),
+                    contributor: contributor,
+                    contract: $('#specific-contract-'+contributor).val(),
+                    paymentOption: $('#specific-payment-option-'+contributor).val(),
+                    amountOrPercentage: $('#specific-amount-or-percentage-'+contributor).val()
+                },
+                success: function (data){
+                    window.location.reload();
+                }
+            });
+        });
+    });
+</script>
+<%- include('footer') %>

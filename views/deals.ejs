@@ -1,0 +1,24 @@
+<%- include('html_head') %>
+<link rel="stylesheet" type="text/css" href="/css/new.css">
+<link rel="stylesheet" type="text/css" href="/css/mobile.css">
+</head>
+<%- include('header') %>
+<%- include('header2', {
+    page: 'more'
+}) %>
+<%-include('menu')%>
+<%-include('sidebar')%>
+<br><br><br><br>
+<div style="width:90%;margin:auto;">
+    <h1>Deals</h1>
+    <h4>To make a deal: click "deal" in passage options (above a passage).</h4>
+    <%-!mentioned ? '<h4><a href="/deals?mentioned=true">View Deals you are mentioned in.</a></h4>' : '<h4><a href="/deals">View Deals you started.</a></h4>'%>
+    <%-!mentioned ? '<h4>Deals you have started:</h4>' : '<h4>Deals you are mentioned in:</h4>'%>
+    <%for(const deal of deals){%>
+        <div class="deal">
+            <div><a href="/deals/deal/<%=deal._id%>"><%=deal.passage.title%></a></div>
+        </div>
+    <%}%>
+</div>
+
+<%- include('footer') %>

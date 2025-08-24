@@ -176,7 +176,7 @@
                         <input class="share-passage"id="share-passage-<%=passage._id%>"type="text" placeholder="Enter Username">
                     </div>
                     <li id="passage_share_<%=passage._id%>" class="passage_option">Share</li>
-                    <!--<li id="passage-deal-<%=passage._id%>" class="passage_option">Deal</li>-->
+                    <li id="passage-deal-<%=passage._id%>" class="passage_option">Deal</li>
                     <%if(user && user.admin){%>
                         <li style="<%=passage.stickied ? 'color:gold' : ''%>"id="passage_sticky_<%=passage._id%>" class="passage_option">Sticky</li>
                     <%}%>

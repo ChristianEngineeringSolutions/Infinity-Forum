@@ -3,6 +3,7 @@
 const { Passage, PassageSchema } = require('../models/Passage');
 const bookmarkService = require('../services/bookmarkService');
 const passageService = require('../services/passageService');
+const dealService = require('../services/dealService');
 const { User } = require('../models/User');
 const Message = require('../models/Message');
 const Reward = require('../models/Reward');
@@ -731,6 +732,7 @@ async function addCollaborator(req, res) {
                 { _id: req.body.passageID },
                 { $push: { collaborators: collaborator._id.toString() } }
             );
+            dealService.invalidateOldDeals(passage);
             return res.send("Collaborator Added");
         }else{
             return res.send("Not allowed. Can't add author or user already added.");

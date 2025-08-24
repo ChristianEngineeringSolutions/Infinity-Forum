@@ -1,0 +1,13 @@
+<%if(Array.isArray(microDeals)){%>
+	<%for(const microDeal of microDeals){%>
+		<div>Agreed to by: <%=microDeal.agrees.join(', ')%></div>
+		<div>Contact:</div>
+		<div><%=microDeal.contract%></div>
+		<div>Payment Option: <%=microDeal.paymentOption%></div>
+		<%if(microDeal.paymentOption === 'Flat Fee'){%>
+			<div>Payment Amount: <%=microDeal.paymentAmount%></div>
+		<%}else{%>
+			<div>Payment Percentage: <%=microDeal.paymentPercentage%></div>
+		<%}%>
+	<%}%>
+<%}%>

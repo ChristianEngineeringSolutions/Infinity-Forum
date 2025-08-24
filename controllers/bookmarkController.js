@@ -6,6 +6,7 @@ const { User } = require('../models/User');
 const { scripts } = require('../common-utils');
 const passageService = require('../services/passageService');
 const bookmarkService = require('../services/bookmarkService');
+const dealService = require('../services/dealService');
 
 // Transfer bookmark route handler (from sasame.js line 3401)
 async function transferBookmark(req, res) {
@@ -87,6 +88,11 @@ async function transferBookmark(req, res) {
                 lastUpdated: Date.now()
             }
         });
+        //get all passages that use parent passage
+        //and all passages used by those passages
+        //then get all deals associated with any of the above passages
+        //invalidate the deal if it has at least one more contributor after adding new source
+        dealService.invalidateOldDeals(parent);
         //if parent has a reward, give it to the new contributors
         if(parent.parent && parent.parent.reward > 0 && (parent.selectedAnswer || parent.inFirstPlace)){
             var sourceSourceList = await passageService.getRecursiveSourceList(passage.sourceList, [], passage);

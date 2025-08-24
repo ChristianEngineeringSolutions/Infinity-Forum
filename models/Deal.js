@@ -12,12 +12,16 @@ const dealSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Passage'
     },
-    //is the deal active and valid?
+    //is the deal active and valid? (has it been agreed to by all parties?)
     valid: {
         type: Boolean,
         default: false
     },
-    created: {type: Date, default: Date.now},
+    contributors: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    created: {type: Date, default: Date.now}
 });
 
 dealSchema.plugin(mongoosePaginate);
