@@ -72,7 +72,11 @@ async function postsPage(req, res) {
           const processedPassage = await passageService.getPassage(feedResult.feed[i]);
           passages.push(processedPassage);
         }
-        
+        // Check if user can create products
+        let canCreateProducts = false;
+        if (req.session.user) {
+            canCreateProducts = await scripts.canCreateProducts(req.session.user);
+        }
         // Render the feed page
         return res.render("stream", {
           subPassages: false,
@@ -91,7 +95,8 @@ async function postsPage(req, res) {
           whichPage: 'stream',
           thread: false,
           currentPage: feedResult.currentPage,
-          totalPages: feedResult.totalPages
+          totalPages: feedResult.totalPages,
+          canCreateProducts: canCreateProducts
         });
       } catch (error) {
         console.error('Error generating guest feed:', error);

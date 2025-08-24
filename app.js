@@ -34,6 +34,7 @@ const chatRoutes = require('./routes/chat');
 const marketRoutes = require('./routes/market');
 const viewTrackingRoutes = require('./routes/viewTracking');
 const teamRoutes = require('./routes/teams');
+const dealRoutes = require('./routes/deals');
 
 const passageService = require('./services/passageService');
 const { initializeChatSocket } = require('./config/chatSocket');
@@ -105,6 +106,7 @@ async function startServer() {
         app.use('/', marketRoutes);
         app.use('/api/view', viewTrackingRoutes);
         app.use('/teams', teamRoutes);
+        app.use('/deals', dealRoutes);
         
         // Setup graceful shutdown handlers
         setupGracefulShutdown(server, io, app);

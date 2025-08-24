@@ -327,6 +327,20 @@ $(function(){
             }
         });
     });
+    $(document).on('click', '[id^="passage-deal-"]', function(e){
+        var thiz = $(this);
+        var _id = thiz.attr('id').split('-').at(-1);
+        $.ajax({
+            type: 'post',
+            url: '/deals/make-deal',
+            data: {
+                passageId: _id
+            },
+            success: function(data){
+                window.location.href = '/deals';
+            }
+        });
+    });
     function productFormHTML(_id="root", price=null, stock=null, unlimited=null){
         return `
             Price: $<input ${price ? `value="${price}"` : 'value="1"'} min="1"id="editor-price-${_id}"type="number" name="price" autocomplete="off"/><br>
