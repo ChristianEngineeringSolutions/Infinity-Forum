@@ -1,0 +1,78 @@
+<div class="team-info">
+    <h3>Pay Team: <%= team.name %></h3>
+    <p><%= team.description %></p>
+    <p><strong>Total Points:</strong> <%= team.totalPoints || 0 %></p>
+    <p><strong>Members:</strong> <%= team.ledger.length %></p>
+</div>
+
+<div class="payment-input">
+    <label for="payment-amount"><strong>Payment Amount:</strong></label>
+    <input type="number" id="payment-amount" min="1" step="0.01" placeholder="0.00" />
+    <span>USD</span>
+    <div class="error-message" id="amount-error" style="display: none;"></div>
+</div>
+
+<div class="total-info" id="total-info" style="display: none;">
+    <div><strong>Total Payment:</strong> $<span id="total-amount">0.00</span></div>
+    <div><strong>Platform Fee (10%):</strong> $<span id="platform-fee">0.00</span></div>
+    <div><strong>Net to Team:</strong> $<span id="net-amount">0.00</span></div>
+</div>
+
+<div class="ledger">
+    <h4>Payment Distribution</h4>
+    <% if (team.totalPoints === 0) { %>
+        <div class="warning">
+            No points have been earned by team members yet. Payment cannot be distributed.
+        </div>
+    <% } else { %>
+        <% 
+        const sortedLedger = team.ledger.sort((a, b) => b.points - a.points); 
+        // Calculate total points for users with Stripe accounts only
+        const usersWithStripe = sortedLedger.filter(ledge => ledge.user.stripeOnboardingComplete);
+        const totalPointsWithStripe = usersWithStripe.reduce((sum, ledge) => sum + ledge.points, 0);
+        %>
+        <% sortedLedger.forEach(function(ledge) { %>
+            <% 
+            const hasStripe = ledge.user.stripeOnboardingComplete;
+            const displayPercentage = hasStripe && totalPointsWithStripe > 0 
+                ? (ledge.points / totalPointsWithStripe * 100).toFixed(1) 
+                : 0;
+            const dataPercentage = hasStripe && totalPointsWithStripe > 0 
+                ? ledge.points / totalPointsWithStripe 
+                : 0;
+            %>
+            <div class="ledger-item">
+                <div class="member-info">
+                    <div class="member-name"><%= ledge.user.name %> (@<%= ledge.user.username %>)</div>
+                    <div class="member-details">
+                        Points: <%= ledge.points %> | 
+                        Percentage: <%= displayPercentage %>%
+                        <% if (!hasStripe) { %>
+                            <span class="no-stripe">(No Stripe Account)</span>
+                        <% } %>
+                    </div>
+                </div>
+                <div class="payout-info">
+                    <div class="payout-amount" data-percentage="<%= dataPercentage %>">
+                        $<span class="payout-value">0.00</span>
+                    </div>
+                    <div class="payout-percentage">
+                        (<%= displayPercentage %>%)
+                    </div>
+                </div>
+            </div>
+        <% }); %>
+        
+        <% const membersWithoutStripe = sortedLedger.filter(l => !l.user.stripeOnboardingComplete); %>
+        <% if (membersWithoutStripe.length > 0) { %>
+            <div class="warning">
+                <strong>Note:</strong> <%= membersWithoutStripe.length %> team member(s) don't have Stripe accounts set up and will not receive any payment. The payment will be distributed only among members with completed Stripe onboarding.
+            </div>
+        <% } %>
+    <% } %>
+</div>
+
+The exact amount paid to each user may change based on actvity between when you loaded this popup and pressed the pay button.
+<button class="pay-button" id="pay-button-<%= team._id %>" disabled onclick="createTeamPayment('<%= team._id %>', <%= team.totalPoints || 0 %>)">
+    Pay Team
+</button>

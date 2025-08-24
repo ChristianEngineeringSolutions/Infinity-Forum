@@ -125,14 +125,16 @@ const stripeWebhook = async(request, response) => {
                                     donationStars: amountToAdd
                                 }
                             });
-                            await System.updateOne({
-                                _id: SYSTEM._id.toString()
-                            }, {
-                                $inc: {
-                                    platformAmount: Math.floor((amount * platformDec) - fee),
-                                    userAmount: Math.floor(amount * userDec)
-                                }
-                            });
+                            if(metadata.type !== 'TeamPayment'){
+                                await System.updateOne({
+                                    _id: SYSTEM._id.toString()
+                                }, {
+                                    $inc: {
+                                        platformAmount: Math.floor((amount * platformDec) - fee),
+                                        userAmount: Math.floor(amount * userDec)
+                                    }
+                                });
+                            }
                         }
                     }
                     //user not logged in so cant give donation stars
@@ -181,6 +183,30 @@ const stripeWebhook = async(request, response) => {
                           }
                       });
                       console.log("Order created.");
+                    }
+                    if(metadata.type && metadata.type === 'TeamPayment'){
+                        var platformCommission = amount * 0.10;
+                        var userPayoutAmount = platformCommission * 0.25;
+                        var platformAmount = platformCommission - userPayoutAmount - fee;
+                        await System.updateOne({
+                            _id: SYSTEM._id.toString()
+                        }, {
+                            $inc: {
+                                platformAmount: Math.floor(platformAmount),
+                                userAmount: Math.floor(userPayoutAmount)
+                            }
+                        });
+                        var payouts = JSON.parse(metadata.payouts);
+                        for(const payout of payouts){
+                            if(payout.hasStripeAccount){
+                                const transfer = await stripe.transfers.create({
+                                  amount: payout.payoutAmountCents,
+                                  currency: 'usd',
+                                  destination: payout.stripeAccountId,
+                                  transfer_group: metadata.teamId,
+                                });
+                            }
+                        }
                     }
                 }
                 // if (session.shipping_details) {

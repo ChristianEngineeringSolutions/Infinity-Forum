@@ -12,6 +12,7 @@ const System = require('../models/System');
 const Message = require('../models/Message');
 const Team = require('../models/Team');
 const starService = require('./starService');
+const {scripts} = require('../common-utils.js');
 const { getRecursiveSourceList, getRecursiveSourceListTabbed, fillUsedInListSingle, getLastSource, getPassage, getAllContributors, inTeam, isTeamLeader } = require('./passageService');
 const { passageSimilarity, overlaps } = require('../utils/stringUtils');
 
@@ -923,7 +924,6 @@ async function processSourcesBatchedTabbed(rootPassage, amount, sessionUser, dep
 // Process starPassage logic - refactored for batch processing
 async function processStarPassage(userId, passageId, amount, sessionUserId, deplete, single, team=false) {
     console.log('processStarPassage called with:', { userId, passageId, amount, sessionUserId, deplete, single });
-    
     // Validation
     if(isNaN(amount) || amount == 0){
         throw new Error('Please enter a number greater than 0.');
@@ -933,9 +933,6 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
     const sessionUser = await User.findOne({_id: sessionUserId});
     if (!sessionUser) {
         throw new Error('Session user not found');
-    }
-    if(sessionUser.phone === '' && !sessionUser.identityVerified){
-        throw new Error('Must be verified to star.');
     }
     
     let starsTakenAway = 0;
@@ -961,6 +958,9 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             if(team === null){
                 team = false;
             }
+            if(!team && sessionUser.phone === '' && !sessionUser.identityVerified){
+                throw new Error('Must be verified to star.');
+            }
             var ledger = false;
             if (!user || !passage) {
                 throw new Error('User or passage not found');
@@ -979,17 +979,25 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                 ledger = team.ledger.filter(function(obj){
                     return obj.user._id.toString() === user._id.toString()
                 });
-                if(ledger.length === 0 || passage.teamRootPassage){
+                if(ledger.length === 0 && !scripts.isTeamLeader(user, team)){
                     team = false;
                     ledger = false;
-                }else{
+                }else if(!scripts.isTeamLeader(user, team)){
                     ledger = ledger[0];
                     if(ledger.stars < amount && !single && !ledger.options.useGeneralStars && team.leader._id.toString() !== user._id.toString()){
                         throw new Error("Not enough stars.");
                     }
                 }
+                if(scripts.isTeamLeader(user, team)){
+                    ledger = {
+                        options: {
+                            useGeneralStars: false
+                        }
+                    }
+                }
             }
-            whichStarsToUse = !team ? 'general' : (ledger.options.useGeneralStars ? 'general' : 'team');
+            whichStarsToUse = !team ? 'general' : 'team';
+            console.log("WHICHSTARSTOUSE:"+whichStarsToUse);
             if(deplete){
                 // Check if user has enough total stars (skip check if single)
                 if(((user.stars + user.borrowedStars + user.donationStars) < amount) 
@@ -1110,9 +1118,11 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
                     ((user.starsGiven+starsTakenAway) * totalAbsorbed) / 
                     (totalPoints + starsTakenAway - ledger.points);
                     numContributionPoints -= dockingAmount;
-                    accumulator.addUserTeamStars(userId, {points: numContributionPoints}, team);
                     // Update system total
-                    await Team.updateOne({_id:team._id}, { $inc: { totalPoints: numContributionPoints }}, {session: mainSession});
+                    if(!scripts.isTeamLeader(user, team)){
+                        accumulator.addUserTeamStars(userId, {points: numContributionPoints}, team);
+                        await Team.updateOne({_id:team._id}, { $inc: { totalPoints: numContributionPoints }}, {session: mainSession});
+                    }
                 }
             }
             
@@ -1124,15 +1134,20 @@ async function processStarPassage(userId, passageId, amount, sessionUserId, depl
             if(!contributionPoints){
                 amountToGiveCollabers = 0;
             }
+            console.log('OUT HERE');
             
             if(amountToGiveCollabers > 0){
+                console.log("IN HERE");
                 // Author
                 const authorUser = await User.findById(passage.author._id).session(mainSession);
                 if(authorUser){
+                    console.log("AUTHORUSER");
                     if(whichStarsToUse === 'general'){
+                        console.log("GENERAL");
                         const authorDeltas = calculateStarAddition(authorUser, amountToGiveCollabers);
                         accumulator.addUserStars(passage.author._id.toString(), authorDeltas);
                     }else{
+                        console.log("ADDING TEAM STARS");
                         accumulator.addUserTeamStars(passage.author._id.toString(), {stars: amountToGiveCollabers}, team);
                     }
                 }
@@ -1603,12 +1618,10 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
     
     try {
         await session.withTransaction(async () => {
+            console.log('lol');
             const sessionUser = await User.findOne({_id: sessionUserId}).session(session);
             if (!sessionUser) {
                 throw new Error('Session user not found');
-            }
-            if(sessionUser.phone === '' && !sessionUser.identityVerified){
-                throw new Error('Must be verified to star.');
             }
             passage = await Passage.findOne({_id: passageId})
                 .populate('author sourceList collaborators team')
@@ -1618,17 +1631,13 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
             if(team === null){
                 team = false;
             }
+            if(!team && sessionUser.phone === '' && !sessionUser.identityVerified){
+                throw new Error('Must be verified to star.');
+            }
             var ledger = false;
             if(team){
                 if(!passage.teamRootPassage && !inTeam(sessionUser, team) && !isTeamLeader(sessionUser, team)){
                     throw new Error("You must be in the team to star it.");
-                }
-                ledger = team.ledger.filter(function(obj){
-                    return obj.user._id.toString() === user._id.toString()
-                });
-                ledger = ledger[0];
-                if(ledger.stars < amount && !single && !ledger.options.useGeneralStars && team.leader._id.toString() !== user._id.toString()){
-                    throw new Error("Not enough stars.");
                 }
             }
             if (!passage) {
@@ -1689,7 +1698,7 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                     
                     // Star each source recursively
                     // If user is verified and numVerifiedStars > lastCap give the passage a user star
-                    if(sessionUser.identityVerified && !starredBefore && shouldGetContributionPoints){
+                    if((team && !starredBefore && shouldGetContributionPoints) || (sessionUser.phone !== '' && !starredBefore && shouldGetContributionPoints)){
                         // Queue a regular star operation instead of direct call
                         const subIdempotencyKey = generateStarIdempotencyKey(sessionUserId, passageId, 1, 'singlestar-verified');
                         await queueStarOperation({
@@ -1706,7 +1715,7 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                         // Mark that sources need to be processed after transaction
                         sourcesOperation = {reverse: false, justRecord: true};
                     }
-                    else if(sessionUser.identityVerified && !starredBefore){
+                    else if((team && !starredBefore) || (sessionUser.phone !== '' && !starredBefore)){
                         //just add a star to passage but not collabers
                         passage.stars += 1;
                         if(!team){
@@ -1718,7 +1727,7 @@ async function processSingleStarPassage(sessionUserId, passageId, reverse, isSub
                             await Team.updateOne(
                                 {
                                     _id: team._id,
-                                    'ledger.user': user._id.toString()
+                                    'ledger.user': user
                                 },
                                 {
                                     $inc: {

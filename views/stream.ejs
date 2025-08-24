@@ -22,9 +22,6 @@
                 <%if(passage.team){%>
                     <h1>&emsp;&emsp;&emsp;Team: <a href="/teams/team/<%=passage.team._id%>"><%=passage.team.name%></h1></a>
                 <%}%>
-                <%if(passage.teamForRoot){%>
-                    <h1>&emsp;&emsp;&emsp;Team: <a href="/teams/team/<%=passage.teamForRoot._id%>"><%=passage.teamForRoot.name%></h1></a>
-                <%}%>
                 <%passageTitle = passageTitle === '' ? 'Untitled' : passageTitle;%>
                 <%if(passage.parent != null){%>
                     <div id="parent_title"><span data-url="/passage/<%=encodeURIComponent(passage.parent.title) == '' ? 'Untitled' : encodeURIComponent(passage.parent.title)%>/<%=passage.parent._id%>"id="parent_title2"><%=location.join('/')%></span></div>
@@ -81,8 +78,8 @@
             <%}else{%>
                 <%-include('sort_select');%>
             <%}%>
-            <%if((typeof comments != 'undefined' && comments == true) || (user && passage.id == 'root') || (user && (passage.public || passageUsers.includes(user._id.toString())))){%>
-                <%if((typeof comments != 'undefined' && comments == true) || (passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true)){%>
+            <%if((typeof comments != 'undefined' && comments == true) || (user && passage.id == 'root') || (user && (passage.public || passage.team || passageUsers.includes(user._id.toString())))){%>
+                <%if((typeof comments != 'undefined' && comments == true) || (passage.id == 'root'  && passage.public_daemon != 2 && passage.default_daemon != true) || passage.team){%>
                     <%if(whichPage === 'market' && !scripts.canCreateProducts(user)){%>
 
                     <%}else{%>
@@ -107,7 +104,7 @@
                 <%} %>
             </div>
             <div id="passage_form_wrapper"></div>
-            <%if((user && passage.id == 'root') || (user && (passage.author._id == user._id || passage.public || passageUsers.includes(user._id.toString())))){%>
+            <%if((user && passage.id == 'root') || (user && (passage.author._id == user._id || passage.team || passage.public || passageUsers.includes(user._id.toString())))){%>
                 <%if(passage.id != 'root' && passage.public_daemon != 2 && passage.default_daemon != true && ( typeof comments == 'undefined' || !comments)){%>
                     <%if(whichPage === 'market' && (!user.identityVerified || !user.stripeOnboardingComplete)){%>
 

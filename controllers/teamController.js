@@ -3,7 +3,7 @@
 const Team = require('../models/Team');
 const { Passage } = require('../models/Passage');
 const { User } = require('../models/User');
-const { scripts, DOCS_PER_PAGE} = require('../common-utils');
+const { scripts, DOCS_PER_PAGE, accessSecret} = require('../common-utils');
 const passageService = require('../services/passageService');
 
 async function teams(req, res){
@@ -52,14 +52,7 @@ async function createTeam(req, res){
     var newParticipantIds = usersToAdd
         .map(u => u._id);
     newParticipantIds = Object.values(newParticipantIds.reduce((acc,cur)=>Object.assign(acc,{[cur._id.toString()]:cur}),{}));
-    var newParticipantLedger = [{
-        user: req.session.user._id.toString(),
-        stars: 0,
-        points: 0,
-        options: {
-            useGeneralStars: false
-        }
-    }];
+    var newParticipantLedger = [];
     for(const id of newParticipantIds){
         newParticipantLedger.push({
             user: id,
@@ -310,6 +303,157 @@ async function editTeam(req, res){
     }
     return res.send("Team updated");
 }
+
+async function payTeam(req, res){
+    if(!req.session.user){
+        return res.status(401).send('Not logged in');
+    }
+    
+    try {
+        const team = await Team.findById(req.query.teamId)
+            .populate('leader')
+            .populate('members')
+            .populate({
+                path: 'ledger.user',
+                select: 'name username stripeOnboardingComplete stripeAccountId'
+            });
+            
+        if (!team) {
+            return res.status(404).send('Team not found');
+        }
+        
+        // Check if user is team leader or member
+        const isLeader = team.leader._id.toString() === req.session.user._id.toString();
+        const isMember = team.members.some(member => member._id.toString() === req.session.user._id.toString());
+        
+        if (!isLeader && !isMember) {
+            return res.status(403).send('Not authorized to pay this team');
+        }
+        
+        return res.render('pay-team', { team: team, scripts: scripts });
+        
+    } catch (error) {
+        console.error('Error loading pay team page:', error);
+        return res.status(500).send('Error loading pay team page');
+    }
+}
+
+async function payTeamCheckout(req, res){
+    if(!req.session.user){
+        return res.status(401).json({ error: 'Not logged in' });
+    }
+    
+    try {
+        const { teamId, amount } = req.body;
+        
+        if (!teamId || !amount || amount < 1) {
+            return res.status(400).json({ error: 'Invalid parameters' });
+        }
+        
+        const team = await Team.findById(teamId)
+            .populate('leader')
+            .populate('members')
+            .populate({
+                path: 'ledger.user',
+                select: 'name username stripeOnboardingComplete stripeAccountId'
+            });
+            
+        if (!team) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+        
+        // Check authorization
+        const isLeader = team.leader._id.toString() === req.session.user._id.toString();
+        const isMember = team.members.some(member => member._id.toString() === req.session.user._id.toString());
+        
+        if (!isLeader) {
+            return res.status(403).json({ error: 'Not authorized to pay this team' });
+        }
+        
+        if (team.totalPoints === 0) {
+            return res.status(400).json({ error: 'Cannot pay team with no points earned' });
+        }
+        
+        const STRIPE_SECRET_KEY = await accessSecret("STRIPE_SECRET_KEY");
+        const stripe = require("stripe")(STRIPE_SECRET_KEY);
+        
+        // Calculate application fee (10%) and net amount
+        const totalAmountInCents = Math.round(amount * 100);
+        const platformFee = amount * 0.10;
+        const netAmount = amount - platformFee;
+        
+        // Calculate individual payouts - only for users with Stripe accounts
+        const payouts = [];
+        
+        // First, calculate total points for users with Stripe accounts only
+        const usersWithStripe = team.ledger.filter(ledge => ledge.user.stripeOnboardingComplete);
+        const totalPointsWithStripe = usersWithStripe.reduce((sum, ledge) => sum + ledge.points, 0);
+        
+        // Calculate payouts only for users with Stripe accounts
+        for (const ledge of team.ledger) {
+            if (ledge.user.stripeOnboardingComplete && totalPointsWithStripe > 0) {
+                const percentage = ledge.points / totalPointsWithStripe; // Percentage among Stripe users only
+                const payoutAmount = netAmount * percentage;
+                const payoutAmountCents = Math.round(payoutAmount * 100);
+                
+                payouts.push({
+                    userId: ledge.user._id.toString(),
+                    username: ledge.user.username,
+                    stripeAccountId: ledge.user.stripeAccountId || '',
+                    hasStripeAccount: true,
+                    points: ledge.points,
+                    percentage: percentage,
+                    payoutAmount: payoutAmount,
+                    payoutAmountCents: payoutAmountCents
+                });
+            }
+        }
+        
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            line_items: [{
+                price_data: {
+                    currency: 'usd',
+                    unit_amount: totalAmountInCents,
+                    product_data: {
+                        name: `Team Payment: ${team.name}`,
+                        description: `Payment to team members based on points distribution`,
+                        metadata: {
+                            type: 'TeamPayment',
+                            teamId: teamId,
+                            payerId: req.session.user._id.toString(),
+                            teamName: team.name,
+                            totalPoints: team.totalPoints.toString(),
+                            payouts: JSON.stringify(payouts)
+                        }
+                    },
+                },
+                quantity: 1,
+            }],
+            success_url: req.headers.origin + `/teams/team/${teamId}`,
+            cancel_url: req.headers.origin + `/teams/team/${teamId}`,
+            customer_email: req.session.user.email,
+            payment_intent_data: {
+                metadata: {
+                    type: 'TeamPayment',
+                    teamId: teamId,
+                    payerId: req.session.user._id.toString(),
+                    teamName: team.name,
+                    totalPoints: team.totalPoints.toString(),
+                    payouts: JSON.stringify(payouts)
+                }
+            }
+        });
+        
+        return res.json({ url: session.url });
+        
+    } catch (error) {
+        console.error('Error creating team payment checkout:', error);
+        return res.status(500).json({ error: 'Error creating payment session' });
+    }
+}
+
 module.exports = {
     teams,
     createTeam,
@@ -319,5 +463,7 @@ module.exports = {
     team,
     starPassage,
     singleStarPassage,
-    editTeam
+    editTeam,
+    payTeam,
+    payTeamCheckout
 };

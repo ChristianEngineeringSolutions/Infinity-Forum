@@ -16,5 +16,7 @@ router.post('/remove-member', requiresLogin, teamController.removeMember);
 router.get('/team/:teamId/:search?', requiresLogin, teamController.team);
 router.post('/star/:passageId', requiresLogin, teamController.starPassage);
 router.post('/single-star/:passageId', requiresLogin, teamController.singleStarPassage);
+router.get('/pay-team', requiresLogin, teamController.payTeam);
+router.post('/pay-team-checkout', requiresLogin, teamController.payTeamCheckout);
 
 module.exports = router;

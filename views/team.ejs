@@ -1,6 +1,101 @@
 <%- include('html_head') %>
 <link rel="stylesheet" type="text/css" href="/css/new.css">
 <link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<style>
+    /* Pay Team Popup Styles */
+    .team-info {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #ddd;
+    }
+    .payment-input {
+        margin: 20px 0;
+    }
+    .payment-input input {
+        padding: 8px;
+        font-size: 16px;
+        width: 100px;
+        margin-left: 10px;
+    }
+    .ledger {
+        margin: 20px 0;
+    }
+    .ledger-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        margin: 5px 0;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    .member-info {
+        flex-grow: 1;
+    }
+    .member-name {
+        font-weight: bold;
+        color: #333;
+    }
+    .member-details {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 2px;
+    }
+    .payout-info {
+        text-align: right;
+        min-width: 120px;
+    }
+    .payout-amount {
+        font-weight: bold;
+        color: #28a745;
+        font-size: 1.1em;
+    }
+    .payout-percentage {
+        font-size: 0.9em;
+        color: #666;
+    }
+    .no-stripe {
+        color: #dc3545;
+        font-style: italic;
+    }
+    .pay-button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 20px;
+        width: 100%;
+    }
+    .pay-button:hover {
+        background: #0056b3;
+    }
+    .pay-button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    .total-info {
+        background: #000;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+    }
+    .error-message {
+        color: #dc3545;
+        margin-top: 10px;
+        font-size: 0.9em;
+    }
+    .warning {
+        background: #fff3cd;
+        color: #856404;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-size: 0.9em;
+    }
+</style>
 </head>
 <%- include('header') %>
 <%- include('header2', {
@@ -28,21 +123,24 @@
         <div id="ledger" style="display:none;">
             <ul style="margin-top:0px;">
                 <%for(const ledge of team.ledger.sort((a, b) => b.points - a.points)){%>
-                    <li><a target="__blank"href="/profile/<%=ledge.user.username%>/<%=ledge.user._id%>"><%=ledge.user.name%></a></li>
-                    <ul>
-                        <li>Stars: <%=ledge.stars%></li>
-                        <li>Points: <%=ledge.points%></li>
-                        <li>Percentage of Points: <%=team.totalPoints === 0 ? 0 : (ledge.points/team.totalPoints)*100%>%</li>
-                    </ul>
+                    <li><a target="__blank"href="/profile/<%=ledge.user.username%>/<%=ledge.user._id%>"><%=ledge.user.name%></a><%=scripts.isTeamLeader(ledge.user, team) ? " (Leader)" : ''%></li>
+                    <%if(!scripts.isTeamLeader(ledge.user, team)){%>
+                        <ul>
+                            <li>Stars: <%=ledge.stars%></li>
+                            <li>Points: <%=ledge.points%></li>
+                            <li>Percentage of Points: <%=team.totalPoints === 0 ? 0 : (ledge.points/team.totalPoints)*100%>%</li>
+                        </ul>
+                    <%}%>
                 <%}%>
             </ul>
         </div>
     </div>
     <br>
-    <a id="enter-team"class="basic_link" href="/passage/<%=team.rootPassage.title === '' ? 'Untitled' : encodeURIComponent(team.rootPassage.title)%>/<%=team.rootPassage._id.toString()%>">ENTER</a><br>
+    <a id="enter-team"class="basic_link" href="/passage/<%=team.rootPassage.title === '' ? 'Untitled' : encodeURIComponent(team.rootPassage.title)%>/<%=team.rootPassage._id.toString()%>">ENTER</a><%if(scripts.isTeamLeader(user, team)){%>&nbsp;<a id="pay-team-<%=team._id%>"class="grey-button">PAY TEAM</a><%}%><br>
     <%if(team.leader._id.toString() === user._id.toString()){%>
         <h5><a id="delete-team-<%=team._id%>">Delete</a> | <a id="edit-team">Edit</a></h5>
     <%}%>
+    <br><br>
     <a href="/teams">← Back to Teams</a>
 </div>
 
@@ -68,5 +166,145 @@
         </div>
     <% } %>
 </div>
-
+<script>
+    $(function(){
+        $(document).on('click', '[id^="pay-team-"]', function(){
+            var _id = $(this).attr('id').split('-').at(-1);
+            $.ajax({
+                type: 'get',
+                url: '/teams/pay-team?teamId='+_id,
+                success: function(data){
+                    popup("Pay Team", data);
+                }
+            });
+        });
+    });
+    
+    // Pay team functionality
+    function updatePayoutCalculations() {
+        const amountInput = document.getElementById('payment-amount');
+        if (!amountInput) return;
+        
+        const amount = parseFloat(amountInput.value) || 0;
+        
+        if (amount <= 0) {
+            const totalInfo = document.getElementById('total-info');
+            if (totalInfo) totalInfo.style.display = 'none';
+            const payButtons = document.querySelectorAll('[id^="pay-button-"]');
+            payButtons.forEach(btn => btn.disabled = true);
+            document.querySelectorAll('.payout-value').forEach(el => el.textContent = '0.00');
+            return;
+        }
+        
+        if (amount < 1) {
+            const errorEl = document.getElementById('amount-error');
+            if (errorEl) {
+                errorEl.textContent = 'Minimum payment is $1.00';
+                errorEl.style.display = 'block';
+            }
+            const payButtons = document.querySelectorAll('[id^="pay-button-"]');
+            payButtons.forEach(btn => btn.disabled = true);
+            return;
+        } else {
+            const errorEl = document.getElementById('amount-error');
+            if (errorEl) errorEl.style.display = 'none';
+        }
+        
+        // Calculate fees
+        const platformFee = amount * 0.10;
+        const netAmount = amount - platformFee;
+        
+        // Update total info
+        const totalAmountEl = document.getElementById('total-amount');
+        const platformFeeEl = document.getElementById('platform-fee');
+        const netAmountEl = document.getElementById('net-amount');
+        const totalInfoEl = document.getElementById('total-info');
+        
+        if (totalAmountEl) totalAmountEl.textContent = amount.toFixed(2);
+        if (platformFeeEl) platformFeeEl.textContent = platformFee.toFixed(2);
+        if (netAmountEl) netAmountEl.textContent = Math.max(0, netAmount).toFixed(2);
+        if (totalInfoEl) totalInfoEl.style.display = 'block';
+        
+        // Calculate individual payouts using pre-calculated percentages
+        const payoutElements = document.querySelectorAll('.payout-amount');
+        
+        payoutElements.forEach(el => {
+            const percentage = parseFloat(el.getAttribute('data-percentage'));
+            const valueEl = el.querySelector('.payout-value');
+            
+            if (!valueEl) return;
+            
+            if (netAmount <= 0 || percentage === 0) {
+                valueEl.textContent = '0.00';
+            } else {
+                const payout = netAmount * percentage;
+                valueEl.textContent = payout.toFixed(2);
+            }
+        });
+        
+        const payButtons = document.querySelectorAll('[id^="pay-button-"]');
+        payButtons.forEach(btn => btn.disabled = netAmount <= 0);
+    }
+    
+    function createTeamPayment(teamId, totalPoints) {
+        const amountInput = document.getElementById('payment-amount');
+        if (!amountInput) {
+            alert('Payment form not found');
+            return;
+        }
+        
+        const amount = parseFloat(amountInput.value);
+        if (amount < 1) {
+            alert('Please enter a valid payment amount (minimum $1.00)');
+            return;
+        }
+        
+        if (totalPoints === 0) {
+            alert('Cannot pay team with no points earned');
+            return;
+        }
+        
+        // Disable button to prevent double-clicks
+        const payButton = document.getElementById('pay-button-' + teamId);
+        if (payButton) {
+            payButton.disabled = true;
+            payButton.textContent = 'Processing...';
+        }
+        
+        // Create checkout session
+        fetch('/teams/pay-team-checkout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                teamId: teamId,
+                amount: amount
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert('Error creating payment: ' + (data.error || 'Unknown error'));
+                if (payButton) {
+                    payButton.disabled = false;
+                    payButton.textContent = 'Pay Team';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error creating payment: ' + error.message);
+            if (payButton) {
+                payButton.disabled = false;
+                payButton.textContent = 'Pay Team';
+            }
+        });
+    }
+    
+    // Event listener for payment amount input
+    $(document).on('input', '#payment-amount', updatePayoutCalculations);
+</script>
 <%- include('footer') %>

@@ -46,7 +46,7 @@ async function starPassage(req, res){
     }
     var subPassage = req.body.parent == 'root' ? false : true;
     if(req.session.user && user){
-        if(!team && ((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount) && process.env.REMOTE == 'true'){
+        if((!team && ((sessionUser.stars + sessionUser.borrowedStars + sessionUser.donationStars) >= amount) || team) && process.env.REMOTE == 'true'){
             let passage = await starQueue.starPassage(req.session.user, amount, req.body.passage_id, sessionUser._id, true);
             if(typeof passage === 'object'){
                 // passage = await passageService.getPassage(passage);
