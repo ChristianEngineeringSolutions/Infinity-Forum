@@ -21,6 +21,11 @@ const dealSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    //who has agreed with the deal
+    agrees: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     created: {type: Date, default: Date.now}
 });
 

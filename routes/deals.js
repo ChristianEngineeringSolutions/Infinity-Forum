@@ -12,5 +12,6 @@ router.get('/deal/:dealId', requiresLogin, dealController.deal);
 router.post('/make-deal', requiresLogin, dealController.makeDeal);
 router.post('/send-general', requiresLogin, dealController.sendGeneral);
 router.post('/send-specific', requiresLogin, dealController.sendSpecific);
+router.post('/agree-to-deal', requiresLogin, dealController.agreeToDeal);
 
 module.exports = router;

@@ -1,6 +1,12 @@
 <%- include('html_head') %>
 <link rel="stylesheet" type="text/css" href="/css/new.css">
 <link rel="stylesheet" type="text/css" href="/css/mobile.css">
+<style>
+    .micro-deal{
+        border: 1px solid white;
+        padding: 5px;
+    }
+</style>
 </head>
 <%- include('header') %>
 <%- include('header2', {
@@ -12,7 +18,11 @@
 <input type="hidden" id="dealId" value="<%=deal._id%>">
 <div style="width:90%;margin:auto;">
     <h1>Deal</h1>
-    <h4>(<%=deal.valid ? 'Valid: All contributors agree' : 'Invalid: Not all contributors have agreed'; %>)</h4>
+    <h4><a href="/deals">Back to Deals</a></h4>
+    <%if(deal.starter._id.toString() === user._id.toString()){%>
+        <h4>(<%=deal.valid ? 'Valid: All contributors agree' : 'Invalid: Not all contributors have agreed'; %>)</h4>
+        <h4>Agree so far: (<%=[...new Set(deal.agrees)].length == 0 ? 'None' : [...new Set(deal.agrees)].join(', ');%>)</h4>
+    <%}%>
     <div class="deal">
         <h2><a href="/passage/<%=deal.passage.title == '' ? 'Untitled' : encodeURIComponent(deal.passage.title);%>/<%=deal.passage._id%>"><%=deal.passage.title%></a></h2>
         <%if(deal.starter._id.toString() === user._id.toString()){%>
@@ -45,7 +55,7 @@
                         <%-include('micro-deals', {microDeals: microDealsMap[contributor._id.toString()]})%>
                         <%if(microDealsMap[contributor._id.toString()] && microDealsMap[contributor._id.toString()].length > 0){%>
                             <div>
-                                <button>Agree to latest deal</button>
+                                <button id="deal-agree-<%=microDealsMap[contributor._id.toString()].at(-1)._id.toString()%>">Agree to latest deal</button>
                             </div>
                         <%}%>
                         <textarea name="" id="specific-contract-<%=contributor._id%>" placeholder="Additional Contract Specifications"></textarea>
@@ -101,6 +111,20 @@
                     contract: $('#specific-contract-'+contributor).val(),
                     paymentOption: $('#specific-payment-option-'+contributor).val(),
                     amountOrPercentage: $('#specific-amount-or-percentage-'+contributor).val()
+                },
+                success: function (data){
+                    window.location.reload();
+                }
+            });
+        });
+        $(document).on('click', '[id^="deal-agree-"]', function(){
+            var microDealId = $(this).attr('id').split('-').at(-1);
+            $.ajax({
+                type: 'post',
+                url: '/deals/agree-to-deal',
+                data: {
+                    dealId: $('#dealId').val(),
+                    microDealId: microDealId
                 },
                 success: function (data){
                     window.location.reload();
